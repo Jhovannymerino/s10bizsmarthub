@@ -1,0 +1,42 @@
+import {
+  Controller,
+  Post,
+  Body,
+  Headers,
+  UnauthorizedException,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
+import { SyncService } from './sync.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
+@Controller('sync')
+export class SyncController {
+  constructor(private readonly syncService: SyncService) {}
+
+  /**
+   * POST /sync/push
+   * Endpoint para el agente local — autenticado con x-sync-key header
+   */
+  @Post('push')
+  async push(
+    @Headers('x-sync-key') syncKey: string,
+    @Body() payload: any,
+  ) {
+    const expectedKey = process.env.SYNC_API_KEY;
+    if (!expectedKey || syncKey !== expectedKey) {
+      throw new UnauthorizedException('Invalid sync key');
+    }
+    return this.syncService.processPush(payload);
+  }
+
+  /**
+   * POST /sync/trigger
+   * Trigger manual de sync directo — requiere JWT de admin
+   */
+  @Post('trigger')
+  @UseGuards(JwtAuthGuard)
+  async trigger(@Query('companyId') companyId?: string) {
+    return this.syncService.triggerDirectSync(companyId);
+  }
+}

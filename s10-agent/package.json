@@ -1,0 +1,14 @@
+{
+  "name": "s10-sync-agent",
+  "version": "1.0.0",
+  "description": "Agente local de sincronización S10 → VPS BizSmartHub",
+  "main": "sync-agent.js",
+  "scripts": {
+    "start": "node sync-agent.js",
+    "sync": "node sync-agent.js --year=$(date +%Y)"
+  },
+  "dependencies": {
+    "mssql": "^10.0.0",
+    "node-fetch": "^3.3.2"
+  }
+}

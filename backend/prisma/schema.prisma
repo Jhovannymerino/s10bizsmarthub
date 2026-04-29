@@ -1,0 +1,70 @@
+// ============================================================
+// S10 BizSmartHub — Prisma Schema
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Snapshot de KPIs sincronizados desde S10
+model KpiSnapshot {
+  id          Int      @id @default(autoincrement())
+  companyId   String   // CodEmpresa del S10
+  companyName String
+  kpiType     String   // 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'gastos_financieros'
+  period      String   // 'YYYY' o 'YYYY-MM'
+  year        Int
+  month       Int?     // null = datos anuales consolidados
+  data        Json     // payload completo del KPI
+  syncedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, kpiType, period])
+  @@index([companyId, year])
+  @@index([kpiType, year])
+}
+
+// Empresas configuradas
+model Company {
+  id            Int      @id @default(autoincrement())
+  codEmpresa    String   @unique
+  name          String
+  claseIngreso  String   @default("70")  // '70' para INTEGRAL, '75' para CMO GROUP
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Log de sincronizaciones
+model SyncLog {
+  id            Int      @id @default(autoincrement())
+  companyId     String
+  kpiType       String
+  status        String   // 'success' | 'error'
+  mode          String   // 'push' | 'direct'
+  rowsProcessed Int      @default(0)
+  errorMessage  String?
+  triggeredBy   String   @default("scheduler")  // 'scheduler' | 'manual' | 'agent'
+  createdAt     DateTime @default(now())
+
+  @@index([companyId, createdAt])
+}
+
+// Usuarios del dashboard
+model User {
+  id               Int      @id @default(autoincrement())
+  email            String   @unique
+  passwordHash     String
+  role             String   @default("viewer")  // 'admin' | 'viewer'
+  allowedCompanies String[]  // [] = todas las empresas
+  active           Boolean  @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

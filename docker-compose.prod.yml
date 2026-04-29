@@ -1,0 +1,60 @@
+version: '3.8'
+
+# S10 BizSmartHub — app independiente
+# Dominio: s10bizsmarthub.bizwareapps.com
+# Puertos: backend 3202 | frontend 3100 | postgres 5435
+
+services:
+  s10biz-db:
+    image: postgres:15-alpine
+    container_name: s10biz-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-s10biz2026}
+      - POSTGRES_DB=s10biz_db
+    volumes:
+      - s10biz_db_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - app_default
+
+  s10biz-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: s10biz-api
+    ports:
+      - "3202:3202"
+    env_file:
+      - ./backend/.env
+    restart: always
+    depends_on:
+      - s10biz-db
+    networks:
+      - app_default
+
+  s10biz-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://s10bizsmarthub.bizwareapps.com/api
+    container_name: s10biz-web
+    ports:
+      - "3100:3100"
+    environment:
+      - NEXT_PUBLIC_API_URL=https://s10bizsmarthub.bizwareapps.com/api
+      - NODE_ENV=production
+      - PORT=3100
+    restart: always
+    depends_on:
+      - s10biz-backend
+    networks:
+      - app_default
+
+networks:
+  app_default:
+    external: true
+
+volumes:
+  s10biz_db_data:

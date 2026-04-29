@@ -1,0 +1,72 @@
+version: '3.8'
+
+# S10 BizSmartHub — entorno de desarrollo local
+
+services:
+  s10biz-db:
+    image: postgres:15-alpine
+    container_name: s10biz-db-dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: s10biz2026
+      POSTGRES_DB: s10biz_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - s10biz_db_data:/var/lib/postgresql/data
+    networks:
+      - app_default
+
+  s10biz-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: s10biz-api-dev
+    environment:
+      - DATABASE_URL=postgresql://postgres:s10biz2026@s10biz-db:5432/s10biz_db?schema=public
+      - NODE_ENV=development
+      - PORT=3202
+      # S10 SQL Server — ajustar según acceso
+      - S10_HOST=192.168.1.XXX
+      - S10_PORT=1433
+      - S10_USER=sa
+      - S10_PASSWORD=
+      - S10_DATABASE=CMO
+      - S10_SYNC_MODE=push   # 'direct' si hay acceso SQL desde este equipo
+      - SYNC_API_KEY=dev-key-change-in-prod
+    ports:
+      - "3202:3202"
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - s10biz-db
+    networks:
+      - app_default
+
+  s10biz-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: s10biz-web-dev
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3202
+      - NODE_ENV=development
+      - PORT=3100
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+    depends_on:
+      - s10biz-backend
+    networks:
+      - app_default
+
+networks:
+  app_default:
+    driver: bridge
+
+volumes:
+  s10biz_db_data:

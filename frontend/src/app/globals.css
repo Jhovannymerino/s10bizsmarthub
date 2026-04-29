@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #0D3B5E;
+  --navy-light: #1a5276;
+  --orange: #E25C1A;
+  --green: #1E8449;
+  --red: #C0392B;
+  --gray-bg: #F4F6F9;
+  --border: #DEE2E6;
+}
+
+body {
+  background-color: var(--gray-bg);
+  color: #1a1a2e;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.kpi-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border: 1px solid var(--border);
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.table-s10 {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table-s10 th {
+  background: var(--navy);
+  color: white;
+  padding: 0.6rem 0.875rem;
+  text-align: right;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table-s10 th:first-child { text-align: left; }
+
+.table-s10 td {
+  padding: 0.55rem 0.875rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-s10 td:first-child { text-align: left; }
+
+.table-s10 tr:hover td { background: #f8faff; }
+
+.table-s10 tr.total-row td {
+  font-weight: 700;
+  background: #EBF4FF;
+  border-top: 2px solid var(--navy);
+}
+
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+.neutral  { color: #374151; }
+
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: var(--navy);
+  color: white;
+  flex-shrink: 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  color: #CBD5E1;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+  border-radius: 0.375rem;
+  margin: 0.125rem 0.5rem;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: rgba(255,255,255,0.12);
+  color: white;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}

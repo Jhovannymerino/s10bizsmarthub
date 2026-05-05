@@ -7,19 +7,16 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class KpiController {
   constructor(private readonly kpiService: KpiService) {}
 
-  /** Dashboard completo: P&L mensual + YTD */
-  @Get(':companyId/dashboard')
-  getDashboard(
-    @Param('companyId') companyId: string,
-    @Query('year') year?: string,
-  ) {
+  /** Consolidado de todas las empresas del grupo */
+  @Get('consolidado')
+  getConsolidado(@Query('year') year?: string) {
     const y = year ? parseInt(year, 10) : new Date().getFullYear();
-    return this.kpiService.getDashboard(companyId, y);
+    return this.kpiService.getConsolidado(y);
   }
 
-  /** P&L mensual + YTD */
-  @Get(':companyId/pl')
-  getPL(
+  /** Dashboard completo: P&L mensual + YTD + prevYear */
+  @Get(':companyId/dashboard')
+  getDashboard(
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {

@@ -50,30 +50,34 @@ export class KpiService {
   }
 
   // ─────────────────────────────────────────────
-  // Dashboard (P&L + KPI cards)
+  // Dashboard (P&L + KPI cards) — incluye prevYear para YoY
   // ─────────────────────────────────────────────
 
   async getDashboard(companyId: string, year: number) {
     const period = `${year}`;
 
-    // Try cache first
     const cached = await this.getSnapshot(companyId, 'pl', period);
+    let dashboard: any;
+
     if (cached) {
       this.logger.debug(`Cache hit: ${companyId}/pl/${period}`);
-      return cached.data;
-    }
-
-    // Direct mode fallback
-    if (this.s10.isDirectMode) {
+      dashboard = cached.data;
+    } else if (this.s10.isDirectMode) {
       const company = await this.resolveCompany(companyId);
       const rows = await this.s10.getPLCompleto(companyId, company.claseIngreso, year);
-      const dashboard = this.buildDashboardFromPL(rows, company.claseIngreso);
+      dashboard = this.buildDashboardFromPL(rows, company.claseIngreso);
       await this.saveSnapshot(companyId, company.name, 'pl', period, year, null, dashboard);
-      return dashboard;
+    } else {
+      return { message: 'No data available. Run sync first.', year };
     }
 
-    // No data available yet
-    return { message: 'No data available. Run sync first.', year };
+    // Adjuntar datos del año anterior para comparativo YoY
+    const prevCached = await this.getSnapshot(companyId, 'pl', `${year - 1}`);
+    const prevYear = prevCached?.data?.ytd
+      ? { ytd: prevCached.data.ytd, year: year - 1 }
+      : null;
+
+    return { ...dashboard, prevYear };
   }
 
   // ─────────────────────────────────────────────
@@ -93,7 +97,6 @@ export class KpiService {
       monthly[m] = { ingresos: 0, costo: 0, cargas: 0, gav: 0, gastosFinancieros: 0 };
     }
 
-    // Per-account detail maps
     const detalleMap: Record<string, Record<string, any>> = {
       ingresos: {},
       costoDirecto: {},
@@ -120,7 +123,6 @@ export class KpiService {
         grupo = 'costoDirecto'; valor = debito - credito;
       } else if (clase === '79') {
         monthly[mes].cargas += credito - debito;
-        // 79 reduces costo — no separate detail row
       } else if (clase === '94') {
         monthly[mes].gav += debito - credito;
         grupo = 'gav'; valor = debito - credito;
@@ -158,6 +160,7 @@ export class KpiService {
         ebitdaPct: v.ingresos > 0 ? round((ebitda / v.ingresos) * 100) : 0,
         gastosFinancieros: round(v.gastosFinancieros),
         utilidadNeta: round(utilidadNeta),
+        utilidadNetaPct: v.ingresos > 0 ? round((utilidadNeta / v.ingresos) * 100) : 0,
       };
     });
 
@@ -176,6 +179,10 @@ export class KpiService {
 
     ytd['margenBrutoPct'] = ytd.ingresos > 0 ? round((ytd.margenBruto / ytd.ingresos) * 100) : 0;
     ytd['ebitdaPct'] = ytd.ingresos > 0 ? round((ytd.ebitda / ytd.ingresos) * 100) : 0;
+    ytd['margenNetoPct'] = ytd.ingresos > 0 ? round((ytd.utilidadNeta / ytd.ingresos) * 100) : 0;
+    ytd['gavPct'] = ytd.ingresos > 0 ? round((ytd.gav / ytd.ingresos) * 100) : 0;
+    ytd['costoPct'] = ytd.ingresos > 0 ? round((ytd.costoDirecto / ytd.ingresos) * 100) : 0;
+    ytd['covIntereses'] = ytd.gastosFinancieros > 0 ? round(ytd.ebitda / ytd.gastosFinancieros) : null;
 
     const detalle = {
       ingresos: Object.values(detalleMap.ingresos).sort((a: any, b: any) => b.ytd - a.ytd),
@@ -188,7 +195,7 @@ export class KpiService {
   }
 
   // ─────────────────────────────────────────────
-  // CxC
+  // CxC — con métricas de concentración
   // ─────────────────────────────────────────────
 
   async getCxC(companyId: string) {
@@ -221,17 +228,24 @@ export class KpiService {
     const totalSaldo = clientes.reduce((sum, c) => sum + c.saldoTotal, 0);
     const total90mas = clientes.reduce((sum, c) => sum + c.dias90mas, 0);
 
+    // Concentración: top 3 clientes por saldo
+    const sorted = [...clientes].sort((a, b) => b.saldoTotal - a.saldoTotal);
+    const top3Saldo = sorted.slice(0, 3).reduce((s, c) => s + c.saldoTotal, 0);
+    const concentracionTop3 = totalSaldo > 0 ? round((top3Saldo / totalSaldo) * 100) : 0;
+
     return {
       clientes,
       totalSaldo: round(totalSaldo),
       total90mas: round(total90mas),
       pct90mas: totalSaldo > 0 ? round((total90mas / totalSaldo) * 100) : 0,
+      concentracionTop3,
+      numClientes: clientes.length,
       syncedAt: new Date().toISOString(),
     };
   }
 
   // ─────────────────────────────────────────────
-  // Caja
+  // Caja — con totales consolidados
   // ─────────────────────────────────────────────
 
   async getCaja(companyId: string, year: number) {
@@ -262,8 +276,17 @@ export class KpiService {
       bancos[banco].meses[row.Mes] = round(parseFloat(row.FlujoNeto) || 0);
     }
 
+    const bancosArr = Object.values(bancos);
+
+    // Total por mes (suma de todos los bancos)
+    const totalPorMes: Record<number, number> = {};
+    for (let m = 1; m <= 12; m++) {
+      totalPorMes[m] = round(bancosArr.reduce((s: number, b: any) => s + (b.meses[m] || 0), 0));
+    }
+
     return {
-      bancos: Object.values(bancos),
+      bancos: bancosArr,
+      totalPorMes,
       syncedAt: new Date().toISOString(),
     };
   }
@@ -309,6 +332,98 @@ export class KpiService {
       total: round(total),
       syncedAt: new Date().toISOString(),
     };
+  }
+
+  // ─────────────────────────────────────────────
+  // Consolidado Grupo — suma todas las empresas activas
+  // ─────────────────────────────────────────────
+
+  async getConsolidado(year: number) {
+    const companies = await this.prisma.company.findMany({ where: { active: true } });
+
+    const snapshots = await Promise.all(
+      companies.map(async (co) => {
+        const snap = await this.getSnapshot(co.codEmpresa, 'pl', `${year}`);
+        return { company: co, data: snap?.data || null };
+      }),
+    );
+
+    const zeroYtd = () => ({
+      ingresos: 0, costoDirecto: 0, margenBruto: 0,
+      gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0,
+    });
+
+    const ytdTotal = zeroYtd();
+    const empresas: any[] = [];
+
+    // Monthly consolidado (12 meses)
+    const monthlyTotal: Record<number, any> = {};
+    for (let m = 1; m <= 12; m++) {
+      monthlyTotal[m] = { mes: m, mesLabel: MONTHS[m - 1], ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 };
+    }
+
+    for (const { company, data } of snapshots) {
+      if (!data?.ytd) continue;
+      const y = data.ytd;
+
+      ytdTotal.ingresos += y.ingresos || 0;
+      ytdTotal.costoDirecto += y.costoDirecto || 0;
+      ytdTotal.margenBruto += y.margenBruto || 0;
+      ytdTotal.gav += y.gav || 0;
+      ytdTotal.ebitda += y.ebitda || 0;
+      ytdTotal.gastosFinancieros += y.gastosFinancieros || 0;
+      ytdTotal.utilidadNeta += y.utilidadNeta || 0;
+
+      empresas.push({
+        codEmpresa: company.codEmpresa,
+        name: company.name,
+        shortName: company.name.split(' ')[0],
+        ytd: y,
+        pctIngresos: 0, // calculado después
+      });
+
+      if (data.plMonthly) {
+        for (const m of data.plMonthly) {
+          monthlyTotal[m.mes].ingresos += m.ingresos || 0;
+          monthlyTotal[m.mes].costoDirecto += m.costoDirecto || 0;
+          monthlyTotal[m.mes].margenBruto += m.margenBruto || 0;
+          monthlyTotal[m.mes].gav += m.gav || 0;
+          monthlyTotal[m.mes].ebitda += m.ebitda || 0;
+          monthlyTotal[m.mes].gastosFinancieros += m.gastosFinancieros || 0;
+          monthlyTotal[m.mes].utilidadNeta += m.utilidadNeta || 0;
+        }
+      }
+    }
+
+    // Porcentaje de ingresos por empresa
+    for (const e of empresas) {
+      e.pctIngresos = ytdTotal.ingresos > 0
+        ? round((e.ytd.ingresos / ytdTotal.ingresos) * 100)
+        : 0;
+    }
+
+    // Ratios consolidados
+    const ytd: any = { ...ytdTotal };
+    ytd.margenBrutoPct = ytd.ingresos > 0 ? round((ytd.margenBruto / ytd.ingresos) * 100) : 0;
+    ytd.ebitdaPct = ytd.ingresos > 0 ? round((ytd.ebitda / ytd.ingresos) * 100) : 0;
+    ytd.margenNetoPct = ytd.ingresos > 0 ? round((ytd.utilidadNeta / ytd.ingresos) * 100) : 0;
+    ytd.gavPct = ytd.ingresos > 0 ? round((ytd.gav / ytd.ingresos) * 100) : 0;
+    ytd.covIntereses = ytd.gastosFinancieros > 0 ? round(ytd.ebitda / ytd.gastosFinancieros) : null;
+
+    const plMonthly = Object.values(monthlyTotal).map((m: any) => ({
+      ...m,
+      ingresos: round(m.ingresos),
+      costoDirecto: round(m.costoDirecto),
+      margenBruto: round(m.margenBruto),
+      margenBrutoPct: m.ingresos > 0 ? round((m.margenBruto / m.ingresos) * 100) : 0,
+      gav: round(m.gav),
+      ebitda: round(m.ebitda),
+      ebitdaPct: m.ingresos > 0 ? round((m.ebitda / m.ingresos) * 100) : 0,
+      gastosFinancieros: round(m.gastosFinancieros),
+      utilidadNeta: round(m.utilidadNeta),
+    }));
+
+    return { ytd, plMonthly, empresas, year };
   }
 }
 

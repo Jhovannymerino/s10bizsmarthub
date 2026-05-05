@@ -23,14 +23,21 @@ const COLORS_PIE = ['#0D3B5E', '#E25C1A', '#1E8449', '#2874A6', '#8E44AD', '#D35
 const COLORS_EMPRESA = ['#0D3B5E', '#E25C1A', '#1E8449', '#2874A6'];
 
 // ─── Formatters ───────────────────────────────
-function fmt(n: number): string {
+function fmt(n: number | undefined | null): string {
+  if (n === undefined || n === null || isNaN(n)) return '—';
   if (Math.abs(n) >= 1_000_000) return `S/ ${(n / 1_000_000).toFixed(2)}M`;
   if (Math.abs(n) >= 1_000) return `S/ ${(n / 1_000).toFixed(0)}K`;
   return `S/ ${n.toFixed(0)}`;
 }
-function pct(n: number): string { return `${n.toFixed(1)}%`; }
+function pct(n: number | undefined | null): string {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return `${n.toFixed(1)}%`;
+}
 function fmtDays(n: number): string { return `${Math.round(n)} días`; }
-function fmtX(n: number): string { return `${n.toFixed(1)}x`; }
+function fmtX(n: number | undefined | null): string {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return `${n.toFixed(1)}x`;
+}
 function yoyPct(curr: number, prev: number): number {
   if (!prev || prev === 0) return 0;
   return ((curr - prev) / Math.abs(prev)) * 100;
@@ -155,16 +162,22 @@ function DetalleModal({ title, rows, activeMeses, onClose }: {
 
 // ─── Waterfall chart ──────────────────────────
 function buildWaterfallData(ytd: any) {
-  const steps = [
-    { name: 'Ingresos',    base: 0,                                   value: ytd.ingresos,         type: 'income' },
-    { name: 'Costo Dir.',  base: ytd.margenBruto > 0 ? ytd.margenBruto : 0, value: Math.abs(ytd.costoDirecto), type: 'expense' },
-    { name: 'Margen Bruto',base: 0,                                   value: ytd.margenBruto,      type: 'total' },
-    { name: 'GAV',         base: ytd.ebitda > 0 ? ytd.ebitda : 0,    value: Math.abs(ytd.gav),    type: 'expense' },
-    { name: 'EBITDA',      base: 0,                                   value: ytd.ebitda,           type: 'total' },
-    { name: 'Gastos Fin.', base: ytd.utilidadNeta > 0 ? ytd.utilidadNeta : 0, value: Math.abs(ytd.gastosFinancieros), type: 'expense' },
-    { name: 'Utilidad',    base: 0,                                   value: ytd.utilidadNeta,     type: 'total' },
+  const ing = ytd.ingresos || 0;
+  const costo = ytd.costoDirecto || 0;
+  const margen = ytd.margenBruto || 0;
+  const gav = ytd.gav || 0;
+  const ebitda = ytd.ebitda || 0;
+  const gf = ytd.gastosFinancieros || 0;
+  const util = ytd.utilidadNeta || 0;
+  return [
+    { name: 'Ingresos',    base: 0,                  value: ing,            type: 'income' },
+    { name: 'Costo Dir.',  base: margen > 0 ? margen : 0, value: Math.abs(costo), type: 'expense' },
+    { name: 'Margen',      base: 0,                  value: margen,         type: 'total' },
+    { name: 'GAV',         base: ebitda > 0 ? ebitda : 0, value: Math.abs(gav), type: 'expense' },
+    { name: 'EBITDA',      base: 0,                  value: ebitda,         type: 'total' },
+    { name: 'Gastos Fin.', base: util > 0 ? util : 0, value: Math.abs(gf), type: 'expense' },
+    { name: 'Utilidad',    base: 0,                  value: util,           type: 'total' },
   ];
-  return steps;
 }
 
 function WaterfallChart({ ytd }: { ytd: any }) {

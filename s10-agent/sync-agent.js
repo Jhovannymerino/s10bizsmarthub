@@ -35,16 +35,10 @@ const CONFIG = {
   // Empresas a sincronizar
   // codEmpresa: código en S10 | name: nombre display | claseIngreso: '70' o '75'
   COMPANIES: [
-    { codEmpresa: '22011489',  name: 'CMO GROUP S.A.',                                                    claseIngreso: '75' },
-    { codEmpresa: '80680645',  name: 'CONSORCIO SALUD ZACARIAS',                                          claseIngreso: '70' },
-    { codEmpresa: '80688541',  name: 'INTEGRAL CONSULTORES S.A.C.',                                       claseIngreso: '70' },
-    { codEmpresa: '80240175',  name: 'CONSORCIO PENITENCIARIO MISTI',                                     claseIngreso: '70' },
-    { codEmpresa: '80688706',  name: 'MEDARQ S.A.C.',                                                     claseIngreso: '70' },
-    { codEmpresa: '80688524',  name: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C.',          claseIngreso: '70' },
-    { codEmpresa: '80688895',  name: 'CONSORCIO SALUD MONTENEGRO',                                        claseIngreso: '70' },
-    { codEmpresa: '22020135',  name: 'CONSORCIO DEPORTIVO ATE',                                           claseIngreso: '70' },
-    { codEmpresa: '80688995',  name: 'CONSORCIO SALUD SANTA CRUZ',                                        claseIngreso: '70' },
-    { codEmpresa: '80688535',  name: 'ESTRATEGIA Y SOLUCIONES RAVI E.I.R.L.',                             claseIngreso: '70' },
+    { codEmpresa: '22011489', name: 'CMO GROUP S.A.',                                               claseIngreso: '75' },
+    { codEmpresa: '80688541', name: 'INTEGRAL CONSULTORES S.A.C.',                                  claseIngreso: '70' },
+    { codEmpresa: '80688706', name: 'MEDARQ S.A.C.',                                                claseIngreso: '70' },
+    { codEmpresa: '80688524', name: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C.',     claseIngreso: '70' },
   ],
 };
 

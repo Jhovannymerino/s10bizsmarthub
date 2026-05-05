@@ -10,16 +10,10 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 const YEAR = new Date().getFullYear();
 
 const COMPANIES = [
-  { codEmpresa: '22011489',  shortName: 'CMO GROUP',     fullName: 'CMO GROUP S.A.' },
-  { codEmpresa: '80680645',  shortName: 'CSZ',            fullName: 'CONSORCIO SALUD ZACARIAS' },
-  { codEmpresa: '80688541',  shortName: 'INTEGRAL',       fullName: 'INTEGRAL CONSULTORES S.A.C.' },
-  { codEmpresa: '80240175',  shortName: 'C. MISTI',       fullName: 'CONSORCIO PENITENCIARIO MISTI' },
-  { codEmpresa: '80688706',  shortName: 'MEDARQ',         fullName: 'MEDARQ S.A.C.' },
-  { codEmpresa: '80688524',  shortName: 'AMERICANA',      fullName: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C.' },
-  { codEmpresa: '80688895',  shortName: 'C. MONTENEGRO',  fullName: 'CONSORCIO SALUD MONTENEGRO' },
-  { codEmpresa: '22020135',  shortName: 'C. ATE',         fullName: 'CONSORCIO DEPORTIVO ATE' },
-  { codEmpresa: '80688995',  shortName: 'C. STA CRUZ',    fullName: 'CONSORCIO SALUD SANTA CRUZ' },
-  { codEmpresa: '80688535',  shortName: 'RAVI',           fullName: 'ESTRATEGIA Y SOLUCIONES RAVI E.I.R.L.' },
+  { codEmpresa: '22011489', shortName: 'CMO GROUP',  fullName: 'CMO GROUP S.A.' },
+  { codEmpresa: '80688541', shortName: 'INTEGRAL',   fullName: 'INTEGRAL CONSULTORES S.A.C.' },
+  { codEmpresa: '80688706', shortName: 'MEDARQ',     fullName: 'MEDARQ S.A.C.' },
+  { codEmpresa: '80688524', shortName: 'AMERICANA',  fullName: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C.' },
 ];
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];

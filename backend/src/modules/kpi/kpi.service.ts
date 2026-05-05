@@ -93,22 +93,49 @@ export class KpiService {
       monthly[m] = { ingresos: 0, costo: 0, cargas: 0, gav: 0, gastosFinancieros: 0 };
     }
 
+    // Per-account detail maps
+    const detalleMap: Record<string, Record<string, any>> = {
+      ingresos: {},
+      costoDirecto: {},
+      gav: {},
+      gastosFinancieros: {},
+    };
+
     for (const row of rows) {
       const mes = row.Mes as number;
       const debito = parseFloat(row.TotalDebito) || 0;
       const credito = parseFloat(row.TotalCredito) || 0;
       const clase = row.Clase as string;
+      const cod = row.CodCuenta as string;
+      const des = row.DesCuenta as string;
+
+      let grupo: string | null = null;
+      let valor = 0;
 
       if (clase === claseIngreso) {
         monthly[mes].ingresos += credito - debito;
+        grupo = 'ingresos'; valor = credito - debito;
       } else if (clase === '91') {
         monthly[mes].costo += debito - credito;
+        grupo = 'costoDirecto'; valor = debito - credito;
       } else if (clase === '79') {
         monthly[mes].cargas += credito - debito;
+        // 79 reduces costo — no separate detail row
       } else if (clase === '94') {
         monthly[mes].gav += debito - credito;
+        grupo = 'gav'; valor = debito - credito;
       } else if (clase === '97') {
         monthly[mes].gastosFinancieros += debito - credito;
+        grupo = 'gastosFinancieros'; valor = debito - credito;
+      }
+
+      if (grupo && valor !== 0) {
+        if (!detalleMap[grupo][cod]) {
+          detalleMap[grupo][cod] = { codCuenta: cod, descripcion: des, meses: {}, ytd: 0 };
+          for (let m2 = 1; m2 <= 12; m2++) detalleMap[grupo][cod].meses[m2] = 0;
+        }
+        detalleMap[grupo][cod].meses[mes] = round((detalleMap[grupo][cod].meses[mes] || 0) + valor);
+        detalleMap[grupo][cod].ytd = round(detalleMap[grupo][cod].ytd + valor);
       }
     }
 
@@ -150,7 +177,14 @@ export class KpiService {
     ytd['margenBrutoPct'] = ytd.ingresos > 0 ? round((ytd.margenBruto / ytd.ingresos) * 100) : 0;
     ytd['ebitdaPct'] = ytd.ingresos > 0 ? round((ytd.ebitda / ytd.ingresos) * 100) : 0;
 
-    return { plMonthly, ytd };
+    const detalle = {
+      ingresos: Object.values(detalleMap.ingresos).sort((a: any, b: any) => b.ytd - a.ytd),
+      costoDirecto: Object.values(detalleMap.costoDirecto).sort((a: any, b: any) => b.ytd - a.ytd),
+      gav: Object.values(detalleMap.gav).sort((a: any, b: any) => b.ytd - a.ytd),
+      gastosFinancieros: Object.values(detalleMap.gastosFinancieros).sort((a: any, b: any) => b.ytd - a.ytd),
+    };
+
+    return { plMonthly, ytd, detalle };
   }
 
   // ─────────────────────────────────────────────

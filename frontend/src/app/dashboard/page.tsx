@@ -7,7 +7,6 @@ import {
 } from 'recharts';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
-const YEAR = new Date().getFullYear();
 
 const COMPANIES = [
   { codEmpresa: '22011489', shortName: 'CMO GROUP',  fullName: 'CMO GROUP S.A.' },
@@ -16,8 +15,10 @@ const COMPANIES = [
   { codEmpresa: '80688524', shortName: 'AMERICANA',  fullName: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C.' },
 ];
 
-const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];
 
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 const COLORS_PIE = ['#0D3B5E', '#E25C1A', '#1E8449', '#2874A6', '#8E44AD', '#D35400', '#148F77', '#C0392B'];
 
 function fmt(n: number): string {
@@ -25,15 +26,10 @@ function fmt(n: number): string {
   if (Math.abs(n) >= 1_000) return `S/ ${(n / 1_000).toFixed(0)}K`;
   return `S/ ${n.toFixed(0)}`;
 }
-
-function pct(n: number): string {
-  return `${n.toFixed(1)}%`;
-}
+function pct(n: number): string { return `${n.toFixed(1)}%`; }
 
 async function fetchApi(path: string, token: string) {
-  const res = await fetch(`${API}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) throw new Error('unauthorized');
   if (!res.ok) throw new Error(`Error ${res.status}`);
   return res.json();
@@ -55,8 +51,64 @@ function NoDataBanner({ kpi }: { kpi: string }) {
       <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📭</div>
       <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0D3B5E', marginBottom: '0.5rem' }}>Sin datos de {kpi}</div>
       <div style={{ fontSize: '0.875rem', maxWidth: 380 }}>
-        El agente de sincronización aún no ha enviado datos desde S10.<br />
         Ejecuta <code style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>node sync-agent.js</code> desde la red CMO para cargar los datos.
+      </div>
+    </div>
+  );
+}
+
+// Drill-down modal
+function DetalleModal({ title, rows, activeMeses, onClose }: {
+  title: string;
+  rows: any[];
+  activeMeses: number[];
+  onClose: () => void;
+}) {
+  if (!rows?.length) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={onClose}>
+      <div style={{ background: '#fff', borderRadius: '0.75rem', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', minWidth: 600 }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0D3B5E' }}>Detalle: {title}</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+            <thead>
+              <tr>
+                <th style={{ minWidth: 60 }}>Cuenta</th>
+                <th style={{ minWidth: 200 }}>Descripción</th>
+                {activeMeses.map(m => <th key={m}>{MESES[m - 1]}</th>)}
+                <th style={{ background: '#1a5276' }}>YTD</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r: any) => (
+                <tr key={r.codCuenta}>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{r.codCuenta}</td>
+                  <td>{r.descripcion}</td>
+                  {activeMeses.map(m => (
+                    <td key={m} style={{ color: (r.meses[m] || 0) < 0 ? '#C0392B' : undefined }}>
+                      {fmt(r.meses[m] || 0)}
+                    </td>
+                  ))}
+                  <td style={{ fontWeight: 700 }}>{fmt(r.ytd)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="total-row">
+                <td colSpan={2}>TOTAL</td>
+                {activeMeses.map(m => (
+                  <td key={m}>{fmt(rows.reduce((s: number, r: any) => s + (r.meses[m] || 0), 0))}</td>
+                ))}
+                <td>{fmt(rows.reduce((s: number, r: any) => s + r.ytd, 0))}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -67,11 +119,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(COMPANIES[0]);
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [pl, setPL] = useState<any>(null);
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
   const [gav, setGAV] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'caja' | 'gav'>('pl');
+  const [drillDown, setDrillDown] = useState<{ title: string; rows: any[] } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -81,11 +135,12 @@ export default function DashboardPage() {
     setPL(null); setCxC(null); setCaja(null); setGAV(null);
 
     const id = selectedCompany.codEmpresa;
+    const year = selectedYear;
     Promise.all([
-      fetchApi(`/kpi/${id}/dashboard?year=${YEAR}`, token),
+      fetchApi(`/kpi/${id}/dashboard?year=${year}`, token),
       fetchApi(`/kpi/${id}/cxc`, token),
-      fetchApi(`/kpi/${id}/caja?year=${YEAR}`, token),
-      fetchApi(`/kpi/${id}/gav?year=${YEAR}`, token),
+      fetchApi(`/kpi/${id}/caja?year=${year}`, token),
+      fetchApi(`/kpi/${id}/gav?year=${year}`, token),
     ])
       .then(([plData, cxcData, cajaData, gavData]) => {
         setPL(plData?.plMonthly ? plData : null);
@@ -99,23 +154,45 @@ export default function DashboardPage() {
         setError(err.message);
         setLoading(false);
       });
-  }, [router, selectedCompany]);
+  }, [router, selectedCompany, selectedYear]);
 
   if (error) return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', color: '#C0392B', maxWidth: 400 }}>
         <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Error de conexión</div>
-        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>No se pudo conectar con la API.</div>
         <pre style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#9ca3af' }}>{error}</pre>
       </div>
     </div>
   );
 
   const ytd = pl?.ytd;
-  const plMonthly = pl?.plMonthly || [];
+  const plMonthly: any[] = pl?.plMonthly || [];
+  const detalle = pl?.detalle || {};
+  const activeMeses = plMonthly.filter((m: any) => m.ingresos > 0 || m.gav > 0).map((m: any) => m.mes);
+
+  const PL_ROWS = [
+    { key: 'ingresos',         label: 'Ingresos',          fmt: 'currency', detalleKey: 'ingresos',         drillable: true },
+    { key: 'costoDirecto',     label: 'Costo Directo',     fmt: 'currency', detalleKey: 'costoDirecto',     drillable: true },
+    { key: 'margenBruto',      label: 'Margen Bruto',      fmt: 'currency', bold: true },
+    { key: 'margenBrutoPct',   label: '% Margen',          fmt: 'pct' },
+    { key: 'gav',              label: 'GAV',               fmt: 'currency', detalleKey: 'gav',              drillable: true },
+    { key: 'ebitda',           label: 'EBITDA',            fmt: 'currency', bold: true },
+    { key: 'ebitdaPct',        label: '% EBITDA',          fmt: 'pct' },
+    { key: 'gastosFinancieros',label: 'Gastos Financieros',fmt: 'currency', detalleKey: 'gastosFinancieros', drillable: true },
+    { key: 'utilidadNeta',     label: 'Utilidad Neta',     fmt: 'currency', bold: true },
+  ];
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {drillDown && (
+        <DetalleModal
+          title={drillDown.title}
+          rows={drillDown.rows}
+          activeMeses={activeMeses.length ? activeMeses : [1,2,3,4,5,6,7,8,9,10,11,12]}
+          onClose={() => setDrillDown(null)}
+        />
+      )}
+
       {/* Sidebar */}
       <div className="sidebar">
         <div style={{ padding: '1.5rem 1.25rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -135,8 +212,8 @@ export default function DashboardPage() {
                 border: 'none', borderRadius: '0.375rem',
                 color: selectedCompany.codEmpresa === co.codEmpresa ? '#fff' : '#94A3B8',
                 padding: '0.4rem 0.6rem', marginBottom: '0.2rem',
-                cursor: 'pointer', fontSize: '0.8rem', fontWeight: selectedCompany.codEmpresa === co.codEmpresa ? 700 : 400,
-                transition: 'all 0.15s',
+                cursor: 'pointer', fontSize: '0.8rem',
+                fontWeight: selectedCompany.codEmpresa === co.codEmpresa ? 700 : 400,
               }}
             >
               {co.shortName}
@@ -144,7 +221,29 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Nav tabs */}
+        {/* Year selector */}
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ fontSize: '0.65rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Año</div>
+          {YEARS.map((y) => (
+            <button
+              key={y}
+              onClick={() => setSelectedYear(y)}
+              style={{
+                display: 'inline-block', marginRight: '0.4rem',
+                background: selectedYear === y ? 'rgba(255,255,255,0.15)' : 'none',
+                border: selectedYear === y ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
+                borderRadius: '0.375rem',
+                color: selectedYear === y ? '#fff' : '#94A3B8',
+                padding: '0.3rem 0.6rem',
+                cursor: 'pointer', fontSize: '0.8rem', fontWeight: selectedYear === y ? 700 : 400,
+              }}
+            >
+              {y}
+            </button>
+          ))}
+        </div>
+
+        {/* Nav */}
         <nav style={{ padding: '0.75rem 0' }}>
           {(['pl', 'cxc', 'caja', 'gav'] as const).map((tab) => (
             <button
@@ -172,7 +271,6 @@ export default function DashboardPage() {
 
       {/* Main */}
       <div className="main-content" style={{ width: 'calc(100% - 240px)' }}>
-        {/* Header */}
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0D3B5E', margin: 0 }}>
@@ -182,15 +280,10 @@ export default function DashboardPage() {
               {activeTab === 'gav' && 'Gastos de Admin. y Ventas'}
             </h1>
             <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-              {selectedCompany.fullName} · YTD {YEAR} · Fuente: S10 ERP
+              {selectedCompany.fullName} · YTD {selectedYear} · Fuente: S10 ERP
             </div>
           </div>
-          {loading && (
-            <div style={{ fontSize: '0.8rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#E25C1A', animation: 'pulse 1.5s infinite' }} />
-              Cargando...
-            </div>
-          )}
+          {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Cargando...</div>}
         </div>
 
         {/* P&L Tab */}
@@ -207,7 +300,7 @@ export default function DashboardPage() {
 
             <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
               <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Ingresos vs EBITDA — Mensual</div>
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={plMonthly.filter((m: any) => m.ingresos > 0)} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="mesLabel" tick={{ fontSize: 12 }} />
@@ -220,7 +313,10 @@ export default function DashboardPage() {
             </div>
 
             <div className="kpi-card">
-              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Detalle Mensual</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Detalle Mensual</div>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Click en Ingresos, Costo, GAV o Gastos para ver el desglose de cuentas</div>
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-s10">
                   <thead>
@@ -233,27 +329,28 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { key: 'ingresos', label: 'Ingresos', fmt: 'currency' },
-                      { key: 'costoDirecto', label: 'Costo Directo', fmt: 'currency' },
-                      { key: 'margenBruto', label: 'Margen Bruto', fmt: 'currency', bold: true },
-                      { key: 'margenBrutoPct', label: '% Margen', fmt: 'pct' },
-                      { key: 'gav', label: 'GAV', fmt: 'currency' },
-                      { key: 'ebitda', label: 'EBITDA', fmt: 'currency', bold: true },
-                      { key: 'ebitdaPct', label: '% EBITDA', fmt: 'pct' },
-                      { key: 'gastosFinancieros', label: 'Gastos Financieros', fmt: 'currency' },
-                      { key: 'utilidadNeta', label: 'Utilidad Neta', fmt: 'currency', bold: true },
-                    ].map((row) => {
-                      const activeMeses = plMonthly.filter((m: any) => m.ingresos > 0 || m.gav > 0);
+                    {PL_ROWS.map((row) => {
+                      const mesesActivos = plMonthly.filter((m: any) => m.ingresos > 0 || m.gav > 0);
+                      const isDrillable = row.drillable && detalle[row.detalleKey!]?.length > 0;
                       return (
-                        <tr key={row.key} className={row.bold ? 'total-row' : ''}>
-                          <td style={{ fontWeight: row.bold ? 700 : 400 }}>{row.label}</td>
-                          {activeMeses.map((m: any) => {
+                        <tr
+                          key={row.key}
+                          className={row.bold ? 'total-row' : ''}
+                          onClick={isDrillable ? () => setDrillDown({ title: row.label, rows: detalle[row.detalleKey!] }) : undefined}
+                          style={{ cursor: isDrillable ? 'pointer' : 'default' }}
+                          title={isDrillable ? `Ver desglose de ${row.label}` : undefined}
+                        >
+                          <td style={{ fontWeight: row.bold ? 700 : 400 }}>
+                            {row.label}
+                            {isDrillable && (
+                              <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem', color: '#2874A6', verticalAlign: 'middle' }}>▶ {detalle[row.detalleKey!].length} cuentas</span>
+                            )}
+                          </td>
+                          {mesesActivos.map((m: any) => {
                             const val = m[row.key];
-                            const color = row.fmt !== 'pct' && row.key !== 'ingresos' && row.key !== 'costoDirecto' && row.key !== 'gav' && row.key !== 'gastosFinancieros'
-                              ? (val >= 0 ? 'positive' : 'negative') : '';
+                            const isNeg = row.fmt !== 'pct' && !['ingresos','costoDirecto','gav','gastosFinancieros'].includes(row.key) && val < 0;
                             return (
-                              <td key={m.mes} className={color}>
+                              <td key={m.mes} className={isNeg ? 'negative' : val > 0 && !['costoDirecto','gav','gastosFinancieros'].includes(row.key) && row.fmt !== 'pct' && row.bold ? 'positive' : ''}>
                                 {row.fmt === 'pct' ? pct(val) : fmt(val)}
                               </td>
                             );
@@ -286,12 +383,7 @@ export default function DashboardPage() {
                 <table className="table-s10">
                   <thead>
                     <tr>
-                      <th>Cliente</th>
-                      <th>0-30 días</th>
-                      <th>31-60 días</th>
-                      <th>61-90 días</th>
-                      <th>+90 días</th>
-                      <th>Total</th>
+                      <th>Cliente</th><th>0-30 días</th><th>31-60 días</th><th>61-90 días</th><th>+90 días</th><th>Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -360,60 +452,48 @@ export default function DashboardPage() {
         {/* GAV Tab */}
         {activeTab === 'gav' && !gav && !loading && <NoDataBanner kpi="GAV" />}
         {activeTab === 'gav' && gav && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div className="kpi-card">
-                <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>GAV por Categoría</div>
-                <table className="table-s10">
-                  <thead>
-                    <tr>
-                      <th>Categoría</th>
-                      <th>YTD</th>
-                      <th>%</th>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="kpi-card">
+              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>GAV por Categoría</div>
+              <table className="table-s10">
+                <thead>
+                  <tr><th>Categoría</th><th>YTD</th><th>%</th></tr>
+                </thead>
+                <tbody>
+                  {gav.categorias?.map((c: any) => (
+                    <tr key={c.cod}>
+                      <td>{c.descripcion}</td>
+                      <td>{fmt(c.ytd)}</td>
+                      <td>{pct(c.pct)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {gav.categorias?.map((c: any) => (
-                      <tr key={c.cod}>
-                        <td>{c.descripcion}</td>
-                        <td>{fmt(c.ytd)}</td>
-                        <td>{pct(c.pct)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="total-row">
-                      <td>TOTAL</td>
-                      <td>{fmt(gav.total)}</td>
-                      <td>100%</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              <div className="kpi-card">
-                <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Distribución GAV</div>
-                <ResponsiveContainer width="100%" height={320}>
-                  <PieChart>
-                    <Pie
-                      data={gav.categorias?.map((c: any) => ({ name: c.descripcion, value: c.ytd }))}
-                      cx="50%"
-                      cy="45%"
-                      outerRadius={110}
-                      dataKey="value"
-                      label={({ name, pct: p }) => `${(p * 100).toFixed(1)}%`}
-                    >
-                      {gav.categorias?.map((_: any, i: number) => (
-                        <Cell key={i} fill={COLORS_PIE[i % COLORS_PIE.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => fmt(v)} />
-                    <Legend wrapperStyle={{ fontSize: '0.75rem' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="total-row">
+                    <td>TOTAL</td><td>{fmt(gav.total)}</td><td>100%</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-          </>
+            <div className="kpi-card">
+              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Distribución GAV</div>
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={gav.categorias?.map((c: any) => ({ name: c.descripcion, value: c.ytd }))}
+                    cx="50%" cy="45%" outerRadius={110} dataKey="value"
+                    label={({ pct: p }) => `${(p * 100).toFixed(1)}%`}
+                  >
+                    {gav.categorias?.map((_: any, i: number) => (
+                      <Cell key={i} fill={COLORS_PIE[i % COLORS_PIE.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => fmt(v)} />
+                  <Legend wrapperStyle={{ fontSize: '0.75rem' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
       </div>
     </div>

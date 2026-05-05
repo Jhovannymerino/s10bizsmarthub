@@ -605,8 +605,11 @@ export default function DashboardPage() {
                     {PL_ROWS.map((row) => {
                       const mesesActivos = plMonthly.filter((m: any) => m.ingresos > 0 || m.gav > 0);
                       const isDrillable = !isGrupo && row.drillable && detalle[row.detalleKey!]?.length > 0;
-                      const prevVal = prevYear?.ytd?.[row.key];
-                      const currVal = ytd[row.key];
+                      // utilidadNetaPct en snapshots viejos se guardó como margenNetoPct
+                      const resolveYtdVal = (ytdObj: any) =>
+                        ytdObj?.[row.key] !== undefined ? ytdObj[row.key] : (row.key === 'utilidadNetaPct' ? ytdObj?.['margenNetoPct'] : undefined);
+                      const prevVal = resolveYtdVal(prevYear?.ytd);
+                      const currVal = resolveYtdVal(ytd);
                       const delta = prevVal !== undefined ? yoyPct(currVal, prevVal) : null;
                       return (
                         <tr
@@ -633,7 +636,7 @@ export default function DashboardPage() {
                             );
                           })}
                           <td style={{ fontWeight: 700 }}>
-                            {row.fmt === 'pct' ? pct(ytd[row.key]) : fmt(ytd[row.key])}
+                            {row.fmt === 'pct' ? pct(currVal) : fmt(currVal)}
                           </td>
                           {prevYear && (
                             <td style={{ color: '#6b7280', fontStyle: 'italic' }}>

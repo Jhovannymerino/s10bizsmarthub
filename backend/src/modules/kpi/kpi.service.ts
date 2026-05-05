@@ -85,16 +85,19 @@ export class KpiService {
   // ─────────────────────────────────────────────
 
   buildDashboardFromPL(rows: any[], claseIngreso: string) {
+    // Clase 79 (Cargas imputables) es el contra-asiento de clase 9x:
+    // suma clase91+94+97 en créditos. Restarla solo de clase91 daría
+    // costoDirecto = -(GAV+GastosFinancieros), lo cual es incorrecto.
+    // Se ignora clase79 y se usa clase91 bruto como costo directo.
     const monthly: Record<number, {
       ingresos: number;
       costo: number;
-      cargas: number;
       gav: number;
       gastosFinancieros: number;
     }> = {};
 
     for (let m = 1; m <= 12; m++) {
-      monthly[m] = { ingresos: 0, costo: 0, cargas: 0, gav: 0, gastosFinancieros: 0 };
+      monthly[m] = { ingresos: 0, costo: 0, gav: 0, gastosFinancieros: 0 };
     }
 
     const detalleMap: Record<string, Record<string, any>> = {
@@ -122,7 +125,7 @@ export class KpiService {
         monthly[mes].costo += debito - credito;
         grupo = 'costoDirecto'; valor = debito - credito;
       } else if (clase === '79') {
-        monthly[mes].cargas += credito - debito;
+        // ignorar — es el contra-asiento de clase 9x, no un costo real
       } else if (clase === '94') {
         monthly[mes].gav += debito - credito;
         grupo = 'gav'; valor = debito - credito;
@@ -143,7 +146,7 @@ export class KpiService {
 
     const plMonthly = Object.entries(monthly).map(([mesStr, v]) => {
       const mes = parseInt(mesStr);
-      const costoNeto = v.costo - v.cargas;
+      const costoNeto = v.costo;
       const margenBruto = v.ingresos - costoNeto;
       const ebitda = margenBruto - v.gav;
       const utilidadNeta = ebitda - v.gastosFinancieros;

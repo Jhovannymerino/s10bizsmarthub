@@ -26,9 +26,9 @@ RUN npm install --omit=dev --legacy-peer-deps
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
 
-# Generate Prisma client in runtime image
-RUN npx prisma generate
+# Generate Prisma client using the version installed in node_modules
+RUN ./node_modules/.bin/prisma generate
 
 EXPOSE 3202
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/main"]

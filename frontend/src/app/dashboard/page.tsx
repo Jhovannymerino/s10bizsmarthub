@@ -306,7 +306,7 @@ export default function DashboardPage() {
     ? Math.round((cxc.totalSaldo / ytd.ingresos) * 365)
     : null;
 
-  // Cash Runway: último mes con datos / gasto operativo mensual promedio
+  // Último mes con datos de caja
   const mesConDatos = caja?.totalPorMes
     ? Object.entries(caja.totalPorMes as Record<string, number>)
         .filter(([, v]) => (v as number) !== 0)
@@ -314,9 +314,17 @@ export default function DashboardPage() {
     : [];
   const ultimoMesCaja = mesConDatos.length ? Math.max(...mesConDatos) : null;
   const saldoCaja = ultimoMesCaja && caja?.totalPorMes ? caja.totalPorMes[ultimoMesCaja] : null;
-  const gastoMensualPromedio = ytd ? Math.abs(ytd.costoDirecto + ytd.gav + ytd.gastosFinancieros) / Math.max(activeMeses.length, 1) : null;
-  const runway = (saldoCaja && gastoMensualPromedio && gastoMensualPromedio > 0)
-    ? Math.round(saldoCaja / gastoMensualPromedio)
+
+  // Cash Runway: saldo acumulado YTD / gasto fijo mensual (GAV + Gastos Fin.)
+  // Usamos solo GAV + GastosFinancieros para evitar que costoDirecto negativo anule el denominador
+  const saldoAcumCaja = caja?.totalPorMes
+    ? Object.values(caja.totalPorMes as Record<string, number>).reduce((s, v) => s + (v as number), 0)
+    : null;
+  const gastoFijoMensual = (ytd && activeMeses.length > 0)
+    ? (Math.abs(ytd.gav || 0) + Math.abs(ytd.gastosFinancieros || 0)) / activeMeses.length
+    : null;
+  const runway = (saldoAcumCaja != null && saldoAcumCaja > 0 && gastoFijoMensual != null && gastoFijoMensual > 100)
+    ? Math.min(Math.round(saldoAcumCaja / gastoFijoMensual), 120)
     : null;
 
   const PL_ROWS = [

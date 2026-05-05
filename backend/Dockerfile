@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-RUN npm run build
+RUN npm run build && ./node_modules/.bin/prisma generate
 
 # --- Runtime stage ---
 FROM node:20-alpine AS runner
@@ -25,10 +25,10 @@ RUN npm install --omit=dev --legacy-peer-deps
 
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
-
-# Generate Prisma client using the version installed in node_modules
-RUN ./node_modules/.bin/prisma generate
+# Copy generated Prisma client from builder (prisma is a devDependency)
+COPY --from=builder /usr/src/app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /usr/src/app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 EXPOSE 3202
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/main"]

@@ -24,20 +24,18 @@ const CONFIG = {
   S10_HOST: '192.168.1.51',
   S10_PORT: 1433,
   S10_USER: 'sa',
-  S10_PASSWORD: 'Cmo$2017.',
+  S10_PASSWORD: 'Cmo$2017',
   S10_DATABASE: 'CMO',
 
   // VPS BizSmartHub
   VPS_URL: 'https://s10bizsmarthub.bizwareapps.com',
-  // Gateway VPN: 38.19.155.204:10443
   SYNC_API_KEY: '1fe0bf01e872d7f586e4828abcdc1ba0a5283f5625570128',
 
   // Empresas a sincronizar
   // codEmpresa: código en S10 | name: nombre display | claseIngreso: '70' o '75'
   COMPANIES: [
     { codEmpresa: '80688541', name: 'INTEGRAL CONSULTORES S.A.C.', claseIngreso: '70' },
-    { codEmpresa: '80688706', name: 'MEDARQ S.A.C.', claseIngreso: '70' },
-    { codEmpresa: '80688524', name: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C.', claseIngreso: '70' },
+    // { codEmpresa: 'XXXXXXXX', name: 'CMO GROUP S.A.', claseIngreso: '75' },
   ],
 };
 
@@ -62,7 +60,7 @@ const QUERY_PL = (claseIngreso, codEmpresa, fechaInicio, fechaFin) => `
 SELECT
   LEFT(pcd.CodCuenta, 2)                   AS Clase,
   pcd.CodCuenta,
-  pcd.Descripcion                          AS DesCuenta,
+  pcd.DesCuenta,
   MONTH(ac.FechaAplicacionContable)         AS Mes,
   SUM(ISNULL(ac.Debito, 0))                AS TotalDebito,
   SUM(ISNULL(ac.Credito, 0))               AS TotalCredito
@@ -72,13 +70,13 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
   AND LEFT(pcd.CodCuenta, 2) IN ('${claseIngreso}', '79', '91', '94', '97')
-GROUP BY LEFT(pcd.CodCuenta,2), pcd.CodCuenta, pcd.Descripcion, MONTH(ac.FechaAplicacionContable)
+GROUP BY LEFT(pcd.CodCuenta,2), pcd.CodCuenta, pcd.DesCuenta, MONTH(ac.FechaAplicacionContable)
 ORDER BY Clase, CodCuenta, Mes
 `;
 
 const QUERY_CXC = (codEmpresa) => `
 SELECT
-  i.Descripcion                                                             AS Cliente,
+  i.NomIdentificador                                                        AS Cliente,
   ac.CodIdentificador                                                       AS CodCliente,
   SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))                  AS SaldoTotal,
   SUM(CASE WHEN ac.FechaAplicacionContable >= DATEADD(DAY,-30,GETDATE())
@@ -96,14 +94,14 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '12'
-GROUP BY i.Descripcion, ac.CodIdentificador
+GROUP BY i.NomIdentificador, ac.CodIdentificador
 HAVING SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) > 0
 ORDER BY SaldoTotal DESC
 `;
 
 const QUERY_CXP = (codEmpresa) => `
 SELECT
-  i.Descripcion                                        AS Proveedor,
+  i.NomIdentificador                                   AS Proveedor,
   ac.CodIdentificador                                  AS CodProveedor,
   SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) AS SaldoTotal
 FROM CMO.dbo.AsientoContable ac
@@ -113,14 +111,14 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '42'
-GROUP BY i.Descripcion, ac.CodIdentificador
+GROUP BY i.NomIdentificador, ac.CodIdentificador
 HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) > 0
 ORDER BY SaldoTotal DESC
 `;
 
 const QUERY_CAJA = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  pcd.Descripcion                                         AS Banco,
+  pcd.DesCuenta                                           AS Banco,
   pcd.CodCuenta                                           AS CodBanco,
   MONTH(ac.FechaAplicacionContable)                       AS Mes,
   SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))   AS FlujoNeto
@@ -130,26 +128,8 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
   AND LEFT(pcd.CodCuenta, 2) = '10'
-GROUP BY pcd.Descripcion, pcd.CodCuenta, MONTH(ac.FechaAplicacionContable)
-ORDER BY pcd.Descripcion, Mes
-`;
-
-const QUERY_GAV = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT
-  LEFT(d.CodCuenta, 3)                                    AS CodCuenta,
-  MAX(ISNULL(p.Descripcion, d.Descripcion))               AS DesCuenta,
-  MONTH(ac.FechaAplicacionContable)                       AS Mes,
-  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))   AS GAV
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle d
-  ON ac.NroPlanContableDetalle = d.NroPlanContableDetalle
-LEFT JOIN CMO.dbo.PlanContableDetalle p
-  ON p.CodCuenta = LEFT(d.CodCuenta, 3)
-WHERE ac.CodEmpresa = '${codEmpresa}'
-  AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND LEFT(d.CodCuenta, 2) = '94'
-GROUP BY LEFT(d.CodCuenta, 3), MONTH(ac.FechaAplicacionContable)
-ORDER BY CodCuenta, Mes
+GROUP BY pcd.DesCuenta, pcd.CodCuenta, MONTH(ac.FechaAplicacionContable)
+ORDER BY pcd.DesCuenta, Mes
 `;
 
 // ─────────────────────────────────────────────
@@ -199,19 +179,17 @@ async function main() {
 
     try {
       // Run all queries in parallel
-      const [plResult, cxcResult, cxpResult, cajaResult, gavResult] = await Promise.all([
+      const [plResult, cxcResult, cxpResult, cajaResult] = await Promise.all([
         pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_CXC(company.codEmpresa)),
         pool.request().query(QUERY_CXP(company.codEmpresa)),
         pool.request().query(QUERY_CAJA(company.codEmpresa, fechaInicio, fechaFin)),
-        pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
       ]);
 
       console.log(`  P&L rows: ${plResult.recordset.length}`);
       console.log(`  CxC rows: ${cxcResult.recordset.length}`);
       console.log(`  CxP rows: ${cxpResult.recordset.length}`);
       console.log(`  Caja rows: ${cajaResult.recordset.length}`);
-      console.log(`  GAV rows: ${gavResult.recordset.length}`);
 
       // Build payload
       const payload = {
@@ -224,12 +202,11 @@ async function main() {
           cxc: cxcResult.recordset,
           cxp: cxpResult.recordset,
           caja: cajaResult.recordset,
-          gav: gavResult.recordset,
         },
       };
 
       // POST to VPS
-      const response = await fetch(`${CONFIG.VPS_URL}/api/sync/push`, {
+      const response = await fetch(`${CONFIG.VPS_URL}/sync/push`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

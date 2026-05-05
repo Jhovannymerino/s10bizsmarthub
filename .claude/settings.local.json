@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no root@72.62.16.28 ' *)"
+    ]
+  }
+}

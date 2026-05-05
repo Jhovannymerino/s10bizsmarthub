@@ -28,6 +28,7 @@ export class SyncService {
       cxc?: any[];
       cxp?: any[];
       caja?: any[];
+      gav?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -56,6 +57,12 @@ export class SyncService {
         const cajaData = this.kpiService.buildCaja(data.caja);
         await this.kpiService.saveSnapshot(companyId, companyName, 'caja', period, year, null, cajaData);
         logs.push({ kpiType: 'caja', rowsProcessed: data.caja.length, status: 'success' });
+      }
+
+      if (data.gav?.length) {
+        const gavData = this.kpiService.buildGAV(data.gav);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'gav', period, year, null, gavData);
+        logs.push({ kpiType: 'gav', rowsProcessed: data.gav.length, status: 'success' });
       }
 
       // Write sync logs

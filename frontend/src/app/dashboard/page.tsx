@@ -7,8 +7,13 @@ import {
 } from 'recharts';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
-const COMPANY_ID = '80688541'; // INTEGRAL CONSULTORES S.A.C.
 const YEAR = new Date().getFullYear();
+
+const COMPANIES = [
+  { codEmpresa: '80688541', shortName: 'INTEGRAL', fullName: 'INTEGRAL CONSULTORES S.A.C.' },
+  { codEmpresa: '80688706', shortName: 'MEDARQ', fullName: 'MEDARQ S.A.C.' },
+  { codEmpresa: '80688524', shortName: 'AMERICANA', fullName: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C.' },
+];
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 
@@ -43,10 +48,24 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string; s
   );
 }
 
+function NoDataBanner({ kpi }: { kpi: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 320, color: '#6b7280', textAlign: 'center' }}>
+      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📭</div>
+      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0D3B5E', marginBottom: '0.5rem' }}>Sin datos de {kpi}</div>
+      <div style={{ fontSize: '0.875rem', maxWidth: 380 }}>
+        El agente de sincronización aún no ha enviado datos desde S10.<br />
+        Ejecuta <code style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>node sync-agent.js</code> desde la red CMO para cargar los datos.
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState(COMPANIES[0]);
   const [pl, setPL] = useState<any>(null);
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
@@ -57,17 +76,21 @@ export default function DashboardPage() {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
 
+    setLoading(true);
+    setPL(null); setCxC(null); setCaja(null); setGAV(null);
+
+    const id = selectedCompany.codEmpresa;
     Promise.all([
-      fetchApi(`/kpi/${COMPANY_ID}/dashboard?year=${YEAR}`, token),
-      fetchApi(`/kpi/${COMPANY_ID}/cxc`, token),
-      fetchApi(`/kpi/${COMPANY_ID}/caja?year=${YEAR}`, token),
-      fetchApi(`/kpi/${COMPANY_ID}/gav?year=${YEAR}`, token),
+      fetchApi(`/kpi/${id}/dashboard?year=${YEAR}`, token),
+      fetchApi(`/kpi/${id}/cxc`, token),
+      fetchApi(`/kpi/${id}/caja?year=${YEAR}`, token),
+      fetchApi(`/kpi/${id}/gav?year=${YEAR}`, token),
     ])
       .then(([plData, cxcData, cajaData, gavData]) => {
-        setPL(plData);
-        setCxC(cxcData);
-        setCaja(cajaData);
-        setGAV(gavData);
+        setPL(plData?.plMonthly ? plData : null);
+        setCxC(cxcData?.clientes ? cxcData : null);
+        setCaja(cajaData?.bancos ? cajaData : null);
+        setGAV(gavData?.categorias ? gavData : null);
         setLoading(false);
       })
       .catch((err) => {
@@ -75,21 +98,13 @@ export default function DashboardPage() {
         setError(err.message);
         setLoading(false);
       });
-  }, [router]);
-
-  if (loading) return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', color: '#0D3B5E' }}>
-        <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>Cargando datos S10...</div>
-      </div>
-    </div>
-  );
+  }, [router, selectedCompany]);
 
   if (error) return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', color: '#C0392B', maxWidth: 400 }}>
-        <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Sin datos disponibles</div>
-        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Ejecuta el agente de sincronización para cargar datos desde S10.</div>
+        <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Error de conexión</div>
+        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>No se pudo conectar con la API.</div>
         <pre style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#9ca3af' }}>{error}</pre>
       </div>
     </div>
@@ -104,8 +119,31 @@ export default function DashboardPage() {
       <div className="sidebar">
         <div style={{ padding: '1.5rem 1.25rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.02em' }}>S10 BizSmartHub</div>
-          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.25rem' }}>INTEGRAL CONSULTORES</div>
         </div>
+
+        {/* Company selector */}
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ fontSize: '0.65rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Empresa</div>
+          {COMPANIES.map((co) => (
+            <button
+              key={co.codEmpresa}
+              onClick={() => { setSelectedCompany(co); setActiveTab('pl'); }}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                background: selectedCompany.codEmpresa === co.codEmpresa ? 'rgba(255,255,255,0.15)' : 'none',
+                border: 'none', borderRadius: '0.375rem',
+                color: selectedCompany.codEmpresa === co.codEmpresa ? '#fff' : '#94A3B8',
+                padding: '0.4rem 0.6rem', marginBottom: '0.2rem',
+                cursor: 'pointer', fontSize: '0.8rem', fontWeight: selectedCompany.codEmpresa === co.codEmpresa ? 700 : 400,
+                transition: 'all 0.15s',
+              }}
+            >
+              {co.shortName}
+            </button>
+          ))}
+        </div>
+
+        {/* Nav tabs */}
         <nav style={{ padding: '0.75rem 0' }}>
           {(['pl', 'cxc', 'caja', 'gav'] as const).map((tab) => (
             <button
@@ -142,11 +180,20 @@ export default function DashboardPage() {
               {activeTab === 'caja' && 'Posición de Caja'}
               {activeTab === 'gav' && 'Gastos de Admin. y Ventas'}
             </h1>
-            <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>YTD {YEAR} · Fuente: S10 ERP</div>
+            <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              {selectedCompany.fullName} · YTD {YEAR} · Fuente: S10 ERP
+            </div>
           </div>
+          {loading && (
+            <div style={{ fontSize: '0.8rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#E25C1A', animation: 'pulse 1.5s infinite' }} />
+              Cargando...
+            </div>
+          )}
         </div>
 
-        {/* KPI Cards (always visible on P&L tab) */}
+        {/* P&L Tab */}
+        {activeTab === 'pl' && !pl && !loading && <NoDataBanner kpi="P&L" />}
         {activeTab === 'pl' && ytd && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -157,7 +204,6 @@ export default function DashboardPage() {
               <KpiCard label="Utilidad Neta" value={fmt(ytd.utilidadNeta)} color={ytd.utilidadNeta >= 0 ? '#1E8449' : '#C0392B'} />
             </div>
 
-            {/* Bar chart */}
             <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
               <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Ingresos vs EBITDA — Mensual</div>
               <ResponsiveContainer width="100%" height={280}>
@@ -172,7 +218,6 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </div>
 
-            {/* P&L table */}
             <div className="kpi-card">
               <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Detalle Mensual</div>
               <div style={{ overflowX: 'auto' }}>
@@ -226,6 +271,7 @@ export default function DashboardPage() {
         )}
 
         {/* CxC Tab */}
+        {activeTab === 'cxc' && !cxc && !loading && <NoDataBanner kpi="CxC" />}
         {activeTab === 'cxc' && cxc && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -276,6 +322,7 @@ export default function DashboardPage() {
         )}
 
         {/* Caja Tab */}
+        {activeTab === 'caja' && !caja && !loading && <NoDataBanner kpi="Caja" />}
         {activeTab === 'caja' && caja && (
           <div className="kpi-card">
             <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Flujo Neto por Banco</div>
@@ -310,6 +357,7 @@ export default function DashboardPage() {
         )}
 
         {/* GAV Tab */}
+        {activeTab === 'gav' && !gav && !loading && <NoDataBanner kpi="GAV" />}
         {activeTab === 'gav' && gav && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>

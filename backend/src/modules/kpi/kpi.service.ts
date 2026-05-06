@@ -75,7 +75,8 @@ export class KpiService {
     const prevCached = await this.getSnapshot(companyId, 'pl', `${year - 1}`);
     let prevYear: any = null;
 
-    if (prevCached?.data?.plMonthly) {
+    const prevCachedData = prevCached?.data as any;
+    if (prevCachedData?.plMonthly) {
       // Período definido por el último mes con ingresos (no por costos residuales)
       const lastMonthWithIngresos = Math.max(
         0,
@@ -89,7 +90,7 @@ export class KpiService {
           : [],
       );
 
-      const prevMonths = (prevCached.data.plMonthly as any[]).filter((m: any) => activeMonths.has(m.mes));
+      const prevMonths = (prevCachedData.plMonthly as any[]).filter((m: any) => activeMonths.has(m.mes));
 
       if (prevMonths.length > 0) {
         const zero = { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 };
@@ -422,8 +423,9 @@ export class KpiService {
     }
 
     for (const { company, data } of snapshots) {
-      if (!data?.ytd) continue;
-      const y = data.ytd;
+      const d = data as any;
+      if (!d?.ytd) continue;
+      const y = d.ytd;
 
       ytdTotal.ingresos += y.ingresos || 0;
       ytdTotal.costoDirecto += y.costoDirecto || 0;
@@ -441,8 +443,8 @@ export class KpiService {
         pctIngresos: 0, // calculado después
       });
 
-      if (data.plMonthly) {
-        for (const m of data.plMonthly) {
+      if (d.plMonthly) {
+        for (const m of d.plMonthly) {
           monthlyTotal[m.mes].ingresos += m.ingresos || 0;
           monthlyTotal[m.mes].costoDirecto += m.costoDirecto || 0;
           monthlyTotal[m.mes].margenBruto += m.margenBruto || 0;

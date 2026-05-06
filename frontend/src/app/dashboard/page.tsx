@@ -597,7 +597,13 @@ export default function DashboardPage() {
                         <th key={m.mes}>{m.mesLabel}</th>
                       ))}
                       <th style={{ background: '#1a5276' }}>YTD {selectedYear}</th>
-                      {prevYear && <th style={{ background: '#2c3e50' }}>YTD {prevYear.year}</th>}
+                      {prevYear && (
+                        <th style={{ background: '#2c3e50' }}>
+                          {prevYear.meses?.length
+                            ? `${MESES[prevYear.meses[0]-1]}-${MESES[prevYear.meses[prevYear.meses.length-1]-1]} ${prevYear.year}`
+                            : `YTD ${prevYear.year}`}
+                        </th>
+                      )}
                       {prevYear && <th style={{ background: '#34495e' }}>∆ YoY</th>}
                     </tr>
                   </thead>

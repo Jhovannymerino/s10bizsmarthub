@@ -71,11 +71,43 @@ export class KpiService {
       return { message: 'No data available. Run sync first.', year };
     }
 
-    // Adjuntar datos del año anterior para comparativo YoY
+    // Comparativo YoY: mismo período del año anterior (no año completo)
     const prevCached = await this.getSnapshot(companyId, 'pl', `${year - 1}`);
-    const prevYear = prevCached?.data?.ytd
-      ? { ytd: prevCached.data.ytd, year: year - 1 }
-      : null;
+    let prevYear: any = null;
+
+    if (prevCached?.data?.plMonthly) {
+      const activeMonths = new Set(
+        (dashboard.plMonthly as any[])
+          .filter((m: any) => m.ingresos !== 0 || m.costoDirecto !== 0 || m.gav !== 0)
+          .map((m: any) => m.mes),
+      );
+
+      const prevMonths = (prevCached.data.plMonthly as any[]).filter((m: any) => activeMonths.has(m.mes));
+
+      if (prevMonths.length > 0) {
+        const zero = { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 };
+        const py = prevMonths.reduce((acc: any, m: any) => ({
+          ingresos: acc.ingresos + m.ingresos,
+          costoDirecto: acc.costoDirecto + m.costoDirecto,
+          margenBruto: acc.margenBruto + m.margenBruto,
+          gav: acc.gav + m.gav,
+          ebitda: acc.ebitda + m.ebitda,
+          gastosFinancieros: acc.gastosFinancieros + m.gastosFinancieros,
+          utilidadNeta: acc.utilidadNeta + m.utilidadNeta,
+        }), zero);
+
+        if (py.ingresos !== 0) {
+          py.margenBrutoPct = round((py.margenBruto / py.ingresos) * 100);
+          py.ebitdaPct = round((py.ebitda / py.ingresos) * 100);
+          py.margenNetoPct = round((py.utilidadNeta / py.ingresos) * 100);
+          py.utilidadNetaPct = py.margenNetoPct;
+          py.gavPct = round((py.gav / py.ingresos) * 100);
+        }
+
+        const sortedMonths = [...activeMonths].sort((a, b) => a - b);
+        prevYear = { ytd: py, year: year - 1, meses: sortedMonths };
+      }
+    }
 
     return { ...dashboard, prevYear };
   }

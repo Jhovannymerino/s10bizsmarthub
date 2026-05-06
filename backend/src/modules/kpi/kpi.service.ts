@@ -418,6 +418,13 @@ export class KpiService {
     return { facturas, total: facturas.length, year };
   }
 
+  async getHonorariosRecibidos(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'honorarios_recibidos', `${year}`);
+    if (!cached) return { facturas: [], total: 0, year };
+    const facturas = cached.data as any[];
+    return { facturas, total: facturas.length, year };
+  }
+
   // ─────────────────────────────────────────────
   // Consolidado Grupo — suma todas las empresas activas
   // ─────────────────────────────────────────────

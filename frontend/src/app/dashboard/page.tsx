@@ -443,8 +443,8 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'caja' | 'gav' | 'docs'>('pl');
   const [drillDown, setDrillDown] = useState<{ title: string; rows: any[] } | null>(null);
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
-  const [docs, setDocs] = useState<{ emitidas: any[]; recibidas: any[] } | null>(null);
-  const [docsTab, setDocsTab] = useState<'emitidas' | 'recibidas'>('emitidas');
+  const [docs, setDocs] = useState<{ emitidas: any[]; recibidas: any[]; honorarios: any[] } | null>(null);
+  const [docsTab, setDocsTab] = useState<'emitidas' | 'recibidas' | 'honorarios'>('emitidas');
   const [docsSearch, setDocsSearch] = useState('');
   const [docsOnlySinAsiento, setDocsOnlySinAsiento] = useState(false);
 
@@ -506,11 +506,13 @@ export default function DashboardPage() {
     Promise.all([
       fetchApi(`/kpi/${id}/facturas-emitidas?year=${selectedYear}`, token),
       fetchApi(`/kpi/${id}/facturas-recibidas?year=${selectedYear}`, token),
+      fetchApi(`/kpi/${id}/honorarios-recibidos?year=${selectedYear}`, token),
     ])
-      .then(([emitData, reciData]) => {
+      .then(([emitData, reciData, honorData]) => {
         setDocs({
           emitidas: emitData?.facturas || [],
           recibidas: reciData?.facturas || [],
+          honorarios: honorData?.facturas || [],
         });
       })
       .catch(() => {});
@@ -1062,7 +1064,7 @@ export default function DashboardPage() {
           <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>Cargando documentos...</div>
         )}
         {activeTab === 'docs' && !isGrupo && docs && (() => {
-          const lista = docsTab === 'emitidas' ? docs.emitidas : docs.recibidas;
+          const lista = docsTab === 'emitidas' ? docs.emitidas : docsTab === 'recibidas' ? docs.recibidas : docs.honorarios;
           const sinAsientoCount = lista.filter((d: any) => d.SinAsiento === 1).length;
           const sinAsientoMonto = lista.filter((d: any) => d.SinAsiento === 1).reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
           const q = docsSearch.toLowerCase();
@@ -1076,21 +1078,21 @@ export default function DashboardPage() {
           });
           const totalMonto = filtrada.reduce((s: number, d: any) => s + (d.Total || 0), 0);
           const totalNeto = filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
-          const totalSaldo = docsTab === 'recibidas'
-            ? filtrada.reduce((s: number, d: any) => s + (d.TotalSaldo || 0), 0)
-            : filtrada.reduce((s: number, d: any) => s + (d.Saldo || 0), 0);
+          const totalSaldo = docsTab === 'emitidas'
+            ? filtrada.reduce((s: number, d: any) => s + (d.Saldo || 0), 0)
+            : filtrada.reduce((s: number, d: any) => s + (d.TotalSaldo || 0), 0);
           return (
             <div>
               {/* Sub-tabs */}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {(['emitidas', 'recibidas'] as const).map((t) => (
+                {(['emitidas', 'recibidas', 'honorarios'] as const).map((t) => (
                   <button key={t} onClick={() => { setDocsTab(t); setDocsSearch(''); setDocsOnlySinAsiento(false); }}
                     style={{ padding: '0.4rem 1.2rem', borderRadius: '0.375rem', border: '1px solid',
                       borderColor: docsTab === t ? '#0D3B5E' : '#d1d5db',
                       background: docsTab === t ? '#0D3B5E' : '#fff',
                       color: docsTab === t ? '#fff' : '#374151',
                       fontWeight: docsTab === t ? 700 : 400, fontSize: '0.85rem', cursor: 'pointer' }}>
-                    {t === 'emitidas' ? `Facturas Emitidas (${docs.emitidas.length})` : `Facturas Recibidas (${docs.recibidas.length})`}
+                    {t === 'emitidas' ? `Facturas Emitidas (${docs.emitidas.length})` : t === 'recibidas' ? `Facturas Recibidas (${docs.recibidas.length})` : `Honorarios (${docs.honorarios.length})`}
                   </button>
                 ))}
                 {sinAsientoCount > 0 && (
@@ -1109,7 +1111,7 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
                     <div style={{ fontWeight: 700, color: '#0D3B5E' }}>
-                      {docsTab === 'emitidas' ? 'Facturas emitidas a clientes' : 'Facturas / boletas / RHE recibidas'}
+                      {docsTab === 'emitidas' ? 'Facturas emitidas a clientes' : docsTab === 'recibidas' ? 'Facturas y boletas recibidas' : 'Recibos por Honorarios Profesionales'}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.2rem' }}>
                       {filtrada.length} documentos · Neto {fmt(totalNeto)} · Total c/IGV {fmt(totalMonto)} · Pendiente {fmt(totalSaldo)}
@@ -1124,7 +1126,56 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                  {docsTab === 'emitidas' ? (
+                  {docsTab === 'honorarios' ? (
+                    <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                      <thead>
+                        <tr>
+                          <th>Serie-Número</th>
+                          <th>Fecha Doc.</th>
+                          <th>Vencimiento</th>
+                          <th style={{ minWidth: 200 }}>Prestador</th>
+                          <th>RUC</th>
+                          <th>Neto</th>
+                          <th>Retención</th>
+                          <th>Total</th>
+                          <th>Pagado</th>
+                          <th>Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtrada.map((d: any, i: number) => {
+                          const sinAsiento = d.SinAsiento === 1;
+                          return (
+                          <tr key={i} style={{ background: sinAsiento ? '#fff5f5' : undefined }}>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de gasto" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {d.Serie || '—'}-{d.Numero}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
+                            <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#C0392B' : '#6b7280' }}>{d.FechaVencimiento}</td>
+                            <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Proveedor}>{d.Proveedor || '—'}</td>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#6b7280' }}>{d.RucProveedor || '—'}</td>
+                            <td>{fmt(d.TotalNeto)}</td>
+                            <td style={{ color: '#C0392B' }}>{fmt(d.TotalImpuesto)}</td>
+                            <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
+                            <td style={{ color: '#1E8449' }}>{fmt(d.TotalPagado)}</td>
+                            <td className={(d.TotalSaldo || 0) > 0 ? 'negative' : ''}>{fmt(d.TotalSaldo)}</td>
+                          </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="total-row">
+                          <td colSpan={5}>TOTAL ({filtrada.length})</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0))}</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
+                          <td>{fmt(totalMonto)}</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalPagado || 0), 0))}</td>
+                          <td>{fmt(totalSaldo)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  ) : docsTab === 'emitidas' ? (
                     <table className="table-s10" style={{ fontSize: '0.8rem' }}>
                       <thead>
                         <tr>

@@ -81,6 +81,16 @@ export class KpiController {
     return this.kpiService.getFacturasRecibidas(companyId, y);
   }
 
+  /** Recibos por Honorarios Profesionales recibidos */
+  @Get(':companyId/honorarios-recibidos')
+  getHonorariosRecibidos(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getHonorariosRecibidos(companyId, y);
+  }
+
   /** GAV por categoría */
   @Get(':companyId/gav')
   getGAV(

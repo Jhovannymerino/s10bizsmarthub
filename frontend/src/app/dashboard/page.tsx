@@ -447,6 +447,7 @@ export default function DashboardPage() {
   const [docsTab, setDocsTab] = useState<'emitidas' | 'recibidas' | 'honorarios'>('emitidas');
   const [docsSearch, setDocsSearch] = useState('');
   const [docsOnlySinAsiento, setDocsOnlySinAsiento] = useState(false);
+  const [docsOnlyDuplicados, setDocsOnlyDuplicados] = useState(false);
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
 
@@ -1067,9 +1068,11 @@ export default function DashboardPage() {
           const lista = docsTab === 'emitidas' ? docs.emitidas : docsTab === 'recibidas' ? docs.recibidas : docs.honorarios;
           const sinAsientoCount = lista.filter((d: any) => d.SinAsiento === 1).length;
           const sinAsientoMonto = lista.filter((d: any) => d.SinAsiento === 1).reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
+          const duplicadosCount = lista.filter((d: any) => d.EsDuplicado === 1).length;
           const q = docsSearch.toLowerCase();
           const filtrada = lista.filter((d: any) => {
             if (docsOnlySinAsiento && d.SinAsiento !== 1) return false;
+            if (docsOnlyDuplicados && d.EsDuplicado !== 1) return false;
             if (!q) return true;
             const nombre = docsTab === 'emitidas' ? (d.Cliente || '') : (d.Proveedor || '');
             const num = `${d.Serie || ''}-${d.Numero || ''}`;
@@ -1086,7 +1089,7 @@ export default function DashboardPage() {
               {/* Sub-tabs */}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 {(['emitidas', 'recibidas', 'honorarios'] as const).map((t) => (
-                  <button key={t} onClick={() => { setDocsTab(t); setDocsSearch(''); setDocsOnlySinAsiento(false); }}
+                  <button key={t} onClick={() => { setDocsTab(t); setDocsSearch(''); setDocsOnlySinAsiento(false); setDocsOnlyDuplicados(false); }}
                     style={{ padding: '0.4rem 1.2rem', borderRadius: '0.375rem', border: '1px solid',
                       borderColor: docsTab === t ? '#0D3B5E' : '#d1d5db',
                       background: docsTab === t ? '#0D3B5E' : '#fff',
@@ -1097,13 +1100,24 @@ export default function DashboardPage() {
                 ))}
                 {sinAsientoCount > 0 && (
                   <button
-                    onClick={() => { setDocsOnlySinAsiento(!docsOnlySinAsiento); setDocsSearch(''); }}
+                    onClick={() => { setDocsOnlySinAsiento(!docsOnlySinAsiento); setDocsOnlyDuplicados(false); setDocsSearch(''); }}
                     style={{ padding: '0.4rem 1rem', borderRadius: '0.375rem', border: '1px solid',
                       borderColor: docsOnlySinAsiento ? '#C0392B' : '#fca5a5',
                       background: docsOnlySinAsiento ? '#C0392B' : '#fef2f2',
                       color: docsOnlySinAsiento ? '#fff' : '#C0392B',
                       fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
                     ⚠ Sin asiento contable ({sinAsientoCount}) · S/ {sinAsientoMonto.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
+                  </button>
+                )}
+                {duplicadosCount > 0 && (
+                  <button
+                    onClick={() => { setDocsOnlyDuplicados(!docsOnlyDuplicados); setDocsOnlySinAsiento(false); setDocsSearch(''); }}
+                    style={{ padding: '0.4rem 1rem', borderRadius: '0.375rem', border: '1px solid',
+                      borderColor: docsOnlyDuplicados ? '#D35400' : '#fed7aa',
+                      background: docsOnlyDuplicados ? '#D35400' : '#fff7ed',
+                      color: docsOnlyDuplicados ? '#fff' : '#D35400',
+                      fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
+                    ⚠ Duplicados ({duplicadosCount})
                   </button>
                 )}
               </div>
@@ -1145,9 +1159,11 @@ export default function DashboardPage() {
                       <tbody>
                         {filtrada.map((d: any, i: number) => {
                           const sinAsiento = d.SinAsiento === 1;
+                          const esDuplicado = d.EsDuplicado === 1;
                           return (
-                          <tr key={i} style={{ background: sinAsiento ? '#fff5f5' : undefined }}>
+                          <tr key={i} style={{ background: esDuplicado ? '#fff7ed' : sinAsiento ? '#fff5f5' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#D35400', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
                               {sinAsiento && <span title="Sin asiento contable en cuenta de gasto" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
@@ -1193,9 +1209,11 @@ export default function DashboardPage() {
                       <tbody>
                         {filtrada.map((d: any, i: number) => {
                           const sinAsiento = d.SinAsiento === 1;
+                          const esDuplicado = d.EsDuplicado === 1;
                           return (
-                          <tr key={i} style={{ background: sinAsiento ? '#fff5f5' : undefined }}>
+                          <tr key={i} style={{ background: esDuplicado ? '#fff7ed' : sinAsiento ? '#fff5f5' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#D35400', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
                               {sinAsiento && <span title="Sin asiento contable en cuenta de ingreso" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
@@ -1241,9 +1259,11 @@ export default function DashboardPage() {
                       <tbody>
                         {filtrada.map((d: any, i: number) => {
                           const sinAsiento = d.SinAsiento === 1;
+                          const esDuplicado = d.EsDuplicado === 1;
                           return (
-                          <tr key={i} style={{ background: sinAsiento ? '#fff5f5' : undefined }}>
+                          <tr key={i} style={{ background: esDuplicado ? '#fff7ed' : sinAsiento ? '#fff5f5' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#D35400', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
                               {sinAsiento && <span title="Sin asiento contable en cuenta de costo/gasto" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>

@@ -316,18 +316,12 @@ ORDER BY CodCuenta, Mes
 // Helpers
 // ─────────────────────────────────────────────
 
-// Deduplica por NroD (clave real del documento en S10); en caso de duplicado
-// conserva la fila con SinAsiento=0 (contabilizada), o la primera si ambas igual.
-function dedupDocs(rows) {
-  const map = new Map();
-  for (const row of rows) {
-    const key = row.NroD;
-    const existing = map.get(key);
-    if (!existing || (existing.SinAsiento === 1 && row.SinAsiento === 0)) {
-      map.set(key, row);
-    }
-  }
-  return Array.from(map.values());
+// Marca con EsDuplicado=1 todas las filas cuyo NroD aparece más de una vez.
+// NO elimina duplicados — se conservan para revisión por contabilidad.
+function markDups(rows) {
+  const count = new Map();
+  for (const row of rows) count.set(row.NroD, (count.get(row.NroD) || 0) + 1);
+  return rows.map(row => ({ ...row, EsDuplicado: count.get(row.NroD) > 1 ? 1 : 0 }));
 }
 
 // ─────────────────────────────────────────────
@@ -390,9 +384,9 @@ async function main() {
         pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
       ]);
 
-      const emitidas    = dedupDocs(emitResult.recordset);
-      const recibidas   = dedupDocs(reciResult.recordset);
-      const honorarios  = dedupDocs(honorResult.recordset);
+      const emitidas    = markDups(emitResult.recordset);
+      const recibidas   = markDups(reciResult.recordset);
+      const honorarios  = markDups(honorResult.recordset);
 
       console.log(`  P&L rows: ${plResult.recordset.length}`);
       console.log(`  CxC rows: ${cxcResult.recordset.length}`);
@@ -401,9 +395,12 @@ async function main() {
       console.log(`  GAV rows: ${gavResult.recordset.length}`);
       console.log(`  Transactions: ${txResult.recordset.length}`);
       console.log(`  CxC Transactions: ${cxcTxResult.recordset.length}`);
-      console.log(`  Facturas Emitidas: ${emitidas.length}${emitidas.length < emitResult.recordset.length ? ` (${emitResult.recordset.length - emitidas.length} dup eliminados)` : ''}`);
-      console.log(`  Facturas Recibidas: ${recibidas.length}${recibidas.length < reciResult.recordset.length ? ` (${reciResult.recordset.length - recibidas.length} dup eliminados)` : ''}`);
-      console.log(`  Honorarios Recibidos: ${honorarios.length}${honorarios.length < honorResult.recordset.length ? ` (${honorResult.recordset.length - honorarios.length} dup eliminados)` : ''}`);
+      const dupEmit  = emitidas.filter(r => r.EsDuplicado).length;
+      const dupReci  = recibidas.filter(r => r.EsDuplicado).length;
+      const dupHonor = honorarios.filter(r => r.EsDuplicado).length;
+      console.log(`  Facturas Emitidas: ${emitidas.length}${dupEmit  ? ` (⚠ ${dupEmit} filas duplicadas)` : ''}`);
+      console.log(`  Facturas Recibidas: ${recibidas.length}${dupReci  ? ` (⚠ ${dupReci} filas duplicadas)` : ''}`);
+      console.log(`  Honorarios Recibidos: ${honorarios.length}${dupHonor ? ` (⚠ ${dupHonor} filas duplicadas)` : ''}`);
 
       // Build payload
       const payload = {

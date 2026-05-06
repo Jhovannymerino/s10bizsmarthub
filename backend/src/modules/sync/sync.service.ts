@@ -29,6 +29,7 @@ export class SyncService {
       cxp?: any[];
       caja?: any[];
       gav?: any[];
+      transactions?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;

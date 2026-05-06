@@ -126,7 +126,7 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
   }, [companyId, year, codCuenta]);
 
   const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
-  const mesesPresentes = [...new Set(txns.map((t: any) => t.Mes as number))].sort((a, b) => a - b);
+  const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
   const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
   const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
 

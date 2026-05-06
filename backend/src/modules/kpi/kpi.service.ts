@@ -76,10 +76,17 @@ export class KpiService {
     let prevYear: any = null;
 
     if (prevCached?.data?.plMonthly) {
+      // Período definido por el último mes con ingresos (no por costos residuales)
+      const lastMonthWithIngresos = Math.max(
+        0,
+        ...(dashboard.plMonthly as any[])
+          .filter((m: any) => m.ingresos > 0)
+          .map((m: any) => m.mes as number),
+      );
       const activeMonths = new Set(
-        (dashboard.plMonthly as any[])
-          .filter((m: any) => m.ingresos !== 0 || m.costoDirecto !== 0 || m.gav !== 0)
-          .map((m: any) => m.mes),
+        lastMonthWithIngresos > 0
+          ? Array.from({ length: lastMonthWithIngresos }, (_, i) => i + 1)
+          : [],
       );
 
       const prevMonths = (prevCached.data.plMonthly as any[]).filter((m: any) => activeMonths.has(m.mes));

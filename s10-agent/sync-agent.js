@@ -159,6 +159,7 @@ const TIPOS_HONORARIOS = `'010'`;
 
 const QUERY_FACTURAS_EMITIDAS = (codEmpresa, year, claseIngreso) => `
 SELECT
+  doc.NroD                                                   AS NroD,
   ISNULL(doc.SerieDocumento, '')                             AS Serie,
   ISNULL(doc.NumeroDocumento, '')                            AS Numero,
   CONVERT(VARCHAR(10), doc.FechaDocumento, 103)              AS FechaDocumento,
@@ -194,6 +195,7 @@ const CLASES_COSTO = `'60','61','62','63','64','65','66','67','68','69','91','94
 
 const QUERY_FACTURAS_RECIBIDAS = (codEmpresa, year) => `
 SELECT
+  doc.NroD                                                   AS NroD,
   ISNULL(doc.SerieDocumento, '')                             AS Serie,
   ISNULL(doc.NumeroDocumento, '')                            AS Numero,
   CONVERT(VARCHAR(10), doc.FechaDocumento, 103)              AS FechaDocumento,
@@ -227,6 +229,7 @@ ORDER BY SinAsiento DESC, doc.FechaDocumento DESC, doc.SerieDocumento, doc.Numer
 
 const QUERY_HONORARIOS_RECIBIDOS = (codEmpresa, year) => `
 SELECT
+  doc.NroD                                                   AS NroD,
   ISNULL(doc.SerieDocumento, '')                             AS Serie,
   ISNULL(doc.NumeroDocumento, '')                            AS Numero,
   CONVERT(VARCHAR(10), doc.FechaDocumento, 103)              AS FechaDocumento,
@@ -310,6 +313,24 @@ ORDER BY CodCuenta, Mes
 `;
 
 // ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+
+// Deduplica por NroD (clave real del documento en S10); en caso de duplicado
+// conserva la fila con SinAsiento=0 (contabilizada), o la primera si ambas igual.
+function dedupDocs(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const key = row.NroD;
+    const existing = map.get(key);
+    if (!existing || (existing.SinAsiento === 1 && row.SinAsiento === 0)) {
+      map.set(key, row);
+    }
+  }
+  return Array.from(map.values());
+}
+
+// ─────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────
 
@@ -369,6 +390,10 @@ async function main() {
         pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
       ]);
 
+      const emitidas    = dedupDocs(emitResult.recordset);
+      const recibidas   = dedupDocs(reciResult.recordset);
+      const honorarios  = dedupDocs(honorResult.recordset);
+
       console.log(`  P&L rows: ${plResult.recordset.length}`);
       console.log(`  CxC rows: ${cxcResult.recordset.length}`);
       console.log(`  CxP rows: ${cxpResult.recordset.length}`);
@@ -376,9 +401,9 @@ async function main() {
       console.log(`  GAV rows: ${gavResult.recordset.length}`);
       console.log(`  Transactions: ${txResult.recordset.length}`);
       console.log(`  CxC Transactions: ${cxcTxResult.recordset.length}`);
-      console.log(`  Facturas Emitidas: ${emitResult.recordset.length}`);
-      console.log(`  Facturas Recibidas: ${reciResult.recordset.length}`);
-      console.log(`  Honorarios Recibidos: ${honorResult.recordset.length}`);
+      console.log(`  Facturas Emitidas: ${emitidas.length}${emitidas.length < emitResult.recordset.length ? ` (${emitResult.recordset.length - emitidas.length} dup eliminados)` : ''}`);
+      console.log(`  Facturas Recibidas: ${recibidas.length}${recibidas.length < reciResult.recordset.length ? ` (${reciResult.recordset.length - recibidas.length} dup eliminados)` : ''}`);
+      console.log(`  Honorarios Recibidos: ${honorarios.length}${honorarios.length < honorResult.recordset.length ? ` (${honorResult.recordset.length - honorarios.length} dup eliminados)` : ''}`);
 
       // Build payload
       const payload = {
@@ -394,9 +419,9 @@ async function main() {
           gav: gavResult.recordset,
           transactions: txResult.recordset,
           cxc_transactions: cxcTxResult.recordset,
-          facturas_emitidas: emitResult.recordset,
-          facturas_recibidas: reciResult.recordset,
-          honorarios_recibidos: honorResult.recordset,
+          facturas_emitidas: emitidas,
+          facturas_recibidas: recibidas,
+          honorarios_recibidos: honorarios,
         },
       };
 

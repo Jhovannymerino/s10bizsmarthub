@@ -394,6 +394,16 @@ export class KpiService {
     return { transactions: txns, total: txns.length };
   }
 
+  async getCxCTransactions(companyId: string, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'cxc_transactions', 'current');
+    if (!cached) return { transactions: [], total: 0 };
+
+    let txns = cached.data as any[];
+    if (codTercero) txns = txns.filter((t: any) => String(t.CodTercero) === String(codTercero));
+
+    return { transactions: txns, total: txns.length };
+  }
+
   // ─────────────────────────────────────────────
   // Consolidado Grupo — suma todas las empresas activas
   // ─────────────────────────────────────────────

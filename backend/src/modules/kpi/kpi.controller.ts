@@ -52,6 +52,15 @@ export class KpiController {
     return this.kpiService.getTransactions(companyId, y, codCuenta, mes ? parseInt(mes) : undefined);
   }
 
+  /** Detalle de asientos CxC (clase 12) por cliente */
+  @Get(':companyId/cxc-transactions')
+  getCxCTransactions(
+    @Param('companyId') companyId: string,
+    @Query('codTercero') codTercero?: string,
+  ) {
+    return this.kpiService.getCxCTransactions(companyId, codTercero);
+  }
+
   /** GAV por categoría */
   @Get(':companyId/gav')
   getGAV(

@@ -30,6 +30,7 @@ export class SyncService {
       caja?: any[];
       gav?: any[];
       transactions?: any[];
+      cxc_transactions?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -69,6 +70,11 @@ export class SyncService {
       if (data.transactions?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'transactions', period, year, null, data.transactions);
         logs.push({ kpiType: 'transactions', rowsProcessed: data.transactions.length, status: 'success' });
+      }
+
+      if (data.cxc_transactions?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_transactions', 'current', year, null, data.cxc_transactions);
+        logs.push({ kpiType: 'cxc_transactions', rowsProcessed: data.cxc_transactions.length, status: 'success' });
       }
 
       // Write sync logs

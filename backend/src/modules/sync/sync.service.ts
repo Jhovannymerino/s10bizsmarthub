@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { KpiService } from '../kpi/kpi.service';
 import { S10Service } from '../s10/s10.service';
+import { spawn } from 'child_process';
 
 @Injectable()
 export class SyncService {
@@ -125,6 +126,43 @@ export class SyncService {
       });
       throw error;
     }
+  }
+
+  // ─────────────────────────────────────────────
+  // VPN script trigger — lanza sync-vpn.sh en background
+  // ─────────────────────────────────────────────
+
+  private syncRunning = false;
+
+  async triggerVpnSync(years: number[] = [new Date().getFullYear()]) {
+    if (this.syncRunning) {
+      return { message: 'Sync already running', status: 'busy' };
+    }
+
+    const SCRIPT = '/opt/apps/s10bizsmarthub/sync-vpn.sh';
+    this.syncRunning = true;
+    this.logger.log(`VPN sync triggered for years: ${years.join(', ')}`);
+
+    // Lanza los años secuencialmente en background
+    (async () => {
+      for (const year of years) {
+        await new Promise<void>((resolve) => {
+          const child = spawn(SCRIPT, [String(year)], {
+            detached: false,
+            stdio: ['ignore', 'pipe', 'pipe'],
+          });
+          child.stdout.on('data', (d) => this.logger.log(`[sync ${year}] ${d.toString().trim()}`));
+          child.stderr.on('data', (d) => this.logger.log(`[sync ${year}] ${d.toString().trim()}`));
+          child.on('close', (code) => {
+            this.logger.log(`[sync ${year}] finished with code ${code}`);
+            resolve();
+          });
+        });
+      }
+      this.syncRunning = false;
+    })();
+
+    return { message: `Sync iniciado para año(s) ${years.join(', ')}`, status: 'started' };
   }
 
   // ─────────────────────────────────────────────

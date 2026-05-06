@@ -32,11 +32,14 @@ export class SyncController {
 
   /**
    * POST /sync/trigger
-   * Trigger manual de sync directo — requiere JWT de admin
+   * Trigger manual via VPN script — requiere JWT
    */
   @Post('trigger')
   @UseGuards(JwtAuthGuard)
-  async trigger(@Query('companyId') companyId?: string) {
-    return this.syncService.triggerDirectSync(companyId);
+  async trigger(@Query('years') years?: string) {
+    const yearList = years
+      ? years.split(',').map(Number).filter(Boolean)
+      : [new Date().getFullYear()];
+    return this.syncService.triggerVpnSync(yearList);
   }
 }

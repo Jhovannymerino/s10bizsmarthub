@@ -435,6 +435,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<typeof COMPANIES[0] | typeof GRUPO>(COMPANIES[0]);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
   const [pl, setPL] = useState<any>(null);
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
@@ -666,6 +667,47 @@ export default function DashboardPage() {
               {y}
             </button>
           ))}
+        </div>
+
+        {/* Sync button */}
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <button
+            disabled={syncStatus === 'running'}
+            onClick={async () => {
+              const token = localStorage.getItem('token');
+              if (!token) return;
+              setSyncStatus('running');
+              try {
+                await fetch(`${API}/sync/trigger?years=${CURRENT_YEAR},${CURRENT_YEAR - 1}`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                setSyncStatus('done');
+                setTimeout(() => setSyncStatus('idle'), 5000);
+              } catch {
+                setSyncStatus('error');
+                setTimeout(() => setSyncStatus('idle'), 4000);
+              }
+            }}
+            style={{
+              width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', border: 'none',
+              background: syncStatus === 'running' ? 'rgba(255,255,255,0.05)'
+                        : syncStatus === 'done'    ? '#1E8449'
+                        : syncStatus === 'error'   ? '#C0392B'
+                        : 'rgba(255,255,255,0.1)',
+              color: syncStatus === 'running' ? '#94A3B8' : '#fff',
+              fontSize: '0.82rem', fontWeight: 600, cursor: syncStatus === 'running' ? 'default' : 'pointer',
+              transition: 'background 0.2s',
+            }}
+          >
+            {syncStatus === 'running' ? '⏳ Sincronizando...'
+           : syncStatus === 'done'    ? '✓ Sync iniciado'
+           : syncStatus === 'error'   ? '✗ Error al sincronizar'
+           : '↻ Sincronizar datos'}
+          </button>
+          <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.4rem', textAlign: 'center' }}>
+            Auto: Lun-Vie 7am y 6pm
+          </div>
         </div>
 
         {/* Nav tabs */}

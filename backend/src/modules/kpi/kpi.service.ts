@@ -404,6 +404,20 @@ export class KpiService {
     return { transactions: txns, total: txns.length };
   }
 
+  async getFacturasEmitidas(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'facturas_emitidas', `${year}`);
+    if (!cached) return { facturas: [], total: 0, year };
+    const facturas = cached.data as any[];
+    return { facturas, total: facturas.length, year };
+  }
+
+  async getFacturasRecibidas(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'facturas_recibidas', `${year}`);
+    if (!cached) return { facturas: [], total: 0, year };
+    const facturas = cached.data as any[];
+    return { facturas, total: facturas.length, year };
+  }
+
   // ─────────────────────────────────────────────
   // Consolidado Grupo — suma todas las empresas activas
   // ─────────────────────────────────────────────

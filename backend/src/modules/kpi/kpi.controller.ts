@@ -61,6 +61,26 @@ export class KpiController {
     return this.kpiService.getCxCTransactions(companyId, codTercero);
   }
 
+  /** Facturas emitidas (AgrupamientoDocumento vía NotaDeVenta) */
+  @Get(':companyId/facturas-emitidas')
+  getFacturasEmitidas(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getFacturasEmitidas(companyId, y);
+  }
+
+  /** Facturas recibidas (RDocumento) */
+  @Get(':companyId/facturas-recibidas')
+  getFacturasRecibidas(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getFacturasRecibidas(companyId, y);
+  }
+
   /** GAV por categoría */
   @Get(':companyId/gav')
   getGAV(

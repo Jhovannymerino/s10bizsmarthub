@@ -31,6 +31,8 @@ export class SyncService {
       gav?: any[];
       transactions?: any[];
       cxc_transactions?: any[];
+      facturas_emitidas?: any[];
+      facturas_recibidas?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -75,6 +77,16 @@ export class SyncService {
       if (data.cxc_transactions?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_transactions', 'current', year, null, data.cxc_transactions);
         logs.push({ kpiType: 'cxc_transactions', rowsProcessed: data.cxc_transactions.length, status: 'success' });
+      }
+
+      if (data.facturas_emitidas?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'facturas_emitidas', `${year}`, year, null, data.facturas_emitidas);
+        logs.push({ kpiType: 'facturas_emitidas', rowsProcessed: data.facturas_emitidas.length, status: 'success' });
+      }
+
+      if (data.facturas_recibidas?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'facturas_recibidas', `${year}`, year, null, data.facturas_recibidas);
+        logs.push({ kpiType: 'facturas_recibidas', rowsProcessed: data.facturas_recibidas.length, status: 'success' });
       }
 
       // Write sync logs

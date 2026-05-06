@@ -147,6 +147,82 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable, ac.NroAsientoContable
 `;
 
+// Facturas emitidas: electrónicas (131, 125 vinculadas), NC (134, 128), docs sin CP (060)
+// Excluye: 071=Préstamos, 058=Transferencias bancarias, 075=Devoluciones
+const TIPOS_EMITIDAS = `'060','125','128','131','134'`;
+// Facturas/comprobantes recibidos: facturas (001,002), NC (004), RHE (010), servicios públicos (012),
+//   aviación (015), no domiciliado (091), IGV (123), facturas 10%/10.5% (143,144)
+// Excluye: 071=Préstamos, 058=Transferencias, 070=Anticipos, 069=Entrega rendir, 051/072=Planilla
+const TIPOS_RECIBIDAS = `'001','002','004','010','012','015','091','123','143','144'`;
+
+const QUERY_FACTURAS_EMITIDAS = (codEmpresa, year, claseIngreso) => `
+SELECT
+  ISNULL(doc.SerieDocumento, '')                             AS Serie,
+  ISNULL(doc.NumeroDocumento, '')                            AS Numero,
+  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)              AS FechaDocumento,
+  CONVERT(VARCHAR(10), doc.FechaVencimiento, 103)            AS FechaVencimiento,
+  ISNULL(doc.DescripcionTipoDocumento, '')                   AS TipoDocumento,
+  ISNULL(doc.DescripcionIdentificador, '')                   AS Cliente,
+  ISNULL(doc.RUC, '')                                        AS RucCliente,
+  ISNULL(doc.TotalNeto, 0)                                   AS TotalNeto,
+  ISNULL(doc.TotalImpuesto, 0)                               AS TotalImpuesto,
+  ISNULL(doc.Total, 0)                                       AS Total,
+  ISNULL(doc.TotalPagado, 0)                                 AS TotalPagado,
+  doc.Total - ISNULL(doc.TotalPagado, 0)                     AS Saldo,
+  ISNULL(doc.DescripcionEstado, '')                          AS Estado,
+  ISNULL(doc.Observacion, '')                                AS Observacion,
+  CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento
+FROM CMO.dbo.vw_12DocumentosPorCobrar doc
+LEFT JOIN (
+  SELECT DISTINCT ac.NroD
+  FROM CMO.dbo.AsientoContable ac
+  JOIN CMO.dbo.PlanContableDetalle pcd
+    ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+  WHERE ac.CodEmpresa = '${codEmpresa}'
+    AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
+    AND ac.FechaAplicacionContable BETWEEN '${year}-01-01' AND '${year}-12-31'
+) ac_chk ON ac_chk.NroD = doc.NroD
+WHERE doc.CodEmpresa = '${codEmpresa}'
+  AND YEAR(doc.FechaDocumento) = ${year}
+  AND doc.CodTipoDocumento IN (${TIPOS_EMITIDAS})
+ORDER BY SinAsiento DESC, doc.FechaDocumento DESC, doc.SerieDocumento, doc.NumeroDocumento
+`;
+
+const CLASES_COSTO = `'60','61','62','63','64','65','66','67','68','69','91','94'`;
+
+const QUERY_FACTURAS_RECIBIDAS = (codEmpresa, year) => `
+SELECT
+  ISNULL(doc.SerieDocumento, '')                             AS Serie,
+  ISNULL(doc.NumeroDocumento, '')                            AS Numero,
+  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)              AS FechaDocumento,
+  CONVERT(VARCHAR(10), doc.FechaVencimiento, 103)            AS FechaVencimiento,
+  ISNULL(doc.DescripcionTipoDocumento, '')                   AS TipoDocumento,
+  ISNULL(doc.DescripcionIdentificador, '')                   AS Proveedor,
+  ISNULL(doc.RUC, '')                                        AS RucProveedor,
+  ISNULL(doc.TotalNeto, 0)                                   AS TotalNeto,
+  ISNULL(doc.TotalImpuesto, 0)                               AS TotalImpuesto,
+  ISNULL(doc.Total, 0)                                       AS Total,
+  ISNULL(doc.TotalPagado, 0)                                 AS TotalPagado,
+  doc.Total - ISNULL(doc.TotalPagado, 0)                     AS TotalSaldo,
+  ISNULL(doc.DescripcionEstado, '')                          AS Estado,
+  ISNULL(doc.DescripcionCategoria, '')                       AS Categoria,
+  CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento
+FROM CMO.dbo.vw_12DocumentosPorPagar doc
+LEFT JOIN (
+  SELECT DISTINCT ac.NroD
+  FROM CMO.dbo.AsientoContable ac
+  JOIN CMO.dbo.PlanContableDetalle pcd
+    ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+  WHERE ac.CodEmpresa = '${codEmpresa}'
+    AND LEFT(pcd.CodCuenta, 2) IN (${CLASES_COSTO})
+    AND ac.FechaAplicacionContable BETWEEN '${year}-01-01' AND '${year}-12-31'
+) ac_chk ON ac_chk.NroD = doc.NroD
+WHERE doc.CodEmpresa = '${codEmpresa}'
+  AND YEAR(doc.FechaDocumento) = ${year}
+  AND doc.CodTipoDocumento IN (${TIPOS_RECIBIDAS})
+ORDER BY SinAsiento DESC, doc.FechaDocumento DESC, doc.SerieDocumento, doc.NumeroDocumento
+`;
+
 const QUERY_CXP = (codEmpresa) => `
 SELECT
   i.Descripcion                                        AS Proveedor,
@@ -232,7 +308,7 @@ async function main() {
       enableArithAbort: true,
     },
     connectionTimeout: 30000,
-    requestTimeout: 60000,
+    requestTimeout: 180000,
   }).connect();
 
   console.log('✓ Connected to S10 SQL Server');
@@ -245,7 +321,7 @@ async function main() {
 
     try {
       // Run all queries in parallel
-      const [plResult, cxcResult, cxpResult, cajaResult, gavResult, txResult, cxcTxResult] = await Promise.all([
+      const [plResult, cxcResult, cxpResult, cajaResult, gavResult, txResult, cxcTxResult, emitResult, reciResult] = await Promise.all([
         pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_CXC(company.codEmpresa)),
         pool.request().query(QUERY_CXP(company.codEmpresa)),
@@ -253,6 +329,8 @@ async function main() {
         pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_TRANSACTIONS(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_CXC_TRANSACTIONS(company.codEmpresa)),
+        pool.request().query(QUERY_FACTURAS_EMITIDAS(company.codEmpresa, year, company.claseIngreso)),
+        pool.request().query(QUERY_FACTURAS_RECIBIDAS(company.codEmpresa, year)),
       ]);
 
       console.log(`  P&L rows: ${plResult.recordset.length}`);
@@ -262,6 +340,8 @@ async function main() {
       console.log(`  GAV rows: ${gavResult.recordset.length}`);
       console.log(`  Transactions: ${txResult.recordset.length}`);
       console.log(`  CxC Transactions: ${cxcTxResult.recordset.length}`);
+      console.log(`  Facturas Emitidas: ${emitResult.recordset.length}`);
+      console.log(`  Facturas Recibidas: ${reciResult.recordset.length}`);
 
       // Build payload
       const payload = {
@@ -277,6 +357,8 @@ async function main() {
           gav: gavResult.recordset,
           transactions: txResult.recordset,
           cxc_transactions: cxcTxResult.recordset,
+          facturas_emitidas: emitResult.recordset,
+          facturas_recibidas: reciResult.recordset,
         },
       };
 

@@ -440,9 +440,13 @@ export default function DashboardPage() {
   const [caja, setCaja] = useState<any>(null);
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'caja' | 'gav'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'caja' | 'gav' | 'docs'>('pl');
   const [drillDown, setDrillDown] = useState<{ title: string; rows: any[] } | null>(null);
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
+  const [docs, setDocs] = useState<{ emitidas: any[]; recibidas: any[] } | null>(null);
+  const [docsTab, setDocsTab] = useState<'emitidas' | 'recibidas'>('emitidas');
+  const [docsSearch, setDocsSearch] = useState('');
+  const [docsOnlySinAsiento, setDocsOnlySinAsiento] = useState(false);
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
 
@@ -490,6 +494,27 @@ export default function DashboardPage() {
         });
     }
   }, [router, selectedCompany, selectedYear]);
+
+  useEffect(() => {
+    if (activeTab !== 'docs' || isGrupo) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    setDocs(null);
+    setDocsSearch('');
+    setDocsOnlySinAsiento(false);
+    Promise.all([
+      fetchApi(`/kpi/${id}/facturas-emitidas?year=${selectedYear}`, token),
+      fetchApi(`/kpi/${id}/facturas-recibidas?year=${selectedYear}`, token),
+    ])
+      .then(([emitData, reciData]) => {
+        setDocs({
+          emitidas: emitData?.facturas || [],
+          recibidas: reciData?.facturas || [],
+        });
+      })
+      .catch(() => {});
+  }, [activeTab, selectedCompany, selectedYear, isGrupo]);
 
   if (error) return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -642,17 +667,18 @@ export default function DashboardPage() {
 
         {/* Nav tabs */}
         <nav style={{ padding: '0.75rem 0' }}>
-          {(['pl', 'cxc', 'caja', 'gav'] as const).map((tab) => (
+          {(['pl', 'cxc', 'caja', 'gav', 'docs'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
             >
-              {tab === 'pl'  && '📊 P&L'}
-              {tab === 'cxc' && '💰 CxC Aging'}
-              {tab === 'caja'&& '🏦 Posición Caja'}
-              {tab === 'gav' && '📋 GAV Detalle'}
+              {tab === 'pl'   && '📊 P&L'}
+              {tab === 'cxc'  && '💰 CxC Aging'}
+              {tab === 'caja' && '🏦 Posición Caja'}
+              {tab === 'gav'  && '📋 GAV Detalle'}
+              {tab === 'docs' && '🧾 Documentos'}
             </button>
           ))}
         </nav>
@@ -672,10 +698,11 @@ export default function DashboardPage() {
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0D3B5E', margin: 0 }}>
-              {activeTab === 'pl'  && (isGrupo ? 'Consolidado del Grupo' : 'Estado de Resultados')}
-              {activeTab === 'cxc' && 'Cuentas por Cobrar — Aging'}
-              {activeTab === 'caja'&& 'Posición de Caja'}
-              {activeTab === 'gav' && 'Gastos de Admin. y Ventas'}
+              {activeTab === 'pl'   && (isGrupo ? 'Consolidado del Grupo' : 'Estado de Resultados')}
+              {activeTab === 'cxc'  && 'Cuentas por Cobrar — Aging'}
+              {activeTab === 'caja' && 'Posición de Caja'}
+              {activeTab === 'gav'  && 'Gastos de Admin. y Ventas'}
+              {activeTab === 'docs' && 'Documentos del Período'}
             </h1>
             <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
               {selectedCompany.fullName} · YTD {selectedYear} · Fuente: S10 ERP
@@ -1024,6 +1051,181 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+
+        {/* ═══ Documentos Tab ═══ */}
+        {activeTab === 'docs' && isGrupo && (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+            Selecciona una empresa para ver sus documentos.
+          </div>
+        )}
+        {activeTab === 'docs' && !isGrupo && !docs && (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>Cargando documentos...</div>
+        )}
+        {activeTab === 'docs' && !isGrupo && docs && (() => {
+          const lista = docsTab === 'emitidas' ? docs.emitidas : docs.recibidas;
+          const sinAsientoCount = lista.filter((d: any) => d.SinAsiento === 1).length;
+          const sinAsientoMonto = lista.filter((d: any) => d.SinAsiento === 1).reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
+          const q = docsSearch.toLowerCase();
+          const filtrada = lista.filter((d: any) => {
+            if (docsOnlySinAsiento && d.SinAsiento !== 1) return false;
+            if (!q) return true;
+            const nombre = docsTab === 'emitidas' ? (d.Cliente || '') : (d.Proveedor || '');
+            const num = `${d.Serie || ''}-${d.Numero || ''}`;
+            const tipo = d.TipoDocumento || '';
+            return nombre.toLowerCase().includes(q) || num.toLowerCase().includes(q) || tipo.toLowerCase().includes(q);
+          });
+          const totalMonto = filtrada.reduce((s: number, d: any) => s + (d.Total || 0), 0);
+          const totalNeto = filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
+          const totalSaldo = docsTab === 'recibidas'
+            ? filtrada.reduce((s: number, d: any) => s + (d.TotalSaldo || 0), 0)
+            : filtrada.reduce((s: number, d: any) => s + (d.Saldo || 0), 0);
+          return (
+            <div>
+              {/* Sub-tabs */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {(['emitidas', 'recibidas'] as const).map((t) => (
+                  <button key={t} onClick={() => { setDocsTab(t); setDocsSearch(''); setDocsOnlySinAsiento(false); }}
+                    style={{ padding: '0.4rem 1.2rem', borderRadius: '0.375rem', border: '1px solid',
+                      borderColor: docsTab === t ? '#0D3B5E' : '#d1d5db',
+                      background: docsTab === t ? '#0D3B5E' : '#fff',
+                      color: docsTab === t ? '#fff' : '#374151',
+                      fontWeight: docsTab === t ? 700 : 400, fontSize: '0.85rem', cursor: 'pointer' }}>
+                    {t === 'emitidas' ? `Facturas Emitidas (${docs.emitidas.length})` : `Facturas Recibidas (${docs.recibidas.length})`}
+                  </button>
+                ))}
+                {sinAsientoCount > 0 && (
+                  <button
+                    onClick={() => { setDocsOnlySinAsiento(!docsOnlySinAsiento); setDocsSearch(''); }}
+                    style={{ padding: '0.4rem 1rem', borderRadius: '0.375rem', border: '1px solid',
+                      borderColor: docsOnlySinAsiento ? '#C0392B' : '#fca5a5',
+                      background: docsOnlySinAsiento ? '#C0392B' : '#fef2f2',
+                      color: docsOnlySinAsiento ? '#fff' : '#C0392B',
+                      fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
+                    ⚠ Sin asiento contable ({sinAsientoCount}) · S/ {sinAsientoMonto.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
+                  </button>
+                )}
+              </div>
+              <div className="kpi-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#0D3B5E' }}>
+                      {docsTab === 'emitidas' ? 'Facturas emitidas a clientes' : 'Facturas / boletas / RHE recibidas'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.2rem' }}>
+                      {filtrada.length} documentos · Neto {fmt(totalNeto)} · Total c/IGV {fmt(totalMonto)} · Pendiente {fmt(totalSaldo)}
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={docsTab === 'emitidas' ? 'Buscar cliente o número...' : 'Buscar proveedor o número...'}
+                    value={docsSearch}
+                    onChange={e => setDocsSearch(e.target.value)}
+                    style={{ padding: '0.4rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 240 }}
+                  />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  {docsTab === 'emitidas' ? (
+                    <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                      <thead>
+                        <tr>
+                          <th>Serie-Número</th>
+                          <th>Fecha</th>
+                          <th style={{ minWidth: 140 }}>Tipo</th>
+                          <th style={{ minWidth: 200 }}>Cliente</th>
+                          <th>Neto</th>
+                          <th>IGV</th>
+                          <th>Total</th>
+                          <th>Pagado</th>
+                          <th>Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtrada.map((d: any, i: number) => {
+                          const sinAsiento = d.SinAsiento === 1;
+                          return (
+                          <tr key={i} style={{ background: sinAsiento ? '#fff5f5' : undefined }}>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de ingreso" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {d.Serie || '—'}-{d.Numero}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
+                            <td style={{ fontSize: '0.72rem', color: '#2874A6', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
+                            <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Cliente}>{d.Cliente || '—'}</td>
+                            <td>{fmt(d.TotalNeto)}</td>
+                            <td style={{ color: '#6b7280' }}>{fmt(d.TotalImpuesto)}</td>
+                            <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
+                            <td style={{ color: '#1E8449' }}>{fmt(d.TotalPagado)}</td>
+                            <td className={(d.Saldo || 0) > 0 ? 'negative' : ''}>{fmt(d.Saldo)}</td>
+                          </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="total-row">
+                          <td colSpan={4}>TOTAL ({filtrada.length})</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0))}</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
+                          <td>{fmt(totalMonto)}</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalPagado || 0), 0))}</td>
+                          <td>{fmt(totalSaldo)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  ) : (
+                    <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                      <thead>
+                        <tr>
+                          <th>Serie-Número</th>
+                          <th>Fecha Doc.</th>
+                          <th>Vencimiento</th>
+                          <th style={{ minWidth: 120 }}>Tipo</th>
+                          <th style={{ minWidth: 200 }}>Proveedor</th>
+                          <th>Neto</th>
+                          <th>IGV</th>
+                          <th>Total</th>
+                          <th>Pagado</th>
+                          <th>Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtrada.map((d: any, i: number) => {
+                          const sinAsiento = d.SinAsiento === 1;
+                          return (
+                          <tr key={i} style={{ background: sinAsiento ? '#fff5f5' : undefined }}>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de costo/gasto" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {d.Serie || '—'}-{d.Numero}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
+                            <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#C0392B' : '#6b7280' }}>{d.FechaVencimiento}</td>
+                            <td style={{ fontSize: '0.72rem', color: '#2874A6', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
+                            <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Proveedor}>{d.Proveedor || '—'}</td>
+                            <td>{fmt(d.TotalNeto)}</td>
+                            <td style={{ color: '#6b7280' }}>{fmt(d.TotalImpuesto)}</td>
+                            <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
+                            <td style={{ color: '#1E8449' }}>{fmt(d.TotalPagado)}</td>
+                            <td className={(d.TotalSaldo || 0) > 0 ? 'negative' : ''}>{fmt(d.TotalSaldo)}</td>
+                          </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="total-row">
+                          <td colSpan={5}>TOTAL ({filtrada.length})</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0))}</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
+                          <td>{fmt(totalMonto)}</td>
+                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalPagado || 0), 0))}</td>
+                          <td>{fmt(totalSaldo)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ═══ GAV Tab ═══ */}
         {activeTab === 'gav' && !gav && !loading && <NoDataBanner kpi="GAV" />}

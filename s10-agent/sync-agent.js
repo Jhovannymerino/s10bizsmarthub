@@ -77,6 +77,28 @@ GROUP BY LEFT(pcd.CodCuenta,2), pcd.CodCuenta, pcd.Descripcion, MONTH(ac.FechaAp
 ORDER BY Clase, CodCuenta, Mes
 `;
 
+const QUERY_TRANSACTIONS = (claseIngreso, codEmpresa, fechaInicio, fechaFin) => `
+SELECT
+  ac.NroAsientoContable                                    AS NroAsiento,
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
+  MONTH(ac.FechaAplicacionContable)                        AS Mes,
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  pcd.CodCuenta                                            AS CodCuenta,
+  ISNULL(ac.Glosa, '')                                     AS Glosa,
+  ISNULL(ac.Debito, 0)                                     AS Debito,
+  ISNULL(ac.Credito, 0)                                    AS Credito,
+  ISNULL(i.Descripcion, '')                                AS Tercero
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
+  AND LEFT(pcd.CodCuenta, 2) IN ('${claseIngreso}', '91', '94', '97')
+ORDER BY ac.FechaAplicacionContable, ac.NroAsientoContable
+`;
+
 const QUERY_CXC = (codEmpresa) => `
 SELECT
   i.Descripcion                                                             AS Cliente,
@@ -200,12 +222,13 @@ async function main() {
 
     try {
       // Run all queries in parallel
-      const [plResult, cxcResult, cxpResult, cajaResult, gavResult] = await Promise.all([
+      const [plResult, cxcResult, cxpResult, cajaResult, gavResult, txResult] = await Promise.all([
         pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_CXC(company.codEmpresa)),
         pool.request().query(QUERY_CXP(company.codEmpresa)),
         pool.request().query(QUERY_CAJA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
+        pool.request().query(QUERY_TRANSACTIONS(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
       ]);
 
       console.log(`  P&L rows: ${plResult.recordset.length}`);
@@ -213,6 +236,7 @@ async function main() {
       console.log(`  CxP rows: ${cxpResult.recordset.length}`);
       console.log(`  Caja rows: ${cajaResult.recordset.length}`);
       console.log(`  GAV rows: ${gavResult.recordset.length}`);
+      console.log(`  Transactions: ${txResult.recordset.length}`);
 
       // Build payload
       const payload = {
@@ -226,6 +250,7 @@ async function main() {
           cxp: cxpResult.recordset,
           caja: cajaResult.recordset,
           gav: gavResult.recordset,
+          transactions: txResult.recordset,
         },
       };
 

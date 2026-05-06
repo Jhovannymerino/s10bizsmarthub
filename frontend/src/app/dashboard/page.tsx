@@ -107,17 +107,116 @@ function NoDataBanner({ kpi }: { kpi: string }) {
   );
 }
 
-function DetalleModal({ title, rows, activeMeses, onClose }: {
-  title: string; rows: any[]; activeMeses: number[]; onClose: () => void;
+function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: {
+  companyId: string; year: number; codCuenta: string; descripcion: string; onClose: () => void;
 }) {
+  const [txns, setTxns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [mesFilter, setMesFilter] = useState<number | null>(null);
+
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const params = new URLSearchParams({ year: String(year), codCuenta });
+    fetch(`${API}/kpi/${companyId}/transactions?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(d => { setTxns(d.transactions || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [companyId, year, codCuenta]);
+
+  const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
+  const mesesPresentes = [...new Set(txns.map((t: any) => t.Mes as number))].sort((a, b) => a - b);
+  const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
+  const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={onClose}>
+      <div style={{ background: '#fff', borderRadius: '0.75rem', maxWidth: '95vw', width: 900, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0D3B5E' }}>{codCuenta} — {descripcion}</div>
+            <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.2rem' }}>Asientos individuales · {filtered.length} movimientos</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <button onClick={() => setMesFilter(null)}
+            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: '1px solid #d1d5db', background: mesFilter === null ? '#0D3B5E' : '#fff', color: mesFilter === null ? '#fff' : '#374151', fontSize: '0.78rem', cursor: 'pointer' }}>
+            Todos
+          </button>
+          {mesesPresentes.map(m => (
+            <button key={m} onClick={() => setMesFilter(m)}
+              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: '1px solid #d1d5db', background: mesFilter === m ? '#0D3B5E' : '#fff', color: mesFilter === m ? '#fff' : '#374151', fontSize: '0.78rem', cursor: 'pointer' }}>
+              {MESES[m - 1]}
+            </button>
+          ))}
+        </div>
+        {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Cargando...</div> : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Nro. Asiento</th>
+                  <th style={{ minWidth: 260 }}>Glosa</th>
+                  <th style={{ minWidth: 160 }}>Tercero</th>
+                  <th>Débito</th>
+                  <th>Crédito</th>
+                  <th>Neto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((t: any, i: number) => {
+                  const neto = (t.Debito || 0) - (t.Credito || 0);
+                  return (
+                    <tr key={i}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
+                      <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
+                      <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Tercero}>{t.Tercero || '—'}</td>
+                      <td style={{ color: t.Debito > 0 ? '#1E8449' : '#6b7280' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? '#C0392B' : '#6b7280' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto < 0 ? '#C0392B' : '#1E8449' }}>{fmt(neto)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="total-row">
+                  <td colSpan={4}>TOTAL</td>
+                  <td>{fmt(totalDeb)}</td>
+                  <td>{fmt(totalCred)}</td>
+                  <td style={{ color: (totalDeb - totalCred) < 0 ? '#C0392B' : '#1E8449' }}>{fmt(totalDeb - totalCred)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetalleModal({ title, rows, activeMeses, companyId, year, onClose }: {
+  title: string; rows: any[]; activeMeses: number[]; companyId: string; year: number; onClose: () => void;
+}) {
+  const [txDrill, setTxDrill] = useState<{ codCuenta: string; descripcion: string } | null>(null);
+
   if (!rows?.length) return null;
   return (
+    <>
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
       <div style={{ background: '#fff', borderRadius: '0.75rem', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', minWidth: 600 }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0D3B5E' }}>Detalle: {title}</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0D3B5E' }}>Detalle: {title}</div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.2rem' }}>Click en una cuenta para ver los asientos individuales</div>
+          </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
         </div>
         <div style={{ overflowX: 'auto' }}>
@@ -132,9 +231,11 @@ function DetalleModal({ title, rows, activeMeses, onClose }: {
             </thead>
             <tbody>
               {rows.map((r: any) => (
-                <tr key={r.codCuenta}>
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{r.codCuenta}</td>
-                  <td>{r.descripcion}</td>
+                <tr key={r.codCuenta} style={{ cursor: 'pointer' }}
+                  onClick={() => setTxDrill({ codCuenta: r.codCuenta, descripcion: r.descripcion })}
+                  title="Ver asientos individuales">
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#2874A6' }}>{r.codCuenta}</td>
+                  <td style={{ color: '#2874A6' }}>{r.descripcion} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                   {activeMeses.map(m => (
                     <td key={m} style={{ color: (r.meses[m] || 0) < 0 ? '#C0392B' : undefined }}>
                       {fmt(r.meses[m] || 0)}
@@ -157,6 +258,16 @@ function DetalleModal({ title, rows, activeMeses, onClose }: {
         </div>
       </div>
     </div>
+    {txDrill && (
+      <TransactionModal
+        companyId={companyId}
+        year={year}
+        codCuenta={txDrill.codCuenta}
+        descripcion={txDrill.descripcion}
+        onClose={() => setTxDrill(null)}
+      />
+    )}
+    </>
   );
 }
 
@@ -347,6 +458,8 @@ export default function DashboardPage() {
           title={drillDown.title}
           rows={drillDown.rows}
           activeMeses={activeMeses.length ? activeMeses : [1,2,3,4,5,6,7,8,9,10,11,12]}
+          companyId={selectedCompany.codEmpresa}
+          year={selectedYear}
           onClose={() => setDrillDown(null)}
         />
       )}

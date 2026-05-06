@@ -378,6 +378,22 @@ export class KpiService {
   }
 
   // ─────────────────────────────────────────────
+  // Transacciones — detalle de asientos por cuenta
+  // ─────────────────────────────────────────────
+
+  async getTransactions(companyId: string, year: number, codCuenta?: string, mes?: number) {
+    const period = `${year}`;
+    const cached = await this.getSnapshot(companyId, 'transactions', period);
+    if (!cached) return { transactions: [], total: 0 };
+
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => t.CodCuenta === codCuenta);
+    if (mes) txns = txns.filter((t: any) => t.Mes === mes);
+
+    return { transactions: txns, total: txns.length };
+  }
+
+  // ─────────────────────────────────────────────
   // Consolidado Grupo — suma todas las empresas activas
   // ─────────────────────────────────────────────
 

@@ -65,6 +65,11 @@ export class SyncService {
         logs.push({ kpiType: 'gav', rowsProcessed: data.gav.length, status: 'success' });
       }
 
+      if (data.transactions?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'transactions', period, year, null, data.transactions);
+        logs.push({ kpiType: 'transactions', rowsProcessed: data.transactions.length, status: 'success' });
+      }
+
       // Write sync logs
       await this.prisma.syncLog.createMany({
         data: logs.map((l) => ({

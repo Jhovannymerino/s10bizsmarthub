@@ -40,6 +40,18 @@ export class KpiController {
     return this.kpiService.getCaja(companyId, y);
   }
 
+  /** Detalle de asientos por cuenta y mes */
+  @Get(':companyId/transactions')
+  getTransactions(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('codCuenta') codCuenta?: string,
+    @Query('mes') mes?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getTransactions(companyId, y, codCuenta, mes ? parseInt(mes) : undefined);
+  }
+
   /** GAV por categoría */
   @Get(':companyId/gav')
   getGAV(

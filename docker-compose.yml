@@ -42,7 +42,9 @@ services:
     depends_on:
       - s10biz-db
     networks:
-      - app_default
+      app_default:
+        aliases:
+          - s10biz-api
 
   s10biz-frontend:
     build:
@@ -66,7 +68,7 @@ services:
 
 networks:
   app_default:
-    driver: bridge
+    external: true
 
 volumes:
   s10biz_db_data:

@@ -465,6 +465,7 @@ export default function DashboardPage() {
   const [caja, setCaja] = useState<any>(null);
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
+  const [scorecard, setScorecard] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin'>('pl');
   const [userRole, setUserRole] = useState<string>('viewer');
   const [userEmail, setUserEmail] = useState<string>('');
@@ -503,15 +504,17 @@ export default function DashboardPage() {
     if (!token) { router.push('/login'); return; }
 
     setLoading(true);
-    setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null);
+    setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
 
     if (isGrupo) {
       Promise.all([
         fetchApi(`/kpi/consolidado?year=${selectedYear}`, token),
+        fetchApi(`/kpi/scorecard?year=${selectedYear}`, token),
         fetchApi(`/kpi/${COMPANIES[0].codEmpresa}/cxc`, token),
       ])
-        .then(([conData, cxcData]) => {
+        .then(([conData, scData, cxcData]) => {
           setConsolidado(conData?.ytd ? conData : null);
+          setScorecard(scData?.companies ? scData : null);
           setCxC(cxcData?.clientes ? cxcData : null);
           setLoading(false);
         })
@@ -880,6 +883,17 @@ export default function DashboardPage() {
                   signal={semaforo('covIntereses', ytd.covIntereses)}
                 />
               )}
+              {!isGrupo && cxc?.totalSaldo != null && cxp?.totalSaldo != null && (() => {
+                const wc = (cxc.totalSaldo || 0) - (cxp.totalSaldo || 0);
+                return (
+                  <KpiCard
+                    label="Capital de Trabajo"
+                    value={fmt(wc)}
+                    sub="CxC − CxP"
+                    signal={wc >= 0 ? 'green' : 'red'}
+                  />
+                );
+              })()}
             </div>
 
             {/* Vista Grupo: ranking de empresas */}
@@ -914,6 +928,72 @@ export default function DashboardPage() {
                       <Bar dataKey="Utilidad" fill="#1E8449" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Scorecard comparativo */}
+            {isGrupo && scorecard?.companies?.length > 0 && (
+              <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Scorecard Comparativo</div>
+                  <ExportBtn onClick={() => {
+                    const headers = ['Empresa', 'Ingresos YTD', '% Margen', '% EBITDA', 'DSO (días)', 'DPO (días)', 'Capital de Trabajo', 'Caja Total'];
+                    const rows = scorecard.companies.map((c: any) => [
+                      c.shortName, c.ingresosYTD,
+                      c.margenPct != null ? c.margenPct.toFixed(1) : '',
+                      c.ebitdaPct != null ? c.ebitdaPct.toFixed(1) : '',
+                      c.dso != null ? Math.round(c.dso) : '',
+                      c.dpo != null ? Math.round(c.dpo) : '',
+                      c.workingCapital ?? '', c.cajaTotal ?? '',
+                    ]);
+                    exportCSV(`Scorecard_${selectedYear}.csv`, headers, rows);
+                  }} />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10">
+                    <thead>
+                      <tr>
+                        <th>Empresa</th>
+                        <th>Ingresos YTD</th>
+                        <th>% Margen</th>
+                        <th>% EBITDA</th>
+                        <th>DSO</th>
+                        <th>DPO</th>
+                        <th>Capital de Trabajo</th>
+                        <th>Caja</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scorecard.companies.map((c: any) => {
+                        const wc = c.workingCapital;
+                        return (
+                          <tr key={c.codEmpresa}>
+                            <td style={{ fontWeight: 600, color: '#0D3B5E' }}>{c.shortName}</td>
+                            <td style={{ fontWeight: 600 }}>{fmt(c.ingresosYTD)}</td>
+                            <td style={{ color: c.margenPct != null ? SIGNAL_COLOR[semaforo('margenBrutoPct', c.margenPct)] : '#6b7280', fontWeight: 600 }}>
+                              {c.margenPct != null ? `${SIGNAL_DOT[semaforo('margenBrutoPct', c.margenPct)]} ${pct(c.margenPct)}` : '—'}
+                            </td>
+                            <td style={{ color: c.ebitdaPct != null ? SIGNAL_COLOR[semaforo('ebitdaPct', c.ebitdaPct)] : '#6b7280', fontWeight: 600 }}>
+                              {c.ebitdaPct != null ? `${SIGNAL_DOT[semaforo('ebitdaPct', c.ebitdaPct)]} ${pct(c.ebitdaPct)}` : '—'}
+                            </td>
+                            <td style={{ color: c.dso != null ? SIGNAL_COLOR[semaforo('dso', c.dso)] : '#6b7280' }}>
+                              {c.dso != null ? fmtDays(c.dso) : '—'}
+                            </td>
+                            <td style={{ color: '#6b7280' }}>
+                              {c.dpo != null ? fmtDays(c.dpo) : '—'}
+                            </td>
+                            <td style={{ fontWeight: 600, color: wc != null ? (wc >= 0 ? '#1E8449' : '#C0392B') : '#6b7280' }}>
+                              {wc != null ? fmt(wc) : '—'}
+                            </td>
+                            <td style={{ color: c.cajaTotal != null ? (c.cajaTotal >= 0 ? '#1E8449' : '#C0392B') : '#6b7280' }}>
+                              {c.cajaTotal != null ? fmt(c.cajaTotal) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}

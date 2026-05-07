@@ -566,6 +566,61 @@ export class KpiService {
 
     return { ytd, plMonthly, empresas, year };
   }
+
+  // ─────────────────────────────────────────────
+  // Scorecard — KPIs clave de todas las empresas
+  // ─────────────────────────────────────────────
+
+  async getScorecard(year: number) {
+    const companies = await this.prisma.company.findMany({ where: { active: true } });
+
+    const results = await Promise.all(
+      companies.map(async (co) => {
+        const [plSnap, cxcSnap, cxpSnap, cajaSnap] = await Promise.all([
+          this.getSnapshot(co.codEmpresa, 'pl', `${year}`),
+          this.getSnapshot(co.codEmpresa, 'cxc', 'current'),
+          this.getSnapshot(co.codEmpresa, 'cxp', 'current'),
+          this.getSnapshot(co.codEmpresa, 'caja', `${year}`),
+        ]);
+
+        const pl      = plSnap?.data    as any;
+        const cxcData = cxcSnap?.data   as any;
+        const cxpData = cxpSnap?.data   as any;
+        const cajaData= cajaSnap?.data  as any;
+
+        const ytd      = pl?.ytd ?? null;
+        const cxcSaldo = cxcData?.totalSaldo  ?? null;
+        const cxpSaldo = cxpData?.totalSaldo  ?? null;
+
+        const dso = (cxcSaldo !== null && ytd?.ingresos > 0)
+          ? Math.round((cxcSaldo / ytd.ingresos) * 365) : null;
+        const dpo = (cxpSaldo !== null && ytd?.costoDirecto && Math.abs(ytd.costoDirecto) > 0)
+          ? Math.round((cxpSaldo / Math.abs(ytd.costoDirecto)) * 365) : null;
+        const workingCapital = (cxcSaldo !== null && cxpSaldo !== null)
+          ? round(cxcSaldo - cxpSaldo) : null;
+        const cashCycle = (dso !== null && dpo !== null) ? dso - dpo : null;
+
+        const cajaTotal = cajaData?.totalPorMes
+          ? round(Object.values(cajaData.totalPorMes as Record<string, number>).reduce((s, v) => s + (v as number), 0))
+          : null;
+
+        return {
+          codEmpresa: co.codEmpresa,
+          name: co.name,
+          ytd,
+          cxcSaldo,
+          cxpSaldo,
+          dso,
+          dpo,
+          workingCapital,
+          cashCycle,
+          cajaTotal,
+        };
+      }),
+    );
+
+    return { year, companies: results };
+  }
 }
 
 function round(n: number, decimals = 2): number {

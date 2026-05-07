@@ -15,6 +15,13 @@ export class KpiController {
     return this.kpiService.getConsolidado(y);
   }
 
+  /** Scorecard: KPIs clave de todas las empresas en una sola llamada */
+  @Get('scorecard')
+  getScorecard(@Query('year') year?: string) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getScorecard(y);
+  }
+
   /** Dashboard completo: P&L mensual + YTD + prevYear */
   @Get(':companyId/dashboard')
   getDashboard(

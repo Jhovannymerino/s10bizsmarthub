@@ -629,7 +629,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#05080F' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#050a12' }}>
       {drillDown && (
         <DetalleModal
           title={drillDown.title}
@@ -650,15 +650,18 @@ export default function DashboardPage() {
       )}
 
       {/* ── Sidebar ── */}
-      <div className="sidebar" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="sidebar">
+        <div className="sidebar-inner">
 
         {/* Logo */}
-        <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
-            <div style={{ width: 34, height: 34, borderRadius: '0.625rem', background: 'linear-gradient(135deg, #207E83, #2BB4BB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 900, color: '#fff', flexShrink: 0 }}>S</div>
+        <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 0 2px rgba(255,255,255,0.08), 0 8px 20px rgba(32,126,131,0.3)' }}>S</div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: '0.88rem', color: '#F8FAFC', letterSpacing: '-0.02em', lineHeight: 1.1 }}>S10 BizSmartHub</div>
-              <div style={{ fontSize: '0.55rem', color: '#8B97A8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Dashboard Financiero</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: '0.95rem', color: '#F8FAFC', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                S10 <span style={{ color: '#2BB4BB' }}>BizSmartHub</span>
+              </div>
+              <div style={{ fontSize: '0.52rem', color: '#8B97A8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.1rem' }}>Dashboard Financiero</div>
             </div>
           </div>
           {/* Sync badge */}
@@ -671,23 +674,25 @@ export default function DashboardPage() {
         </div>
 
         {/* Empresa section */}
-        <div style={{ padding: '0.875rem 0.75rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '0.75rem 0.625rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="sidebar-section-label">Empresa</div>
           <button
             onClick={() => { setSelectedCompany(GRUPO); setActiveTab('pl'); }}
             style={{
               display: 'block', width: '100%', textAlign: 'left',
-              background: isGrupo ? 'rgba(32,126,131,0.15)' : 'none',
-              border: isGrupo ? '1px solid rgba(32,126,131,0.3)' : '1px solid transparent',
+              background: isGrupo ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'none',
+              border: 'none',
               borderRadius: '0.625rem',
-              color: isGrupo ? '#2BB4BB' : '#8B97A8',
-              padding: '0.45rem 0.75rem', marginBottom: '0.3rem',
-              cursor: 'pointer', fontSize: '0.8rem', fontWeight: isGrupo ? 700 : 400,
+              color: isGrupo ? '#fff' : '#8B97A8',
+              padding: '0.5rem 0.875rem', marginBottom: '0.2rem',
+              cursor: 'pointer', fontSize: '0.8rem', fontWeight: isGrupo ? 600 : 400,
+              boxShadow: isGrupo ? '0 0 15px rgba(79,70,229,0.3)' : 'none',
+              fontFamily: "'Inter', sans-serif",
             }}
           >
             🏢 GRUPO Consolidado
           </button>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0.3rem 0.25rem' }} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '0.25rem 0.5rem' }} />
           {COMPANIES.map((co) => {
             const active = !isGrupo && selectedCompany.codEmpresa === co.codEmpresa;
             return (
@@ -695,12 +700,14 @@ export default function DashboardPage() {
                 onClick={() => { setSelectedCompany(co); setActiveTab('pl'); }}
                 style={{
                   display: 'block', width: '100%', textAlign: 'left',
-                  background: active ? 'rgba(32,126,131,0.15)' : 'none',
-                  border: active ? '1px solid rgba(32,126,131,0.3)' : '1px solid transparent',
+                  background: active ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'none',
+                  border: 'none',
                   borderRadius: '0.625rem',
-                  color: active ? '#2BB4BB' : '#8B97A8',
-                  padding: '0.4rem 0.75rem', marginBottom: '0.15rem',
-                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: active ? 700 : 400,
+                  color: active ? '#fff' : '#8B97A8',
+                  padding: '0.4rem 0.875rem', marginBottom: '0.1rem',
+                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: active ? 600 : 400,
+                  boxShadow: active ? '0 0 12px rgba(79,70,229,0.3)' : 'none',
+                  fontFamily: "'Inter', sans-serif",
                 }}
               >
                 {co.shortName}
@@ -710,19 +717,21 @@ export default function DashboardPage() {
         </div>
 
         {/* Año section */}
-        <div style={{ padding: '0.75rem 0.75rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '0.625rem 0.625rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="sidebar-section-label">Período</div>
-          <div style={{ display: 'flex', gap: '0.35rem' }}>
+          <div style={{ display: 'flex', gap: '0.3rem' }}>
             {YEARS.map((y) => (
               <button key={y} onClick={() => setSelectedYear(y)}
                 style={{
                   flex: 1,
-                  background: selectedYear === y ? 'rgba(32,126,131,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: selectedYear === y ? '1px solid rgba(32,126,131,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                  background: selectedYear === y ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'rgba(255,255,255,0.03)',
+                  border: '1px solid ' + (selectedYear === y ? 'transparent' : 'rgba(255,255,255,0.05)'),
                   borderRadius: '0.5rem',
-                  color: selectedYear === y ? '#2BB4BB' : '#8B97A8',
+                  color: selectedYear === y ? '#fff' : '#8B97A8',
                   padding: '0.35rem 0',
-                  cursor: 'pointer', fontSize: '0.78rem', fontWeight: selectedYear === y ? 700 : 400,
+                  cursor: 'pointer', fontSize: '0.75rem', fontWeight: selectedYear === y ? 700 : 400,
+                  boxShadow: selectedYear === y ? '0 0 10px rgba(79,70,229,0.25)' : 'none',
+                  fontFamily: "'Inter', sans-serif",
                 }}
               >
                 {y}
@@ -812,27 +821,33 @@ export default function DashboardPage() {
         </nav>
 
         {/* User + logout */}
-        <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.6rem', padding: '0 0.25rem' }}>
-            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2BB4BB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB, #4F46E5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: '#fff', flexShrink: 0, boxShadow: '0 0 10px rgba(79,70,229,0.4)' }}>
               {userEmail ? userEmail[0].toUpperCase() : 'U'}
             </div>
             <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userEmail || 'Usuario'}</div>
-              <div style={{ fontSize: '0.62rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{userRole}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Inter', sans-serif" }}>{userEmail || 'Usuario'}</div>
+              <div style={{ fontSize: '0.6rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{userRole}</div>
             </div>
           </div>
           <button
             onClick={() => { localStorage.removeItem('token'); router.push('/login'); }}
-            style={{ width: '100%', padding: '0.45rem 0.75rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444', borderRadius: '0.625rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em' }}
+            style={{ width: '100%', padding: '0.45rem 0.75rem', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#EF4444', borderRadius: '0.625rem', cursor: 'pointer', fontSize: '0.73rem', fontWeight: 600, letterSpacing: '0.04em', fontFamily: "'Inter', sans-serif" }}
           >
             Cerrar sesión
           </button>
         </div>
+
+        </div>{/* end sidebar-inner */}
       </div>
 
       {/* ── Main content ── */}
-      <div className="main-content" style={{ width: 'calc(100% - 272px)' }}>
+      <div className="main-content" style={{ width: 'calc(100% - 272px)', position: 'relative' }}>
+        {/* Decorative background blurs */}
+        <div className="bg-blur-primary" />
+        <div className="bg-blur-indigo" />
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div className="page-section-label">
@@ -1939,6 +1954,7 @@ export default function DashboardPage() {
             </div>
           );
         })()}
+        </div>{/* end relative z-1 */}
       </div>
     </div>
   );

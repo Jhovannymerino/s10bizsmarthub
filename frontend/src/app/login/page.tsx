@@ -4,13 +4,6 @@ import { useRouter } from 'next/navigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 
-const COMPANIES = [
-  { name: 'CMO GROUP S.A.',                           abbr: 'CMO' },
-  { name: 'INTEGRAL CONSULTORES S.A.C.',               abbr: 'INT' },
-  { name: 'MEDARQ S.A.C.',                             abbr: 'MDQ' },
-  { name: 'COMPAÑÍA AMERICANA DE CONSTRUCCIÓN S.A.C.', abbr: 'CAC' },
-];
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail]       = useState('');
@@ -42,127 +35,114 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#05080F' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050a12' }}>
 
-      {/* ── Left hero panel ── */}
+      {/* Top dark hero */}
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        padding: '3rem',
-        background: 'linear-gradient(135deg, #050B16 0%, #0B1424 60%, #0D1F35 100%)',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(180deg, #050a12 0%, #0a1628 60%, #0e1d35 100%)',
+        padding: '3.5rem 1rem 6rem',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <div style={{ position: 'absolute', top: -80, left: -80, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(32,126,131,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(32,126,131,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        {/* Decorative blur */}
+        <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 500, height: 300, background: 'radial-gradient(circle, rgba(32,126,131,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '3.5rem' }}>
-            <div style={{ width: 44, height: 44, borderRadius: '0.75rem', background: 'linear-gradient(135deg, #207E83, #2BB4BB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 900, color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 900, color: '#fff', boxShadow: '0 0 0 3px rgba(255,255,255,0.08), 0 8px 24px rgba(32,126,131,0.4)' }}>
               S
             </div>
-            <div>
-              <div style={{ fontWeight: 900, fontSize: '1rem', color: '#F8FAFC', letterSpacing: '-0.02em', lineHeight: 1.1 }}>S10 BizSmartHub</div>
-              <div style={{ fontSize: '0.62rem', color: '#8B97A8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Dashboard Financiero</div>
-            </div>
           </div>
 
-          {/* Hero text */}
-          <div style={{ marginBottom: '2.5rem' }}>
-            <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#2BB4BB', marginBottom: '0.5rem' }}>
-              Inteligencia de Negocios
-            </div>
-            <h1 style={{ fontSize: '2.75rem', fontWeight: 900, color: '#F8FAFC', lineHeight: 0.95, textTransform: 'uppercase', letterSpacing: '-0.02em', margin: '0 0 1rem 0' }}>
-              Control<br />
-              <span style={{ color: '#2BB4BB' }}>Financiero</span><br />
-              del Grupo
-            </h1>
-            <p style={{ color: '#8B97A8', fontSize: '0.88rem', lineHeight: 1.65, maxWidth: 320, margin: 0 }}>
-              Consolidado financiero en tiempo real, aging de cartera y KPIs de gestión para todo el grupo empresarial.
-            </p>
+          <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2BB4BB', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
+            S10 Intelligence Hub
           </div>
-
-          {/* Company chips */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {COMPANIES.map((co) => (
-              <div key={co.abbr} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: 30, height: 30, borderRadius: '0.5rem', background: 'rgba(32,126,131,0.12)', border: '1px solid rgba(32,126,131,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 800, color: '#2BB4BB', flexShrink: 0, letterSpacing: '0.03em' }}>
-                  {co.abbr}
-                </div>
-                <span style={{ fontSize: '0.78rem', color: '#8B97A8' }}>{co.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ fontSize: '0.65rem', color: '#374151', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span>Powered by</span>
-          <span style={{ fontWeight: 700, color: '#4B5563' }}>Bizware Consultoría</span>
-          <span>·</span>
-          <span>© 2026</span>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '2.5rem', fontWeight: 900, color: '#F8FAFC', margin: 0, lineHeight: 1, letterSpacing: '-0.03em' }}>
+            Portal de Acceso
+          </h1>
         </div>
       </div>
 
-      {/* ── Right form panel ── */}
-      <div style={{ width: 440, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '3rem 3.5rem', background: '#05080F' }}>
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#2BB4BB', marginBottom: '0.4rem' }}>
-            Acceso Central
+      {/* Card centrada */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-3rem', padding: '0 1rem 3rem', position: 'relative', zIndex: 10 }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '1.5rem',
+          padding: '2.5rem',
+          width: '100%',
+          maxWidth: 440,
+          boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+        }}>
+          {/* Lock icon */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(32,126,131,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+              🔒
+            </div>
           </div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#F8FAFC', margin: '0 0 0.4rem 0', lineHeight: 1.1 }}>
-            Bienvenido de vuelta
+
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.6rem', fontWeight: 800, color: '#0D1525', textAlign: 'center', margin: '0 0 0.35rem 0' }}>
+            Bienvenido
           </h2>
-          <p style={{ color: '#8B97A8', fontSize: '0.85rem', margin: 0 }}>Ingresa tus credenciales para continuar</p>
+          <p style={{ textAlign: 'center', color: '#8B97A8', fontSize: '0.85rem', margin: '0 0 2rem 0', fontFamily: "'Inter', sans-serif" }}>
+            Ingresa tus credenciales para acceder
+          </p>
+
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
+                Email
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>✉</span>
+                <input
+                  type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                  placeholder="nombre@empresa.com"
+                  style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: '1.5px solid #E5E7EB', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
+                  onFocus={e => (e.target.style.borderColor = '#207E83')}
+                  onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
+                Contraseña
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>🔒</span>
+                <input
+                  type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
+                  placeholder="••••••••"
+                  style={{ width: '100%', padding: '0.75rem 2.75rem 0.75rem 2.5rem', border: '1.5px solid #E5E7EB', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
+                  onFocus={e => (e.target.style.borderColor = '#207E83')}
+                  onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                />
+                <button type="button" onClick={() => setShowPwd(!showPwd)}
+                  style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '0.85rem', padding: 0 }}>
+                  {showPwd ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading}
+              style={{ width: '100%', padding: '0.9rem', background: loading ? '#9CA3AF' : '#207E83', color: 'white', border: 'none', borderRadius: '0.875rem', fontSize: '0.85rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: "'Inter', sans-serif", transition: 'background 0.15s', boxShadow: loading ? 'none' : '0 4px 20px rgba(32,126,131,0.4)' }}>
+              {loading ? 'Autenticando...' : 'Iniciar Sesión'}
+            </button>
+          </form>
         </div>
+      </div>
 
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: 700, marginBottom: '0.5rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
-              Identidad Digital
-            </label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.85rem', color: '#8B97A8' }}>✉</span>
-              <input
-                type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                placeholder="nombre@empresa.com"
-                style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#F8FAFC', boxSizing: 'border-box', outline: 'none' }}
-                onFocus={e => (e.target.style.borderColor = 'rgba(32,126,131,0.6)')}
-                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1.75rem' }}>
-            <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: 700, marginBottom: '0.5rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
-              Clave Secreta
-            </label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.85rem', color: '#8B97A8' }}>🔒</span>
-              <input
-                type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required
-                placeholder="••••••••"
-                style={{ width: '100%', padding: '0.75rem 2.75rem 0.75rem 2.5rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#F8FAFC', boxSizing: 'border-box', outline: 'none' }}
-                onFocus={e => (e.target.style.borderColor = 'rgba(32,126,131,0.6)')}
-                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
-              />
-              <button type="button" onClick={() => setShowPwd(!showPwd)}
-                style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', fontSize: '0.85rem', padding: 0 }}>
-                {showPwd ? '🙈' : '👁'}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center' }}>
-              {error}
-            </div>
-          )}
-
-          <button type="submit" disabled={loading}
-            style={{ width: '100%', padding: '0.875rem', background: loading ? 'rgba(32,126,131,0.4)' : 'linear-gradient(135deg, #207E83 0%, #2BB4BB 100%)', color: 'white', border: 'none', borderRadius: '0.75rem', fontSize: '0.82rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em', transition: 'opacity 0.15s' }}>
-            {loading ? 'Autenticando...' : 'Entrar al sistema →'}
-          </button>
-        </form>
+      {/* Footer */}
+      <div style={{ textAlign: 'center', padding: '0 1rem 2rem', fontSize: '0.65rem', color: '#374151', fontFamily: "'Inter', sans-serif" }}>
+        © 2026 Bizware Consultoría. Todos los derechos reservados.
       </div>
     </div>
   );

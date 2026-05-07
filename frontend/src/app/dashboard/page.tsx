@@ -465,7 +465,8 @@ export default function DashboardPage() {
   const [caja, setCaja] = useState<any>(null);
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'caja' | 'gav' | 'docs'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs'>('pl');
+  const [cxp, setCxP] = useState<any>(null);
   const [drillDown, setDrillDown] = useState<{ title: string; rows: any[] } | null>(null);
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
   const [docs, setDocs] = useState<{ emitidas: any[]; recibidas: any[]; honorarios: any[] } | null>(null);
@@ -482,7 +483,7 @@ export default function DashboardPage() {
     if (!token) { router.push('/login'); return; }
 
     setLoading(true);
-    setPL(null); setCxC(null); setCaja(null); setGAV(null); setConsolidado(null);
+    setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null);
 
     if (isGrupo) {
       Promise.all([
@@ -505,13 +506,15 @@ export default function DashboardPage() {
       Promise.all([
         fetchApi(`/kpi/${id}/dashboard?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/cxc`, token),
+        fetchApi(`/kpi/${id}/cxp`, token),
         fetchApi(`/kpi/${id}/caja?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/gav?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/last-sync?year=${selectedYear}`, token),
       ])
-        .then(([plData, cxcData, cajaData, gavData, syncData]) => {
+        .then(([plData, cxcData, cxpData, cajaData, gavData, syncData]) => {
           setPL(plData?.plMonthly ? plData : null);
           setCxC(cxcData?.clientes ? cxcData : null);
+          setCxP(cxpData?.proveedores ? cxpData : null);
           setCaja(cajaData?.bancos ? cajaData : null);
           setGAV(gavData?.categorias ? gavData : null);
           setLastSync(syncData?.lastSync ?? null);
@@ -740,7 +743,7 @@ export default function DashboardPage() {
 
         {/* Nav tabs */}
         <nav style={{ padding: '0.75rem 0' }}>
-          {(['pl', 'cxc', 'caja', 'gav', 'docs'] as const).map((tab) => (
+          {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -749,6 +752,7 @@ export default function DashboardPage() {
             >
               {tab === 'pl'   && '📊 P&L'}
               {tab === 'cxc'  && '💰 CxC Aging'}
+              {tab === 'cxp'  && '🏪 CxP Aging'}
               {tab === 'caja' && '🏦 Posición Caja'}
               {tab === 'gav'  && '📋 GAV Detalle'}
               {tab === 'docs' && '🧾 Documentos'}
@@ -773,6 +777,7 @@ export default function DashboardPage() {
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0D3B5E', margin: 0 }}>
               {activeTab === 'pl'   && (isGrupo ? 'Consolidado del Grupo' : 'Estado de Resultados')}
               {activeTab === 'cxc'  && 'Cuentas por Cobrar — Aging'}
+              {activeTab === 'cxp'  && 'Cuentas por Pagar — Aging'}
               {activeTab === 'caja' && 'Posición de Caja'}
               {activeTab === 'gav'  && 'Gastos de Admin. y Ventas'}
               {activeTab === 'docs' && 'Documentos del Período'}
@@ -1077,6 +1082,93 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+
+        {/* ═══ CxP Tab ═══ */}
+        {activeTab === 'cxp' && isGrupo && (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+            Selecciona una empresa para ver sus cuentas por pagar.
+          </div>
+        )}
+        {activeTab === 'cxp' && !isGrupo && !cxp && !loading && <NoDataBanner kpi="CxP" />}
+        {activeTab === 'cxp' && !isGrupo && cxp && (() => {
+          const dpo = (cxp.totalSaldo && ytd?.costoDirecto && Math.abs(ytd.costoDirecto) > 0)
+            ? Math.round((cxp.totalSaldo / Math.abs(ytd.costoDirecto)) * 365)
+            : null;
+          return (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <KpiCard label="Deuda Total Proveedores" value={fmt(cxp.totalSaldo)} signal="neutral" />
+                <KpiCard
+                  label="+90 días vencido"
+                  value={fmt(cxp.total90mas)}
+                  sub={pct(cxp.pct90mas)}
+                  signal={cxp.pct90mas <= 20 ? 'green' : cxp.pct90mas <= 40 ? 'yellow' : 'red'}
+                />
+                <KpiCard label="N° Proveedores" value={String(cxp.numProveedores ?? 0)} signal="neutral" />
+                {dpo !== null && (
+                  <KpiCard
+                    label="DPO (Días de Pago)"
+                    value={fmtDays(dpo)}
+                    sub="Deuda / (Costo Dir. / 365)"
+                    signal={dpo <= 60 ? 'green' : dpo <= 90 ? 'yellow' : 'red'}
+                  />
+                )}
+                <KpiCard
+                  label="Concentración Top 3"
+                  value={pct(cxp.concentracionTop3 ?? 0)}
+                  sub="% deuda en 3 principales proveedores"
+                  signal={semaforo('concentracion', cxp.concentracionTop3)}
+                />
+              </div>
+              <div className="kpi-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Aging por Proveedor</div>
+                  <ExportBtn onClick={() => {
+                    const headers = ['Proveedor', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Deuda'];
+                    const rows = [...cxp.proveedores].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((p: any) => [
+                      p.proveedor, p.dias0_30, p.dias31_60, p.dias61_90, p.dias90mas, p.saldoTotal,
+                      cxp.totalSaldo > 0 ? `${((p.saldoTotal / cxp.totalSaldo) * 100).toFixed(1)}%` : '',
+                    ]);
+                    exportCSV(`CxP_${selectedCompany.shortName}.csv`, headers, rows);
+                  }} />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10">
+                    <thead>
+                      <tr>
+                        <th>Proveedor</th><th>0-30 días</th><th>31-60 días</th><th>61-90 días</th><th>+90 días</th><th>Total</th><th>% Deuda</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...cxp.proveedores].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((p: any) => (
+                        <tr key={p.codProveedor}>
+                          <td>{p.proveedor}</td>
+                          <td>{fmt(p.dias0_30)}</td>
+                          <td>{fmt(p.dias31_60)}</td>
+                          <td>{fmt(p.dias61_90)}</td>
+                          <td className={p.dias90mas > 0 ? 'negative' : ''}>{fmt(p.dias90mas)}</td>
+                          <td style={{ fontWeight: 600 }}>{fmt(p.saldoTotal)}</td>
+                          <td style={{ color: '#6b7280' }}>{cxp.totalSaldo > 0 ? pct((p.saldoTotal / cxp.totalSaldo) * 100) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="total-row">
+                        <td>TOTAL</td>
+                        <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias0_30, 0))}</td>
+                        <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias31_60, 0))}</td>
+                        <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias61_90, 0))}</td>
+                        <td className="negative">{fmt(cxp.total90mas)}</td>
+                        <td>{fmt(cxp.totalSaldo)}</td>
+                        <td>100%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {/* ═══ Caja Tab ═══ */}
         {activeTab === 'caja' && !caja && !loading && <NoDataBanner kpi="Caja" />}

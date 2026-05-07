@@ -31,6 +31,12 @@ export class KpiController {
     return this.kpiService.getCxC(companyId);
   }
 
+  /** CxP Aging por proveedor */
+  @Get(':companyId/cxp')
+  getCxP(@Param('companyId') companyId: string) {
+    return this.kpiService.getCxP(companyId);
+  }
+
   /** Posición de Caja por banco */
   @Get(':companyId/caja')
   getCaja(

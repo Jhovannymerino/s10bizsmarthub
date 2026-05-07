@@ -8,9 +8,15 @@ import { JwtStrategy } from './jwt.strategy';
 @Module({
   imports: [
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev-secret',
-      signOptions: { expiresIn: process.env.JWT_EXPIRATION || '8h' },
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET env var is required');
+        return {
+          secret,
+          signOptions: { expiresIn: process.env.JWT_EXPIRATION || '8h' },
+        };
+      },
     }),
   ],
   providers: [AuthService, JwtStrategy],

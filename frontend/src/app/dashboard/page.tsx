@@ -465,7 +465,16 @@ export default function DashboardPage() {
   const [caja, setCaja] = useState<any>(null);
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin'>('pl');
+  const [userRole, setUserRole] = useState<string>('viewer');
+  const [userEmail, setUserEmail] = useState<string>('');
+  // ── Admin: gestión de usuarios ──
+  const [adminUsers, setAdminUsers] = useState<any[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminModal, setAdminModal] = useState<{ mode: 'create' | 'edit'; user?: any } | null>(null);
+  const [adminForm, setAdminForm] = useState({ email: '', password: '', role: 'viewer', allowedCompanies: [] as string[], active: true });
+  const [adminError, setAdminError] = useState('');
+  const [adminSuccess, setAdminSuccess] = useState('');
   const [cxp, setCxP] = useState<any>(null);
   const [drillDown, setDrillDown] = useState<{ title: string; rows: any[] } | null>(null);
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
@@ -477,6 +486,17 @@ export default function DashboardPage() {
   const [lastSync, setLastSync] = useState<string | null>(null);
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
+
+  useEffect(() => {
+    const info = localStorage.getItem('userInfo');
+    if (info) {
+      try {
+        const parsed = JSON.parse(info);
+        setUserRole(parsed.role ?? 'viewer');
+        setUserEmail(parsed.email ?? '');
+      } catch { /* ignore */ }
+    }
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -758,6 +778,23 @@ export default function DashboardPage() {
               {tab === 'docs' && '🧾 Documentos'}
             </button>
           ))}
+          {userRole === 'admin' && (
+            <button
+              onClick={() => {
+                setActiveTab('admin');
+                const token = localStorage.getItem('token');
+                if (!token || adminUsers.length > 0) return;
+                setAdminLoading(true);
+                fetch(`${API}/users`, { headers: { Authorization: `Bearer ${token}` } })
+                  .then(r => r.json()).then(data => { setAdminUsers(Array.isArray(data) ? data : []); setAdminLoading(false); })
+                  .catch(() => setAdminLoading(false));
+              }}
+              className={`sidebar-link ${activeTab === 'admin' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.5rem', paddingTop: '0.5rem' }}
+            >
+              ⚙ Administración
+            </button>
+          )}
         </nav>
 
         <div style={{ position: 'absolute', bottom: '1rem', padding: '0 1.25rem' }}>
@@ -775,12 +812,13 @@ export default function DashboardPage() {
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0D3B5E', margin: 0 }}>
-              {activeTab === 'pl'   && (isGrupo ? 'Consolidado del Grupo' : 'Estado de Resultados')}
-              {activeTab === 'cxc'  && 'Cuentas por Cobrar — Aging'}
-              {activeTab === 'cxp'  && 'Cuentas por Pagar — Aging'}
-              {activeTab === 'caja' && 'Posición de Caja'}
-              {activeTab === 'gav'  && 'Gastos de Admin. y Ventas'}
-              {activeTab === 'docs' && 'Documentos del Período'}
+              {activeTab === 'pl'    && (isGrupo ? 'Consolidado del Grupo' : 'Estado de Resultados')}
+              {activeTab === 'cxc'   && 'Cuentas por Cobrar — Aging'}
+              {activeTab === 'cxp'   && 'Cuentas por Pagar — Aging'}
+              {activeTab === 'caja'  && 'Posición de Caja'}
+              {activeTab === 'gav'   && 'Gastos de Admin. y Ventas'}
+              {activeTab === 'docs'  && 'Documentos del Período'}
+              {activeTab === 'admin' && 'Administración de Usuarios'}
             </h1>
             <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
               {selectedCompany.fullName} · YTD {selectedYear} · Fuente: S10 ERP
@@ -1579,6 +1617,207 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* ═══ Admin Tab ═══ */}
+        {activeTab === 'admin' && userRole === 'admin' && (() => {
+          const reloadUsers = () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            setAdminLoading(true);
+            setAdminUsers([]);
+            fetch(`${API}/users`, { headers: { Authorization: `Bearer ${token}` } })
+              .then(r => r.json()).then(d => { setAdminUsers(Array.isArray(d) ? d : []); setAdminLoading(false); })
+              .catch(() => setAdminLoading(false));
+          };
+
+          const openCreate = () => {
+            setAdminForm({ email: '', password: '', role: 'viewer', allowedCompanies: [], active: true });
+            setAdminError(''); setAdminSuccess('');
+            setAdminModal({ mode: 'create' });
+          };
+
+          const openEdit = (u: any) => {
+            setAdminForm({ email: u.email, password: '', role: u.role, allowedCompanies: u.allowedCompanies ?? [], active: u.active });
+            setAdminError(''); setAdminSuccess('');
+            setAdminModal({ mode: 'edit', user: u });
+          };
+
+          const saveUser = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            setAdminError(''); setAdminSuccess('');
+            try {
+              const isEdit = adminModal?.mode === 'edit';
+              const url = isEdit ? `${API}/users/${adminModal!.user.id}` : `${API}/users`;
+              const body: any = { role: adminForm.role, allowedCompanies: adminForm.allowedCompanies, active: adminForm.active };
+              if (!isEdit) { body.email = adminForm.email; body.password = adminForm.password; }
+              else if (adminForm.password) { body.password = adminForm.password; }
+              const res = await fetch(url, { method: isEdit ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+              if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Error'); }
+              setAdminSuccess(isEdit ? 'Usuario actualizado.' : 'Usuario creado.');
+              setAdminModal(null);
+              reloadUsers();
+            } catch (e: any) { setAdminError(e.message); }
+          };
+
+          const toggleActive = async (u: any) => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            await fetch(`${API}/users/${u.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ active: !u.active }) });
+            reloadUsers();
+          };
+
+          const COMPANY_OPTIONS = COMPANIES.map(c => ({ value: c.codEmpresa, label: c.shortName }));
+
+          return (
+            <div>
+              {adminModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+                  onClick={() => setAdminModal(null)}>
+                  <div style={{ background: '#fff', borderRadius: '0.75rem', padding: '2rem', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#0D3B5E', marginBottom: '1.25rem' }}>
+                      {adminModal.mode === 'create' ? 'Nuevo usuario' : `Editar: ${adminModal.user?.email}`}
+                    </div>
+
+                    {adminModal.mode === 'create' && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#374151' }}>Email</label>
+                        <input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))}
+                          style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+                      </div>
+                    )}
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#374151' }}>
+                        {adminModal.mode === 'edit' ? 'Nueva contraseña (dejar en blanco para no cambiar)' : 'Contraseña'}
+                      </label>
+                      <input type="password" value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#374151' }}>Rol</label>
+                      <select value={adminForm.role} onChange={e => setAdminForm(f => ({ ...f, role: e.target.value }))}
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.9rem' }}>
+                        <option value="viewer">Viewer — solo lectura</option>
+                        <option value="admin">Admin — acceso total</option>
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.5rem', color: '#374151' }}>
+                        Empresas permitidas <span style={{ fontWeight: 400, color: '#6b7280' }}>(vacío = todas)</span>
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {COMPANY_OPTIONS.map(co => {
+                          const checked = adminForm.allowedCompanies.includes(co.value);
+                          return (
+                            <label key={co.value} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', border: `1px solid ${checked ? '#0D3B5E' : '#d1d5db'}`, borderRadius: '0.375rem', background: checked ? '#EEF2FF' : '#fff', cursor: 'pointer', fontSize: '0.82rem' }}>
+                              <input type="checkbox" checked={checked}
+                                onChange={() => setAdminForm(f => ({
+                                  ...f,
+                                  allowedCompanies: checked
+                                    ? f.allowedCompanies.filter(x => x !== co.value)
+                                    : [...f.allowedCompanies, co.value],
+                                }))} />
+                              {co.label}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {adminModal.mode === 'edit' && (
+                      <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input type="checkbox" id="active-chk" checked={adminForm.active} onChange={e => setAdminForm(f => ({ ...f, active: e.target.checked }))} />
+                        <label htmlFor="active-chk" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151' }}>Usuario activo</label>
+                      </div>
+                    )}
+
+                    {adminError && <div style={{ color: '#C0392B', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{adminError}</div>}
+
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                      <button onClick={() => setAdminModal(null)}
+                        style={{ padding: '0.5rem 1.25rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        Cancelar
+                      </button>
+                      <button onClick={saveUser}
+                        style={{ padding: '0.5rem 1.25rem', border: 'none', borderRadius: '0.375rem', background: '#0D3B5E', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                        {adminModal.mode === 'create' ? 'Crear usuario' : 'Guardar cambios'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="kpi-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Usuarios del sistema</div>
+                    {adminSuccess && <div style={{ fontSize: '0.78rem', color: '#1E8449', marginTop: '0.2rem' }}>{adminSuccess}</div>}
+                  </div>
+                  <button onClick={openCreate}
+                    style={{ padding: '0.4rem 1rem', border: 'none', borderRadius: '0.375rem', background: '#0D3B5E', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
+                    + Nuevo usuario
+                  </button>
+                </div>
+
+                {adminLoading ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Cargando...</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="table-s10">
+                      <thead>
+                        <tr>
+                          <th>Email</th><th>Rol</th><th>Empresas</th><th>Último acceso</th><th>Estado</th><th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminUsers.map((u: any) => (
+                          <tr key={u.id} style={{ opacity: u.active ? 1 : 0.5 }}>
+                            <td style={{ fontWeight: 500 }}>{u.email}</td>
+                            <td>
+                              <span style={{ padding: '0.15rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 700,
+                                background: u.role === 'admin' ? '#0D3B5E' : '#e5e7eb', color: u.role === 'admin' ? '#fff' : '#374151' }}>
+                                {u.role}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                              {u.allowedCompanies?.length
+                                ? u.allowedCompanies.map((id: string) => COMPANIES.find(c => c.codEmpresa === id)?.shortName || id).join(', ')
+                                : 'Todas'}
+                            </td>
+                            <td style={{ fontSize: '0.78rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                              {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'}
+                            </td>
+                            <td>
+                              <span style={{ padding: '0.15rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 700,
+                                background: u.active ? '#dcfce7' : '#fee2e2', color: u.active ? '#166534' : '#991b1b' }}>
+                                {u.active ? 'Activo' : 'Inactivo'}
+                              </span>
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                              <button onClick={() => openEdit(u)}
+                                style={{ marginRight: '0.5rem', padding: '0.2rem 0.6rem', border: '1px solid #d1d5db', borderRadius: '0.25rem', background: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
+                                Editar
+                              </button>
+                              {u.email !== userEmail && (
+                                <button onClick={() => toggleActive(u)}
+                                  style={{ padding: '0.2rem 0.6rem', border: `1px solid ${u.active ? '#fca5a5' : '#bbf7d0'}`, borderRadius: '0.25rem', background: u.active ? '#fef2f2' : '#f0fdf4', color: u.active ? '#991b1b' : '#166534', fontSize: '0.75rem', cursor: 'pointer' }}>
+                                  {u.active ? 'Desactivar' : 'Activar'}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

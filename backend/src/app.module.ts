@@ -7,6 +7,7 @@ import { KpiModule } from './modules/kpi/kpi.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompanyModule } from './modules/company/company.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CompanyModule } from './modules/company/company.module';
     SyncModule,
     AuthModule,
     CompanyModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

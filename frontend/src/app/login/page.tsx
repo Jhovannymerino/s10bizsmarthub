@@ -24,6 +24,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error('Credenciales inválidas');
       const data = await res.json();
       localStorage.setItem('token', data.access_token);
+      localStorage.setItem('userInfo', JSON.stringify(data.user));
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);

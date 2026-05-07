@@ -1,10 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { KpiService } from '../kpi/kpi.service';
 import { S10Service } from '../s10/s10.service';
-import { spawn } from 'child_process';
-import { existsSync } from 'fs';
 
 @Injectable()
 export class SyncService {
@@ -136,55 +134,64 @@ export class SyncService {
   }
 
   // ─────────────────────────────────────────────
-  // VPN script trigger — lanza sync-vpn.sh en background
+  // VPN script trigger — llama al servicio trigger en el host VPS
+  // El servicio corre en host:3299 y ejecuta sync-vpn.sh fuera de Docker
   // ─────────────────────────────────────────────
 
-  private syncRunning = false;
+  private readonly TRIGGER_URL = 'http://172.17.0.1:3299';
+  private readonly SYNC_KEY = process.env.SYNC_API_KEY ?? '';
 
   async triggerVpnSync(years: number[] = [new Date().getFullYear()]) {
-    if (this.syncRunning) {
-      return { message: 'Sync en curso, espera que termine.', status: 'busy' };
+    // Primero verificar si el servicio trigger está disponible
+    let serviceAvailable = false;
+    try {
+      const status = await fetch(`${this.TRIGGER_URL}/status`, {
+        headers: { 'x-sync-key': this.SYNC_KEY },
+        signal: AbortSignal.timeout(3000),
+      });
+      if (status.ok) {
+        const body: any = await status.json();
+        serviceAvailable = true;
+        if (body.running) {
+          return { message: 'Sync ya en curso, espera que termine.', status: 'busy' };
+        }
+      }
+    } catch {
+      serviceAvailable = false;
     }
 
-    // Buscar el script en rutas posibles (host mount o directorio del proyecto)
-    const SCRIPT_CANDIDATES = [
-      '/opt/apps/s10bizsmarthub/sync-vpn.sh',
-      '/opt/apps/s10bizsmarthub/s10-agent/vpn-sync/run.sh',
-      '/app/sync-vpn.sh',
-    ];
-    const SCRIPT = SCRIPT_CANDIDATES.find(p => existsSync(p));
-
-    if (!SCRIPT) {
-      this.logger.warn('sync-vpn.sh no encontrado — sync debe ejecutarse con node sync-agent.js localmente');
+    if (!serviceAvailable) {
+      this.logger.warn('sync-trigger service no disponible en host:3299');
       return {
-        message: 'El agente de sincronización no está configurado en el servidor. Ejecuta node sync-agent.js desde la red CMO para sincronizar datos.',
+        message: 'Servicio de sincronización no disponible. El sync automático corre a las 7am y 6pm (lunes-viernes).',
         status: 'unavailable',
       };
     }
 
-    this.syncRunning = true;
-    this.logger.log(`VPN sync triggered for years: ${years.join(', ')}`);
+    this.logger.log(`VPN sync trigger → host:3299 years: ${years.join(', ')}`);
 
-    // Lanza los años secuencialmente en background
-    (async () => {
-      for (const year of years) {
-        await new Promise<void>((resolve) => {
-          const child = spawn(SCRIPT, [String(year)], {
-            detached: false,
-            stdio: ['ignore', 'pipe', 'pipe'],
-          });
-          child.stdout.on('data', (d) => this.logger.log(`[sync ${year}] ${d.toString().trim()}`));
-          child.stderr.on('data', (d) => this.logger.log(`[sync ${year}] ${d.toString().trim()}`));
-          child.on('close', (code) => {
-            this.logger.log(`[sync ${year}] finished with code ${code}`);
-            resolve();
-          });
-        });
-      }
-      this.syncRunning = false;
-    })();
+    const res = await fetch(`${this.TRIGGER_URL}/trigger?years=${years.join(',')}`, {
+      method: 'POST',
+      headers: { 'x-sync-key': this.SYNC_KEY },
+      signal: AbortSignal.timeout(5000),
+    });
 
-    return { message: `Sync iniciado para año(s) ${years.join(', ')}`, status: 'started' };
+    const body: any = await res.json();
+    this.logger.log(`Sync trigger response: ${JSON.stringify(body)}`);
+    return body;
+  }
+
+  async getVpnSyncStatus() {
+    try {
+      const res = await fetch(`${this.TRIGGER_URL}/status`, {
+        headers: { 'x-sync-key': this.SYNC_KEY },
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) return await res.json();
+    } catch {
+      // ignore
+    }
+    return { running: false, available: false };
   }
 
   // ─────────────────────────────────────────────

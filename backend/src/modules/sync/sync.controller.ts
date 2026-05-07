@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Headers,
@@ -41,5 +42,15 @@ export class SyncController {
       ? years.split(',').map(Number).filter(Boolean)
       : [new Date().getFullYear()];
     return this.syncService.triggerVpnSync(yearList);
+  }
+
+  /**
+   * GET /sync/status
+   * Estado actual del sync (running o no) — requiere JWT
+   */
+  @Get('status')
+  @UseGuards(JwtAuthGuard)
+  async status() {
+    return this.syncService.getVpnSyncStatus();
   }
 }

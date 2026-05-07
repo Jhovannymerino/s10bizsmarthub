@@ -978,7 +978,7 @@ export default function DashboardPage() {
               const token = localStorage.getItem('token');
               if (!token) return;
               setSyncStatus('running');
-              setSyncMsg('');
+              setSyncMsg('Iniciando sincronización...');
               try {
                 const res = await fetch(`${API}/sync/trigger?years=${CURRENT_YEAR},${CURRENT_YEAR - 1}`, {
                   method: 'POST', headers: { Authorization: `Bearer ${token}` },
@@ -986,16 +986,30 @@ export default function DashboardPage() {
                 const data = await res.json();
                 if (data.status === 'unavailable') {
                   setSyncStatus('unavailable');
-                  setSyncMsg(data.message || '');
-                  setTimeout(() => setSyncStatus('idle'), 12000);
-                } else if (data.status === 'busy') {
-                  setSyncStatus('running');
+                  setSyncMsg(data.message || 'Servicio no disponible');
+                  setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 10000);
+                  return;
+                }
+                if (data.status === 'busy') {
                   setSyncMsg('Ya hay un sync en progreso...');
                 } else {
-                  setSyncStatus('running');
-                  setSyncMsg('Sync iniciado en el servidor. Puede tomar varios minutos.');
-                  setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 120000);
+                  setSyncMsg('Conectando a S10 vía VPN...');
                 }
+                // Poll status hasta que termine
+                const poll = setInterval(async () => {
+                  try {
+                    const st = await fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } });
+                    const s = await st.json();
+                    if (!s.running) {
+                      clearInterval(poll);
+                      setSyncStatus('done');
+                      setSyncMsg('');
+                      setTimeout(() => setSyncStatus('idle'), 8000);
+                    }
+                  } catch { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); }
+                }, 8000);
+                // Safety timeout 10 min
+                setTimeout(() => { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); }, 600000);
               } catch {
                 setSyncStatus('error');
                 setSyncMsg('No se pudo conectar al servidor.');
@@ -1022,17 +1036,12 @@ export default function DashboardPage() {
             {syncStatus === 'running'     ? '⏳ Sincronizando...'
            : syncStatus === 'done'        ? '✓ Datos actualizados'
            : syncStatus === 'error'       ? '✗ Error — reintentar'
-           : syncStatus === 'unavailable' ? '⚠ Ver instrucciones'
+           : syncStatus === 'unavailable' ? '⚠ No disponible'
            : '↻ Sincronizar datos'}
           </button>
           {syncMsg && (
             <div style={{ fontSize: '0.65rem', color: syncStatus === 'unavailable' ? '#F59E0B' : '#8B97A8', marginTop: '0.4rem', lineHeight: 1.4, padding: '0 0.1rem' }}>
               {syncMsg}
-            </div>
-          )}
-          {!syncMsg && (
-            <div style={{ fontSize: '0.6rem', color: '#4B5563', marginTop: '0.35rem', textAlign: 'center', letterSpacing: '0.04em' }}>
-              Ejecutar: <code style={{ fontSize: '0.58rem', color: '#6B7280' }}>node sync-agent.js</code>
             </div>
           )}
         </div>

@@ -425,6 +425,16 @@ export class KpiService {
     return { facturas, total: facturas.length, year };
   }
 
+  async getLastSync(companyId: string, year: number) {
+    const snaps = await this.prisma.kpiSnapshot.findMany({
+      where: { companyId, year },
+      select: { kpiType: true, syncedAt: true },
+      orderBy: { syncedAt: 'desc' },
+    });
+    const lastSync = snaps[0]?.syncedAt ?? null;
+    return { lastSync, types: snaps.map((s) => ({ kpiType: s.kpiType, syncedAt: s.syncedAt })) };
+  }
+
   // ─────────────────────────────────────────────
   // Consolidado Grupo — suma todas las empresas activas
   // ─────────────────────────────────────────────

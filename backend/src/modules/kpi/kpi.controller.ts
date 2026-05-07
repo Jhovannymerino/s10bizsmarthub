@@ -101,4 +101,14 @@ export class KpiController {
     const y = year ? parseInt(year, 10) : new Date().getFullYear();
     return this.kpiService.getGAV(companyId, y);
   }
+
+  /** Fecha y hora del último sync exitoso para la empresa/año */
+  @Get(':companyId/last-sync')
+  getLastSync(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getLastSync(companyId, y);
+  }
 }

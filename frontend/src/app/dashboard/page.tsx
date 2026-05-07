@@ -43,6 +43,30 @@ function yoyPct(curr: number, prev: number): number {
   return ((curr - prev) / Math.abs(prev)) * 100;
 }
 
+// ─── CSV Export ───────────────────────────────
+function exportCSV(filename: string, headers: string[], rows: (string | number | null | undefined)[][]) {
+  const BOM = '﻿';
+  const esc = (v: string | number | null | undefined) => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const lines = [headers.map(esc).join(';'), ...rows.map(r => r.map(esc).join(';'))];
+  const blob = new Blob([BOM + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function ExportBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} title="Exportar a CSV (Excel)"
+      style={{ padding: '0.3rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', background: '#f9fafb', color: '#374151', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+      ⬇ CSV
+    </button>
+  );
+}
+
 // ─── Semáforo ─────────────────────────────────
 type Signal = 'green' | 'yellow' | 'red' | 'neutral';
 function semaforo(key: string, value: number | null): Signal {
@@ -449,6 +473,7 @@ export default function DashboardPage() {
   const [docsSearch, setDocsSearch] = useState('');
   const [docsOnlySinAsiento, setDocsOnlySinAsiento] = useState(false);
   const [docsOnlyDuplicados, setDocsOnlyDuplicados] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(null);
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
 
@@ -476,17 +501,20 @@ export default function DashboardPage() {
         });
     } else {
       const id = selectedCompany.codEmpresa;
+      setLastSync(null);
       Promise.all([
         fetchApi(`/kpi/${id}/dashboard?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/cxc`, token),
         fetchApi(`/kpi/${id}/caja?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/gav?year=${selectedYear}`, token),
+        fetchApi(`/kpi/${id}/last-sync?year=${selectedYear}`, token),
       ])
-        .then(([plData, cxcData, cajaData, gavData]) => {
+        .then(([plData, cxcData, cajaData, gavData, syncData]) => {
           setPL(plData?.plMonthly ? plData : null);
           setCxC(cxcData?.clientes ? cxcData : null);
           setCaja(cajaData?.bancos ? cajaData : null);
           setGAV(gavData?.categorias ? gavData : null);
+          setLastSync(syncData?.lastSync ?? null);
           setLoading(false);
         })
         .catch((err) => {
@@ -752,6 +780,11 @@ export default function DashboardPage() {
             <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
               {selectedCompany.fullName} · YTD {selectedYear} · Fuente: S10 ERP
               {prevYear && <span style={{ marginLeft: '0.5rem', color: '#9ca3af' }}>· vs {prevYear.year}</span>}
+              {lastSync && (
+                <span style={{ marginLeft: '0.5rem', color: '#9ca3af' }}>
+                  · Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
             </div>
           </div>
           {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Cargando...</div>}
@@ -871,8 +904,22 @@ export default function DashboardPage() {
             <div className="kpi-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Detalle Mensual</div>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                  {!isGrupo && 'Click en Ingresos, Costo, GAV o Gastos para ver el desglose'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                    {!isGrupo && 'Click en Ingresos, Costo, GAV o Gastos para ver el desglose'}
+                  </div>
+                  <ExportBtn onClick={() => {
+                    const mesesActivos = plMonthly.filter((m: any) => m.ingresos > 0 || m.gav > 0);
+                    const headers = ['Concepto', ...mesesActivos.map((m: any) => m.mesLabel), `YTD ${selectedYear}`, ...(prevYear ? [`Ant. ${prevYear.year}`, '∆ YoY%'] : [])];
+                    const rows = PL_ROWS.map((row) => {
+                      const resolveVal = (obj: any) => obj?.[row.key] !== undefined ? obj[row.key] : (row.key === 'utilidadNetaPct' ? obj?.['margenNetoPct'] : undefined);
+                      const currVal = resolveVal(ytd);
+                      const prevVal = resolveVal(prevYear?.ytd);
+                      const delta = prevVal !== undefined && prevVal !== 0 ? ((currVal - prevVal) / Math.abs(prevVal) * 100) : null;
+                      return [row.label, ...mesesActivos.map((m: any) => m[row.key] ?? ''), currVal ?? '', ...(prevYear ? [prevVal ?? '', delta !== null ? `${delta.toFixed(1)}%` : ''] : [])];
+                    });
+                    exportCSV(`PL_${selectedCompany.shortName}_${selectedYear}.csv`, headers, rows);
+                  }} />
                 </div>
               </div>
               <div style={{ overflowX: 'auto' }}>
@@ -980,7 +1027,17 @@ export default function DashboardPage() {
               />
             </div>
             <div className="kpi-card">
-              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '0.5rem' }}>Aging por Cliente</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Aging por Cliente</div>
+                <ExportBtn onClick={() => {
+                  const headers = ['Cliente', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Cartera'];
+                  const rows = [...cxc.clientes].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((c: any) => [
+                    c.cliente, c.dias0_30, c.dias31_60, c.dias61_90, c.dias90mas, c.saldoTotal,
+                    cxc.totalSaldo > 0 ? `${((c.saldoTotal / cxc.totalSaldo) * 100).toFixed(1)}%` : '',
+                  ]);
+                  exportCSV(`CxC_${selectedCompany.shortName}.csv`, headers, rows);
+                }} />
+              </div>
               <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>Click en un cliente para ver los asientos individuales</div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-s10">
@@ -1052,7 +1109,17 @@ export default function DashboardPage() {
 
             {/* Tabla flujo por banco */}
             <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Flujo Neto por Banco</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Flujo Neto por Banco</div>
+                <ExportBtn onClick={() => {
+                  const headers = ['Banco', ...MESES, 'Total Año'];
+                  const rows = (caja.bancos || []).map((b: any) => {
+                    const total = Object.values(b.meses).reduce((s: number, v: any) => s + v, 0) as number;
+                    return [b.banco, ...Array.from({ length: 12 }, (_, i) => b.meses[i + 1] || 0), total];
+                  });
+                  exportCSV(`Caja_${selectedCompany.shortName}_${selectedYear}.csv`, headers, rows);
+                }} />
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-s10">
                   <thead>
@@ -1173,13 +1240,28 @@ export default function DashboardPage() {
                       {filtrada.length} documentos · Neto {fmt(totalNeto)} · Total c/IGV {fmt(totalMonto)} · Pendiente {fmt(totalSaldo)}
                     </div>
                   </div>
-                  <input
-                    type="text"
-                    placeholder={docsTab === 'emitidas' ? 'Buscar cliente o número...' : 'Buscar proveedor o número...'}
-                    value={docsSearch}
-                    onChange={e => setDocsSearch(e.target.value)}
-                    style={{ padding: '0.4rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 240 }}
-                  />
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      placeholder={docsTab === 'emitidas' ? 'Buscar cliente o número...' : 'Buscar proveedor o número...'}
+                      value={docsSearch}
+                      onChange={e => setDocsSearch(e.target.value)}
+                      style={{ padding: '0.4rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 200 }}
+                    />
+                    <ExportBtn onClick={() => {
+                      const tab = docsTab;
+                      const fname = `Docs_${tab}_${selectedCompany.shortName}_${selectedYear}.csv`;
+                      if (tab === 'emitidas') {
+                        const headers = ['Serie-Número', 'Fecha', 'Tipo', 'Cliente', 'Neto', 'IGV', 'Total', 'Pagado', 'Saldo', 'SinAsiento', 'Duplicado'];
+                        const rows = filtrada.map((d: any) => [`${d.Serie || ''}-${d.Numero}`, d.FechaDocumento, d.TipoDocumento, d.Cliente, d.TotalNeto, d.TotalImpuesto, d.Total, d.TotalPagado, d.Saldo, d.SinAsiento === 1 ? 'Sí' : 'No', d.EsDuplicado === 1 ? 'Sí' : 'No']);
+                        exportCSV(fname, headers, rows);
+                      } else {
+                        const headers = ['Serie-Número', 'Fecha Doc.', 'Vencimiento', tab === 'recibidas' ? 'Tipo' : '', 'Proveedor', 'Neto', tab === 'recibidas' ? 'IGV' : 'Retención', 'Total', 'Pagado', 'Saldo', 'SinAsiento', 'Duplicado'].filter(Boolean);
+                        const rows = filtrada.map((d: any) => [`${d.Serie || ''}-${d.Numero}`, d.FechaDocumento, d.FechaVencimiento, ...(tab === 'recibidas' ? [d.TipoDocumento] : []), d.Proveedor, d.TotalNeto, d.TotalImpuesto, d.Total, d.TotalPagado, d.TotalSaldo, d.SinAsiento === 1 ? 'Sí' : 'No', d.EsDuplicado === 1 ? 'Sí' : 'No']);
+                        exportCSV(fname, headers, rows);
+                      }
+                    }} />
+                  </div>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   {docsTab === 'honorarios' ? (
@@ -1345,7 +1427,18 @@ export default function DashboardPage() {
         {activeTab === 'gav' && gav && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="kpi-card">
-              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>GAV por Categoría</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>GAV por Categoría</div>
+                <ExportBtn onClick={() => {
+                  const headers = ['Categoría', 'YTD', '% GAV', '% Ingresos'];
+                  const rows = (gav.categorias || []).map((c: any) => [
+                    c.descripcion, c.ytd,
+                    `${c.pct?.toFixed(1)}%`,
+                    ytd?.ingresos > 0 ? `${((c.ytd / ytd.ingresos) * 100).toFixed(1)}%` : '',
+                  ]);
+                  exportCSV(`GAV_${selectedCompany.shortName}_${selectedYear}.csv`, headers, rows);
+                }} />
+              </div>
               <table className="table-s10">
                 <thead>
                   <tr><th>Categoría</th><th>YTD</th><th>% GAV</th><th>% Ingresos</th></tr>

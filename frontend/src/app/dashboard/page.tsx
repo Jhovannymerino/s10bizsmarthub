@@ -19,8 +19,8 @@ const GRUPO = { codEmpresa: 'GRUPO', shortName: 'GRUPO', fullName: 'Consolidado 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
-const COLORS_PIE = ['#0D3B5E', '#E25C1A', '#1E8449', '#2874A6', '#8E44AD', '#D35400', '#148F77', '#C0392B'];
-const COLORS_EMPRESA = ['#0D3B5E', '#E25C1A', '#1E8449', '#2874A6'];
+const COLORS_PIE = ['#207E83', '#F59E0B', '#10B981', '#2BB4BB', '#8E44AD', '#F97316', '#148F77', '#EF4444'];
+const COLORS_EMPRESA = ['#207E83', '#F59E0B', '#10B981', '#2BB4BB'];
 
 // ─── Formatters ───────────────────────────────
 function fmt(n: number | undefined | null): string {
@@ -61,7 +61,7 @@ function exportCSV(filename: string, headers: string[], rows: (string | number |
 function ExportBtn({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} title="Exportar a CSV (Excel)"
-      style={{ padding: '0.3rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', background: '#f9fafb', color: '#374151', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+      style={{ padding: '0.3rem 0.75rem', borderRadius: '0.375rem', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#8B97A8', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
       ⬇ CSV
     </button>
   );
@@ -85,7 +85,7 @@ function semaforo(key: string, value: number | null): Signal {
   }
 }
 const SIGNAL_COLOR: Record<Signal, string> = {
-  green: '#1E8449', yellow: '#D4AC0D', red: '#C0392B', neutral: '#0D3B5E',
+  green: '#10B981', yellow: '#F59E0B', red: '#EF4444', neutral: '#8B97A8',
 };
 const SIGNAL_DOT: Record<Signal, string> = {
   green: '🟢', yellow: '🟡', red: '🔴', neutral: '',
@@ -113,19 +113,19 @@ function KpiCard({ label, value, sub, signal, hint }: {
       )}
       <div className="kpi-label">{label}</div>
       <div className="kpi-value" style={{ color }}>{value}</div>
-      {sub && <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>{sub}</div>}
-      {hint && <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.25rem' }}>{hint}</div>}
+      {sub && <div style={{ fontSize: '0.8rem', color: '#8B97A8', marginTop: '0.25rem' }}>{sub}</div>}
+      {hint && <div style={{ fontSize: '0.7rem', color: '#8B97A8', marginTop: '0.25rem' }}>{hint}</div>}
     </div>
   );
 }
 
 function NoDataBanner({ kpi }: { kpi: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 320, color: '#6b7280', textAlign: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 320, color: '#8B97A8', textAlign: 'center' }}>
       <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📭</div>
-      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0D3B5E', marginBottom: '0.5rem' }}>Sin datos de {kpi}</div>
+      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#F8FAFC', marginBottom: '0.5rem' }}>Sin datos de {kpi}</div>
       <div style={{ fontSize: '0.875rem', maxWidth: 380 }}>
-        Ejecuta <code style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>node sync-agent.js</code> desde la red CMO para cargar los datos.
+        Ejecuta <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 4 }}>node sync-agent.js</code> desde la red CMO para cargar los datos.
       </div>
     </div>
   );
@@ -157,28 +157,28 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: '0.75rem', maxWidth: '95vw', width: 900, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 900, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0D3B5E' }}>{codCuenta} — {descripcion}</div>
-            <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.2rem' }}>Asientos individuales · {filtered.length} movimientos</div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {filtered.length} movimientos</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <button onClick={() => setMesFilter(null)}
-            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: '1px solid #d1d5db', background: mesFilter === null ? '#0D3B5E' : '#fff', color: mesFilter === null ? '#fff' : '#374151', fontSize: '0.78rem', cursor: 'pointer' }}>
+            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
             Todos
           </button>
           {mesesPresentes.map(m => (
             <button key={m} onClick={() => setMesFilter(m)}
-              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: '1px solid #d1d5db', background: mesFilter === m ? '#0D3B5E' : '#fff', color: mesFilter === m ? '#fff' : '#374151', fontSize: '0.78rem', cursor: 'pointer' }}>
+              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === m ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === m ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === m ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
               {MESES[m - 1]}
             </button>
           ))}
         </div>
-        {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Cargando...</div> : (
+        {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div> : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
               <thead>
@@ -201,9 +201,9 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
                       <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Tercero}>{t.Tercero || '—'}</td>
-                      <td style={{ color: t.Debito > 0 ? '#1E8449' : '#6b7280' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
-                      <td style={{ color: t.Credito > 0 ? '#C0392B' : '#6b7280' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
-                      <td style={{ fontWeight: 600, color: neto < 0 ? '#C0392B' : '#1E8449' }}>{fmt(neto)}</td>
+                      <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
                     </tr>
                   );
                 })}
@@ -213,7 +213,7 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
                   <td colSpan={4}>TOTAL</td>
                   <td>{fmt(totalDeb)}</td>
                   <td>{fmt(totalCred)}</td>
-                  <td style={{ color: (totalDeb - totalCred) < 0 ? '#C0392B' : '#1E8449' }}>{fmt(totalDeb - totalCred)}</td>
+                  <td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -250,28 +250,28 @@ function CxCTransactionModal({ companyId, cliente, codCliente, onClose }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0D3B5E' }}>{cliente}</div>
-            <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '0.2rem' }}>Movimientos clase 12 (CxC) · {filtered.length} asientos</div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cliente}</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Movimientos clase 12 (CxC) · {filtered.length} asientos</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <button onClick={() => setAnioFilter(null)}
-            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: '1px solid #d1d5db', background: anioFilter === null ? '#0D3B5E' : '#fff', color: anioFilter === null ? '#fff' : '#374151', fontSize: '0.78rem', cursor: 'pointer' }}>
+            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: anioFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
             Todos
           </button>
           {aniosPresentes.map(a => (
             <button key={a} onClick={() => setAnioFilter(a)}
-              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: '1px solid #d1d5db', background: anioFilter === a ? '#0D3B5E' : '#fff', color: anioFilter === a ? '#fff' : '#374151', fontSize: '0.78rem', cursor: 'pointer' }}>
+              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === a ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === a ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: anioFilter === a ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
               {a}
             </button>
           ))}
         </div>
-        {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Cargando...</div> : (
+        {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div> : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
               <thead>
@@ -292,11 +292,11 @@ function CxCTransactionModal({ companyId, cliente, codCliente, onClose }: {
                     <tr key={i}>
                       <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2874A6' }}>{t.CodCuenta}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2BB4BB' }}>{t.CodCuenta}</td>
                       <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
-                      <td style={{ color: t.Debito > 0 ? '#1E8449' : '#6b7280' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
-                      <td style={{ color: t.Credito > 0 ? '#C0392B' : '#6b7280' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
-                      <td style={{ fontWeight: 600, color: neto < 0 ? '#C0392B' : '#1E8449' }}>{fmt(neto)}</td>
+                      <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
                     </tr>
                   );
                 })}
@@ -306,7 +306,7 @@ function CxCTransactionModal({ companyId, cliente, codCliente, onClose }: {
                   <td colSpan={4}>TOTAL</td>
                   <td>{fmt(totalDeb)}</td>
                   <td>{fmt(totalCred)}</td>
-                  <td style={{ color: (totalDeb - totalCred) < 0 ? '#C0392B' : '#1E8449' }}>{fmt(totalDeb - totalCred)}</td>
+                  <td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -327,14 +327,14 @@ function DetalleModal({ title, rows, activeMeses, companyId, year, onClose }: {
     <>
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: '0.75rem', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', minWidth: 600 }}
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', minWidth: 600 }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0D3B5E' }}>Detalle: {title}</div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.2rem' }}>Click en una cuenta para ver los asientos individuales</div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>Detalle: {title}</div>
+            <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.2rem' }}>Click en una cuenta para ver los asientos individuales</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -343,7 +343,7 @@ function DetalleModal({ title, rows, activeMeses, companyId, year, onClose }: {
                 <th style={{ minWidth: 60 }}>Cuenta</th>
                 <th style={{ minWidth: 200 }}>Descripción</th>
                 {activeMeses.map(m => <th key={m}>{MESES[m - 1]}</th>)}
-                <th style={{ background: '#1a5276' }}>YTD</th>
+                <th style={{ background: 'rgba(32,126,131,0.2)' }}>YTD</th>
               </tr>
             </thead>
             <tbody>
@@ -351,10 +351,10 @@ function DetalleModal({ title, rows, activeMeses, companyId, year, onClose }: {
                 <tr key={r.codCuenta} style={{ cursor: 'pointer' }}
                   onClick={() => setTxDrill({ codCuenta: r.codCuenta, descripcion: r.descripcion })}
                   title="Ver asientos individuales">
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#2874A6' }}>{r.codCuenta}</td>
-                  <td style={{ color: '#2874A6' }}>{r.descripcion} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#2BB4BB' }}>{r.codCuenta}</td>
+                  <td style={{ color: '#2BB4BB' }}>{r.descripcion} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                   {activeMeses.map(m => (
-                    <td key={m} style={{ color: (r.meses[m] || 0) < 0 ? '#C0392B' : undefined }}>
+                    <td key={m} style={{ color: (r.meses[m] || 0) < 0 ? '#EF4444' : undefined }}>
                       {fmt(r.meses[m] || 0)}
                     </td>
                   ))}
@@ -411,17 +411,17 @@ function buildWaterfallData(ytd: any) {
 function WaterfallChart({ ytd }: { ytd: any }) {
   const data = buildWaterfallData(ytd);
   const getColor = (type: string, value: number) => {
-    if (type === 'total') return value >= 0 ? '#1E8449' : '#C0392B';
-    if (type === 'expense') return '#C0392B';
-    return '#0D3B5E';
+    if (type === 'total') return value >= 0 ? '#10B981' : '#EF4444';
+    if (type === 'expense') return '#EF4444';
+    return '#207E83';
   };
 
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ top: 10, right: 10, bottom: 5, left: 10 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-        <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 10 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#8B97A8' }} />
+        <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 10, fill: '#8B97A8' }} />
         <Tooltip
           formatter={(val: number, name: string) => name === 'base' ? null : [fmt(val), '']}
           labelFormatter={(l) => l}
@@ -441,7 +441,7 @@ function WaterfallChart({ ytd }: { ytd: any }) {
 function YoYBadge({ curr, prev }: { curr: number; prev: number | undefined }) {
   if (!prev && prev !== 0) return null;
   const delta = yoyPct(curr, prev);
-  const color = delta >= 0 ? '#1E8449' : '#C0392B';
+  const color = delta >= 0 ? '#10B981' : '#EF4444';
   const arrow = delta >= 0 ? '▲' : '▼';
   return (
     <span style={{ fontSize: '0.7rem', color, marginLeft: '0.4rem', fontWeight: 600 }}>
@@ -576,9 +576,9 @@ export default function DashboardPage() {
 
   if (error) return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', color: '#C0392B', maxWidth: 400 }}>
+      <div style={{ textAlign: 'center', color: '#EF4444', maxWidth: 400 }}>
         <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Error de conexión</div>
-        <pre style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#9ca3af' }}>{error}</pre>
+        <pre style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: '#8B97A8' }}>{error}</pre>
       </div>
     </div>
   );
@@ -629,7 +629,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#05080F' }}>
       {drillDown && (
         <DetalleModal
           title={drillDown.title}
@@ -650,49 +650,57 @@ export default function DashboardPage() {
       )}
 
       {/* ── Sidebar ── */}
-      <div className="sidebar">
-        <div style={{ padding: '1.5rem 1.25rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.02em' }}>S10 BizSmartHub</div>
+      <div className="sidebar" style={{ display: 'flex', flexDirection: 'column' }}>
+
+        {/* Logo */}
+        <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
+            <div style={{ width: 34, height: 34, borderRadius: '0.625rem', background: 'linear-gradient(135deg, #207E83, #2BB4BB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 900, color: '#fff', flexShrink: 0 }}>S</div>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: '0.88rem', color: '#F8FAFC', letterSpacing: '-0.02em', lineHeight: 1.1 }}>S10 BizSmartHub</div>
+              <div style={{ fontSize: '0.55rem', color: '#8B97A8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Dashboard Financiero</div>
+            </div>
+          </div>
+          {/* Sync badge */}
+          <div className={`sync-badge${syncStatus === 'error' ? ' offline' : ''}`} style={{ width: '100%', justifyContent: 'center' }}>
+            {syncStatus === 'running' ? '⏳ Sincronizando...'
+           : syncStatus === 'done'    ? '✓ Sync completado'
+           : syncStatus === 'error'   ? '✗ Error de sync'
+           : '● Sistema online'}
+          </div>
         </div>
 
-        {/* Company selector */}
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ fontSize: '0.65rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Empresa</div>
-
-          {/* Botón GRUPO */}
+        {/* Empresa section */}
+        <div style={{ padding: '0.875rem 0.75rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="sidebar-section-label">Empresa</div>
           <button
             onClick={() => { setSelectedCompany(GRUPO); setActiveTab('pl'); }}
             style={{
               display: 'block', width: '100%', textAlign: 'left',
-              background: isGrupo ? 'rgba(255,255,255,0.15)' : 'none',
-              border: isGrupo ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
-              borderRadius: '0.375rem',
-              color: isGrupo ? '#fff' : '#94A3B8',
-              padding: '0.4rem 0.6rem', marginBottom: '0.4rem',
-              cursor: 'pointer', fontSize: '0.8rem',
-              fontWeight: isGrupo ? 700 : 400,
+              background: isGrupo ? 'rgba(32,126,131,0.15)' : 'none',
+              border: isGrupo ? '1px solid rgba(32,126,131,0.3)' : '1px solid transparent',
+              borderRadius: '0.625rem',
+              color: isGrupo ? '#2BB4BB' : '#8B97A8',
+              padding: '0.45rem 0.75rem', marginBottom: '0.3rem',
+              cursor: 'pointer', fontSize: '0.8rem', fontWeight: isGrupo ? 700 : 400,
             }}
           >
-            🏢 GRUPO (Consolidado)
+            🏢 GRUPO Consolidado
           </button>
-
-          {/* Divisor */}
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0.25rem 0 0.4rem' }} />
-
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0.3rem 0.25rem' }} />
           {COMPANIES.map((co) => {
             const active = !isGrupo && selectedCompany.codEmpresa === co.codEmpresa;
             return (
-              <button
-                key={co.codEmpresa}
+              <button key={co.codEmpresa}
                 onClick={() => { setSelectedCompany(co); setActiveTab('pl'); }}
                 style={{
                   display: 'block', width: '100%', textAlign: 'left',
-                  background: active ? 'rgba(255,255,255,0.15)' : 'none',
-                  border: 'none', borderRadius: '0.375rem',
-                  color: active ? '#fff' : '#94A3B8',
-                  padding: '0.4rem 0.6rem', marginBottom: '0.2rem',
-                  cursor: 'pointer', fontSize: '0.8rem',
-                  fontWeight: active ? 700 : 400,
+                  background: active ? 'rgba(32,126,131,0.15)' : 'none',
+                  border: active ? '1px solid rgba(32,126,131,0.3)' : '1px solid transparent',
+                  borderRadius: '0.625rem',
+                  color: active ? '#2BB4BB' : '#8B97A8',
+                  padding: '0.4rem 0.75rem', marginBottom: '0.15rem',
+                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: active ? 700 : 400,
                 }}
               >
                 {co.shortName}
@@ -701,30 +709,30 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Year selector */}
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ fontSize: '0.65rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Año</div>
-          {YEARS.map((y) => (
-            <button
-              key={y}
-              onClick={() => setSelectedYear(y)}
-              style={{
-                display: 'inline-block', marginRight: '0.4rem',
-                background: selectedYear === y ? 'rgba(255,255,255,0.15)' : 'none',
-                border: selectedYear === y ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
-                borderRadius: '0.375rem',
-                color: selectedYear === y ? '#fff' : '#94A3B8',
-                padding: '0.3rem 0.6rem',
-                cursor: 'pointer', fontSize: '0.8rem', fontWeight: selectedYear === y ? 700 : 400,
-              }}
-            >
-              {y}
-            </button>
-          ))}
+        {/* Año section */}
+        <div style={{ padding: '0.75rem 0.75rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="sidebar-section-label">Período</div>
+          <div style={{ display: 'flex', gap: '0.35rem' }}>
+            {YEARS.map((y) => (
+              <button key={y} onClick={() => setSelectedYear(y)}
+                style={{
+                  flex: 1,
+                  background: selectedYear === y ? 'rgba(32,126,131,0.15)' : 'rgba(255,255,255,0.04)',
+                  border: selectedYear === y ? '1px solid rgba(32,126,131,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '0.5rem',
+                  color: selectedYear === y ? '#2BB4BB' : '#8B97A8',
+                  padding: '0.35rem 0',
+                  cursor: 'pointer', fontSize: '0.78rem', fontWeight: selectedYear === y ? 700 : 400,
+                }}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Sync button */}
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        {/* Sincronizar */}
+        <div style={{ padding: '0.75rem 0.75rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <button
             disabled={syncStatus === 'running'}
             onClick={async () => {
@@ -733,8 +741,7 @@ export default function DashboardPage() {
               setSyncStatus('running');
               try {
                 await fetch(`${API}/sync/trigger?years=${CURRENT_YEAR},${CURRENT_YEAR - 1}`, {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${token}` },
+                  method: 'POST', headers: { Authorization: `Bearer ${token}` },
                 });
                 setSyncStatus('done');
                 setTimeout(() => setSyncStatus('idle'), 5000);
@@ -744,66 +751,80 @@ export default function DashboardPage() {
               }
             }}
             style={{
-              width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', border: 'none',
-              background: syncStatus === 'running' ? 'rgba(255,255,255,0.05)'
-                        : syncStatus === 'done'    ? '#1E8449'
-                        : syncStatus === 'error'   ? '#C0392B'
-                        : 'rgba(255,255,255,0.1)',
-              color: syncStatus === 'running' ? '#94A3B8' : '#fff',
-              fontSize: '0.82rem', fontWeight: 600, cursor: syncStatus === 'running' ? 'default' : 'pointer',
-              transition: 'background 0.2s',
+              width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.625rem',
+              border: '1px solid rgba(32,126,131,0.25)',
+              background: syncStatus === 'running' ? 'rgba(255,255,255,0.03)'
+                        : syncStatus === 'done'    ? 'rgba(16,185,129,0.15)'
+                        : syncStatus === 'error'   ? 'rgba(239,68,68,0.15)'
+                        : 'rgba(32,126,131,0.1)',
+              color: syncStatus === 'done' ? '#10B981' : syncStatus === 'error' ? '#EF4444' : '#2BB4BB',
+              fontSize: '0.78rem', fontWeight: 700, cursor: syncStatus === 'running' ? 'default' : 'pointer',
+              textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 0.2s',
             }}
           >
             {syncStatus === 'running' ? '⏳ Sincronizando...'
-           : syncStatus === 'done'    ? '✓ Sync iniciado'
-           : syncStatus === 'error'   ? '✗ Error al sincronizar'
+           : syncStatus === 'done'    ? '✓ Sync completado'
+           : syncStatus === 'error'   ? '✗ Error — reintentar'
            : '↻ Sincronizar datos'}
           </button>
-          <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.4rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.6rem', color: '#4B5563', marginTop: '0.35rem', textAlign: 'center', letterSpacing: '0.04em' }}>
             Auto: Lun-Vie 7am y 6pm
           </div>
         </div>
 
-        {/* Nav tabs */}
-        <nav style={{ padding: '0.75rem 0' }}>
+        {/* Nav principal */}
+        <nav style={{ flex: 1, padding: '0.5rem 0', overflow: 'auto' }}>
+          <div className="sidebar-section-label">Paneles</div>
           {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).map((tab) => (
-            <button
-              key={tab}
+            <button key={tab}
               onClick={() => setActiveTab(tab)}
               className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
             >
-              {tab === 'pl'   && '📊 P&L'}
-              {tab === 'cxc'  && '💰 CxC Aging'}
-              {tab === 'cxp'  && '🏪 CxP Aging'}
-              {tab === 'caja' && '🏦 Posición Caja'}
-              {tab === 'gav'  && '📋 GAV Detalle'}
-              {tab === 'docs' && '🧾 Documentos'}
+              {tab === 'pl'   && '📊  P&L'}
+              {tab === 'cxc'  && '💰  CxC Aging'}
+              {tab === 'cxp'  && '🏪  CxP Aging'}
+              {tab === 'caja' && '🏦  Posición Caja'}
+              {tab === 'gav'  && '📋  GAV Detalle'}
+              {tab === 'docs' && '🧾  Documentos'}
             </button>
           ))}
           {userRole === 'admin' && (
-            <button
-              onClick={() => {
-                setActiveTab('admin');
-                const token = localStorage.getItem('token');
-                if (!token || adminUsers.length > 0) return;
-                setAdminLoading(true);
-                fetch(`${API}/users`, { headers: { Authorization: `Bearer ${token}` } })
-                  .then(r => r.json()).then(data => { setAdminUsers(Array.isArray(data) ? data : []); setAdminLoading(false); })
-                  .catch(() => setAdminLoading(false));
-              }}
-              className={`sidebar-link ${activeTab === 'admin' ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.5rem', paddingTop: '0.5rem' }}
-            >
-              ⚙ Administración
-            </button>
+            <>
+              <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Configuración</div>
+              <button
+                onClick={() => {
+                  setActiveTab('admin');
+                  const token = localStorage.getItem('token');
+                  if (!token || adminUsers.length > 0) return;
+                  setAdminLoading(true);
+                  fetch(`${API}/users`, { headers: { Authorization: `Bearer ${token}` } })
+                    .then(r => r.json()).then(data => { setAdminUsers(Array.isArray(data) ? data : []); setAdminLoading(false); })
+                    .catch(() => setAdminLoading(false));
+                }}
+                className={`sidebar-link ${activeTab === 'admin' ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+              >
+                ⚙  Administración
+              </button>
+            </>
           )}
         </nav>
 
-        <div style={{ position: 'absolute', bottom: '1rem', padding: '0 1.25rem' }}>
+        {/* User + logout */}
+        <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.6rem', padding: '0 0.25rem' }}>
+            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2BB4BB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+              {userEmail ? userEmail[0].toUpperCase() : 'U'}
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userEmail || 'Usuario'}</div>
+              <div style={{ fontSize: '0.62rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{userRole}</div>
+            </div>
+          </div>
           <button
             onClick={() => { localStorage.removeItem('token'); router.push('/login'); }}
-            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: '#CBD5E1', padding: '0.5rem 1rem', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.8rem', width: '100%' }}
+            style={{ width: '100%', padding: '0.45rem 0.75rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444', borderRadius: '0.625rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em' }}
           >
             Cerrar sesión
           </button>
@@ -811,29 +832,49 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Main content ── */}
-      <div className="main-content" style={{ width: 'calc(100% - 240px)' }}>
-        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div className="main-content" style={{ width: 'calc(100% - 272px)' }}>
+        <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0D3B5E', margin: 0 }}>
-              {activeTab === 'pl'    && (isGrupo ? 'Consolidado del Grupo' : 'Estado de Resultados')}
-              {activeTab === 'cxc'   && 'Cuentas por Cobrar — Aging'}
-              {activeTab === 'cxp'   && 'Cuentas por Pagar — Aging'}
+            <div className="page-section-label">
+              {activeTab === 'pl'    && (isGrupo ? 'Consolidado del Grupo' : 'Business Intelligence')}
+              {activeTab === 'cxc'   && 'Gestión de Cartera'}
+              {activeTab === 'cxp'   && 'Gestión de Pagos'}
+              {activeTab === 'caja'  && 'Tesorería'}
+              {activeTab === 'gav'   && 'Gastos Operativos'}
+              {activeTab === 'docs'  && 'Documentos'}
+              {activeTab === 'admin' && 'Administración'}
+            </div>
+            <h1 className="page-title">
+              {activeTab === 'pl'    && (isGrupo ? 'Análisis Ejecutivo' : 'Estado de Resultados')}
+              {activeTab === 'cxc'   && 'Cuentas por Cobrar'}
+              {activeTab === 'cxp'   && 'Cuentas por Pagar'}
               {activeTab === 'caja'  && 'Posición de Caja'}
-              {activeTab === 'gav'   && 'Gastos de Admin. y Ventas'}
+              {activeTab === 'gav'   && 'GAV Detalle'}
               {activeTab === 'docs'  && 'Documentos del Período'}
-              {activeTab === 'admin' && 'Administración de Usuarios'}
+              {activeTab === 'admin' && 'Usuarios del Sistema'}
             </h1>
-            <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-              {selectedCompany.fullName} · YTD {selectedYear} · Fuente: S10 ERP
-              {prevYear && <span style={{ marginLeft: '0.5rem', color: '#9ca3af' }}>· vs {prevYear.year}</span>}
+            <div style={{ color: '#8B97A8', fontSize: '0.8rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span>{selectedCompany.fullName}</span>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span>YTD {selectedYear}</span>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span>Fuente: S10 ERP</span>
+              {prevYear && <><span style={{ opacity: 0.4 }}>·</span><span>vs {prevYear.year}</span></>}
               {lastSync && (
-                <span style={{ marginLeft: '0.5rem', color: '#9ca3af' }}>
-                  · Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <>
+                  <span style={{ opacity: 0.4 }}>·</span>
+                  <span style={{ color: '#10B981', fontWeight: 600 }}>
+                    ● Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </>
               )}
             </div>
           </div>
-          {loading && <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Cargando...</div>}
+          {loading && (
+            <div style={{ padding: '0.4rem 0.875rem', background: 'rgba(32,126,131,0.1)', border: '1px solid rgba(32,126,131,0.2)', borderRadius: '2rem', fontSize: '0.72rem', color: '#2BB4BB', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>
+              ⏳ Cargando...
+            </div>
+          )}
         </div>
 
         {/* ═══ P&L Tab ═══ */}
@@ -899,17 +940,17 @@ export default function DashboardPage() {
             {/* Vista Grupo: ranking de empresas */}
             {isGrupo && consolidado?.empresas?.length > 0 && (
               <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Aporte por Empresa</div>
+                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '1rem' }}>Aporte por Empresa</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
                   {consolidado.empresas
                     .sort((a: any, b: any) => b.ytd.ingresos - a.ytd.ingresos)
                     .map((e: any, i: number) => (
-                      <div key={e.codEmpresa} style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '0.75rem', borderLeft: `4px solid ${COLORS_EMPRESA[i % 4]}` }}>
+                      <div key={e.codEmpresa} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '0.75rem', borderLeft: `4px solid ${COLORS_EMPRESA[i % 4]}` }}>
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: COLORS_EMPRESA[i % 4], textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                           {e.shortName} · {e.pctIngresos}% del grupo
                         </div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0D3B5E' }}>{fmt(e.ytd.ingresos)}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.2rem' }}>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#F8FAFC' }}>{fmt(e.ytd.ingresos)}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.2rem' }}>
                           EBITDA {pct(e.ytd.ebitdaPct ?? 0)} · Neto {fmt(e.ytd.utilidadNeta)}
                         </div>
                       </div>
@@ -919,13 +960,13 @@ export default function DashboardPage() {
                 <div style={{ marginTop: '1rem' }}>
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={consolidado.empresas.map((e: any) => ({ name: e.shortName, Ingresos: e.ytd.ingresos, EBITDA: e.ytd.ebitda, Utilidad: e.ytd.utilidadNeta }))} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis tickFormatter={(v) => `${(v / 1_000_000).toFixed(1)}M`} tick={{ fontSize: 10 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#8B97A8' }} />
+                      <YAxis tickFormatter={(v) => `${(v / 1_000_000).toFixed(1)}M`} tick={{ fontSize: 10, fill: '#8B97A8' }} />
                       <Tooltip formatter={(v: number) => fmt(v)} />
-                      <Bar dataKey="Ingresos" fill="#0D3B5E" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="EBITDA" fill="#E25C1A" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="Utilidad" fill="#1E8449" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="Ingresos" fill="#207E83" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="EBITDA" fill="#F59E0B" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="Utilidad" fill="#10B981" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -936,7 +977,7 @@ export default function DashboardPage() {
             {isGrupo && scorecard?.companies?.length > 0 && (
               <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Scorecard Comparativo</div>
+                  <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Scorecard Comparativo</div>
                   <ExportBtn onClick={() => {
                     const headers = ['Empresa', 'Ingresos YTD', '% Margen', '% EBITDA', 'DSO (días)', 'DPO (días)', 'Capital de Trabajo', 'Caja Total'];
                     const rows = scorecard.companies.map((c: any) => [
@@ -969,24 +1010,24 @@ export default function DashboardPage() {
                         const wc = c.workingCapital;
                         return (
                           <tr key={c.codEmpresa}>
-                            <td style={{ fontWeight: 600, color: '#0D3B5E' }}>{c.shortName}</td>
+                            <td style={{ fontWeight: 600, color: '#F8FAFC' }}>{c.shortName}</td>
                             <td style={{ fontWeight: 600 }}>{fmt(c.ingresosYTD)}</td>
-                            <td style={{ color: c.margenPct != null ? SIGNAL_COLOR[semaforo('margenBrutoPct', c.margenPct)] : '#6b7280', fontWeight: 600 }}>
+                            <td style={{ color: c.margenPct != null ? SIGNAL_COLOR[semaforo('margenBrutoPct', c.margenPct)] : '#8B97A8', fontWeight: 600 }}>
                               {c.margenPct != null ? `${SIGNAL_DOT[semaforo('margenBrutoPct', c.margenPct)]} ${pct(c.margenPct)}` : '—'}
                             </td>
-                            <td style={{ color: c.ebitdaPct != null ? SIGNAL_COLOR[semaforo('ebitdaPct', c.ebitdaPct)] : '#6b7280', fontWeight: 600 }}>
+                            <td style={{ color: c.ebitdaPct != null ? SIGNAL_COLOR[semaforo('ebitdaPct', c.ebitdaPct)] : '#8B97A8', fontWeight: 600 }}>
                               {c.ebitdaPct != null ? `${SIGNAL_DOT[semaforo('ebitdaPct', c.ebitdaPct)]} ${pct(c.ebitdaPct)}` : '—'}
                             </td>
-                            <td style={{ color: c.dso != null ? SIGNAL_COLOR[semaforo('dso', c.dso)] : '#6b7280' }}>
+                            <td style={{ color: c.dso != null ? SIGNAL_COLOR[semaforo('dso', c.dso)] : '#8B97A8' }}>
                               {c.dso != null ? fmtDays(c.dso) : '—'}
                             </td>
-                            <td style={{ color: '#6b7280' }}>
+                            <td style={{ color: '#8B97A8' }}>
                               {c.dpo != null ? fmtDays(c.dpo) : '—'}
                             </td>
-                            <td style={{ fontWeight: 600, color: wc != null ? (wc >= 0 ? '#1E8449' : '#C0392B') : '#6b7280' }}>
+                            <td style={{ fontWeight: 600, color: wc != null ? (wc >= 0 ? '#10B981' : '#EF4444') : '#8B97A8' }}>
                               {wc != null ? fmt(wc) : '—'}
                             </td>
-                            <td style={{ color: c.cajaTotal != null ? (c.cajaTotal >= 0 ? '#1E8449' : '#C0392B') : '#6b7280' }}>
+                            <td style={{ color: c.cajaTotal != null ? (c.cajaTotal >= 0 ? '#10B981' : '#EF4444') : '#8B97A8' }}>
                               {c.cajaTotal != null ? fmt(c.cajaTotal) : '—'}
                             </td>
                           </tr>
@@ -1000,7 +1041,7 @@ export default function DashboardPage() {
 
             {/* Waterfall chart */}
             <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '0.75rem' }}>
+              <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.75rem' }}>
                 Cascada P&L — YTD {selectedYear}
               </div>
               <WaterfallChart ytd={ytd} />
@@ -1009,15 +1050,15 @@ export default function DashboardPage() {
             {/* Gráfico mensual Ingresos vs EBITDA */}
             {!isGrupo && (
               <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Ingresos vs EBITDA — Mensual</div>
+                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '1rem' }}>Ingresos vs EBITDA — Mensual</div>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={plMonthly.filter((m: any) => m.ingresos > 0)} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="mesLabel" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 12, fill: '#8B97A8' }} />
+                    <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: '#8B97A8' }} />
                     <Tooltip formatter={(v: number) => fmt(v)} />
-                    <Bar dataKey="ingresos" name="Ingresos" fill="#0D3B5E" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="ebitda" name="EBITDA" fill="#E25C1A" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="ingresos" name="Ingresos" fill="#207E83" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="ebitda" name="EBITDA" fill="#F59E0B" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1026,9 +1067,9 @@ export default function DashboardPage() {
             {/* Tabla Detalle Mensual con YoY */}
             <div className="kpi-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Detalle Mensual</div>
+                <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Detalle Mensual</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#8B97A8' }}>
                     {!isGrupo && 'Click en Ingresos, Costo, GAV o Gastos para ver el desglose'}
                   </div>
                   <ExportBtn onClick={() => {
@@ -1053,15 +1094,15 @@ export default function DashboardPage() {
                       {plMonthly.filter((m: any) => m.ingresos > 0 || m.gav > 0).map((m: any) => (
                         <th key={m.mes}>{m.mesLabel}</th>
                       ))}
-                      <th style={{ background: '#1a5276' }}>YTD {selectedYear}</th>
+                      <th style={{ background: 'rgba(32,126,131,0.2)' }}>YTD {selectedYear}</th>
                       {prevYear && (
-                        <th style={{ background: '#2c3e50' }}>
+                        <th style={{ background: 'rgba(255,255,255,0.06)' }}>
                           {prevYear.meses?.length
                             ? `${MESES[prevYear.meses[0]-1]}-${MESES[prevYear.meses[prevYear.meses.length-1]-1]} ${prevYear.year}`
                             : `YTD ${prevYear.year}`}
                         </th>
                       )}
-                      {prevYear && <th style={{ background: '#34495e' }}>∆ YoY</th>}
+                      {prevYear && <th style={{ background: 'rgba(255,255,255,0.04)' }}>∆ YoY</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -1085,7 +1126,7 @@ export default function DashboardPage() {
                           <td style={{ fontWeight: row.bold ? 700 : 400 }}>
                             {row.label}
                             {isDrillable && (
-                              <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem', color: '#2874A6' }}>
+                              <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem', color: '#2BB4BB' }}>
                                 ▶ {detalle[row.detalleKey!].length} cuentas
                               </span>
                             )}
@@ -1102,12 +1143,12 @@ export default function DashboardPage() {
                             {row.fmt === 'pct' ? pct(currVal) : fmt(currVal)}
                           </td>
                           {prevYear && (
-                            <td style={{ color: '#6b7280', fontStyle: 'italic' }}>
+                            <td style={{ color: '#8B97A8', fontStyle: 'italic' }}>
                               {row.fmt === 'pct' ? pct(prevVal ?? 0) : fmt(prevVal ?? 0)}
                             </td>
                           )}
                           {prevYear && (
-                            <td style={{ fontWeight: 600, color: delta !== null ? (delta >= 0 ? '#1E8449' : '#C0392B') : '#6b7280', fontSize: '0.85rem' }}>
+                            <td style={{ fontWeight: 600, color: delta !== null ? (delta >= 0 ? '#10B981' : '#EF4444') : '#8B97A8', fontSize: '0.85rem' }}>
                               {delta !== null ? `${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)}%` : '—'}
                             </td>
                           )}
@@ -1151,7 +1192,7 @@ export default function DashboardPage() {
             </div>
             <div className="kpi-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Aging por Cliente</div>
+                <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Cliente</div>
                 <ExportBtn onClick={() => {
                   const headers = ['Cliente', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Cartera'];
                   const rows = [...cxc.clientes].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((c: any) => [
@@ -1161,7 +1202,7 @@ export default function DashboardPage() {
                   exportCSV(`CxC_${selectedCompany.shortName}.csv`, headers, rows);
                 }} />
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>Click en un cliente para ver los asientos individuales</div>
+              <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginBottom: '1rem' }}>Click en un cliente para ver los asientos individuales</div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-s10">
                   <thead>
@@ -1174,13 +1215,13 @@ export default function DashboardPage() {
                       <tr key={c.codCliente} style={{ cursor: 'pointer' }}
                         onClick={() => setCxCTxDrill({ cliente: c.cliente, codCliente: String(c.codCliente) })}
                         title="Ver asientos individuales">
-                        <td style={{ color: '#2874A6' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                        <td style={{ color: '#2BB4BB' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                         <td>{fmt(c.dias0_30)}</td>
                         <td>{fmt(c.dias31_60)}</td>
                         <td>{fmt(c.dias61_90)}</td>
                         <td className={c.dias90mas > 0 ? 'negative' : ''}>{fmt(c.dias90mas)}</td>
                         <td style={{ fontWeight: 600 }}>{fmt(c.saldoTotal)}</td>
-                        <td style={{ color: '#6b7280' }}>{cxc.totalSaldo > 0 ? pct((c.saldoTotal / cxc.totalSaldo) * 100) : '—'}</td>
+                        <td style={{ color: '#8B97A8' }}>{cxc.totalSaldo > 0 ? pct((c.saldoTotal / cxc.totalSaldo) * 100) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1203,7 +1244,7 @@ export default function DashboardPage() {
 
         {/* ═══ CxP Tab ═══ */}
         {activeTab === 'cxp' && isGrupo && (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>
             Selecciona una empresa para ver sus cuentas por pagar.
           </div>
         )}
@@ -1240,7 +1281,7 @@ export default function DashboardPage() {
               </div>
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Aging por Proveedor</div>
+                  <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Proveedor</div>
                   <ExportBtn onClick={() => {
                     const headers = ['Proveedor', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Deuda'];
                     const rows = [...cxp.proveedores].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((p: any) => [
@@ -1266,7 +1307,7 @@ export default function DashboardPage() {
                           <td>{fmt(p.dias61_90)}</td>
                           <td className={p.dias90mas > 0 ? 'negative' : ''}>{fmt(p.dias90mas)}</td>
                           <td style={{ fontWeight: 600 }}>{fmt(p.saldoTotal)}</td>
-                          <td style={{ color: '#6b7280' }}>{cxp.totalSaldo > 0 ? pct((p.saldoTotal / cxp.totalSaldo) * 100) : '—'}</td>
+                          <td style={{ color: '#8B97A8' }}>{cxp.totalSaldo > 0 ? pct((p.saldoTotal / cxp.totalSaldo) * 100) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1320,7 +1361,7 @@ export default function DashboardPage() {
             {/* Tabla flujo por banco */}
             <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Flujo Neto por Banco</div>
+                <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Flujo Neto por Banco</div>
                 <ExportBtn onClick={() => {
                   const headers = ['Banco', ...MESES, 'Total Año'];
                   const rows = (caja.bancos || []).map((b: any) => {
@@ -1376,12 +1417,12 @@ export default function DashboardPage() {
 
         {/* ═══ Documentos Tab ═══ */}
         {activeTab === 'docs' && isGrupo && (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>
             Selecciona una empresa para ver sus documentos.
           </div>
         )}
         {activeTab === 'docs' && !isGrupo && !docs && (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>Cargando documentos...</div>
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando documentos...</div>
         )}
         {activeTab === 'docs' && !isGrupo && docs && (() => {
           const lista = docsTab === 'emitidas' ? docs.emitidas : docsTab === 'recibidas' ? docs.recibidas : docs.honorarios;
@@ -1410,9 +1451,9 @@ export default function DashboardPage() {
                 {(['emitidas', 'recibidas', 'honorarios'] as const).map((t) => (
                   <button key={t} onClick={() => { setDocsTab(t); setDocsSearch(''); setDocsOnlySinAsiento(false); setDocsOnlyDuplicados(false); }}
                     style={{ padding: '0.4rem 1.2rem', borderRadius: '0.375rem', border: '1px solid',
-                      borderColor: docsTab === t ? '#0D3B5E' : '#d1d5db',
-                      background: docsTab === t ? '#0D3B5E' : '#fff',
-                      color: docsTab === t ? '#fff' : '#374151',
+                      borderColor: docsTab === t ? 'rgba(32,126,131,0.5)' : 'rgba(255,255,255,0.1)',
+                      background: docsTab === t ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)',
+                      color: docsTab === t ? '#2BB4BB' : '#8B97A8',
                       fontWeight: docsTab === t ? 700 : 400, fontSize: '0.85rem', cursor: 'pointer' }}>
                     {t === 'emitidas' ? `Facturas Emitidas (${docs.emitidas.length})` : t === 'recibidas' ? `Facturas Recibidas (${docs.recibidas.length})` : `Honorarios (${docs.honorarios.length})`}
                   </button>
@@ -1421,9 +1462,9 @@ export default function DashboardPage() {
                   <button
                     onClick={() => { setDocsOnlySinAsiento(!docsOnlySinAsiento); setDocsOnlyDuplicados(false); setDocsSearch(''); }}
                     style={{ padding: '0.4rem 1rem', borderRadius: '0.375rem', border: '1px solid',
-                      borderColor: docsOnlySinAsiento ? '#C0392B' : '#fca5a5',
-                      background: docsOnlySinAsiento ? '#C0392B' : '#fef2f2',
-                      color: docsOnlySinAsiento ? '#fff' : '#C0392B',
+                      borderColor: docsOnlySinAsiento ? '#EF4444' : 'rgba(239,68,68,0.3)',
+                      background: docsOnlySinAsiento ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.08)',
+                      color: '#EF4444',
                       fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
                     ⚠ Sin asiento contable ({sinAsientoCount}) · S/ {sinAsientoMonto.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
                   </button>
@@ -1432,9 +1473,9 @@ export default function DashboardPage() {
                   <button
                     onClick={() => { setDocsOnlyDuplicados(!docsOnlyDuplicados); setDocsOnlySinAsiento(false); setDocsSearch(''); }}
                     style={{ padding: '0.4rem 1rem', borderRadius: '0.375rem', border: '1px solid',
-                      borderColor: docsOnlyDuplicados ? '#D35400' : '#fed7aa',
-                      background: docsOnlyDuplicados ? '#D35400' : '#fff7ed',
-                      color: docsOnlyDuplicados ? '#fff' : '#D35400',
+                      borderColor: docsOnlyDuplicados ? '#F59E0B' : 'rgba(245,158,11,0.3)',
+                      background: docsOnlyDuplicados ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.08)',
+                      color: '#F59E0B',
                       fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
                     ⚠ Duplicados ({duplicadosCount})
                   </button>
@@ -1443,10 +1484,10 @@ export default function DashboardPage() {
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, color: '#0D3B5E' }}>
+                    <div style={{ fontWeight: 700, color: '#F8FAFC' }}>
                       {docsTab === 'emitidas' ? 'Facturas emitidas a clientes' : docsTab === 'recibidas' ? 'Facturas y boletas recibidas' : 'Recibos por Honorarios Profesionales'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.2rem' }}>
                       {filtrada.length} documentos · Neto {fmt(totalNeto)} · Total c/IGV {fmt(totalMonto)} · Pendiente {fmt(totalSaldo)}
                     </div>
                   </div>
@@ -1456,7 +1497,7 @@ export default function DashboardPage() {
                       placeholder={docsTab === 'emitidas' ? 'Buscar cliente o número...' : 'Buscar proveedor o número...'}
                       value={docsSearch}
                       onChange={e => setDocsSearch(e.target.value)}
-                      style={{ padding: '0.4rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 200 }}
+                      style={{ padding: '0.4rem 0.75rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 200, background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }}
                     />
                     <ExportBtn onClick={() => {
                       const tab = docsTab;
@@ -1495,20 +1536,20 @@ export default function DashboardPage() {
                           const sinAsiento = d.SinAsiento === 1;
                           const esDuplicado = d.EsDuplicado === 1;
                           return (
-                          <tr key={i} style={{ background: esDuplicado ? '#fff7ed' : sinAsiento ? '#fff5f5' : undefined }}>
+                          <tr key={i} style={{ background: esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#D35400', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
-                              {sinAsiento && <span title="Sin asiento contable en cuenta de gasto" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de gasto" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
-                            <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#C0392B' : '#6b7280' }}>{d.FechaVencimiento}</td>
+                            <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#EF4444' : '#8B97A8' }}>{d.FechaVencimiento}</td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Proveedor}>{d.Proveedor || '—'}</td>
-                            <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#6b7280' }}>{d.RucProveedor || '—'}</td>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#8B97A8' }}>{d.RucProveedor || '—'}</td>
                             <td>{fmt(d.TotalNeto)}</td>
-                            <td style={{ color: '#C0392B' }}>{fmt(d.TotalImpuesto)}</td>
+                            <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
                             <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
-                            <td style={{ color: '#1E8449' }}>{fmt(d.TotalPagado)}</td>
+                            <td style={{ color: '#10B981' }}>{fmt(d.TotalPagado)}</td>
                             <td className={(d.TotalSaldo || 0) > 0 ? 'negative' : ''}>{fmt(d.TotalSaldo)}</td>
                           </tr>
                           );
@@ -1545,19 +1586,19 @@ export default function DashboardPage() {
                           const sinAsiento = d.SinAsiento === 1;
                           const esDuplicado = d.EsDuplicado === 1;
                           return (
-                          <tr key={i} style={{ background: esDuplicado ? '#fff7ed' : sinAsiento ? '#fff5f5' : undefined }}>
+                          <tr key={i} style={{ background: esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#D35400', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
-                              {sinAsiento && <span title="Sin asiento contable en cuenta de ingreso" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de ingreso" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
-                            <td style={{ fontSize: '0.72rem', color: '#2874A6', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
+                            <td style={{ fontSize: '0.72rem', color: '#2BB4BB', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Cliente}>{d.Cliente || '—'}</td>
                             <td>{fmt(d.TotalNeto)}</td>
-                            <td style={{ color: '#6b7280' }}>{fmt(d.TotalImpuesto)}</td>
+                            <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
                             <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
-                            <td style={{ color: '#1E8449' }}>{fmt(d.TotalPagado)}</td>
+                            <td style={{ color: '#10B981' }}>{fmt(d.TotalPagado)}</td>
                             <td className={(d.Saldo || 0) > 0 ? 'negative' : ''}>{fmt(d.Saldo)}</td>
                           </tr>
                           );
@@ -1595,20 +1636,20 @@ export default function DashboardPage() {
                           const sinAsiento = d.SinAsiento === 1;
                           const esDuplicado = d.EsDuplicado === 1;
                           return (
-                          <tr key={i} style={{ background: esDuplicado ? '#fff7ed' : sinAsiento ? '#fff5f5' : undefined }}>
+                          <tr key={i} style={{ background: esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#D35400', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
-                              {sinAsiento && <span title="Sin asiento contable en cuenta de costo/gasto" style={{ color: '#C0392B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de costo/gasto" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
-                            <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#C0392B' : '#6b7280' }}>{d.FechaVencimiento}</td>
-                            <td style={{ fontSize: '0.72rem', color: '#2874A6', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
+                            <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#EF4444' : '#8B97A8' }}>{d.FechaVencimiento}</td>
+                            <td style={{ fontSize: '0.72rem', color: '#2BB4BB', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Proveedor}>{d.Proveedor || '—'}</td>
                             <td>{fmt(d.TotalNeto)}</td>
-                            <td style={{ color: '#6b7280' }}>{fmt(d.TotalImpuesto)}</td>
+                            <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
                             <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
-                            <td style={{ color: '#1E8449' }}>{fmt(d.TotalPagado)}</td>
+                            <td style={{ color: '#10B981' }}>{fmt(d.TotalPagado)}</td>
                             <td className={(d.TotalSaldo || 0) > 0 ? 'negative' : ''}>{fmt(d.TotalSaldo)}</td>
                           </tr>
                           );
@@ -1638,7 +1679,7 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="kpi-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <div style={{ fontWeight: 700, color: '#0D3B5E' }}>GAV por Categoría</div>
+                <div style={{ fontWeight: 700, color: '#F8FAFC' }}>GAV por Categoría</div>
                 <ExportBtn onClick={() => {
                   const headers = ['Categoría', 'YTD', '% GAV', '% Ingresos'];
                   const rows = (gav.categorias || []).map((c: any) => [
@@ -1659,7 +1700,7 @@ export default function DashboardPage() {
                       <td>{c.descripcion}</td>
                       <td>{fmt(c.ytd)}</td>
                       <td>{pct(c.pct)}</td>
-                      <td style={{ color: '#6b7280' }}>
+                      <td style={{ color: '#8B97A8' }}>
                         {ytd?.ingresos > 0 ? pct((c.ytd / ytd.ingresos) * 100) : '—'}
                       </td>
                     </tr>
@@ -1670,7 +1711,7 @@ export default function DashboardPage() {
                     <td>TOTAL</td>
                     <td>{fmt(gav.total)}</td>
                     <td>100%</td>
-                    <td style={{ color: '#6b7280' }}>
+                    <td style={{ color: '#8B97A8' }}>
                       {ytd?.ingresos > 0 ? pct((gav.total / ytd.ingresos) * 100) : '—'}
                     </td>
                   </tr>
@@ -1678,7 +1719,7 @@ export default function DashboardPage() {
               </table>
             </div>
             <div className="kpi-card">
-              <div style={{ fontWeight: 700, color: '#0D3B5E', marginBottom: '1rem' }}>Distribución GAV</div>
+              <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '1rem' }}>Distribución GAV</div>
               <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
                   <Pie
@@ -1754,45 +1795,45 @@ export default function DashboardPage() {
               {adminModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
                   onClick={() => setAdminModal(null)}>
-                  <div style={{ background: '#fff', borderRadius: '0.75rem', padding: '2rem', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#0D3B5E', marginBottom: '1.25rem' }}>
+                  <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', padding: '2rem', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#F8FAFC', marginBottom: '1.25rem' }}>
                       {adminModal.mode === 'create' ? 'Nuevo usuario' : `Editar: ${adminModal.user?.email}`}
                     </div>
 
                     {adminModal.mode === 'create' && (
                       <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#374151' }}>Email</label>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Email</label>
                         <input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))}
-                          style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+                          style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
                       </div>
                     )}
 
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#374151' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
                         {adminModal.mode === 'edit' ? 'Nueva contraseña (dejar en blanco para no cambiar)' : 'Contraseña'}
                       </label>
                       <input type="password" value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#374151' }}>Rol</label>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Rol</label>
                       <select value={adminForm.role} onChange={e => setAdminForm(f => ({ ...f, role: e.target.value }))}
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.9rem' }}>
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }}>
                         <option value="viewer">Viewer — solo lectura</option>
                         <option value="admin">Admin — acceso total</option>
                       </select>
                     </div>
 
                     <div style={{ marginBottom: '1.25rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.5rem', color: '#374151' }}>
-                        Empresas permitidas <span style={{ fontWeight: 400, color: '#6b7280' }}>(vacío = todas)</span>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.5rem', color: '#8B97A8' }}>
+                        Empresas permitidas <span style={{ fontWeight: 400, color: '#4B5563' }}>(vacío = todas)</span>
                       </label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                         {COMPANY_OPTIONS.map(co => {
                           const checked = adminForm.allowedCompanies.includes(co.value);
                           return (
-                            <label key={co.value} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', border: `1px solid ${checked ? '#0D3B5E' : '#d1d5db'}`, borderRadius: '0.375rem', background: checked ? '#EEF2FF' : '#fff', cursor: 'pointer', fontSize: '0.82rem' }}>
+                            <label key={co.value} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', border: `1px solid ${checked ? 'rgba(32,126,131,0.5)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', background: checked ? 'rgba(32,126,131,0.15)' : 'rgba(255,255,255,0.04)', cursor: 'pointer', fontSize: '0.82rem', color: checked ? '#2BB4BB' : '#8B97A8' }}>
                               <input type="checkbox" checked={checked}
                                 onChange={() => setAdminForm(f => ({
                                   ...f,
@@ -1810,19 +1851,19 @@ export default function DashboardPage() {
                     {adminModal.mode === 'edit' && (
                       <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <input type="checkbox" id="active-chk" checked={adminForm.active} onChange={e => setAdminForm(f => ({ ...f, active: e.target.checked }))} />
-                        <label htmlFor="active-chk" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151' }}>Usuario activo</label>
+                        <label htmlFor="active-chk" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#8B97A8' }}>Usuario activo</label>
                       </div>
                     )}
 
-                    {adminError && <div style={{ color: '#C0392B', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{adminError}</div>}
+                    {adminError && <div style={{ color: '#EF4444', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{adminError}</div>}
 
                     <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                       <button onClick={() => setAdminModal(null)}
-                        style={{ padding: '0.5rem 1.25rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        style={{ padding: '0.5rem 1.25rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.06)', color: '#8B97A8', cursor: 'pointer', fontSize: '0.85rem' }}>
                         Cancelar
                       </button>
                       <button onClick={saveUser}
-                        style={{ padding: '0.5rem 1.25rem', border: 'none', borderRadius: '0.375rem', background: '#0D3B5E', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                        style={{ padding: '0.5rem 1.25rem', border: 'none', borderRadius: '0.375rem', background: 'linear-gradient(135deg, #207E83, #2BB4BB)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
                         {adminModal.mode === 'create' ? 'Crear usuario' : 'Guardar cambios'}
                       </button>
                     </div>
@@ -1833,17 +1874,17 @@ export default function DashboardPage() {
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, color: '#0D3B5E' }}>Usuarios del sistema</div>
-                    {adminSuccess && <div style={{ fontSize: '0.78rem', color: '#1E8449', marginTop: '0.2rem' }}>{adminSuccess}</div>}
+                    <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Usuarios del sistema</div>
+                    {adminSuccess && <div style={{ fontSize: '0.78rem', color: '#10B981', marginTop: '0.2rem' }}>{adminSuccess}</div>}
                   </div>
                   <button onClick={openCreate}
-                    style={{ padding: '0.4rem 1rem', border: 'none', borderRadius: '0.375rem', background: '#0D3B5E', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
+                    style={{ padding: '0.4rem 1rem', border: 'none', borderRadius: '0.375rem', background: 'linear-gradient(135deg, #207E83, #2BB4BB)', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
                     + Nuevo usuario
                   </button>
                 </div>
 
                 {adminLoading ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Cargando...</div>
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
                     <table className="table-s10">
@@ -1858,32 +1899,32 @@ export default function DashboardPage() {
                             <td style={{ fontWeight: 500 }}>{u.email}</td>
                             <td>
                               <span style={{ padding: '0.15rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 700,
-                                background: u.role === 'admin' ? '#0D3B5E' : '#e5e7eb', color: u.role === 'admin' ? '#fff' : '#374151' }}>
+                                background: u.role === 'admin' ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.06)', color: u.role === 'admin' ? '#2BB4BB' : '#8B97A8' }}>
                                 {u.role}
                               </span>
                             </td>
-                            <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                            <td style={{ fontSize: '0.78rem', color: '#8B97A8' }}>
                               {u.allowedCompanies?.length
                                 ? u.allowedCompanies.map((id: string) => COMPANIES.find(c => c.codEmpresa === id)?.shortName || id).join(', ')
                                 : 'Todas'}
                             </td>
-                            <td style={{ fontSize: '0.78rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                            <td style={{ fontSize: '0.78rem', color: '#8B97A8', whiteSpace: 'nowrap' }}>
                               {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'}
                             </td>
                             <td>
                               <span style={{ padding: '0.15rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 700,
-                                background: u.active ? '#dcfce7' : '#fee2e2', color: u.active ? '#166534' : '#991b1b' }}>
+                                background: u.active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: u.active ? '#10B981' : '#EF4444' }}>
                                 {u.active ? 'Activo' : 'Inactivo'}
                               </span>
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>
                               <button onClick={() => openEdit(u)}
-                                style={{ marginRight: '0.5rem', padding: '0.2rem 0.6rem', border: '1px solid #d1d5db', borderRadius: '0.25rem', background: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}>
+                                style={{ marginRight: '0.5rem', padding: '0.2rem 0.6rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.25rem', background: 'rgba(255,255,255,0.06)', color: '#8B97A8', fontSize: '0.75rem', cursor: 'pointer' }}>
                                 Editar
                               </button>
                               {u.email !== userEmail && (
                                 <button onClick={() => toggleActive(u)}
-                                  style={{ padding: '0.2rem 0.6rem', border: `1px solid ${u.active ? '#fca5a5' : '#bbf7d0'}`, borderRadius: '0.25rem', background: u.active ? '#fef2f2' : '#f0fdf4', color: u.active ? '#991b1b' : '#166534', fontSize: '0.75rem', cursor: 'pointer' }}>
+                                  style={{ padding: '0.2rem 0.6rem', border: `1px solid ${u.active ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '0.25rem', background: u.active ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)', color: u.active ? '#EF4444' : '#10B981', fontSize: '0.75rem', cursor: 'pointer' }}>
                                   {u.active ? 'Desactivar' : 'Activar'}
                                 </button>
                               )}

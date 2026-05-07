@@ -388,7 +388,14 @@ export class KpiService {
     if (!cached) return { transactions: [], total: 0 };
 
     let txns = cached.data as any[];
-    if (codCuenta) txns = txns.filter((t: any) => t.CodCuenta === codCuenta);
+    if (codCuenta) {
+      // prefix match when code is abbreviated (e.g. GAV uses 3-char codes like "916")
+      txns = txns.filter((t: any) =>
+        codCuenta.length >= 8
+          ? t.CodCuenta === codCuenta
+          : String(t.CodCuenta).startsWith(codCuenta),
+      );
+    }
     if (mes) txns = txns.filter((t: any) => t.Mes === mes);
 
     return { transactions: txns, total: txns.length };

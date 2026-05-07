@@ -178,17 +178,24 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
 }) {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [mesFilter, setMesFilter] = useState<number | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setFetchError(false);
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const params = new URLSearchParams({ year: String(year), codCuenta });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
     fetch(`${API}/kpi/${companyId}/transactions?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: ctrl.signal,
     })
       .then(r => r.json())
       .then(d => { setTxns(d.transactions || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setFetchError(true); setLoading(false); })
+      .finally(() => clearTimeout(timer));
   }, [companyId, year, codCuenta]);
 
   const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
@@ -220,7 +227,17 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
             </button>
           ))}
         </div>
-        {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div> : (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando asientos...</div>
+        ) : fetchError ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#EF4444', fontSize: '0.85rem' }}>
+            Error al cargar los datos. Verifica tu conexión o vuelve a intentarlo.
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
+            Sin asientos para esta cuenta en {year}. Ejecuta una sincronización para cargar los movimientos.
+          </div>
+        ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
               <thead>

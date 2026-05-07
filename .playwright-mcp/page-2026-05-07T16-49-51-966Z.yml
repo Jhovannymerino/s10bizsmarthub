@@ -1,0 +1,530 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e44]:
+      - generic [ref=e46]:
+        - img "Business Smart Hub" [ref=e48]
+        - heading "Business Smart Hub" [level=1] [ref=e49]:
+          - text: Business
+          - text: Smart Hub
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - text: Powered
+          - text: by
+        - img "Bizware Apps" [ref=e53]
+      - link "Sincronización" [active] [ref=e55] [cursor=pointer]:
+        - /url: /sync
+        - generic [ref=e56]:
+          - img [ref=e57]
+          - generic [ref=e59]: Sincronización
+      - navigation [ref=e60]:
+        - generic [ref=e61]:
+          - button "PANELES" [ref=e62]:
+            - generic [ref=e63]:
+              - img [ref=e64]
+              - generic [ref=e69]: PANELES
+            - img [ref=e70]
+          - generic [ref=e72]:
+            - link "Dashboard de Negocio" [ref=e73] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e76]: Dashboard de Negocio
+            - link "Dashboard de Gastos" [ref=e77] [cursor=pointer]:
+              - /url: /dashboard/gastos
+              - generic [ref=e80]: Dashboard de Gastos
+        - generic [ref=e81]:
+          - button "INFORMES DE NEGOCIO" [ref=e82]:
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - generic [ref=e86]: INFORMES DE NEGOCIO
+            - img [ref=e87]
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - button "Compras y Gastos" [ref=e92]:
+                - generic [ref=e93]: Compras y Gastos
+                - img [ref=e94]
+              - generic [ref=e96]:
+                - link "Cuentas x Pagar" [ref=e97] [cursor=pointer]:
+                  - /url: /reports/business/ctas-pagar
+                  - generic [ref=e99]: Cuentas x Pagar
+                - link "Gastos Mayor Consol" [ref=e100] [cursor=pointer]:
+                  - /url: /reports/business/gastos-mayor-consol
+                  - generic [ref=e102]: Gastos Mayor Consol
+                - link "Libro de Compras Consol" [ref=e103] [cursor=pointer]:
+                  - /url: /reports/business/compras-consol
+                  - generic [ref=e105]: Libro de Compras Consol
+            - generic [ref=e106]:
+              - button "Modulo de Ventas" [ref=e108]:
+                - generic [ref=e109]: Modulo de Ventas
+                - img [ref=e110]
+              - generic [ref=e112]:
+                - link "Cotizado vs Facturado" [ref=e113] [cursor=pointer]:
+                  - /url: /reports/business/cotizado-vs-facturado
+                  - generic [ref=e115]: Cotizado vs Facturado
+                - link "Ventas vs Cobros" [ref=e116] [cursor=pointer]:
+                  - /url: /reports/business/ventas-vs-cobros
+                  - generic [ref=e118]: Ventas vs Cobros
+                - link "Libro de Ventas Consol" [ref=e119] [cursor=pointer]:
+                  - /url: /reports/business/ventas-consol
+                  - generic [ref=e121]: Libro de Ventas Consol
+            - generic [ref=e122]:
+              - button "Recursos Humanos" [ref=e124]:
+                - generic [ref=e125]: Recursos Humanos
+                - img [ref=e126]
+              - generic [ref=e128]:
+                - link "Bono turnos consol" [ref=e129] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-bono-turno-consol
+                  - generic [ref=e131]: Bono turnos consol
+                - link "Dias trabajados consol" [ref=e132] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-dias-trabajados-consol
+                  - generic [ref=e134]: Dias trabajados consol
+                - link "Honorarios consol" [ref=e135] [cursor=pointer]:
+                  - /url: /reports/business/honorarios-consol
+                  - generic [ref=e137]: Honorarios consol
+                - link "Horas extra consol" [ref=e138] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-horas-extra-consol
+                  - generic [ref=e140]: Horas extra consol
+                - link "Licencias consol" [ref=e141] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-licencias-consol
+                  - generic [ref=e143]: Licencias consol
+                - link "RRHH consol" [ref=e144] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-integrado-consol
+                  - generic [ref=e146]: RRHH consol
+                - link "Vacaciones consol" [ref=e147] [cursor=pointer]:
+                  - /url: /reports/business/vacaciones-consol
+                  - generic [ref=e149]: Vacaciones consol
+            - generic [ref=e150]:
+              - button "Valorizaciones" [ref=e152]:
+                - generic [ref=e153]: Valorizaciones
+                - img [ref=e154]
+              - link "Costo Hora Habil" [ref=e157] [cursor=pointer]:
+                - /url: /valuations/working-hour-cost
+                - generic [ref=e159]: Costo Hora Habil
+            - generic [ref=e160]:
+              - button "CONTABILIDAD" [ref=e162]:
+                - generic [ref=e163]: CONTABILIDAD
+                - img [ref=e164]
+              - generic [ref=e166]:
+                - link "Rendiciones Solicitadas" [ref=e167] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-solicitadas-consol
+                  - generic [ref=e169]: Rendiciones Solicitadas
+                - link "Rendiciones Procesadas" [ref=e170] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-procesadas-consol
+                  - generic [ref=e172]: Rendiciones Procesadas
+                - link "Impuesto Único" [ref=e173] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-impuesto-unico-consol
+                  - generic [ref=e175]: Impuesto Único
+                - link "Adicional Salud" [ref=e176] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-adicional-salud-consol
+                  - generic [ref=e178]: Adicional Salud
+                - link "Monto AFP" [ref=e179] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-afp-consol
+                  - generic [ref=e181]: Monto AFP
+                - link "Monto Anticipo" [ref=e182] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-anticipo-consol
+                  - generic [ref=e184]: Monto Anticipo
+                - link "Monto Movilización" [ref=e185] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-movilizacion-consol
+                  - generic [ref=e187]: Monto Movilización
+                - link "Monto SIS" [ref=e188] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-sis-consol
+                  - generic [ref=e190]: Monto SIS
+                - link "Fondos por Rendir" [ref=e191] [cursor=pointer]:
+                  - /url: /reports/business/fondos-rendir
+                  - generic [ref=e193]: Fondos por Rendir
+        - generic [ref=e194]:
+          - button "DETALLE KAME" [ref=e195]:
+            - generic [ref=e196]:
+              - img [ref=e197]
+              - generic [ref=e199]: DETALLE KAME
+            - img [ref=e200]
+          - generic [ref=e202]:
+            - generic [ref=e203]:
+              - button "Modulo de Ventas" [ref=e205]:
+                - generic [ref=e206]: Modulo de Ventas
+                - img [ref=e207]
+              - generic [ref=e209]:
+                - link "Cotizaciones x Venta (Kame)" [ref=e210] [cursor=pointer]:
+                  - /url: /reports/COTIZACIONES
+                  - generic [ref=e212]: Cotizaciones x Venta (Kame)
+                - link "Cuentas por Cobrar (Kame)" [ref=e213] [cursor=pointer]:
+                  - /url: /reports/CTAS_COBRAR
+                  - generic [ref=e215]: Cuentas por Cobrar (Kame)
+                - link "Libro de Ventas (Kame)" [ref=e216] [cursor=pointer]:
+                  - /url: /reports/VENTAS
+                  - generic [ref=e218]: Libro de Ventas (Kame)
+            - generic [ref=e219]:
+              - button "Compras y Gastos" [ref=e221]:
+                - generic [ref=e222]: Compras y Gastos
+                - img [ref=e223]
+              - generic [ref=e225]:
+                - link "Cuentas por Pagar (Kame)" [ref=e226] [cursor=pointer]:
+                  - /url: /reports/CTAS_PAGAR
+                  - generic [ref=e228]: Cuentas por Pagar (Kame)
+                - link "Gastos Consolidados (Kame)" [ref=e229] [cursor=pointer]:
+                  - /url: /reports/GASTOS_MAYOR
+                  - generic [ref=e231]: Gastos Consolidados (Kame)
+                - link "Libro de Compras (Kame)" [ref=e232] [cursor=pointer]:
+                  - /url: /reports/COMPRAS
+                  - generic [ref=e234]: Libro de Compras (Kame)
+                - link "Ordenes de Compra (Kame)" [ref=e235] [cursor=pointer]:
+                  - /url: /reports/OCS
+                  - generic [ref=e237]: Ordenes de Compra (Kame)
+                - link "OCs Facturadas (Kame)" [ref=e238] [cursor=pointer]:
+                  - /url: /reports/OC_FACTURADAS
+                  - generic [ref=e240]: OCs Facturadas (Kame)
+            - generic [ref=e241]:
+              - button "Recursos Humanos" [ref=e243]:
+                - generic [ref=e244]: Recursos Humanos
+                - img [ref=e245]
+              - generic [ref=e247]:
+                - link "Boletas Honorarios (Kame)" [ref=e248] [cursor=pointer]:
+                  - /url: /reports/HONORARIOS
+                  - generic [ref=e250]: Boletas Honorarios (Kame)
+                - link "Bono Turno (Kame)" [ref=e251] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_BONO_TURNO
+                  - generic [ref=e253]: Bono Turno (Kame)
+                - link "Costo Empresa (Kame)" [ref=e254] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_EMPRESA
+                  - generic [ref=e256]: Costo Empresa (Kame)
+                - link "Días Trabajados (Kame)" [ref=e257] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_TRABAJADOS
+                  - generic [ref=e259]: Días Trabajados (Kame)
+                - link "Días de Licencia (Kame)" [ref=e260] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_LICENCIA
+                  - generic [ref=e262]: Días de Licencia (Kame)
+                - link "Finiquitos (Kame)" [ref=e263] [cursor=pointer]:
+                  - /url: /reports/FINIQUITOS
+                  - generic [ref=e265]: Finiquitos (Kame)
+                - link "Horas Extra - Cantidad (Kame)" [ref=e266] [cursor=pointer]:
+                  - /url: /reports/RRHH_CANTIDAD_HORAS_EXTRA
+                  - generic [ref=e268]: Horas Extra - Cantidad (Kame)
+                - link "Horas Extra - Costo (Kame)" [ref=e269] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_HORAS_EXTRA
+                  - generic [ref=e271]: Horas Extra - Costo (Kame)
+                - link "Movimientos Personal (Kame)" [ref=e272] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVIMIENTOS_PERSONAL
+                  - generic [ref=e274]: Movimientos Personal (Kame)
+                - link "Total Líquido (Kame)" [ref=e275] [cursor=pointer]:
+                  - /url: /reports/RRHH_TOTAL_LIQUIDO
+                  - generic [ref=e277]: Total Líquido (Kame)
+                - link "Vacaciones (Kame)" [ref=e278] [cursor=pointer]:
+                  - /url: /reports/VACACIONES
+                  - generic [ref=e280]: Vacaciones (Kame)
+            - generic [ref=e281]:
+              - button "CONTABILIDAD" [ref=e283]:
+                - generic [ref=e284]: CONTABILIDAD
+                - img [ref=e285]
+              - generic [ref=e287]:
+                - link "Rendiciones Solicitadas (Kame)" [ref=e288] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_SOLICITADAS
+                  - generic [ref=e290]: Rendiciones Solicitadas (Kame)
+                - link "Rendiciones Procesadas (Kame)" [ref=e291] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_PROCESADAS
+                  - generic [ref=e293]: Rendiciones Procesadas (Kame)
+                - link "Fondos por Rendir (Kame)" [ref=e294] [cursor=pointer]:
+                  - /url: /reports/FONDOS_RENDIR
+                  - generic [ref=e296]: Fondos por Rendir (Kame)
+                - link "Impuesto Único (Kame)" [ref=e297] [cursor=pointer]:
+                  - /url: /reports/RRHH_IMPUESTO_UNICO
+                  - generic [ref=e299]: Impuesto Único (Kame)
+                - link "Adicional Salud (Kame)" [ref=e300] [cursor=pointer]:
+                  - /url: /reports/RRHH_ADICIONAL_SALUD
+                  - generic [ref=e302]: Adicional Salud (Kame)
+                - link "Monto AFP (Kame)" [ref=e303] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_AFP
+                  - generic [ref=e305]: Monto AFP (Kame)
+                - link "Monto Anticipo (Kame)" [ref=e306] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_ANTICIPO
+                  - generic [ref=e308]: Monto Anticipo (Kame)
+                - link "Monto Movilización (Kame)" [ref=e309] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVILIZACION
+                  - generic [ref=e311]: Monto Movilización (Kame)
+                - link "Monto SIS (Kame)" [ref=e312] [cursor=pointer]:
+                  - /url: /reports/RRHH_SIS
+                  - generic [ref=e314]: Monto SIS (Kame)
+        - generic [ref=e315]:
+          - button "CONFIGURACIÓN" [ref=e316]:
+            - generic [ref=e317]:
+              - img [ref=e318]
+              - generic [ref=e321]: CONFIGURACIÓN
+            - img [ref=e322]
+          - generic [ref=e324]:
+            - link "Usuarios" [ref=e325] [cursor=pointer]:
+              - /url: /admin/users
+              - generic [ref=e328]: Usuarios
+            - link "Roles y Perfiles" [ref=e329] [cursor=pointer]:
+              - /url: /admin/roles
+              - generic [ref=e332]: Roles y Perfiles
+            - link "Configuración General" [ref=e333] [cursor=pointer]:
+              - /url: /settings
+              - generic [ref=e336]: Configuración General
+      - generic [ref=e339] [cursor=pointer]:
+        - generic [ref=e340]: JH
+        - generic [ref=e341]:
+          - paragraph [ref=e342]: JHOVANNY MERINO
+          - paragraph [ref=e343]: jmerino@grupobizware.com
+        - generic [ref=e344]:
+          - button [ref=e345]:
+            - img [ref=e346]
+          - button [ref=e350]:
+            - img [ref=e351]
+    - main [ref=e3]:
+      - generic [ref=e932]:
+        - generic [ref=e933]:
+          - generic:
+            - img
+          - generic [ref=e935]:
+            - generic [ref=e936]:
+              - generic [ref=e937]:
+                - img [ref=e939]
+                - generic [ref=e941]: System Performance
+              - heading "Estado de Sincronización" [level=1] [ref=e942]:
+                - generic [ref=e943]: Estado de
+                - generic [ref=e944]: Sincronización
+              - paragraph [ref=e945]: Monitoreo y control centralizado de la extracción de datos desde KameOne.
+            - generic [ref=e946]:
+              - generic [ref=e947]:
+                - button "Sincronizar" [ref=e948]:
+                  - img [ref=e949]
+                  - generic [ref=e954]: Sincronizar
+                - button "Reintentar" [ref=e955]:
+                  - img [ref=e956]
+                  - generic [ref=e961]: Reintentar
+              - generic [ref=e962]:
+                - button "Rango" [ref=e963]:
+                  - img [ref=e964]
+                  - generic [ref=e967]: Rango
+                - button "Historial" [ref=e968]:
+                  - img [ref=e969]
+                  - generic [ref=e972]: Historial
+                - button "Datos" [ref=e973]:
+                  - img [ref=e974]
+                  - generic [ref=e977]: Datos
+        - generic [ref=e978]:
+          - generic [ref=e979]:
+            - generic [ref=e980]:
+              - img [ref=e982]
+              - text: Historial de Ejecuciones
+            - generic [ref=e985]:
+              - img [ref=e986]
+              - textbox "Buscar por empresa o informe..." [ref=e989]
+          - table [ref=e992]:
+            - rowgroup [ref=e993]:
+              - row "Estado Empresa Informe Duración Resultado Fecha ▼" [ref=e994]:
+                - columnheader "Estado" [ref=e995] [cursor=pointer]:
+                  - generic [ref=e997]: Estado
+                - columnheader "Empresa" [ref=e998] [cursor=pointer]:
+                  - generic [ref=e1000]: Empresa
+                - columnheader "Informe" [ref=e1001] [cursor=pointer]:
+                  - generic [ref=e1003]: Informe
+                - columnheader "Duración" [ref=e1004] [cursor=pointer]:
+                  - generic [ref=e1006]: Duración
+                - columnheader "Resultado" [ref=e1007] [cursor=pointer]:
+                  - generic [ref=e1009]: Resultado
+                - columnheader "Fecha ▼" [ref=e1010] [cursor=pointer]:
+                  - generic [ref=e1011]:
+                    - generic [ref=e1012]: Fecha
+                    - text: ▼
+            - rowgroup [ref=e1013]:
+              - row "Exitoso NOVACLOUD SPA Cuentas por Pagar 309ms Synced 9 records 24-04-2026 4:56:04 p. m." [ref=e1014]:
+                - cell "Exitoso" [ref=e1015]:
+                  - generic [ref=e1016]:
+                    - img [ref=e1017]
+                    - text: Exitoso
+                - cell "NOVACLOUD SPA" [ref=e1020]
+                - cell "Cuentas por Pagar" [ref=e1021]
+                - cell "309ms" [ref=e1022]
+                - cell "Synced 9 records" [ref=e1023]
+                - cell "24-04-2026 4:56:04 p. m." [ref=e1024]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Cuentas por Pagar 391ms Synced 27 records 24-04-2026 4:56:01 p. m." [ref=e1025]:
+                - cell "Exitoso" [ref=e1026]:
+                  - generic [ref=e1027]:
+                    - img [ref=e1028]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1031]
+                - cell "Cuentas por Pagar" [ref=e1032]
+                - cell "391ms" [ref=e1033]
+                - cell "Synced 27 records" [ref=e1034]
+                - cell "24-04-2026 4:56:01 p. m." [ref=e1035]
+              - row "Exitoso INGENIERIA Y SISTEMAS BIZWARE LIMITADA Cuentas por Pagar 942ms Synced 164 records 24-04-2026 4:55:59 p. m." [ref=e1036]:
+                - cell "Exitoso" [ref=e1037]:
+                  - generic [ref=e1038]:
+                    - img [ref=e1039]
+                    - text: Exitoso
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1042]
+                - cell "Cuentas por Pagar" [ref=e1043]
+                - cell "942ms" [ref=e1044]
+                - cell "Synced 164 records" [ref=e1045]
+                - cell "24-04-2026 4:55:59 p. m." [ref=e1046]
+              - row "Error BIZWARE CONSULTORIA INFORMATICA LIMITADA Finiquitos 1.0s Request failed with status code 500 18-04-2026 5:41:34 p. m." [ref=e1047]:
+                - cell "Error" [ref=e1048]:
+                  - generic [ref=e1049]:
+                    - img [ref=e1050]
+                    - text: Error
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1054]
+                - cell "Finiquitos" [ref=e1055]
+                - cell "1.0s" [ref=e1056]
+                - cell "Request failed with status code 500" [ref=e1057]
+                - cell "18-04-2026 5:41:34 p. m." [ref=e1058]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Movimientos Personal 152ms Synced 1 records 18-04-2026 5:41:33 p. m." [ref=e1059]:
+                - cell "Exitoso" [ref=e1060]:
+                  - generic [ref=e1061]:
+                    - img [ref=e1062]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1065]
+                - cell "Movimientos Personal" [ref=e1066]
+                - cell "152ms" [ref=e1067]
+                - cell "Synced 1 records" [ref=e1068]
+                - cell "18-04-2026 5:41:33 p. m." [ref=e1069]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Días de Licencia 450ms Synced 8 records 18-04-2026 5:41:33 p. m." [ref=e1070]:
+                - cell "Exitoso" [ref=e1071]:
+                  - generic [ref=e1072]:
+                    - img [ref=e1073]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1076]
+                - cell "Días de Licencia" [ref=e1077]
+                - cell "450ms" [ref=e1078]
+                - cell "Synced 8 records" [ref=e1079]
+                - cell "18-04-2026 5:41:33 p. m." [ref=e1080]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Días Trabajados 403ms Synced 8 records 18-04-2026 5:41:32 p. m." [ref=e1081]:
+                - cell "Exitoso" [ref=e1082]:
+                  - generic [ref=e1083]:
+                    - img [ref=e1084]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1087]
+                - cell "Días Trabajados" [ref=e1088]
+                - cell "403ms" [ref=e1089]
+                - cell "Synced 8 records" [ref=e1090]
+                - cell "18-04-2026 5:41:32 p. m." [ref=e1091]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Bono Turno 385ms Synced 8 records 18-04-2026 5:41:32 p. m." [ref=e1092]:
+                - cell "Exitoso" [ref=e1093]:
+                  - generic [ref=e1094]:
+                    - img [ref=e1095]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1098]
+                - cell "Bono Turno" [ref=e1099]
+                - cell "385ms" [ref=e1100]
+                - cell "Synced 8 records" [ref=e1101]
+                - cell "18-04-2026 5:41:32 p. m." [ref=e1102]
+              - row "Error BIZWARE CONSULTORIA INFORMATICA LIMITADA Gastos Consolidados 283ms Request failed with status code 500 18-04-2026 5:41:32 p. m." [ref=e1103]:
+                - cell "Error" [ref=e1104]:
+                  - generic [ref=e1105]:
+                    - img [ref=e1106]
+                    - text: Error
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1110]
+                - cell "Gastos Consolidados" [ref=e1111]
+                - cell "283ms" [ref=e1112]
+                - cell "Request failed with status code 500" [ref=e1113]
+                - cell "18-04-2026 5:41:32 p. m." [ref=e1114]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Cuentas por Cobrar 2.6s Synced 0 records 18-04-2026 5:41:31 p. m." [ref=e1115]:
+                - cell "Exitoso" [ref=e1116]:
+                  - generic [ref=e1117]:
+                    - img [ref=e1118]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1121]
+                - cell "Cuentas por Cobrar" [ref=e1122]
+                - cell "2.6s" [ref=e1123]
+                - cell "Synced 0 records" [ref=e1124]
+                - cell "18-04-2026 5:41:31 p. m." [ref=e1125]
+              - row "Error BIZWARE CONSULTORIA INFORMATICA LIMITADA Rendiciones (Procesadas) 2.7s Session lost during fetch for RENDICIONES_PROCESADAS 18-04-2026 5:41:29 p. m." [ref=e1126]:
+                - cell "Error" [ref=e1127]:
+                  - generic [ref=e1128]:
+                    - img [ref=e1129]
+                    - text: Error
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1133]
+                - cell "Rendiciones (Procesadas)" [ref=e1134]
+                - cell "2.7s" [ref=e1135]
+                - cell "Session lost during fetch for RENDICIONES_PROCESADAS" [ref=e1136]
+                - cell "18-04-2026 5:41:29 p. m." [ref=e1137]
+              - row "Error BIZWARE CONSULTORIA INFORMATICA LIMITADA Rendiciones (Solicitudes) 356ms Session lost during fetch for RENDICIONES_SOLICITADAS 18-04-2026 5:41:26 p. m." [ref=e1138]:
+                - cell "Error" [ref=e1139]:
+                  - generic [ref=e1140]:
+                    - img [ref=e1141]
+                    - text: Error
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1145]
+                - cell "Rendiciones (Solicitudes)" [ref=e1146]
+                - cell "356ms" [ref=e1147]
+                - cell "Session lost during fetch for RENDICIONES_SOLICITADAS" [ref=e1148]
+                - cell "18-04-2026 5:41:26 p. m." [ref=e1149]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Total Líquido 395ms Synced 8 records 18-04-2026 5:41:25 p. m." [ref=e1150]:
+                - cell "Exitoso" [ref=e1151]:
+                  - generic [ref=e1152]:
+                    - img [ref=e1153]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1156]
+                - cell "Total Líquido" [ref=e1157]
+                - cell "395ms" [ref=e1158]
+                - cell "Synced 8 records" [ref=e1159]
+                - cell "18-04-2026 5:41:25 p. m." [ref=e1160]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Costo Empresa 512ms Synced 8 records 18-04-2026 5:41:25 p. m." [ref=e1161]:
+                - cell "Exitoso" [ref=e1162]:
+                  - generic [ref=e1163]:
+                    - img [ref=e1164]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1167]
+                - cell "Costo Empresa" [ref=e1168]
+                - cell "512ms" [ref=e1169]
+                - cell "Synced 8 records" [ref=e1170]
+                - cell "18-04-2026 5:41:25 p. m." [ref=e1171]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA OCs Facturadas 351ms Synced 0 records 18-04-2026 5:41:25 p. m." [ref=e1172]:
+                - cell "Exitoso" [ref=e1173]:
+                  - generic [ref=e1174]:
+                    - img [ref=e1175]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1178]
+                - cell "OCs Facturadas" [ref=e1179]
+                - cell "351ms" [ref=e1180]
+                - cell "Synced 0 records" [ref=e1181]
+                - cell "18-04-2026 5:41:25 p. m." [ref=e1182]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Ordenes de Compra 169ms Synced 0 records 18-04-2026 5:41:24 p. m." [ref=e1183]:
+                - cell "Exitoso" [ref=e1184]:
+                  - generic [ref=e1185]:
+                    - img [ref=e1186]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1189]
+                - cell "Ordenes de Compra" [ref=e1190]
+                - cell "169ms" [ref=e1191]
+                - cell "Synced 0 records" [ref=e1192]
+                - cell "18-04-2026 5:41:24 p. m." [ref=e1193]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Cotizaciones x Venta 185ms Synced 0 records 18-04-2026 5:41:24 p. m." [ref=e1194]:
+                - cell "Exitoso" [ref=e1195]:
+                  - generic [ref=e1196]:
+                    - img [ref=e1197]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1200]
+                - cell "Cotizaciones x Venta" [ref=e1201]
+                - cell "185ms" [ref=e1202]
+                - cell "Synced 0 records" [ref=e1203]
+                - cell "18-04-2026 5:41:24 p. m." [ref=e1204]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Libro de Compras 183ms Synced 2 records 18-04-2026 5:41:24 p. m." [ref=e1205]:
+                - cell "Exitoso" [ref=e1206]:
+                  - generic [ref=e1207]:
+                    - img [ref=e1208]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1211]
+                - cell "Libro de Compras" [ref=e1212]
+                - cell "183ms" [ref=e1213]
+                - cell "Synced 2 records" [ref=e1214]
+                - cell "18-04-2026 5:41:24 p. m." [ref=e1215]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Libro de Ventas 409ms Synced 0 records 18-04-2026 5:41:24 p. m." [ref=e1216]:
+                - cell "Exitoso" [ref=e1217]:
+                  - generic [ref=e1218]:
+                    - img [ref=e1219]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1222]
+                - cell "Libro de Ventas" [ref=e1223]
+                - cell "409ms" [ref=e1224]
+                - cell "Synced 0 records" [ref=e1225]
+                - cell "18-04-2026 5:41:24 p. m." [ref=e1226]
+              - row "Exitoso BIZWARE CONSULTORIA INFORMATICA LIMITADA Monto SIS 379ms Synced 8 records 18-04-2026 5:41:23 p. m." [ref=e1227]:
+                - cell "Exitoso" [ref=e1228]:
+                  - generic [ref=e1229]:
+                    - img [ref=e1230]
+                    - text: Exitoso
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1233]
+                - cell "Monto SIS" [ref=e1234]
+                - cell "379ms" [ref=e1235]
+                - cell "Synced 8 records" [ref=e1236]
+                - cell "18-04-2026 5:41:23 p. m." [ref=e1237]
+  - region "Notifications alt+T"
+  - alert [ref=e41]
+  - generic [ref=e928]: $25000k

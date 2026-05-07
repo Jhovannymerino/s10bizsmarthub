@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -25,9 +25,9 @@ const COLORS_EMPRESA = ['#207E83', '#F59E0B', '#10B981', '#2BB4BB'];
 // ─── Formatters ───────────────────────────────
 function fmt(n: number | undefined | null): string {
   if (n === undefined || n === null || isNaN(n)) return '—';
-  if (Math.abs(n) >= 1_000_000) return `S/ ${(n / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(n) >= 1_000) return `S/ ${(n / 1_000).toFixed(0)}K`;
-  return `S/ ${n.toFixed(0)}`;
+  const rounded = Math.round(n);
+  const abs = Math.abs(rounded).toLocaleString('en-US');
+  return rounded < 0 ? `-S/ ${abs}` : `S/ ${abs}`;
 }
 function pct(n: number | undefined | null): string {
   if (n === undefined || n === null || isNaN(n)) return '—';
@@ -64,6 +64,48 @@ function ExportBtn({ onClick }: { onClick: () => void }) {
       style={{ padding: '0.3rem 0.75rem', borderRadius: '0.375rem', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#8B97A8', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
       ⬇ CSV
     </button>
+  );
+}
+
+// ─── Sort helpers ─────────────────────────────
+type SortState = { col: string; dir: 'asc' | 'desc' };
+function sortRows<T extends Record<string, any>>(arr: T[], col: string, dir: 'asc' | 'desc'): T[] {
+  return [...arr].sort((a, b) => {
+    const av = a[col] ?? 0, bv = b[col] ?? 0;
+    const cmp = typeof av === 'string' ? av.localeCompare(bv, 'es') : (av as number) - (bv as number);
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+function toggleSort(cur: SortState, col: string): SortState {
+  return cur.col === col ? { col, dir: cur.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'desc' };
+}
+
+function SortTh({ label, col, sort, onSort, style }: {
+  label: string; col: string; sort: SortState; onSort: (col: string) => void; style?: React.CSSProperties;
+}) {
+  const active = sort.col === col;
+  return (
+    <th onClick={() => onSort(col)} style={{ cursor: 'pointer', userSelect: 'none', ...style }}>
+      {label}{' '}
+      <span style={{ fontSize: '0.6rem', opacity: active ? 0.9 : 0.28 }}>
+        {active ? (sort.dir === 'asc' ? '↑' : '↓') : '↕'}
+      </span>
+    </th>
+  );
+}
+
+function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      <span style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', color: '#8B97A8', fontSize: '0.8rem', pointerEvents: 'none' }}>🔍</span>
+      <input
+        type="text" value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder || 'Buscar...'}
+        style={{ padding: '0.4rem 0.75rem 0.4rem 2rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', color: '#F8FAFC', fontSize: '0.8rem', outline: 'none', width: 220, fontFamily: 'var(--font-inter), sans-serif', transition: 'border-color 0.15s' }}
+        onFocus={e => (e.target.style.borderColor = 'rgba(32,126,131,0.5)')}
+        onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+      />
+    </div>
   );
 }
 
@@ -317,6 +359,169 @@ function CxCTransactionModal({ companyId, cliente, codCliente, onClose }: {
   );
 }
 
+function CxPTransactionModal({ companyId, proveedor, codProveedor, onClose }: {
+  companyId: string; proveedor: string; codProveedor: string; onClose: () => void;
+}) {
+  const [txns, setTxns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [anioFilter, setAnioFilter] = useState<number | null>(null);
+
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const params = new URLSearchParams({ codTercero: String(codProveedor) });
+    fetch(`${API}/kpi/${companyId}/cxp-transactions?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(d => { setTxns(d.transactions || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [companyId, codProveedor]);
+
+  const aniosPresentes = Array.from(new Set(txns.map((t: any) => t.Anio as number))).sort((a, b) => b - a);
+  const filtered = anioFilter ? txns.filter((t: any) => t.Anio === anioFilter) : txns;
+  const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
+  const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={onClose}>
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Movimientos clase 42 (CxP) · {filtered.length} asientos</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <button onClick={() => setAnioFilter(null)}
+            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: anioFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
+            Todos
+          </button>
+          {aniosPresentes.map(a => (
+            <button key={a} onClick={() => setAnioFilter(a)}
+              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === a ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === a ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: anioFilter === a ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
+              {a}
+            </button>
+          ))}
+        </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>📭</div>
+            <div>Sin asientos disponibles. Ejecuta una sincronización completa para cargar los movimientos de CxP.</div>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Nro. Asiento</th><th>Cuenta</th>
+                  <th style={{ minWidth: 260 }}>Glosa</th>
+                  <th>Débito</th><th>Crédito</th><th>Neto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((t: any, i: number) => {
+                  const neto = (t.Credito || 0) - (t.Debito || 0);
+                  return (
+                    <tr key={i}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2BB4BB' }}>{t.CodCuenta}</td>
+                      <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
+                      <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto > 0 ? '#EF4444' : '#10B981' }}>{fmt(Math.abs(neto))}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="total-row">
+                  <td colSpan={4}>TOTAL</td>
+                  <td>{fmt(totalDeb)}</td>
+                  <td>{fmt(totalCred)}</td>
+                  <td style={{ color: (totalCred - totalDeb) > 0 ? '#EF4444' : '#10B981' }}>{fmt(Math.abs(totalCred - totalDeb))}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GavCategoryModal({ companyId, year, cat, onClose }: {
+  companyId: string; year: number;
+  cat: { cod: string; descripcion: string; meses: Record<number, number>; ytd: number };
+  onClose: () => void;
+}) {
+  const [txDrill, setTxDrill] = useState(false);
+  const mesesConDatos = Object.entries(cat.meses)
+    .filter(([, v]) => (v as number) !== 0)
+    .map(([k]) => parseInt(k))
+    .sort((a, b) => a - b);
+  const chartData = mesesConDatos.map(m => ({ mes: MESES[m - 1], value: cat.meses[m] || 0 }));
+
+  if (txDrill) {
+    return <TransactionModal companyId={companyId} year={year} codCuenta={cat.cod} descripcion={cat.descripcion} onClose={() => setTxDrill(false)} />;
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={onClose}>
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 720, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cat.cod} — {cat.descripcion}</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>GAV mensual · YTD: {fmt(cat.ytd)}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+        </div>
+        {chartData.length > 0 && (
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#8B97A8' }} />
+              <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}K`} tick={{ fontSize: 10, fill: '#8B97A8' }} />
+              <Tooltip formatter={(v: number) => [fmt(v), 'GAV']} />
+              <Bar dataKey="value" fill="#207E83" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+        <table className="table-s10" style={{ marginTop: '1rem' }}>
+          <thead>
+            <tr><th>Mes</th><th>Importe</th><th>% YTD</th></tr>
+          </thead>
+          <tbody>
+            {mesesConDatos.map(m => (
+              <tr key={m}>
+                <td>{MESES[m - 1]}</td>
+                <td>{fmt(cat.meses[m] || 0)}</td>
+                <td style={{ color: '#8B97A8' }}>{cat.ytd > 0 ? pct(((cat.meses[m] || 0) / cat.ytd) * 100) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="total-row"><td>TOTAL YTD</td><td>{fmt(cat.ytd)}</td><td>100%</td></tr>
+          </tfoot>
+        </table>
+        <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+          <button onClick={() => setTxDrill(true)}
+            style={{ padding: '0.45rem 1rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+            Ver asientos individuales ▶
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DetalleModal({ title, rows, activeMeses, companyId, year, onClose }: {
   title: string; rows: any[]; activeMeses: number[]; companyId: string; year: number; onClose: () => void;
 }) {
@@ -459,7 +664,8 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<typeof COMPANIES[0] | typeof GRUPO>(COMPANIES[0]);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'unavailable' | 'error'>('idle');
+  const [syncMsg, setSyncMsg] = useState('');
   const [pl, setPL] = useState<any>(null);
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
@@ -479,6 +685,13 @@ export default function DashboardPage() {
   const [cxp, setCxP] = useState<any>(null);
   const [drillDown, setDrillDown] = useState<{ title: string; rows: any[] } | null>(null);
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
+  const [cxpTxDrill, setCxPTxDrill] = useState<{ proveedor: string; codProveedor: string } | null>(null);
+  const [gavDrill, setGavDrill] = useState<{ cod: string; descripcion: string; meses: Record<number, number>; ytd: number } | null>(null);
+  const [cxcSearch, setCxcSearch] = useState('');
+  const [cxpSearch, setCxpSearch] = useState('');
+  const [cxcSort, setCxcSort] = useState<SortState>({ col: 'saldoTotal', dir: 'desc' });
+  const [cxpSort, setCxpSort] = useState<SortState>({ col: 'saldoTotal', dir: 'desc' });
+  const [gavSort, setGavSort] = useState<SortState>({ col: 'ytd', dir: 'desc' });
   const [docs, setDocs] = useState<{ emitidas: any[]; recibidas: any[]; honorarios: any[] } | null>(null);
   const [docsTab, setDocsTab] = useState<'emitidas' | 'recibidas' | 'honorarios'>('emitidas');
   const [docsSearch, setDocsSearch] = useState('');
@@ -648,6 +861,22 @@ export default function DashboardPage() {
           onClose={() => setCxCTxDrill(null)}
         />
       )}
+      {cxpTxDrill && (
+        <CxPTransactionModal
+          companyId={selectedCompany.codEmpresa}
+          proveedor={cxpTxDrill.proveedor}
+          codProveedor={cxpTxDrill.codProveedor}
+          onClose={() => setCxPTxDrill(null)}
+        />
+      )}
+      {gavDrill && (
+        <GavCategoryModal
+          companyId={selectedCompany.codEmpresa}
+          year={selectedYear}
+          cat={gavDrill}
+          onClose={() => setGavDrill(null)}
+        />
+      )}
 
       {/* ── Sidebar ── */}
       <div className="sidebar">
@@ -665,10 +894,11 @@ export default function DashboardPage() {
             </div>
           </div>
           {/* Sync badge */}
-          <div className={`sync-badge${syncStatus === 'error' ? ' offline' : ''}`} style={{ width: '100%', justifyContent: 'center' }}>
-            {syncStatus === 'running' ? '⏳ Sincronizando...'
-           : syncStatus === 'done'    ? '✓ Sync completado'
-           : syncStatus === 'error'   ? '✗ Error de sync'
+          <div className={`sync-badge${syncStatus === 'error' || syncStatus === 'unavailable' ? ' offline' : ''}`} style={{ width: '100%', justifyContent: 'center' }}>
+            {syncStatus === 'running'     ? '⏳ Sincronizando...'
+           : syncStatus === 'done'        ? '✓ Datos actualizados'
+           : syncStatus === 'error'       ? '✗ Error de sync'
+           : syncStatus === 'unavailable' ? '⚠ Sync manual'
            : '● Sistema online'}
           </div>
         </div>
@@ -748,37 +978,63 @@ export default function DashboardPage() {
               const token = localStorage.getItem('token');
               if (!token) return;
               setSyncStatus('running');
+              setSyncMsg('');
               try {
-                await fetch(`${API}/sync/trigger?years=${CURRENT_YEAR},${CURRENT_YEAR - 1}`, {
+                const res = await fetch(`${API}/sync/trigger?years=${CURRENT_YEAR},${CURRENT_YEAR - 1}`, {
                   method: 'POST', headers: { Authorization: `Bearer ${token}` },
                 });
-                setSyncStatus('done');
-                setTimeout(() => setSyncStatus('idle'), 5000);
+                const data = await res.json();
+                if (data.status === 'unavailable') {
+                  setSyncStatus('unavailable');
+                  setSyncMsg(data.message || '');
+                  setTimeout(() => setSyncStatus('idle'), 12000);
+                } else if (data.status === 'busy') {
+                  setSyncStatus('running');
+                  setSyncMsg('Ya hay un sync en progreso...');
+                } else {
+                  setSyncStatus('running');
+                  setSyncMsg('Sync iniciado en el servidor. Puede tomar varios minutos.');
+                  setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 120000);
+                }
               } catch {
                 setSyncStatus('error');
-                setTimeout(() => setSyncStatus('idle'), 4000);
+                setSyncMsg('No se pudo conectar al servidor.');
+                setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 6000);
               }
             }}
             style={{
               width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.625rem',
               border: '1px solid rgba(32,126,131,0.25)',
-              background: syncStatus === 'running' ? 'rgba(255,255,255,0.03)'
-                        : syncStatus === 'done'    ? 'rgba(16,185,129,0.15)'
-                        : syncStatus === 'error'   ? 'rgba(239,68,68,0.15)'
+              background: syncStatus === 'running'     ? 'rgba(245,158,11,0.1)'
+                        : syncStatus === 'done'        ? 'rgba(16,185,129,0.15)'
+                        : syncStatus === 'unavailable' ? 'rgba(239,68,68,0.1)'
+                        : syncStatus === 'error'       ? 'rgba(239,68,68,0.15)'
                         : 'rgba(32,126,131,0.1)',
-              color: syncStatus === 'done' ? '#10B981' : syncStatus === 'error' ? '#EF4444' : '#2BB4BB',
+              color: syncStatus === 'done'        ? '#10B981'
+                   : syncStatus === 'error'       ? '#EF4444'
+                   : syncStatus === 'unavailable' ? '#F59E0B'
+                   : syncStatus === 'running'     ? '#F59E0B'
+                   : '#2BB4BB',
               fontSize: '0.78rem', fontWeight: 700, cursor: syncStatus === 'running' ? 'default' : 'pointer',
               textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 0.2s',
             }}
           >
-            {syncStatus === 'running' ? '⏳ Sincronizando...'
-           : syncStatus === 'done'    ? '✓ Sync completado'
-           : syncStatus === 'error'   ? '✗ Error — reintentar'
+            {syncStatus === 'running'     ? '⏳ Sincronizando...'
+           : syncStatus === 'done'        ? '✓ Datos actualizados'
+           : syncStatus === 'error'       ? '✗ Error — reintentar'
+           : syncStatus === 'unavailable' ? '⚠ Ver instrucciones'
            : '↻ Sincronizar datos'}
           </button>
-          <div style={{ fontSize: '0.6rem', color: '#4B5563', marginTop: '0.35rem', textAlign: 'center', letterSpacing: '0.04em' }}>
-            Auto: Lun-Vie 7am y 6pm
-          </div>
+          {syncMsg && (
+            <div style={{ fontSize: '0.65rem', color: syncStatus === 'unavailable' ? '#F59E0B' : '#8B97A8', marginTop: '0.4rem', lineHeight: 1.4, padding: '0 0.1rem' }}>
+              {syncMsg}
+            </div>
+          )}
+          {!syncMsg && (
+            <div style={{ fontSize: '0.6rem', color: '#4B5563', marginTop: '0.35rem', textAlign: 'center', letterSpacing: '0.04em' }}>
+              Ejecutar: <code style={{ fontSize: '0.58rem', color: '#6B7280' }}>node sync-agent.js</code>
+            </div>
+          )}
         </div>
 
         {/* Nav principal */}
@@ -848,6 +1104,14 @@ export default function DashboardPage() {
         <div className="bg-blur-primary" />
         <div className="bg-blur-indigo" />
         <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* ── Sync running banner ── */}
+        {syncStatus === 'running' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 1rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#F59E0B' }}>
+            <span style={{ fontSize: '1rem', animation: 'spin 2s linear infinite' }}>⟳</span>
+            <span style={{ fontWeight: 600 }}>Sincronización en progreso</span>
+            <span style={{ color: '#8B97A8', fontSize: '0.75rem' }}>Los datos se actualizarán al completar. Puedes seguir navegando.</span>
+          </div>
+        )}
         <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div className="page-section-label">
@@ -1206,28 +1470,39 @@ export default function DashboardPage() {
               />
             </div>
             <div className="kpi-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Cliente</div>
-                <ExportBtn onClick={() => {
-                  const headers = ['Cliente', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Cartera'];
-                  const rows = [...cxc.clientes].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((c: any) => [
-                    c.cliente, c.dias0_30, c.dias31_60, c.dias61_90, c.dias90mas, c.saldoTotal,
-                    cxc.totalSaldo > 0 ? `${((c.saldoTotal / cxc.totalSaldo) * 100).toFixed(1)}%` : '',
-                  ]);
-                  exportCSV(`CxC_${selectedCompany.shortName}.csv`, headers, rows);
-                }} />
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <SearchInput value={cxcSearch} onChange={setCxcSearch} placeholder="Buscar cliente..." />
+                  <ExportBtn onClick={() => {
+                    const headers = ['Cliente', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Cartera'];
+                    const rows = sortRows(cxc.clientes, cxcSort.col, cxcSort.dir).map((c: any) => [
+                      c.cliente, c.dias0_30, c.dias31_60, c.dias61_90, c.dias90mas, c.saldoTotal,
+                      cxc.totalSaldo > 0 ? `${((c.saldoTotal / cxc.totalSaldo) * 100).toFixed(1)}%` : '',
+                    ]);
+                    exportCSV(`CxC_${selectedCompany.shortName}.csv`, headers, rows);
+                  }} />
+                </div>
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginBottom: '1rem' }}>Click en un cliente para ver los asientos individuales</div>
+              <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>Click en un cliente para ver los asientos individuales · Ordenar por columna</div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-s10">
                   <thead>
                     <tr>
-                      <th>Cliente</th><th>0-30 días</th><th>31-60 días</th><th>61-90 días</th><th>+90 días</th><th>Total</th><th>% Cartera</th>
+                      <SortTh label="Cliente" col="cliente" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                      <SortTh label="0-30 días" col="dias0_30" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                      <SortTh label="31-60 días" col="dias31_60" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                      <SortTh label="61-90 días" col="dias61_90" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                      <SortTh label="+90 días" col="dias90mas" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                      <SortTh label="Total" col="saldoTotal" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                      <th>% Cartera</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[...cxc.clientes].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((c: any) => (
-                      <tr key={c.codCliente} style={{ cursor: 'pointer' }}
+                    {sortRows(cxc.clientes, cxcSort.col, cxcSort.dir)
+                      .filter((c: any) => !cxcSearch || c.cliente?.toLowerCase().includes(cxcSearch.toLowerCase()))
+                      .map((c: any) => (
+                      <tr key={c.codCliente} data-clickable="1"
                         onClick={() => setCxCTxDrill({ cliente: c.cliente, codCliente: String(c.codCliente) })}
                         title="Ver asientos individuales">
                         <td style={{ color: '#2BB4BB' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
@@ -1242,7 +1517,7 @@ export default function DashboardPage() {
                   </tbody>
                   <tfoot>
                     <tr className="total-row">
-                      <td>TOTAL</td>
+                      <td>TOTAL ({cxc.clientes?.length} clientes)</td>
                       <td>{fmt(cxc.clientes?.reduce((s: number, c: any) => s + c.dias0_30, 0))}</td>
                       <td>{fmt(cxc.clientes?.reduce((s: number, c: any) => s + c.dias31_60, 0))}</td>
                       <td>{fmt(cxc.clientes?.reduce((s: number, c: any) => s + c.dias61_90, 0))}</td>
@@ -1295,28 +1570,42 @@ export default function DashboardPage() {
                 />
               </div>
               <div className="kpi-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Proveedor</div>
-                  <ExportBtn onClick={() => {
-                    const headers = ['Proveedor', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Deuda'];
-                    const rows = [...cxp.proveedores].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((p: any) => [
-                      p.proveedor, p.dias0_30, p.dias31_60, p.dias61_90, p.dias90mas, p.saldoTotal,
-                      cxp.totalSaldo > 0 ? `${((p.saldoTotal / cxp.totalSaldo) * 100).toFixed(1)}%` : '',
-                    ]);
-                    exportCSV(`CxP_${selectedCompany.shortName}.csv`, headers, rows);
-                  }} />
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <SearchInput value={cxpSearch} onChange={setCxpSearch} placeholder="Buscar proveedor..." />
+                    <ExportBtn onClick={() => {
+                      const headers = ['Proveedor', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Deuda'];
+                      const rows = sortRows(cxp.proveedores, cxpSort.col, cxpSort.dir).map((p: any) => [
+                        p.proveedor, p.dias0_30, p.dias31_60, p.dias61_90, p.dias90mas, p.saldoTotal,
+                        cxp.totalSaldo > 0 ? `${((p.saldoTotal / cxp.totalSaldo) * 100).toFixed(1)}%` : '',
+                      ]);
+                      exportCSV(`CxP_${selectedCompany.shortName}.csv`, headers, rows);
+                    }} />
+                  </div>
                 </div>
+                <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>Click en un proveedor para ver los asientos individuales · Ordenar por columna</div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10">
                     <thead>
                       <tr>
-                        <th>Proveedor</th><th>0-30 días</th><th>31-60 días</th><th>61-90 días</th><th>+90 días</th><th>Total</th><th>% Deuda</th>
+                        <SortTh label="Proveedor" col="proveedor" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
+                        <SortTh label="0-30 días" col="dias0_30" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
+                        <SortTh label="31-60 días" col="dias31_60" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
+                        <SortTh label="61-90 días" col="dias61_90" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
+                        <SortTh label="+90 días" col="dias90mas" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
+                        <SortTh label="Total" col="saldoTotal" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
+                        <th>% Deuda</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {[...cxp.proveedores].sort((a: any, b: any) => b.saldoTotal - a.saldoTotal).map((p: any) => (
-                        <tr key={p.codProveedor}>
-                          <td>{p.proveedor}</td>
+                      {sortRows(cxp.proveedores, cxpSort.col, cxpSort.dir)
+                        .filter((p: any) => !cxpSearch || p.proveedor?.toLowerCase().includes(cxpSearch.toLowerCase()))
+                        .map((p: any) => (
+                        <tr key={p.codProveedor} data-clickable="1"
+                          onClick={() => setCxPTxDrill({ proveedor: p.proveedor, codProveedor: String(p.codProveedor) })}
+                          title="Ver asientos individuales">
+                          <td style={{ color: '#2BB4BB' }}>{p.proveedor} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td>{fmt(p.dias0_30)}</td>
                           <td>{fmt(p.dias31_60)}</td>
                           <td>{fmt(p.dias61_90)}</td>
@@ -1328,7 +1617,7 @@ export default function DashboardPage() {
                     </tbody>
                     <tfoot>
                       <tr className="total-row">
-                        <td>TOTAL</td>
+                        <td>TOTAL ({cxp.proveedores?.length} proveedores)</td>
                         <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias0_30, 0))}</td>
                         <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias31_60, 0))}</td>
                         <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias61_90, 0))}</td>
@@ -1693,11 +1982,11 @@ export default function DashboardPage() {
         {activeTab === 'gav' && gav && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="kpi-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ fontWeight: 700, color: '#F8FAFC' }}>GAV por Categoría</div>
                 <ExportBtn onClick={() => {
                   const headers = ['Categoría', 'YTD', '% GAV', '% Ingresos'];
-                  const rows = (gav.categorias || []).map((c: any) => [
+                  const rows = sortRows(gav.categorias || [], gavSort.col, gavSort.dir).map((c: any) => [
                     c.descripcion, c.ytd,
                     `${c.pct?.toFixed(1)}%`,
                     ytd?.ingresos > 0 ? `${((c.ytd / ytd.ingresos) * 100).toFixed(1)}%` : '',
@@ -1705,14 +1994,22 @@ export default function DashboardPage() {
                   exportCSV(`GAV_${selectedCompany.shortName}_${selectedYear}.csv`, headers, rows);
                 }} />
               </div>
+              <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>Click en una categoría para ver el detalle mensual y los asientos</div>
               <table className="table-s10">
                 <thead>
-                  <tr><th>Categoría</th><th>YTD</th><th>% GAV</th><th>% Ingresos</th></tr>
+                  <tr>
+                    <SortTh label="Categoría" col="descripcion" sort={gavSort} onSort={c => setGavSort(toggleSort(gavSort, c))} />
+                    <SortTh label="YTD" col="ytd" sort={gavSort} onSort={c => setGavSort(toggleSort(gavSort, c))} />
+                    <SortTh label="% GAV" col="pct" sort={gavSort} onSort={c => setGavSort(toggleSort(gavSort, c))} />
+                    <th>% Ingresos</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {gav.categorias?.map((c: any) => (
-                    <tr key={c.cod}>
-                      <td>{c.descripcion}</td>
+                  {sortRows(gav.categorias || [], gavSort.col, gavSort.dir).map((c: any) => (
+                    <tr key={c.cod} data-clickable="1"
+                      onClick={() => setGavDrill({ cod: c.cod, descripcion: c.descripcion, meses: c.meses, ytd: c.ytd })}
+                      title="Ver detalle mensual">
+                      <td style={{ color: '#2BB4BB' }}>{c.descripcion} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                       <td>{fmt(c.ytd)}</td>
                       <td>{pct(c.pct)}</td>
                       <td style={{ color: '#8B97A8' }}>

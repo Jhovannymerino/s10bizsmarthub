@@ -1,0 +1,1004 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - img "Business Smart Hub" [ref=e9]
+        - heading "Business Smart Hub" [level=1] [ref=e10]:
+          - text: Business
+          - text: Smart Hub
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - text: Powered
+          - text: by
+        - img "Bizware Apps" [ref=e14]
+      - link "Sincronización" [ref=e16] [cursor=pointer]:
+        - /url: /sync
+        - generic [ref=e17]:
+          - img [ref=e18]
+          - generic [ref=e20]: Sincronización
+      - navigation [ref=e21]:
+        - generic [ref=e22]:
+          - button "PANELES" [ref=e23]:
+            - generic [ref=e24]:
+              - img [ref=e25]
+              - generic [ref=e30]: PANELES
+            - img [ref=e31]
+          - generic [ref=e33]:
+            - link "Dashboard de Negocio" [ref=e34] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e37]: Dashboard de Negocio
+            - link "Dashboard de Gastos" [ref=e38] [cursor=pointer]:
+              - /url: /dashboard/gastos
+              - generic [ref=e41]: Dashboard de Gastos
+        - generic [ref=e42]:
+          - button "INFORMES DE NEGOCIO" [ref=e43]:
+            - generic [ref=e44]:
+              - img [ref=e45]
+              - generic [ref=e47]: INFORMES DE NEGOCIO
+            - img [ref=e48]
+          - generic [ref=e50]:
+            - generic [ref=e51]:
+              - button "Compras y Gastos" [ref=e53]:
+                - generic [ref=e54]: Compras y Gastos
+                - img [ref=e55]
+              - generic [ref=e57]:
+                - link "Cuentas x Pagar" [ref=e58] [cursor=pointer]:
+                  - /url: /reports/business/ctas-pagar
+                  - generic [ref=e60]: Cuentas x Pagar
+                - link "Gastos Mayor Consol" [ref=e61] [cursor=pointer]:
+                  - /url: /reports/business/gastos-mayor-consol
+                  - generic [ref=e63]: Gastos Mayor Consol
+                - link "Libro de Compras Consol" [ref=e64] [cursor=pointer]:
+                  - /url: /reports/business/compras-consol
+                  - generic [ref=e66]: Libro de Compras Consol
+            - generic [ref=e67]:
+              - button "Modulo de Ventas" [ref=e69]:
+                - generic [ref=e70]: Modulo de Ventas
+                - img [ref=e71]
+              - generic [ref=e73]:
+                - link "Cotizado vs Facturado" [ref=e74] [cursor=pointer]:
+                  - /url: /reports/business/cotizado-vs-facturado
+                  - generic [ref=e76]: Cotizado vs Facturado
+                - link "Ventas vs Cobros" [ref=e77] [cursor=pointer]:
+                  - /url: /reports/business/ventas-vs-cobros
+                  - generic [ref=e79]: Ventas vs Cobros
+                - link "Libro de Ventas Consol" [ref=e80] [cursor=pointer]:
+                  - /url: /reports/business/ventas-consol
+                  - generic [ref=e82]: Libro de Ventas Consol
+            - generic [ref=e83]:
+              - button "Recursos Humanos" [ref=e85]:
+                - generic [ref=e86]: Recursos Humanos
+                - img [ref=e87]
+              - generic [ref=e89]:
+                - link "Bono turnos consol" [ref=e90] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-bono-turno-consol
+                  - generic [ref=e92]: Bono turnos consol
+                - link "Dias trabajados consol" [ref=e93] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-dias-trabajados-consol
+                  - generic [ref=e95]: Dias trabajados consol
+                - link "Honorarios consol" [ref=e96] [cursor=pointer]:
+                  - /url: /reports/business/honorarios-consol
+                  - generic [ref=e98]: Honorarios consol
+                - link "Horas extra consol" [ref=e99] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-horas-extra-consol
+                  - generic [ref=e101]: Horas extra consol
+                - link "Licencias consol" [ref=e102] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-licencias-consol
+                  - generic [ref=e104]: Licencias consol
+                - link "RRHH consol" [ref=e105] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-integrado-consol
+                  - generic [ref=e107]: RRHH consol
+                - link "Vacaciones consol" [ref=e108] [cursor=pointer]:
+                  - /url: /reports/business/vacaciones-consol
+                  - generic [ref=e110]: Vacaciones consol
+            - generic [ref=e111]:
+              - button "Valorizaciones" [ref=e113]:
+                - generic [ref=e114]: Valorizaciones
+                - img [ref=e115]
+              - link "Costo Hora Habil" [ref=e118] [cursor=pointer]:
+                - /url: /valuations/working-hour-cost
+                - generic [ref=e120]: Costo Hora Habil
+            - generic [ref=e121]:
+              - button "CONTABILIDAD" [ref=e123]:
+                - generic [ref=e124]: CONTABILIDAD
+                - img [ref=e125]
+              - generic [ref=e127]:
+                - link "Rendiciones Solicitadas" [ref=e128] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-solicitadas-consol
+                  - generic [ref=e130]: Rendiciones Solicitadas
+                - link "Rendiciones Procesadas" [ref=e131] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-procesadas-consol
+                  - generic [ref=e133]: Rendiciones Procesadas
+                - link "Impuesto Único" [ref=e134] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-impuesto-unico-consol
+                  - generic [ref=e136]: Impuesto Único
+                - link "Adicional Salud" [ref=e137] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-adicional-salud-consol
+                  - generic [ref=e139]: Adicional Salud
+                - link "Monto AFP" [ref=e140] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-afp-consol
+                  - generic [ref=e142]: Monto AFP
+                - link "Monto Anticipo" [ref=e143] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-anticipo-consol
+                  - generic [ref=e145]: Monto Anticipo
+                - link "Monto Movilización" [ref=e146] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-movilizacion-consol
+                  - generic [ref=e148]: Monto Movilización
+                - link "Monto SIS" [ref=e149] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-sis-consol
+                  - generic [ref=e151]: Monto SIS
+                - link "Fondos por Rendir" [ref=e152] [cursor=pointer]:
+                  - /url: /reports/business/fondos-rendir
+                  - generic [ref=e154]: Fondos por Rendir
+        - generic [ref=e155]:
+          - button "DETALLE KAME" [ref=e156]:
+            - generic [ref=e157]:
+              - img [ref=e158]
+              - generic [ref=e160]: DETALLE KAME
+            - img [ref=e161]
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - button "Modulo de Ventas" [ref=e166]:
+                - generic [ref=e167]: Modulo de Ventas
+                - img [ref=e168]
+              - generic [ref=e170]:
+                - link "Cotizaciones x Venta (Kame)" [ref=e171] [cursor=pointer]:
+                  - /url: /reports/COTIZACIONES
+                  - generic [ref=e173]: Cotizaciones x Venta (Kame)
+                - link "Cuentas por Cobrar (Kame)" [ref=e174] [cursor=pointer]:
+                  - /url: /reports/CTAS_COBRAR
+                  - generic [ref=e176]: Cuentas por Cobrar (Kame)
+                - link "Libro de Ventas (Kame)" [ref=e177] [cursor=pointer]:
+                  - /url: /reports/VENTAS
+                  - generic [ref=e179]: Libro de Ventas (Kame)
+            - generic [ref=e180]:
+              - button "Compras y Gastos" [ref=e182]:
+                - generic [ref=e183]: Compras y Gastos
+                - img [ref=e184]
+              - generic [ref=e186]:
+                - link "Cuentas por Pagar (Kame)" [ref=e187] [cursor=pointer]:
+                  - /url: /reports/CTAS_PAGAR
+                  - generic [ref=e189]: Cuentas por Pagar (Kame)
+                - link "Gastos Consolidados (Kame)" [ref=e190] [cursor=pointer]:
+                  - /url: /reports/GASTOS_MAYOR
+                  - generic [ref=e192]: Gastos Consolidados (Kame)
+                - link "Libro de Compras (Kame)" [ref=e193] [cursor=pointer]:
+                  - /url: /reports/COMPRAS
+                  - generic [ref=e195]: Libro de Compras (Kame)
+                - link "Ordenes de Compra (Kame)" [ref=e196] [cursor=pointer]:
+                  - /url: /reports/OCS
+                  - generic [ref=e198]: Ordenes de Compra (Kame)
+                - link "OCs Facturadas (Kame)" [ref=e199] [cursor=pointer]:
+                  - /url: /reports/OC_FACTURADAS
+                  - generic [ref=e201]: OCs Facturadas (Kame)
+            - generic [ref=e202]:
+              - button "Recursos Humanos" [ref=e204]:
+                - generic [ref=e205]: Recursos Humanos
+                - img [ref=e206]
+              - generic [ref=e208]:
+                - link "Boletas Honorarios (Kame)" [ref=e209] [cursor=pointer]:
+                  - /url: /reports/HONORARIOS
+                  - generic [ref=e211]: Boletas Honorarios (Kame)
+                - link "Bono Turno (Kame)" [ref=e212] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_BONO_TURNO
+                  - generic [ref=e214]: Bono Turno (Kame)
+                - link "Costo Empresa (Kame)" [active] [ref=e215] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_EMPRESA
+                  - generic [ref=e217]: Costo Empresa (Kame)
+                - link "Días Trabajados (Kame)" [ref=e218] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_TRABAJADOS
+                  - generic [ref=e220]: Días Trabajados (Kame)
+                - link "Días de Licencia (Kame)" [ref=e221] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_LICENCIA
+                  - generic [ref=e223]: Días de Licencia (Kame)
+                - link "Finiquitos (Kame)" [ref=e224] [cursor=pointer]:
+                  - /url: /reports/FINIQUITOS
+                  - generic [ref=e226]: Finiquitos (Kame)
+                - link "Horas Extra - Cantidad (Kame)" [ref=e227] [cursor=pointer]:
+                  - /url: /reports/RRHH_CANTIDAD_HORAS_EXTRA
+                  - generic [ref=e229]: Horas Extra - Cantidad (Kame)
+                - link "Horas Extra - Costo (Kame)" [ref=e230] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_HORAS_EXTRA
+                  - generic [ref=e232]: Horas Extra - Costo (Kame)
+                - link "Movimientos Personal (Kame)" [ref=e233] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVIMIENTOS_PERSONAL
+                  - generic [ref=e235]: Movimientos Personal (Kame)
+                - link "Total Líquido (Kame)" [ref=e236] [cursor=pointer]:
+                  - /url: /reports/RRHH_TOTAL_LIQUIDO
+                  - generic [ref=e238]: Total Líquido (Kame)
+                - link "Vacaciones (Kame)" [ref=e239] [cursor=pointer]:
+                  - /url: /reports/VACACIONES
+                  - generic [ref=e241]: Vacaciones (Kame)
+            - generic [ref=e242]:
+              - button "CONTABILIDAD" [ref=e244]:
+                - generic [ref=e245]: CONTABILIDAD
+                - img [ref=e246]
+              - generic [ref=e248]:
+                - link "Rendiciones Solicitadas (Kame)" [ref=e249] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_SOLICITADAS
+                  - generic [ref=e251]: Rendiciones Solicitadas (Kame)
+                - link "Rendiciones Procesadas (Kame)" [ref=e252] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_PROCESADAS
+                  - generic [ref=e254]: Rendiciones Procesadas (Kame)
+                - link "Fondos por Rendir (Kame)" [ref=e255] [cursor=pointer]:
+                  - /url: /reports/FONDOS_RENDIR
+                  - generic [ref=e257]: Fondos por Rendir (Kame)
+                - link "Impuesto Único (Kame)" [ref=e258] [cursor=pointer]:
+                  - /url: /reports/RRHH_IMPUESTO_UNICO
+                  - generic [ref=e260]: Impuesto Único (Kame)
+                - link "Adicional Salud (Kame)" [ref=e261] [cursor=pointer]:
+                  - /url: /reports/RRHH_ADICIONAL_SALUD
+                  - generic [ref=e263]: Adicional Salud (Kame)
+                - link "Monto AFP (Kame)" [ref=e264] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_AFP
+                  - generic [ref=e266]: Monto AFP (Kame)
+                - link "Monto Anticipo (Kame)" [ref=e267] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_ANTICIPO
+                  - generic [ref=e269]: Monto Anticipo (Kame)
+                - link "Monto Movilización (Kame)" [ref=e270] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVILIZACION
+                  - generic [ref=e272]: Monto Movilización (Kame)
+                - link "Monto SIS (Kame)" [ref=e273] [cursor=pointer]:
+                  - /url: /reports/RRHH_SIS
+                  - generic [ref=e275]: Monto SIS (Kame)
+        - generic [ref=e276]:
+          - button "CONFIGURACIÓN" [ref=e277]:
+            - generic [ref=e278]:
+              - img [ref=e279]
+              - generic [ref=e282]: CONFIGURACIÓN
+            - img [ref=e283]
+          - generic [ref=e285]:
+            - link "Usuarios" [ref=e286] [cursor=pointer]:
+              - /url: /admin/users
+              - generic [ref=e289]: Usuarios
+            - link "Roles y Perfiles" [ref=e290] [cursor=pointer]:
+              - /url: /admin/roles
+              - generic [ref=e293]: Roles y Perfiles
+            - link "Configuración General" [ref=e294] [cursor=pointer]:
+              - /url: /settings
+              - generic [ref=e297]: Configuración General
+      - generic [ref=e300] [cursor=pointer]:
+        - generic [ref=e301]: JH
+        - generic [ref=e302]:
+          - paragraph [ref=e303]: JHOVANNY MERINO
+          - paragraph [ref=e304]: jmerino@grupobizware.com
+        - generic [ref=e305]:
+          - button [ref=e306]:
+            - img [ref=e307]
+          - button [ref=e311]:
+            - img [ref=e312]
+    - main [ref=e315]:
+      - generic [ref=e1032]:
+        - generic [ref=e1033]:
+          - generic [ref=e1034]:
+            - generic [ref=e1035]:
+              - img [ref=e1037]
+              - generic [ref=e1040]: Kame Intelligence Hub
+            - heading "Costo Empresa (Kame)" [level=1] [ref=e1041]
+          - generic [ref=e1043]:
+            - button "Sincronizar" [ref=e1044]:
+              - img [ref=e1045]
+              - generic [ref=e1050]: Sincronizar
+            - button "Eliminar" [ref=e1051]:
+              - img [ref=e1052]
+              - text: Eliminar
+        - generic [ref=e1055]:
+          - generic [ref=e1056]:
+            - generic [ref=e1057]:
+              - generic [ref=e1058]:
+                - img [ref=e1059]
+                - textbox "Buscar en el reporte..." [ref=e1062]
+              - button "Filtros" [ref=e1063]:
+                - img [ref=e1064]
+                - generic [ref=e1066]: Filtros
+            - generic [ref=e1067]: 30 registros
+          - table [ref=e1069]:
+            - rowgroup [ref=e1070]:
+              - row "# Año Empresa RUT Empleado Unidad de Negocio Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre TOTAL" [ref=e1071]:
+                - columnheader "#" [ref=e1072]
+                - columnheader "Año" [ref=e1073]:
+                  - generic [ref=e1074]:
+                    - generic [ref=e1075]: Año
+                    - img [ref=e1077]
+                - columnheader "Empresa" [ref=e1081]:
+                  - generic [ref=e1082]:
+                    - generic [ref=e1083]: Empresa
+                    - img [ref=e1085]
+                - columnheader "RUT" [ref=e1089]:
+                  - generic [ref=e1090]:
+                    - generic [ref=e1091]: RUT
+                    - img [ref=e1093]
+                - columnheader "Empleado" [ref=e1097]:
+                  - generic [ref=e1098]:
+                    - generic [ref=e1099]: Empleado
+                    - img [ref=e1101]
+                - columnheader "Unidad de Negocio" [ref=e1105]:
+                  - generic [ref=e1106]:
+                    - generic [ref=e1107]: Unidad de Negocio
+                    - img [ref=e1109]
+                - columnheader "Enero" [ref=e1113]:
+                  - generic [ref=e1114]:
+                    - generic [ref=e1115]: Enero
+                    - img [ref=e1117]
+                - columnheader "Febrero" [ref=e1121]:
+                  - generic [ref=e1122]:
+                    - generic [ref=e1123]: Febrero
+                    - img [ref=e1125]
+                - columnheader "Marzo" [ref=e1129]:
+                  - generic [ref=e1130]:
+                    - generic [ref=e1131]: Marzo
+                    - img [ref=e1133]
+                - columnheader "Abril" [ref=e1137]:
+                  - generic [ref=e1138]:
+                    - generic [ref=e1139]: Abril
+                    - img [ref=e1141]
+                - columnheader "Mayo" [ref=e1145]:
+                  - generic [ref=e1146]:
+                    - generic [ref=e1147]: Mayo
+                    - img [ref=e1149]
+                - columnheader "Junio" [ref=e1153]:
+                  - generic [ref=e1154]:
+                    - generic [ref=e1155]: Junio
+                    - img [ref=e1157]
+                - columnheader "Julio" [ref=e1161]:
+                  - generic [ref=e1162]:
+                    - generic [ref=e1163]: Julio
+                    - img [ref=e1165]
+                - columnheader "Agosto" [ref=e1169]:
+                  - generic [ref=e1170]:
+                    - generic [ref=e1171]: Agosto
+                    - img [ref=e1173]
+                - columnheader "Septiembre" [ref=e1177]:
+                  - generic [ref=e1178]:
+                    - generic [ref=e1179]: Septiembre
+                    - img [ref=e1181]
+                - columnheader "Octubre" [ref=e1185]:
+                  - generic [ref=e1186]:
+                    - generic [ref=e1187]: Octubre
+                    - img [ref=e1189]
+                - columnheader "Noviembre" [ref=e1193]:
+                  - generic [ref=e1194]:
+                    - generic [ref=e1195]: Noviembre
+                    - img [ref=e1197]
+                - columnheader "Diciembre" [ref=e1201]:
+                  - generic [ref=e1202]:
+                    - generic [ref=e1203]: Diciembre
+                    - img [ref=e1205]
+                - columnheader "TOTAL" [ref=e1209]:
+                  - generic [ref=e1210]:
+                    - generic [ref=e1211]: TOTAL
+                    - img [ref=e1213]
+            - rowgroup [ref=e1217]:
+              - row "1 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 14.330.418-3 Marcelo Freire Castillo Consultoría Y Servicios 4,552,238 4,810,595 4,490,826 4,390,645 0 0 0 0 0 0 0 0 18,244,304" [ref=e1218]:
+                - cell "1" [ref=e1219]
+                - cell "2026" [ref=e1220]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1221]
+                - cell "14.330.418-3" [ref=e1222]
+                - cell "Marcelo Freire Castillo" [ref=e1223]
+                - cell "Consultoría Y Servicios" [ref=e1224]
+                - cell "4,552,238" [ref=e1225]
+                - cell "4,810,595" [ref=e1226]
+                - cell "4,490,826" [ref=e1227]
+                - cell "4,390,645" [ref=e1228]
+                - cell "0" [ref=e1229]
+                - cell "0" [ref=e1230]
+                - cell "0" [ref=e1231]
+                - cell "0" [ref=e1232]
+                - cell "0" [ref=e1233]
+                - cell "0" [ref=e1234]
+                - cell "0" [ref=e1235]
+                - cell "0" [ref=e1236]
+                - cell "18,244,304" [ref=e1237]
+              - row "2 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 17.610.686-7 Alex sebastian Soto Maldonado GAV 2,672,084 2,599,509 2,599,509 0 0 0 0 0 0 0 0 0 7,871,102" [ref=e1238]:
+                - cell "2" [ref=e1239]
+                - cell "2026" [ref=e1240]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1241]
+                - cell "17.610.686-7" [ref=e1242]
+                - cell "Alex sebastian Soto Maldonado" [ref=e1243]
+                - cell "GAV" [ref=e1244]
+                - cell "2,672,084" [ref=e1245]
+                - cell "2,599,509" [ref=e1246]
+                - cell "2,599,509" [ref=e1247]
+                - cell "0" [ref=e1248]
+                - cell "0" [ref=e1249]
+                - cell "0" [ref=e1250]
+                - cell "0" [ref=e1251]
+                - cell "0" [ref=e1252]
+                - cell "0" [ref=e1253]
+                - cell "0" [ref=e1254]
+                - cell "0" [ref=e1255]
+                - cell "0" [ref=e1256]
+                - cell "7,871,102" [ref=e1257]
+              - row "3 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 17.119.466-0 Juan antonio Fernandez De la fuente Consultoría Y Servicios 2,793,627 2,926,249 2,795,289 2,326,697 0 0 0 0 0 0 0 0 10,841,862" [ref=e1258]:
+                - cell "3" [ref=e1259]
+                - cell "2026" [ref=e1260]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1261]
+                - cell "17.119.466-0" [ref=e1262]
+                - cell "Juan antonio Fernandez De la fuente" [ref=e1263]
+                - cell "Consultoría Y Servicios" [ref=e1264]
+                - cell "2,793,627" [ref=e1265]
+                - cell "2,926,249" [ref=e1266]
+                - cell "2,795,289" [ref=e1267]
+                - cell "2,326,697" [ref=e1268]
+                - cell "0" [ref=e1269]
+                - cell "0" [ref=e1270]
+                - cell "0" [ref=e1271]
+                - cell "0" [ref=e1272]
+                - cell "0" [ref=e1273]
+                - cell "0" [ref=e1274]
+                - cell "0" [ref=e1275]
+                - cell "0" [ref=e1276]
+                - cell "10,841,862" [ref=e1277]
+              - row "4 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 10.643.354-2 Juan Alberto Hernandez Esnida Consultoría Y Servicios 4,518,436 4,244,533 4,443,298 4,245,266 0 0 0 0 0 0 0 0 17,451,533" [ref=e1278]:
+                - cell "4" [ref=e1279]
+                - cell "2026" [ref=e1280]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1281]
+                - cell "10.643.354-2" [ref=e1282]
+                - cell "Juan Alberto Hernandez Esnida" [ref=e1283]
+                - cell "Consultoría Y Servicios" [ref=e1284]
+                - cell "4,518,436" [ref=e1285]
+                - cell "4,244,533" [ref=e1286]
+                - cell "4,443,298" [ref=e1287]
+                - cell "4,245,266" [ref=e1288]
+                - cell "0" [ref=e1289]
+                - cell "0" [ref=e1290]
+                - cell "0" [ref=e1291]
+                - cell "0" [ref=e1292]
+                - cell "0" [ref=e1293]
+                - cell "0" [ref=e1294]
+                - cell "0" [ref=e1295]
+                - cell "0" [ref=e1296]
+                - cell "17,451,533" [ref=e1297]
+              - row "5 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 15.384.219-1 DIEGO ISAIAS CORONADO CHAVARRIGA GAV 1,738,677 1,739,076 1,762,757 1,727,236 0 0 0 0 0 0 0 0 6,967,746" [ref=e1298]:
+                - cell "5" [ref=e1299]
+                - cell "2026" [ref=e1300]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1301]
+                - cell "15.384.219-1" [ref=e1302]
+                - cell "DIEGO ISAIAS CORONADO CHAVARRIGA" [ref=e1303]
+                - cell "GAV" [ref=e1304]
+                - cell "1,738,677" [ref=e1305]
+                - cell "1,739,076" [ref=e1306]
+                - cell "1,762,757" [ref=e1307]
+                - cell "1,727,236" [ref=e1308]
+                - cell "0" [ref=e1309]
+                - cell "0" [ref=e1310]
+                - cell "0" [ref=e1311]
+                - cell "0" [ref=e1312]
+                - cell "0" [ref=e1313]
+                - cell "0" [ref=e1314]
+                - cell "0" [ref=e1315]
+                - cell "0" [ref=e1316]
+                - cell "6,967,746" [ref=e1317]
+              - row "6 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 18.521.977-1 Claudia Gonzalez Duran Consultoría Y Servicios 2,630,741 2,630,741 2,630,741 2,630,741 0 0 0 0 0 0 0 0 10,522,964" [ref=e1318]:
+                - cell "6" [ref=e1319]
+                - cell "2026" [ref=e1320]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1321]
+                - cell "18.521.977-1" [ref=e1322]
+                - cell "Claudia Gonzalez Duran" [ref=e1323]
+                - cell "Consultoría Y Servicios" [ref=e1324]
+                - cell "2,630,741" [ref=e1325]
+                - cell "2,630,741" [ref=e1326]
+                - cell "2,630,741" [ref=e1327]
+                - cell "2,630,741" [ref=e1328]
+                - cell "0" [ref=e1329]
+                - cell "0" [ref=e1330]
+                - cell "0" [ref=e1331]
+                - cell "0" [ref=e1332]
+                - cell "0" [ref=e1333]
+                - cell "0" [ref=e1334]
+                - cell "0" [ref=e1335]
+                - cell "0" [ref=e1336]
+                - cell "10,522,964" [ref=e1337]
+              - row "7 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 11.878.071-K Williams Jara Venegas Consultoría Y Servicios 3,814,685 3,796,472 3,796,472 3,338,683 0 0 0 0 0 0 0 0 14,746,312" [ref=e1338]:
+                - cell "7" [ref=e1339]
+                - cell "2026" [ref=e1340]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1341]
+                - cell "11.878.071-K" [ref=e1342]
+                - cell "Williams Jara Venegas" [ref=e1343]
+                - cell "Consultoría Y Servicios" [ref=e1344]
+                - cell "3,814,685" [ref=e1345]
+                - cell "3,796,472" [ref=e1346]
+                - cell "3,796,472" [ref=e1347]
+                - cell "3,338,683" [ref=e1348]
+                - cell "0" [ref=e1349]
+                - cell "0" [ref=e1350]
+                - cell "0" [ref=e1351]
+                - cell "0" [ref=e1352]
+                - cell "0" [ref=e1353]
+                - cell "0" [ref=e1354]
+                - cell "0" [ref=e1355]
+                - cell "0" [ref=e1356]
+                - cell "14,746,312" [ref=e1357]
+              - row "8 2026 BIZWARE CONSULTORIA INFORMATICA LIMITADA 17.711.663-7 Wilson Gabriel Pereira Cortes Consultoría Y Servicios 3,289,247 3,454,540 3,323,170 3,072,841 0 0 0 0 0 0 0 0 13,139,798" [ref=e1358]:
+                - cell "8" [ref=e1359]
+                - cell "2026" [ref=e1360]
+                - cell "BIZWARE CONSULTORIA INFORMATICA LIMITADA" [ref=e1361]
+                - cell "17.711.663-7" [ref=e1362]
+                - cell "Wilson Gabriel Pereira Cortes" [ref=e1363]
+                - cell "Consultoría Y Servicios" [ref=e1364]
+                - cell "3,289,247" [ref=e1365]
+                - cell "3,454,540" [ref=e1366]
+                - cell "3,323,170" [ref=e1367]
+                - cell "3,072,841" [ref=e1368]
+                - cell "0" [ref=e1369]
+                - cell "0" [ref=e1370]
+                - cell "0" [ref=e1371]
+                - cell "0" [ref=e1372]
+                - cell "0" [ref=e1373]
+                - cell "0" [ref=e1374]
+                - cell "0" [ref=e1375]
+                - cell "0" [ref=e1376]
+                - cell "13,139,798" [ref=e1377]
+              - row "9 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 15.510.557-7 RONALD DAVIS DURAN PEREIRA GAV 2,324,628 2,324,628 2,324,628 2,324,628 0 0 0 0 0 0 0 0 9,298,512" [ref=e1378]:
+                - cell "9" [ref=e1379]
+                - cell "2026" [ref=e1380]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1381]
+                - cell "15.510.557-7" [ref=e1382]
+                - cell "RONALD DAVIS DURAN PEREIRA" [ref=e1383]
+                - cell "GAV" [ref=e1384]
+                - cell "2,324,628" [ref=e1385]
+                - cell "2,324,628" [ref=e1386]
+                - cell "2,324,628" [ref=e1387]
+                - cell "2,324,628" [ref=e1388]
+                - cell "0" [ref=e1389]
+                - cell "0" [ref=e1390]
+                - cell "0" [ref=e1391]
+                - cell "0" [ref=e1392]
+                - cell "0" [ref=e1393]
+                - cell "0" [ref=e1394]
+                - cell "0" [ref=e1395]
+                - cell "0" [ref=e1396]
+                - cell "9,298,512" [ref=e1397]
+              - row "10 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 21.147.576-5 Cesar Merino Obando Consultoría y Servicios 6,422,705 6,423,116 6,423,285 6,424,205 0 0 0 0 0 0 0 0 25,693,311" [ref=e1398]:
+                - cell "10" [ref=e1399]
+                - cell "2026" [ref=e1400]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1401]
+                - cell "21.147.576-5" [ref=e1402]
+                - cell "Cesar Merino Obando" [ref=e1403]
+                - cell "Consultoría y Servicios" [ref=e1404]
+                - cell "6,422,705" [ref=e1405]
+                - cell "6,423,116" [ref=e1406]
+                - cell "6,423,285" [ref=e1407]
+                - cell "6,424,205" [ref=e1408]
+                - cell "0" [ref=e1409]
+                - cell "0" [ref=e1410]
+                - cell "0" [ref=e1411]
+                - cell "0" [ref=e1412]
+                - cell "0" [ref=e1413]
+                - cell "0" [ref=e1414]
+                - cell "0" [ref=e1415]
+                - cell "0" [ref=e1416]
+                - cell "25,693,311" [ref=e1417]
+              - row "11 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 13.047.201-K Claudio andres Hevia Acuña Consultoría y Servicios 5,136,774 5,137,061 5,137,175 5,137,794 0 0 0 0 0 0 0 0 20,548,804" [ref=e1418]:
+                - cell "11" [ref=e1419]
+                - cell "2026" [ref=e1420]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1421]
+                - cell "13.047.201-K" [ref=e1422]
+                - cell "Claudio andres Hevia Acuña" [ref=e1423]
+                - cell "Consultoría y Servicios" [ref=e1424]
+                - cell "5,136,774" [ref=e1425]
+                - cell "5,137,061" [ref=e1426]
+                - cell "5,137,175" [ref=e1427]
+                - cell "5,137,794" [ref=e1428]
+                - cell "0" [ref=e1429]
+                - cell "0" [ref=e1430]
+                - cell "0" [ref=e1431]
+                - cell "0" [ref=e1432]
+                - cell "0" [ref=e1433]
+                - cell "0" [ref=e1434]
+                - cell "0" [ref=e1435]
+                - cell "0" [ref=e1436]
+                - cell "20,548,804" [ref=e1437]
+              - row "12 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.127.902-8 John bryan Acevedo Chandia Consultoría y Servicios 2,473,021 2,526,339 2,435,519 2,435,519 0 0 0 0 0 0 0 0 9,870,398" [ref=e1438]:
+                - cell "12" [ref=e1439]
+                - cell "2026" [ref=e1440]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1441]
+                - cell "18.127.902-8" [ref=e1442]
+                - cell "John bryan Acevedo Chandia" [ref=e1443]
+                - cell "Consultoría y Servicios" [ref=e1444]
+                - cell "2,473,021" [ref=e1445]
+                - cell "2,526,339" [ref=e1446]
+                - cell "2,435,519" [ref=e1447]
+                - cell "2,435,519" [ref=e1448]
+                - cell "0" [ref=e1449]
+                - cell "0" [ref=e1450]
+                - cell "0" [ref=e1451]
+                - cell "0" [ref=e1452]
+                - cell "0" [ref=e1453]
+                - cell "0" [ref=e1454]
+                - cell "0" [ref=e1455]
+                - cell "0" [ref=e1456]
+                - cell "9,870,398" [ref=e1457]
+              - row "13 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 19.914.928-8 CRISTOBAL ANDRES PEREZ MANCILLA GAV 885,362 926,186 906,757 829,053 0 0 0 0 0 0 0 0 3,547,358" [ref=e1458]:
+                - cell "13" [ref=e1459]
+                - cell "2026" [ref=e1460]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1461]
+                - cell "19.914.928-8" [ref=e1462]
+                - cell "CRISTOBAL ANDRES PEREZ MANCILLA" [ref=e1463]
+                - cell "GAV" [ref=e1464]
+                - cell "885,362" [ref=e1465]
+                - cell "926,186" [ref=e1466]
+                - cell "906,757" [ref=e1467]
+                - cell "829,053" [ref=e1468]
+                - cell "0" [ref=e1469]
+                - cell "0" [ref=e1470]
+                - cell "0" [ref=e1471]
+                - cell "0" [ref=e1472]
+                - cell "0" [ref=e1473]
+                - cell "0" [ref=e1474]
+                - cell "0" [ref=e1475]
+                - cell "0" [ref=e1476]
+                - cell "3,547,358" [ref=e1477]
+              - row "14 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 19.312.782-7 JAVIER ANDRES ARAVENA CARRASCO GAV 868,064 842,621 862,371 842,621 0 0 0 0 0 0 0 0 3,415,677" [ref=e1478]:
+                - cell "14" [ref=e1479]
+                - cell "2026" [ref=e1480]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1481]
+                - cell "19.312.782-7" [ref=e1482]
+                - cell "JAVIER ANDRES ARAVENA CARRASCO" [ref=e1483]
+                - cell "GAV" [ref=e1484]
+                - cell "868,064" [ref=e1485]
+                - cell "842,621" [ref=e1486]
+                - cell "862,371" [ref=e1487]
+                - cell "842,621" [ref=e1488]
+                - cell "0" [ref=e1489]
+                - cell "0" [ref=e1490]
+                - cell "0" [ref=e1491]
+                - cell "0" [ref=e1492]
+                - cell "0" [ref=e1493]
+                - cell "0" [ref=e1494]
+                - cell "0" [ref=e1495]
+                - cell "0" [ref=e1496]
+                - cell "3,415,677" [ref=e1497]
+              - row "15 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 19.139.673-1 MATIAS JOSE GARCES SILVA GAV 810,059 860,653 810,059 810,059 0 0 0 0 0 0 0 0 3,290,830" [ref=e1498]:
+                - cell "15" [ref=e1499]
+                - cell "2026" [ref=e1500]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1501]
+                - cell "19.139.673-1" [ref=e1502]
+                - cell "MATIAS JOSE GARCES SILVA" [ref=e1503]
+                - cell "GAV" [ref=e1504]
+                - cell "810,059" [ref=e1505]
+                - cell "860,653" [ref=e1506]
+                - cell "810,059" [ref=e1507]
+                - cell "810,059" [ref=e1508]
+                - cell "0" [ref=e1509]
+                - cell "0" [ref=e1510]
+                - cell "0" [ref=e1511]
+                - cell "0" [ref=e1512]
+                - cell "0" [ref=e1513]
+                - cell "0" [ref=e1514]
+                - cell "0" [ref=e1515]
+                - cell "0" [ref=e1516]
+                - cell "3,290,830" [ref=e1517]
+              - row "16 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.408.065-6 Nelson alejandro Moya Andrade GAV 1,379,368 1,387,848 1,395,599 1,213,215 0 0 0 0 0 0 0 0 5,376,030" [ref=e1518]:
+                - cell "16" [ref=e1519]
+                - cell "2026" [ref=e1520]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1521]
+                - cell "18.408.065-6" [ref=e1522]
+                - cell "Nelson alejandro Moya Andrade" [ref=e1523]
+                - cell "GAV" [ref=e1524]
+                - cell "1,379,368" [ref=e1525]
+                - cell "1,387,848" [ref=e1526]
+                - cell "1,395,599" [ref=e1527]
+                - cell "1,213,215" [ref=e1528]
+                - cell "0" [ref=e1529]
+                - cell "0" [ref=e1530]
+                - cell "0" [ref=e1531]
+                - cell "0" [ref=e1532]
+                - cell "0" [ref=e1533]
+                - cell "0" [ref=e1534]
+                - cell "0" [ref=e1535]
+                - cell "0" [ref=e1536]
+                - cell "5,376,030" [ref=e1537]
+              - row "17 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.278.768-K Oscar ignacio Orellana Medina GAV 930,708 898,253 877,667 877,667 0 0 0 0 0 0 0 0 3,584,295" [ref=e1538]:
+                - cell "17" [ref=e1539]
+                - cell "2026" [ref=e1540]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1541]
+                - cell "18.278.768-K" [ref=e1542]
+                - cell "Oscar ignacio Orellana Medina" [ref=e1543]
+                - cell "GAV" [ref=e1544]
+                - cell "930,708" [ref=e1545]
+                - cell "898,253" [ref=e1546]
+                - cell "877,667" [ref=e1547]
+                - cell "877,667" [ref=e1548]
+                - cell "0" [ref=e1549]
+                - cell "0" [ref=e1550]
+                - cell "0" [ref=e1551]
+                - cell "0" [ref=e1552]
+                - cell "0" [ref=e1553]
+                - cell "0" [ref=e1554]
+                - cell "0" [ref=e1555]
+                - cell "0" [ref=e1556]
+                - cell "3,584,295" [ref=e1557]
+              - row "18 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 17.627.581-2 Francisco joel Ormeño Toledo Consultoría y Servicios 2,056,182 2,056,182 2,056,182 2,056,182 0 0 0 0 0 0 0 0 8,224,728" [ref=e1558]:
+                - cell "18" [ref=e1559]
+                - cell "2026" [ref=e1560]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1561]
+                - cell "17.627.581-2" [ref=e1562]
+                - cell "Francisco joel Ormeño Toledo" [ref=e1563]
+                - cell "Consultoría y Servicios" [ref=e1564]
+                - cell "2,056,182" [ref=e1565]
+                - cell "2,056,182" [ref=e1566]
+                - cell "2,056,182" [ref=e1567]
+                - cell "2,056,182" [ref=e1568]
+                - cell "0" [ref=e1569]
+                - cell "0" [ref=e1570]
+                - cell "0" [ref=e1571]
+                - cell "0" [ref=e1572]
+                - cell "0" [ref=e1573]
+                - cell "0" [ref=e1574]
+                - cell "0" [ref=e1575]
+                - cell "0" [ref=e1576]
+                - cell "8,224,728" [ref=e1577]
+              - row "19 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.336.496-0 VERONICA AURELIA PEREZ CONCHA GAV 906,168 961,081 928,928 785,581 0 0 0 0 0 0 0 0 3,581,758" [ref=e1578]:
+                - cell "19" [ref=e1579]
+                - cell "2026" [ref=e1580]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1581]
+                - cell "18.336.496-0" [ref=e1582]
+                - cell "VERONICA AURELIA PEREZ CONCHA" [ref=e1583]
+                - cell "GAV" [ref=e1584]
+                - cell "906,168" [ref=e1585]
+                - cell "961,081" [ref=e1586]
+                - cell "928,928" [ref=e1587]
+                - cell "785,581" [ref=e1588]
+                - cell "0" [ref=e1589]
+                - cell "0" [ref=e1590]
+                - cell "0" [ref=e1591]
+                - cell "0" [ref=e1592]
+                - cell "0" [ref=e1593]
+                - cell "0" [ref=e1594]
+                - cell "0" [ref=e1595]
+                - cell "0" [ref=e1596]
+                - cell "3,581,758" [ref=e1597]
+              - row "20 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.127.253-8 Alberto anibal Ramirez Araya GAV 1,386,224 1,395,352 1,404,480 1,386,224 0 0 0 0 0 0 0 0 5,572,280" [ref=e1598]:
+                - cell "20" [ref=e1599]
+                - cell "2026" [ref=e1600]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1601]
+                - cell "18.127.253-8" [ref=e1602]
+                - cell "Alberto anibal Ramirez Araya" [ref=e1603]
+                - cell "GAV" [ref=e1604]
+                - cell "1,386,224" [ref=e1605]
+                - cell "1,395,352" [ref=e1606]
+                - cell "1,404,480" [ref=e1607]
+                - cell "1,386,224" [ref=e1608]
+                - cell "0" [ref=e1609]
+                - cell "0" [ref=e1610]
+                - cell "0" [ref=e1611]
+                - cell "0" [ref=e1612]
+                - cell "0" [ref=e1613]
+                - cell "0" [ref=e1614]
+                - cell "0" [ref=e1615]
+                - cell "0" [ref=e1616]
+                - cell "5,572,280" [ref=e1617]
+              - row "21 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.964.354-3 CYNTHIA JENNIFER TELLO LÓPEZ GAV 841,565 900,284 829,053 829,053 0 0 0 0 0 0 0 0 3,399,955" [ref=e1618]:
+                - cell "21" [ref=e1619]
+                - cell "2026" [ref=e1620]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1621]
+                - cell "18.964.354-3" [ref=e1622]
+                - cell "CYNTHIA JENNIFER TELLO LÓPEZ" [ref=e1623]
+                - cell "GAV" [ref=e1624]
+                - cell "841,565" [ref=e1625]
+                - cell "900,284" [ref=e1626]
+                - cell "829,053" [ref=e1627]
+                - cell "829,053" [ref=e1628]
+                - cell "0" [ref=e1629]
+                - cell "0" [ref=e1630]
+                - cell "0" [ref=e1631]
+                - cell "0" [ref=e1632]
+                - cell "0" [ref=e1633]
+                - cell "0" [ref=e1634]
+                - cell "0" [ref=e1635]
+                - cell "0" [ref=e1636]
+                - cell "3,399,955" [ref=e1637]
+              - row "22 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 25.198.612-6 Ramon arturo Then Robles Consultoría y Servicios 1,073,051 1,014,952 1,060,053 1,014,952 0 0 0 0 0 0 0 0 4,163,008" [ref=e1638]:
+                - cell "22" [ref=e1639]
+                - cell "2026" [ref=e1640]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1641]
+                - cell "25.198.612-6" [ref=e1642]
+                - cell "Ramon arturo Then Robles" [ref=e1643]
+                - cell "Consultoría y Servicios" [ref=e1644]
+                - cell "1,073,051" [ref=e1645]
+                - cell "1,014,952" [ref=e1646]
+                - cell "1,060,053" [ref=e1647]
+                - cell "1,014,952" [ref=e1648]
+                - cell "0" [ref=e1649]
+                - cell "0" [ref=e1650]
+                - cell "0" [ref=e1651]
+                - cell "0" [ref=e1652]
+                - cell "0" [ref=e1653]
+                - cell "0" [ref=e1654]
+                - cell "0" [ref=e1655]
+                - cell "0" [ref=e1656]
+                - cell "4,163,008" [ref=e1657]
+              - row "23 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.329.626-4 Francisco sebastian Venegas Muñoz Consultoría y Servicios 1,810,359 1,835,362 1,810,359 1,810,359 0 0 0 0 0 0 0 0 7,266,439" [ref=e1658]:
+                - cell "23" [ref=e1659]
+                - cell "2026" [ref=e1660]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1661]
+                - cell "18.329.626-4" [ref=e1662]
+                - cell "Francisco sebastian Venegas Muñoz" [ref=e1663]
+                - cell "Consultoría y Servicios" [ref=e1664]
+                - cell "1,810,359" [ref=e1665]
+                - cell "1,835,362" [ref=e1666]
+                - cell "1,810,359" [ref=e1667]
+                - cell "1,810,359" [ref=e1668]
+                - cell "0" [ref=e1669]
+                - cell "0" [ref=e1670]
+                - cell "0" [ref=e1671]
+                - cell "0" [ref=e1672]
+                - cell "0" [ref=e1673]
+                - cell "0" [ref=e1674]
+                - cell "0" [ref=e1675]
+                - cell "0" [ref=e1676]
+                - cell "7,266,439" [ref=e1677]
+              - row "24 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 10.598.976-8 SONIA ANGELICA REYES TORO GAV 1,313,860 1,313,860 1,313,860 1,313,860 0 0 0 0 0 0 0 0 5,255,440" [ref=e1678]:
+                - cell "24" [ref=e1679]
+                - cell "2026" [ref=e1680]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1681]
+                - cell "10.598.976-8" [ref=e1682]
+                - cell "SONIA ANGELICA REYES TORO" [ref=e1683]
+                - cell "GAV" [ref=e1684]
+                - cell "1,313,860" [ref=e1685]
+                - cell "1,313,860" [ref=e1686]
+                - cell "1,313,860" [ref=e1687]
+                - cell "1,313,860" [ref=e1688]
+                - cell "0" [ref=e1689]
+                - cell "0" [ref=e1690]
+                - cell "0" [ref=e1691]
+                - cell "0" [ref=e1692]
+                - cell "0" [ref=e1693]
+                - cell "0" [ref=e1694]
+                - cell "0" [ref=e1695]
+                - cell "0" [ref=e1696]
+                - cell "5,255,440" [ref=e1697]
+              - row "25 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.275.257-6 Felipe alejandro Romero Infante Consultoría y Servicios 2,071,986 1,990,965 2,099,664 1,757,070 0 0 0 0 0 0 0 0 7,919,685" [ref=e1698]:
+                - cell "25" [ref=e1699]
+                - cell "2026" [ref=e1700]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1701]
+                - cell "18.275.257-6" [ref=e1702]
+                - cell "Felipe alejandro Romero Infante" [ref=e1703]
+                - cell "Consultoría y Servicios" [ref=e1704]
+                - cell "2,071,986" [ref=e1705]
+                - cell "1,990,965" [ref=e1706]
+                - cell "2,099,664" [ref=e1707]
+                - cell "1,757,070" [ref=e1708]
+                - cell "0" [ref=e1709]
+                - cell "0" [ref=e1710]
+                - cell "0" [ref=e1711]
+                - cell "0" [ref=e1712]
+                - cell "0" [ref=e1713]
+                - cell "0" [ref=e1714]
+                - cell "0" [ref=e1715]
+                - cell "0" [ref=e1716]
+                - cell "7,919,685" [ref=e1717]
+              - row "26 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 18.083.564-4 KEVIN JACK MORAN AVILES GAV 812,831 761,217 761,217 761,217 0 0 0 0 0 0 0 0 3,096,482" [ref=e1718]:
+                - cell "26" [ref=e1719]
+                - cell "2026" [ref=e1720]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1721]
+                - cell "18.083.564-4" [ref=e1722]
+                - cell "KEVIN JACK MORAN AVILES" [ref=e1723]
+                - cell "GAV" [ref=e1724]
+                - cell "812,831" [ref=e1725]
+                - cell "761,217" [ref=e1726]
+                - cell "761,217" [ref=e1727]
+                - cell "761,217" [ref=e1728]
+                - cell "0" [ref=e1729]
+                - cell "0" [ref=e1730]
+                - cell "0" [ref=e1731]
+                - cell "0" [ref=e1732]
+                - cell "0" [ref=e1733]
+                - cell "0" [ref=e1734]
+                - cell "0" [ref=e1735]
+                - cell "0" [ref=e1736]
+                - cell "3,096,482" [ref=e1737]
+              - row "27 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 20.048.041-4 NICOLAS ROBINSON MUÑOZ REBOLLEDO GAV 938,380 885,951 822,708 810,059 0 0 0 0 0 0 0 0 3,457,098" [ref=e1738]:
+                - cell "27" [ref=e1739]
+                - cell "2026" [ref=e1740]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1741]
+                - cell "20.048.041-4" [ref=e1742]
+                - cell "NICOLAS ROBINSON MUÑOZ REBOLLEDO" [ref=e1743]
+                - cell "GAV" [ref=e1744]
+                - cell "938,380" [ref=e1745]
+                - cell "885,951" [ref=e1746]
+                - cell "822,708" [ref=e1747]
+                - cell "810,059" [ref=e1748]
+                - cell "0" [ref=e1749]
+                - cell "0" [ref=e1750]
+                - cell "0" [ref=e1751]
+                - cell "0" [ref=e1752]
+                - cell "0" [ref=e1753]
+                - cell "0" [ref=e1754]
+                - cell "0" [ref=e1755]
+                - cell "0" [ref=e1756]
+                - cell "3,457,098" [ref=e1757]
+              - row "28 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 21.147.597-8 Fabiola Marina Vera Vasquez GAV 5,548,374 5,548,661 5,548,775 5,549,394 0 0 0 0 0 0 0 0 22,195,204" [ref=e1758]:
+                - cell "28" [ref=e1759]
+                - cell "2026" [ref=e1760]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1761]
+                - cell "21.147.597-8" [ref=e1762]
+                - cell "Fabiola Marina Vera Vasquez" [ref=e1763]
+                - cell "GAV" [ref=e1764]
+                - cell "5,548,374" [ref=e1765]
+                - cell "5,548,661" [ref=e1766]
+                - cell "5,548,775" [ref=e1767]
+                - cell "5,549,394" [ref=e1768]
+                - cell "0" [ref=e1769]
+                - cell "0" [ref=e1770]
+                - cell "0" [ref=e1771]
+                - cell "0" [ref=e1772]
+                - cell "0" [ref=e1773]
+                - cell "0" [ref=e1774]
+                - cell "0" [ref=e1775]
+                - cell "0" [ref=e1776]
+                - cell "22,195,204" [ref=e1777]
+              - row "29 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 21.266.458-8 Claudio Andres Hevia Rivera Consultoría y Servicios 3,304,734 3,304,734 3,304,734 3,304,734 0 0 0 0 0 0 0 0 13,218,936" [ref=e1778]:
+                - cell "29" [ref=e1779]
+                - cell "2026" [ref=e1780]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1781]
+                - cell "21.266.458-8" [ref=e1782]
+                - cell "Claudio Andres Hevia Rivera" [ref=e1783]
+                - cell "Consultoría y Servicios" [ref=e1784]
+                - cell "3,304,734" [ref=e1785]
+                - cell "3,304,734" [ref=e1786]
+                - cell "3,304,734" [ref=e1787]
+                - cell "3,304,734" [ref=e1788]
+                - cell "0" [ref=e1789]
+                - cell "0" [ref=e1790]
+                - cell "0" [ref=e1791]
+                - cell "0" [ref=e1792]
+                - cell "0" [ref=e1793]
+                - cell "0" [ref=e1794]
+                - cell "0" [ref=e1795]
+                - cell "0" [ref=e1796]
+                - cell "13,218,936" [ref=e1797]
+              - row "30 2026 INGENIERIA Y SISTEMAS BIZWARE LIMITADA 19.224.784-5 Patricio Eduardo Rosales Abello Consultoría y Servicios 795,936 810,280 746,291 746,291 0 0 0 0 0 0 0 0 3,098,798" [ref=e1798]:
+                - cell "30" [ref=e1799]
+                - cell "2026" [ref=e1800]
+                - cell "INGENIERIA Y SISTEMAS BIZWARE LIMITADA" [ref=e1801]
+                - cell "19.224.784-5" [ref=e1802]
+                - cell "Patricio Eduardo Rosales Abello" [ref=e1803]
+                - cell "Consultoría y Servicios" [ref=e1804]
+                - cell "795,936" [ref=e1805]
+                - cell "810,280" [ref=e1806]
+                - cell "746,291" [ref=e1807]
+                - cell "746,291" [ref=e1808]
+                - cell "0" [ref=e1809]
+                - cell "0" [ref=e1810]
+                - cell "0" [ref=e1811]
+                - cell "0" [ref=e1812]
+                - cell "0" [ref=e1813]
+                - cell "0" [ref=e1814]
+                - cell "0" [ref=e1815]
+                - cell "0" [ref=e1816]
+                - cell "3,098,798" [ref=e1817]
+            - rowgroup [ref=e1818]:
+              - row "TOTALES - - - - - 70,100,074 70,307,301 69,701,426 64,751,846 0 0 0 0 0 0 0 0 274,860,647" [ref=e1819]:
+                - cell "TOTALES" [ref=e1820]
+                - cell "-" [ref=e1821]
+                - cell "-" [ref=e1822]
+                - cell "-" [ref=e1823]
+                - cell "-" [ref=e1824]
+                - cell "-" [ref=e1825]
+                - cell "70,100,074" [ref=e1826]
+                - cell "70,307,301" [ref=e1827]
+                - cell "69,701,426" [ref=e1828]
+                - cell "64,751,846" [ref=e1829]
+                - cell "0" [ref=e1830]
+                - cell "0" [ref=e1831]
+                - cell "0" [ref=e1832]
+                - cell "0" [ref=e1833]
+                - cell "0" [ref=e1834]
+                - cell "0" [ref=e1835]
+                - cell "0" [ref=e1836]
+                - cell "0" [ref=e1837]
+                - cell "274,860,647" [ref=e1838]
+          - generic [ref=e1839]:
+            - generic [ref=e1840]: Página 1 de 1
+            - generic [ref=e1841]:
+              - button "Anterior" [disabled] [ref=e1842]:
+                - img [ref=e1843]
+                - text: Anterior
+              - button "Siguiente" [disabled] [ref=e1845]:
+                - text: Siguiente
+                - img [ref=e1846]
+  - region "Notifications alt+T"
+  - alert [ref=e496]
+  - generic [ref=e1030]: $25000k

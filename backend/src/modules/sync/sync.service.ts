@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KpiService } from '../kpi/kpi.service';
 import { S10Service } from '../s10/s10.service';
 import { spawn } from 'child_process';
+import { existsSync } from 'fs';
 
 @Injectable()
 export class SyncService {
@@ -32,6 +33,7 @@ export class SyncService {
       gav?: any[];
       transactions?: any[];
       cxc_transactions?: any[];
+      cxp_transactions?: any[];
       facturas_emitidas?: any[];
       facturas_recibidas?: any[];
       honorarios_recibidos?: any[];
@@ -79,6 +81,11 @@ export class SyncService {
       if (data.cxc_transactions?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_transactions', 'current', year, null, data.cxc_transactions);
         logs.push({ kpiType: 'cxc_transactions', rowsProcessed: data.cxc_transactions.length, status: 'success' });
+      }
+
+      if (data.cxp_transactions?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cxp_transactions', 'current', year, null, data.cxp_transactions);
+        logs.push({ kpiType: 'cxp_transactions', rowsProcessed: data.cxp_transactions.length, status: 'success' });
       }
 
       if (data.facturas_emitidas?.length) {
@@ -136,10 +143,25 @@ export class SyncService {
 
   async triggerVpnSync(years: number[] = [new Date().getFullYear()]) {
     if (this.syncRunning) {
-      return { message: 'Sync already running', status: 'busy' };
+      return { message: 'Sync en curso, espera que termine.', status: 'busy' };
     }
 
-    const SCRIPT = '/opt/apps/s10bizsmarthub/sync-vpn.sh';
+    // Buscar el script en rutas posibles (host mount o directorio del proyecto)
+    const SCRIPT_CANDIDATES = [
+      '/opt/apps/s10bizsmarthub/sync-vpn.sh',
+      '/opt/apps/s10bizsmarthub/s10-agent/vpn-sync/run.sh',
+      '/app/sync-vpn.sh',
+    ];
+    const SCRIPT = SCRIPT_CANDIDATES.find(p => existsSync(p));
+
+    if (!SCRIPT) {
+      this.logger.warn('sync-vpn.sh no encontrado — sync debe ejecutarse con node sync-agent.js localmente');
+      return {
+        message: 'El agente de sincronización no está configurado en el servidor. Ejecuta node sync-agent.js desde la red CMO para sincronizar datos.',
+        status: 'unavailable',
+      };
+    }
+
     this.syncRunning = true;
     this.logger.log(`VPN sync triggered for years: ${years.join(', ')}`);
 

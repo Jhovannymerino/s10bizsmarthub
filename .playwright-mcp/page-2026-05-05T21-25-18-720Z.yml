@@ -1,0 +1,77 @@
+- generic [ref=e2]:
+  - alert [ref=e1]
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e19]: S10 BizSmartHub
+      - generic [ref=e20]:
+        - generic [ref=e21]: Empresa
+        - button "CMO GROUP" [ref=e22] [cursor=pointer]
+        - button "INTEGRAL" [ref=e23] [cursor=pointer]
+        - button "MEDARQ" [ref=e24] [cursor=pointer]
+        - button "AMERICANA" [ref=e25] [cursor=pointer]
+      - generic [ref=e26]:
+        - generic [ref=e27]: Año
+        - button "2026" [ref=e28] [cursor=pointer]
+        - button "2025" [ref=e29] [cursor=pointer]
+        - button "2024" [ref=e30] [cursor=pointer]
+      - navigation [ref=e31]:
+        - button "📊 P&L" [ref=e32] [cursor=pointer]
+        - button "💰 CxC Aging" [ref=e33] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e34] [cursor=pointer]
+        - button "📋 GAV Detalle" [active] [ref=e35] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e37] [cursor=pointer]
+    - generic [ref=e38]:
+      - generic [ref=e40]:
+        - heading "Gastos de Admin. y Ventas" [level=1] [ref=e1206]
+        - generic [ref=e42]: "COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C. · YTD 2026 · Fuente: S10 ERP"
+      - generic [ref=e1207]:
+        - generic [ref=e1208]:
+          - generic [ref=e1209]: GAV por Categoría
+          - table [ref=e1210]:
+            - rowgroup [ref=e1211]:
+              - row "Categoría YTD %" [ref=e1212]:
+                - columnheader "Categoría" [ref=e1213]
+                - columnheader "YTD" [ref=e1214]
+                - columnheader "%" [ref=e1215]
+            - rowgroup [ref=e1216]:
+              - row "GASTOS GENERALES S/ 180K 97.3%" [ref=e1217]:
+                - cell "GASTOS GENERALES" [ref=e1218]
+                - cell "S/ 180K" [ref=e1219]
+                - cell "97.3%" [ref=e1220]
+              - row "INSUMOS S/ 4K 2.1%" [ref=e1221]:
+                - cell "INSUMOS" [ref=e1222]
+                - cell "S/ 4K" [ref=e1223]
+                - cell "2.1%" [ref=e1224]
+              - row "GASTOS DE PERSONAL S/ 1K 0.7%" [ref=e1225]:
+                - cell "GASTOS DE PERSONAL" [ref=e1226]
+                - cell "S/ 1K" [ref=e1227]
+                - cell "0.7%" [ref=e1228]
+            - rowgroup [ref=e1229]:
+              - row "TOTAL S/ 185K 100%" [ref=e1230]:
+                - cell "TOTAL" [ref=e1231]
+                - cell "S/ 185K" [ref=e1232]
+                - cell "100%" [ref=e1233]
+        - generic [ref=e1234]:
+          - generic [ref=e1235]: Distribución GAV
+          - generic [ref=e1237]:
+            - img [ref=e1238]:
+              - generic [ref=e1239]:
+                - generic [ref=e1240]:
+                  - img [ref=e1242]
+                  - img [ref=e1244]
+                  - img [ref=e1246]
+                - generic [ref=e1247]:
+                  - generic [ref=e1250]: NaN%
+                  - generic [ref=e1253]: NaN%
+                  - generic [ref=e1256]: NaN%
+            - list [ref=e1258]:
+              - listitem [ref=e1259]:
+                - img [ref=e1260]
+                - text: GASTOS GENERALES
+              - listitem [ref=e1262]:
+                - img [ref=e1263]
+                - text: INSUMOS
+              - listitem [ref=e1265]:
+                - img [ref=e1266]
+                - text: GASTOS DE PERSONAL
+  - generic [ref=e177]: 30K

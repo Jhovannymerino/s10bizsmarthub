@@ -1,0 +1,34 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e5]: S10 BizSmartHub
+      - generic [ref=e6]:
+        - generic [ref=e7]: Empresa
+        - button "🏢 GRUPO (Consolidado)" [ref=e8] [cursor=pointer]
+        - button "CMO GROUP" [ref=e10] [cursor=pointer]
+        - button "INTEGRAL" [ref=e11] [cursor=pointer]
+        - button "MEDARQ" [active] [ref=e12] [cursor=pointer]
+        - button "AMERICANA" [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e15]: Año
+        - button "2026" [ref=e16] [cursor=pointer]
+        - button "2025" [ref=e17] [cursor=pointer]
+        - button "2024" [ref=e18] [cursor=pointer]
+      - navigation [ref=e19]:
+        - button "📊 P&L" [ref=e20] [cursor=pointer]
+        - button "💰 CxC Aging" [ref=e21] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e22] [cursor=pointer]
+        - button "📋 GAV Detalle" [ref=e23] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e25] [cursor=pointer]
+    - generic [ref=e26]:
+      - generic [ref=e28]:
+        - heading "Estado de Resultados" [level=1] [ref=e29]
+        - generic [ref=e30]: "MEDARQ S.A.C. · YTD 2026 · Fuente: S10 ERP"
+      - generic [ref=e33]:
+        - generic [ref=e34]: 📭
+        - generic [ref=e35]: Sin datos de P&L
+        - generic [ref=e36]:
+          - text: Ejecuta
+          - code [ref=e37]: node sync-agent.js
+          - text: desde la red CMO para cargar los datos.
+  - alert [ref=e32]

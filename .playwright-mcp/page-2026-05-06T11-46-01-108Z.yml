@@ -1,0 +1,208 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e5]: S10 BizSmartHub
+      - generic [ref=e6]:
+        - generic [ref=e7]: Empresa
+        - button "🏢 GRUPO (Consolidado)" [ref=e8] [cursor=pointer]
+        - button "CMO GROUP" [ref=e10] [cursor=pointer]
+        - button "INTEGRAL" [ref=e11] [cursor=pointer]
+        - button "MEDARQ" [active] [ref=e12] [cursor=pointer]
+        - button "AMERICANA" [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e15]: Año
+        - button "2026" [ref=e16] [cursor=pointer]
+        - button "2025" [ref=e17] [cursor=pointer]
+        - button "2024" [ref=e18] [cursor=pointer]
+      - navigation [ref=e19]:
+        - button "📊 P&L" [ref=e20] [cursor=pointer]
+        - button "💰 CxC Aging" [ref=e21] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e22] [cursor=pointer]
+        - button "📋 GAV Detalle" [ref=e23] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e25] [cursor=pointer]
+    - generic [ref=e26]:
+      - generic [ref=e28]:
+        - heading "Estado de Resultados" [level=1] [ref=e29]
+        - generic [ref=e30]:
+          - text: "MEDARQ S.A.C. · YTD 2026 · Fuente: S10 ERP"
+          - generic [ref=e522]: · vs 2025
+      - generic [ref=e523]:
+        - generic [ref=e524]:
+          - generic [ref=e525]: Ingresos YTD
+          - generic [ref=e526]: S/ 740K
+          - generic [ref=e527]: "Ant: S/ 123K"
+        - generic [ref=e528]:
+          - generic [ref=e529]: 🟢
+          - generic [ref=e530]: Margen Bruto
+          - generic [ref=e531]: S/ 734K
+          - generic [ref=e532]: 99.2%
+          - generic [ref=e533]: "Ant: 100.0%"
+        - generic [ref=e534]:
+          - generic [ref=e535]: 🔴
+          - generic [ref=e536]: EBITDA
+          - generic [ref=e537]: S/ -390K
+          - generic [ref=e538]: "-52.7%"
+          - generic [ref=e539]: "Ant: -41.2%"
+        - generic [ref=e540]:
+          - generic [ref=e541]: 🔴
+          - generic [ref=e542]: Margen Neto
+          - generic [ref=e543]: "-53.0%"
+          - generic [ref=e544]: S/ -392K
+          - generic [ref=e545]: "Ant: -41.8%"
+        - generic [ref=e546]:
+          - generic [ref=e547]: 🔴
+          - generic [ref=e548]: GAV / Ingresos
+          - generic [ref=e549]: 151.8%
+          - generic [ref=e550]: S/ 1.12M
+        - generic [ref=e551]:
+          - generic [ref=e552]: 🔴
+          - generic [ref=e553]: Cobertura Intereses
+          - generic [ref=e554]: "-178.3x"
+          - generic [ref=e555]: EBITDA / Gastos Fin.
+      - generic [ref=e556]:
+        - generic [ref=e557]: Cascada P&L — YTD 2026
+        - img [ref=e560]:
+          - generic [ref=e564]:
+            - generic [ref=e566]: Ingresos
+            - generic [ref=e568]: Costo Dir.
+            - generic [ref=e570]: Margen
+            - generic [ref=e572]: GAV
+            - generic [ref=e574]: EBITDA
+            - generic [ref=e576]: Gastos Fin.
+            - generic [ref=e578]: Utilidad
+          - generic [ref=e580]:
+            - generic [ref=e582]: "-400K"
+            - generic [ref=e584]: 0K
+            - generic [ref=e586]: 400K
+            - generic [ref=e588]: 800K
+            - generic [ref=e590]: 1200K
+      - generic [ref=e613]:
+        - generic [ref=e614]: Ingresos vs EBITDA — Mensual
+        - img [ref=e617]:
+          - generic [ref=e622]:
+            - generic [ref=e624]: Ene
+            - generic [ref=e626]: Feb
+            - generic [ref=e628]: Mar
+            - generic [ref=e630]: Abr
+          - generic [ref=e632]:
+            - generic [ref=e634]: "-300K"
+            - generic [ref=e636]: "-150K"
+            - generic [ref=e638]: 0K
+            - generic [ref=e640]: 150K
+            - generic [ref=e642]: 300K
+      - generic [ref=e665]:
+        - generic [ref=e666]:
+          - generic [ref=e667]: Detalle Mensual
+          - generic [ref=e668]: Click en Ingresos, Costo, GAV o Gastos para ver el desglose
+        - table [ref=e670]:
+          - rowgroup [ref=e671]:
+            - row "Concepto Ene Feb Mar Abr YTD 2026 Ene-Abr 2025 ∆ YoY" [ref=e672]:
+              - columnheader "Concepto" [ref=e673]
+              - columnheader "Ene" [ref=e674]
+              - columnheader "Feb" [ref=e675]
+              - columnheader "Mar" [ref=e676]
+              - columnheader "Abr" [ref=e677]
+              - columnheader "YTD 2026" [ref=e678]
+              - columnheader "Ene-Abr 2025" [ref=e679]
+              - columnheader "∆ YoY" [ref=e680]
+          - rowgroup [ref=e681]:
+            - row "Ingresos▶ 2 cuentas S/ 170K S/ 295K S/ 125K S/ 175K S/ 740K S/ 123K ▲ 499.7%" [ref=e682] [cursor=pointer]:
+              - cell "Ingresos▶ 2 cuentas" [ref=e683]:
+                - text: Ingresos
+                - generic [ref=e684]: ▶ 2 cuentas
+              - cell "S/ 170K" [ref=e685]
+              - cell "S/ 295K" [ref=e686]
+              - cell "S/ 125K" [ref=e687]
+              - cell "S/ 175K" [ref=e688]
+              - cell "S/ 740K" [ref=e689]
+              - cell "S/ 123K" [ref=e690]
+              - cell "▲ 499.7%" [ref=e691]
+            - row "Costo Directo▶ 7 cuentas S/ 59 S/ 2K S/ 4K S/ 0 S/ 6K S/ 0 ▲ 0.0%" [ref=e692] [cursor=pointer]:
+              - cell "Costo Directo▶ 7 cuentas" [ref=e693]:
+                - text: Costo Directo
+                - generic [ref=e694]: ▶ 7 cuentas
+              - cell "S/ 59" [ref=e695]
+              - cell "S/ 2K" [ref=e696]
+              - cell "S/ 4K" [ref=e697]
+              - cell "S/ 0" [ref=e698]
+              - cell "S/ 6K" [ref=e699]
+              - cell "S/ 0" [ref=e700]
+              - cell "▲ 0.0%" [ref=e701]
+            - row "Margen Bruto S/ 170K S/ 293K S/ 121K S/ 175K S/ 734K S/ 123K ▲ 494.7%" [ref=e702]:
+              - cell "Margen Bruto" [ref=e703]
+              - cell "S/ 170K" [ref=e704]
+              - cell "S/ 293K" [ref=e705]
+              - cell "S/ 121K" [ref=e706]
+              - cell "S/ 175K" [ref=e707]
+              - cell "S/ 734K" [ref=e708]
+              - cell "S/ 123K" [ref=e709]
+              - cell "▲ 494.7%" [ref=e710]
+            - row "% Margen 100.0% 99.3% 96.7% 100.0% 99.2% 100.0% ▼ 0.8%" [ref=e711]:
+              - cell "% Margen" [ref=e712]
+              - cell "100.0%" [ref=e713]
+              - cell "99.3%" [ref=e714]
+              - cell "96.7%" [ref=e715]
+              - cell "100.0%" [ref=e716]
+              - cell "99.2%" [ref=e717]
+              - cell "100.0%" [ref=e718]
+              - cell "▼ 0.8%" [ref=e719]
+            - row "GAV▶ 41 cuentas S/ 340K S/ 332K S/ 359K S/ 92K S/ 1.12M S/ 174K ▲ 544.8%" [ref=e720] [cursor=pointer]:
+              - cell "GAV▶ 41 cuentas" [ref=e721]:
+                - text: GAV
+                - generic [ref=e722]: ▶ 41 cuentas
+              - cell "S/ 340K" [ref=e723]
+              - cell "S/ 332K" [ref=e724]
+              - cell "S/ 359K" [ref=e725]
+              - cell "S/ 92K" [ref=e726]
+              - cell "S/ 1.12M" [ref=e727]
+              - cell "S/ 174K" [ref=e728]
+              - cell "▲ 544.8%" [ref=e729]
+            - row "EBITDA S/ -170K S/ -39K S/ -238K S/ 83K S/ -390K S/ -51K ▼ 666.3%" [ref=e730]:
+              - cell "EBITDA" [ref=e731]
+              - cell "S/ -170K" [ref=e732]
+              - cell "S/ -39K" [ref=e733]
+              - cell "S/ -238K" [ref=e734]
+              - cell "S/ 83K" [ref=e735]
+              - cell "S/ -390K" [ref=e736]
+              - cell "S/ -51K" [ref=e737]
+              - cell "▼ 666.3%" [ref=e738]
+            - row "% EBITDA -100.1% -13.4% -190.7% 47.5% -52.7% -41.2% ▼ 27.8%" [ref=e739]:
+              - cell "% EBITDA" [ref=e740]
+              - cell "-100.1%" [ref=e741]
+              - cell "-13.4%" [ref=e742]
+              - cell "-190.7%" [ref=e743]
+              - cell "47.5%" [ref=e744]
+              - cell "-52.7%" [ref=e745]
+              - cell "-41.2%" [ref=e746]
+              - cell "▼ 27.8%" [ref=e747]
+            - row "Gastos Financieros▶ 3 cuentas S/ 227 S/ 163 S/ 831 S/ 965 S/ 2K S/ 644 ▲ 239.2%" [ref=e748] [cursor=pointer]:
+              - cell "Gastos Financieros▶ 3 cuentas" [ref=e749]:
+                - text: Gastos Financieros
+                - generic [ref=e750]: ▶ 3 cuentas
+              - cell "S/ 227" [ref=e751]
+              - cell "S/ 163" [ref=e752]
+              - cell "S/ 831" [ref=e753]
+              - cell "S/ 965" [ref=e754]
+              - cell "S/ 2K" [ref=e755]
+              - cell "S/ 644" [ref=e756]
+              - cell "▲ 239.2%" [ref=e757]
+            - row "Utilidad Neta S/ -170K S/ -40K S/ -239K S/ 82K S/ -392K S/ -52K ▼ 660.9%" [ref=e758]:
+              - cell "Utilidad Neta" [ref=e759]
+              - cell "S/ -170K" [ref=e760]
+              - cell "S/ -40K" [ref=e761]
+              - cell "S/ -239K" [ref=e762]
+              - cell "S/ 82K" [ref=e763]
+              - cell "S/ -392K" [ref=e764]
+              - cell "S/ -52K" [ref=e765]
+              - cell "▼ 660.9%" [ref=e766]
+            - row "% Margen Neto -100.2% -13.4% -191.4% 47.0% -53.0% -41.8% ▼ 26.9%" [ref=e767]:
+              - cell "% Margen Neto" [ref=e768]
+              - cell "-100.2%" [ref=e769]
+              - cell "-13.4%" [ref=e770]
+              - cell "-191.4%" [ref=e771]
+              - cell "47.0%" [ref=e772]
+              - cell "-53.0%" [ref=e773]
+              - cell "-41.8%" [ref=e774]
+              - cell "▼ 26.9%" [ref=e775]
+  - alert [ref=e32]
+  - generic [ref=e269]: "-300K"

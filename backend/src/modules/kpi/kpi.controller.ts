@@ -75,6 +75,15 @@ export class KpiController {
     return this.kpiService.getCxCTransactions(companyId, codTercero);
   }
 
+  /** Detalle de asientos CxP (clase 42) por proveedor */
+  @Get(':companyId/cxp-transactions')
+  getCxPTransactions(
+    @Param('companyId') companyId: string,
+    @Query('codTercero') codTercero?: string,
+  ) {
+    return this.kpiService.getCxPTransactions(companyId, codTercero);
+  }
+
   /** Facturas emitidas (AgrupamientoDocumento vía NotaDeVenta) */
   @Get(':companyId/facturas-emitidas')
   getFacturasEmitidas(

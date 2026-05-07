@@ -1,0 +1,583 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e44]:
+      - generic [ref=e46]:
+        - img "Business Smart Hub" [ref=e48]
+        - heading "Business Smart Hub" [level=1] [ref=e49]:
+          - text: Business
+          - text: Smart Hub
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - text: Powered
+          - text: by
+        - img "Bizware Apps" [ref=e53]
+      - link "Sincronización" [ref=e55] [cursor=pointer]:
+        - /url: /sync
+        - generic [ref=e56]:
+          - img [ref=e57]
+          - generic [ref=e59]: Sincronización
+      - navigation [ref=e60]:
+        - generic [ref=e61]:
+          - button "PANELES" [ref=e62]:
+            - generic [ref=e63]:
+              - img [ref=e64]
+              - generic [ref=e69]: PANELES
+            - img [ref=e70]
+          - generic [ref=e72]:
+            - link "Dashboard de Negocio" [ref=e73] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e76]: Dashboard de Negocio
+            - link "Dashboard de Gastos" [ref=e77] [cursor=pointer]:
+              - /url: /dashboard/gastos
+              - generic [ref=e80]: Dashboard de Gastos
+        - generic [ref=e81]:
+          - button "INFORMES DE NEGOCIO" [ref=e82]:
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - generic [ref=e86]: INFORMES DE NEGOCIO
+            - img [ref=e87]
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - button "Compras y Gastos" [ref=e92]:
+                - generic [ref=e93]: Compras y Gastos
+                - img [ref=e94]
+              - generic [ref=e96]:
+                - link "Cuentas x Pagar" [ref=e97] [cursor=pointer]:
+                  - /url: /reports/business/ctas-pagar
+                  - generic [ref=e99]: Cuentas x Pagar
+                - link "Gastos Mayor Consol" [ref=e100] [cursor=pointer]:
+                  - /url: /reports/business/gastos-mayor-consol
+                  - generic [ref=e102]: Gastos Mayor Consol
+                - link "Libro de Compras Consol" [ref=e103] [cursor=pointer]:
+                  - /url: /reports/business/compras-consol
+                  - generic [ref=e105]: Libro de Compras Consol
+            - generic [ref=e106]:
+              - button "Modulo de Ventas" [ref=e108]:
+                - generic [ref=e109]: Modulo de Ventas
+                - img [ref=e110]
+              - generic [ref=e112]:
+                - link "Cotizado vs Facturado" [ref=e113] [cursor=pointer]:
+                  - /url: /reports/business/cotizado-vs-facturado
+                  - generic [ref=e115]: Cotizado vs Facturado
+                - link "Ventas vs Cobros" [ref=e116] [cursor=pointer]:
+                  - /url: /reports/business/ventas-vs-cobros
+                  - generic [ref=e118]: Ventas vs Cobros
+                - link "Libro de Ventas Consol" [ref=e119] [cursor=pointer]:
+                  - /url: /reports/business/ventas-consol
+                  - generic [ref=e121]: Libro de Ventas Consol
+            - generic [ref=e122]:
+              - button "Recursos Humanos" [ref=e124]:
+                - generic [ref=e125]: Recursos Humanos
+                - img [ref=e126]
+              - generic [ref=e128]:
+                - link "Bono turnos consol" [ref=e129] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-bono-turno-consol
+                  - generic [ref=e131]: Bono turnos consol
+                - link "Dias trabajados consol" [ref=e132] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-dias-trabajados-consol
+                  - generic [ref=e134]: Dias trabajados consol
+                - link "Honorarios consol" [ref=e135] [cursor=pointer]:
+                  - /url: /reports/business/honorarios-consol
+                  - generic [ref=e137]: Honorarios consol
+                - link "Horas extra consol" [ref=e138] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-horas-extra-consol
+                  - generic [ref=e140]: Horas extra consol
+                - link "Licencias consol" [ref=e141] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-licencias-consol
+                  - generic [ref=e143]: Licencias consol
+                - link "RRHH consol" [ref=e144] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-integrado-consol
+                  - generic [ref=e146]: RRHH consol
+                - link "Vacaciones consol" [ref=e147] [cursor=pointer]:
+                  - /url: /reports/business/vacaciones-consol
+                  - generic [ref=e149]: Vacaciones consol
+            - generic [ref=e150]:
+              - button "Valorizaciones" [ref=e152]:
+                - generic [ref=e153]: Valorizaciones
+                - img [ref=e154]
+              - link "Costo Hora Habil" [ref=e157] [cursor=pointer]:
+                - /url: /valuations/working-hour-cost
+                - generic [ref=e159]: Costo Hora Habil
+            - generic [ref=e160]:
+              - button "CONTABILIDAD" [ref=e162]:
+                - generic [ref=e163]: CONTABILIDAD
+                - img [ref=e164]
+              - generic [ref=e166]:
+                - link "Rendiciones Solicitadas" [ref=e167] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-solicitadas-consol
+                  - generic [ref=e169]: Rendiciones Solicitadas
+                - link "Rendiciones Procesadas" [ref=e170] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-procesadas-consol
+                  - generic [ref=e172]: Rendiciones Procesadas
+                - link "Impuesto Único" [ref=e173] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-impuesto-unico-consol
+                  - generic [ref=e175]: Impuesto Único
+                - link "Adicional Salud" [ref=e176] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-adicional-salud-consol
+                  - generic [ref=e178]: Adicional Salud
+                - link "Monto AFP" [ref=e179] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-afp-consol
+                  - generic [ref=e181]: Monto AFP
+                - link "Monto Anticipo" [ref=e182] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-anticipo-consol
+                  - generic [ref=e184]: Monto Anticipo
+                - link "Monto Movilización" [ref=e185] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-movilizacion-consol
+                  - generic [ref=e187]: Monto Movilización
+                - link "Monto SIS" [ref=e188] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-sis-consol
+                  - generic [ref=e190]: Monto SIS
+                - link "Fondos por Rendir" [ref=e191] [cursor=pointer]:
+                  - /url: /reports/business/fondos-rendir
+                  - generic [ref=e193]: Fondos por Rendir
+        - generic [ref=e194]:
+          - button "DETALLE KAME" [ref=e195]:
+            - generic [ref=e196]:
+              - img [ref=e197]
+              - generic [ref=e199]: DETALLE KAME
+            - img [ref=e200]
+          - generic [ref=e202]:
+            - generic [ref=e203]:
+              - button "Modulo de Ventas" [ref=e205]:
+                - generic [ref=e206]: Modulo de Ventas
+                - img [ref=e207]
+              - generic [ref=e209]:
+                - link "Cotizaciones x Venta (Kame)" [ref=e210] [cursor=pointer]:
+                  - /url: /reports/COTIZACIONES
+                  - generic [ref=e212]: Cotizaciones x Venta (Kame)
+                - link "Cuentas por Cobrar (Kame)" [ref=e213] [cursor=pointer]:
+                  - /url: /reports/CTAS_COBRAR
+                  - generic [ref=e215]: Cuentas por Cobrar (Kame)
+                - link "Libro de Ventas (Kame)" [ref=e216] [cursor=pointer]:
+                  - /url: /reports/VENTAS
+                  - generic [ref=e218]: Libro de Ventas (Kame)
+            - generic [ref=e219]:
+              - button "Compras y Gastos" [ref=e221]:
+                - generic [ref=e222]: Compras y Gastos
+                - img [ref=e223]
+              - generic [ref=e225]:
+                - link "Cuentas por Pagar (Kame)" [ref=e226] [cursor=pointer]:
+                  - /url: /reports/CTAS_PAGAR
+                  - generic [ref=e228]: Cuentas por Pagar (Kame)
+                - link "Gastos Consolidados (Kame)" [ref=e229] [cursor=pointer]:
+                  - /url: /reports/GASTOS_MAYOR
+                  - generic [ref=e231]: Gastos Consolidados (Kame)
+                - link "Libro de Compras (Kame)" [ref=e232] [cursor=pointer]:
+                  - /url: /reports/COMPRAS
+                  - generic [ref=e234]: Libro de Compras (Kame)
+                - link "Ordenes de Compra (Kame)" [ref=e235] [cursor=pointer]:
+                  - /url: /reports/OCS
+                  - generic [ref=e237]: Ordenes de Compra (Kame)
+                - link "OCs Facturadas (Kame)" [ref=e238] [cursor=pointer]:
+                  - /url: /reports/OC_FACTURADAS
+                  - generic [ref=e240]: OCs Facturadas (Kame)
+            - generic [ref=e241]:
+              - button "Recursos Humanos" [ref=e243]:
+                - generic [ref=e244]: Recursos Humanos
+                - img [ref=e245]
+              - generic [ref=e247]:
+                - link "Boletas Honorarios (Kame)" [ref=e248] [cursor=pointer]:
+                  - /url: /reports/HONORARIOS
+                  - generic [ref=e250]: Boletas Honorarios (Kame)
+                - link "Bono Turno (Kame)" [ref=e251] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_BONO_TURNO
+                  - generic [ref=e253]: Bono Turno (Kame)
+                - link "Costo Empresa (Kame)" [ref=e254] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_EMPRESA
+                  - generic [ref=e256]: Costo Empresa (Kame)
+                - link "Días Trabajados (Kame)" [ref=e257] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_TRABAJADOS
+                  - generic [ref=e259]: Días Trabajados (Kame)
+                - link "Días de Licencia (Kame)" [ref=e260] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_LICENCIA
+                  - generic [ref=e262]: Días de Licencia (Kame)
+                - link "Finiquitos (Kame)" [ref=e263] [cursor=pointer]:
+                  - /url: /reports/FINIQUITOS
+                  - generic [ref=e265]: Finiquitos (Kame)
+                - link "Horas Extra - Cantidad (Kame)" [ref=e266] [cursor=pointer]:
+                  - /url: /reports/RRHH_CANTIDAD_HORAS_EXTRA
+                  - generic [ref=e268]: Horas Extra - Cantidad (Kame)
+                - link "Horas Extra - Costo (Kame)" [ref=e269] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_HORAS_EXTRA
+                  - generic [ref=e271]: Horas Extra - Costo (Kame)
+                - link "Movimientos Personal (Kame)" [ref=e272] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVIMIENTOS_PERSONAL
+                  - generic [ref=e274]: Movimientos Personal (Kame)
+                - link "Total Líquido (Kame)" [ref=e275] [cursor=pointer]:
+                  - /url: /reports/RRHH_TOTAL_LIQUIDO
+                  - generic [ref=e277]: Total Líquido (Kame)
+                - link "Vacaciones (Kame)" [ref=e278] [cursor=pointer]:
+                  - /url: /reports/VACACIONES
+                  - generic [ref=e280]: Vacaciones (Kame)
+            - generic [ref=e281]:
+              - button "CONTABILIDAD" [ref=e283]:
+                - generic [ref=e284]: CONTABILIDAD
+                - img [ref=e285]
+              - generic [ref=e287]:
+                - link "Rendiciones Solicitadas (Kame)" [ref=e288] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_SOLICITADAS
+                  - generic [ref=e290]: Rendiciones Solicitadas (Kame)
+                - link "Rendiciones Procesadas (Kame)" [ref=e291] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_PROCESADAS
+                  - generic [ref=e293]: Rendiciones Procesadas (Kame)
+                - link "Fondos por Rendir (Kame)" [ref=e294] [cursor=pointer]:
+                  - /url: /reports/FONDOS_RENDIR
+                  - generic [ref=e296]: Fondos por Rendir (Kame)
+                - link "Impuesto Único (Kame)" [ref=e297] [cursor=pointer]:
+                  - /url: /reports/RRHH_IMPUESTO_UNICO
+                  - generic [ref=e299]: Impuesto Único (Kame)
+                - link "Adicional Salud (Kame)" [ref=e300] [cursor=pointer]:
+                  - /url: /reports/RRHH_ADICIONAL_SALUD
+                  - generic [ref=e302]: Adicional Salud (Kame)
+                - link "Monto AFP (Kame)" [ref=e303] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_AFP
+                  - generic [ref=e305]: Monto AFP (Kame)
+                - link "Monto Anticipo (Kame)" [ref=e306] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_ANTICIPO
+                  - generic [ref=e308]: Monto Anticipo (Kame)
+                - link "Monto Movilización (Kame)" [ref=e309] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVILIZACION
+                  - generic [ref=e311]: Monto Movilización (Kame)
+                - link "Monto SIS (Kame)" [ref=e312] [cursor=pointer]:
+                  - /url: /reports/RRHH_SIS
+                  - generic [ref=e314]: Monto SIS (Kame)
+        - generic [ref=e315]:
+          - button "CONFIGURACIÓN" [ref=e316]:
+            - generic [ref=e317]:
+              - img [ref=e318]
+              - generic [ref=e321]: CONFIGURACIÓN
+            - img [ref=e322]
+          - generic [ref=e324]:
+            - link "Usuarios" [ref=e325] [cursor=pointer]:
+              - /url: /admin/users
+              - generic [ref=e328]: Usuarios
+            - link "Roles y Perfiles" [ref=e329] [cursor=pointer]:
+              - /url: /admin/roles
+              - generic [ref=e332]: Roles y Perfiles
+            - link "Configuración General" [ref=e333] [cursor=pointer]:
+              - /url: /settings
+              - generic [ref=e336]: Configuración General
+      - generic [ref=e339] [cursor=pointer]:
+        - generic [ref=e340]: JH
+        - generic [ref=e341]:
+          - paragraph [ref=e342]: JHOVANNY MERINO
+          - paragraph [ref=e343]: jmerino@grupobizware.com
+        - generic [ref=e344]:
+          - button [ref=e345]:
+            - img [ref=e346]
+          - button [ref=e350]:
+            - img [ref=e351]
+    - main [ref=e3]:
+      - main [ref=e354]:
+        - generic [ref=e355]:
+          - generic [ref=e356]:
+            - generic [ref=e357]:
+              - generic [ref=e358]:
+                - img [ref=e360]
+                - generic [ref=e364]: Business Intelligence
+              - heading "Análisis Ejecutivo" [level=1] [ref=e365]
+              - paragraph [ref=e366]: Vista consolidada de rentabilidad operativa y gestión estratégica.
+            - generic [ref=e367]:
+              - generic [ref=e368]:
+                - link "Ejecutivo" [ref=e369] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e370]
+                  - generic [ref=e375]: Ejecutivo
+                - link "Gastos" [ref=e376] [cursor=pointer]:
+                  - /url: /dashboard/gastos
+                  - img [ref=e377]
+                  - generic [ref=e380]: Gastos
+              - button "Filtros" [ref=e382]:
+                - img [ref=e383]
+                - generic [ref=e385]: Filtros
+              - button [ref=e386]:
+                - img [ref=e387]
+          - generic [ref=e392]:
+            - generic [ref=e393]:
+              - generic [ref=e397]:
+                - generic [ref=e398]:
+                  - paragraph [ref=e399]: Ventas Totales
+                  - heading "$240,851,598" [level=3] [ref=e400]
+                - img [ref=e402]
+              - generic [ref=e408]:
+                - generic [ref=e409]:
+                  - paragraph [ref=e410]: Total Egresos
+                  - heading "$184,813,240" [level=3] [ref=e411]
+                - img [ref=e413]
+              - generic [ref=e419]:
+                - generic [ref=e420]:
+                  - paragraph [ref=e421]: Costo total Empresa Salarios
+                  - heading "$274,860,647" [level=3] [ref=e422]
+                - img [ref=e424]
+              - generic [ref=e430]:
+                - generic [ref=e431]:
+                  - paragraph [ref=e432]: Margen Neto
+                  - heading "$56,038,358" [level=3] [ref=e433]
+                - img [ref=e435]
+            - generic [ref=e437]:
+              - generic [ref=e438]:
+                - heading "Performance Financiera - $240,851,598" [level=3] [ref=e440]
+                - generic [ref=e443]:
+                  - list [ref=e445]:
+                    - listitem [ref=e446]:
+                      - img "Egresos legend icon" [ref=e447]
+                      - text: Egresos
+                    - listitem [ref=e449]:
+                      - img "Neto legend icon" [ref=e450]
+                      - text: Neto
+                    - listitem [ref=e452]:
+                      - img "Ventas legend icon" [ref=e453]
+                      - text: Ventas
+                  - application [ref=e455]:
+                    - generic [ref=e487]:
+                      - generic [ref=e488]:
+                        - generic [ref=e490]: Ene
+                        - generic [ref=e492]: Feb
+                        - generic [ref=e494]: Mar
+                        - generic [ref=e496]: Abr
+                        - generic [ref=e498]: May
+                        - generic [ref=e500]: Jun
+                        - generic [ref=e502]: Jul
+                        - generic [ref=e504]: Ago
+                        - generic [ref=e506]: Sep
+                        - generic [ref=e508]: Oct
+                        - generic [ref=e510]: Nov
+                        - generic [ref=e512]: Dic
+                      - generic [ref=e513]:
+                        - generic [ref=e515]: $-50000k
+                        - generic [ref=e517]: $0k
+                        - generic [ref=e519]: $50000k
+                        - generic [ref=e521]: $100000k
+                        - generic [ref=e523]: $150000k
+              - generic [ref=e524]:
+                - heading "Salarios y Honorarios - $295,181,774" [level=3] [ref=e526]
+                - generic [ref=e529]:
+                  - list [ref=e531]:
+                    - listitem [ref=e532]:
+                      - img "Empresa legend icon" [ref=e533]
+                      - text: Empresa
+                    - listitem [ref=e535]:
+                      - img "Honorarios legend icon" [ref=e536]
+                      - text: Honorarios
+                  - application [ref=e538]:
+                    - generic [ref=e569]:
+                      - generic [ref=e570]:
+                        - generic [ref=e572]: Ene
+                        - generic [ref=e574]: Feb
+                        - generic [ref=e576]: Mar
+                        - generic [ref=e578]: Abr
+                        - generic [ref=e580]: May
+                        - generic [ref=e582]: Jun
+                        - generic [ref=e584]: Jul
+                        - generic [ref=e586]: Ago
+                        - generic [ref=e588]: Sep
+                        - generic [ref=e590]: Oct
+                        - generic [ref=e592]: Nov
+                        - generic [ref=e594]: Dic
+                      - generic [ref=e595]:
+                        - generic [ref=e597]: $0k
+                        - generic [ref=e599]: $20000k
+                        - generic [ref=e601]: $40000k
+                        - generic [ref=e603]: $60000k
+                        - generic [ref=e605]: $80000k
+              - generic [ref=e606]:
+                - heading "Bonos y HHEE - $5,692,480" [level=3] [ref=e608]
+                - generic [ref=e611]:
+                  - list [ref=e613]:
+                    - listitem [ref=e614]:
+                      - img "Bonos/Turnos legend icon" [ref=e615]
+                      - text: Bonos/Turnos
+                    - listitem [ref=e617]:
+                      - img "Horas Extra legend icon" [ref=e618]
+                      - text: Horas Extra
+                  - application [ref=e620]:
+                    - generic [ref=e645]:
+                      - generic [ref=e646]:
+                        - generic [ref=e648]: Ene
+                        - generic [ref=e650]: Feb
+                        - generic [ref=e652]: Mar
+                        - generic [ref=e654]: Abr
+                        - generic [ref=e656]: May
+                        - generic [ref=e658]: Jun
+                        - generic [ref=e660]: Jul
+                        - generic [ref=e662]: Ago
+                        - generic [ref=e664]: Sep
+                        - generic [ref=e666]: Oct
+                        - generic [ref=e668]: Nov
+                        - generic [ref=e670]: Dic
+                      - generic [ref=e671]:
+                        - generic [ref=e673]: $0k
+                        - generic [ref=e675]: $550k
+                        - generic [ref=e677]: $1100k
+                        - generic [ref=e679]: $1650k
+                        - generic [ref=e681]: $2200k
+            - generic [ref=e683]:
+              - heading "Composición de Egresos Totales - $184,813,240" [level=3] [ref=e685]
+              - generic [ref=e689]:
+                - list [ref=e691]:
+                  - listitem [ref=e692]:
+                    - img "Honorarios legend icon" [ref=e693]
+                    - text: Honorarios
+                  - listitem [ref=e695]:
+                    - img "Operacionales legend icon" [ref=e696]
+                    - text: Operacionales
+                  - listitem [ref=e698]:
+                    - img "Remuneraciones legend icon" [ref=e699]
+                    - text: Remuneraciones
+                - application [ref=e701]:
+                  - generic [ref=e729]:
+                    - generic [ref=e730]:
+                      - generic [ref=e732]: Ene
+                      - generic [ref=e734]: Feb
+                      - generic [ref=e736]: Mar
+                      - generic [ref=e738]: Abr
+                      - generic [ref=e740]: May
+                      - generic [ref=e742]: Jun
+                      - generic [ref=e744]: Jul
+                      - generic [ref=e746]: Ago
+                      - generic [ref=e748]: Sep
+                      - generic [ref=e750]: Oct
+                      - generic [ref=e752]: Nov
+                      - generic [ref=e754]: Dic
+                    - generic [ref=e755]:
+                      - generic [ref=e757]: $0k
+                      - generic [ref=e759]: $25000k
+                      - generic [ref=e761]: $50000k
+                      - generic [ref=e763]: $75000k
+                      - generic [ref=e765]: $100000k
+            - generic [ref=e766]:
+              - generic [ref=e769]:
+                - heading "Resumen Mensual" [level=3] [ref=e770]
+                - paragraph [ref=e771]: Detalle de ingresos y egresos por periodo
+              - table [ref=e773]:
+                - rowgroup [ref=e774]:
+                  - row "Mes Ventas Egresos Neto Margen" [ref=e775]:
+                    - columnheader "Mes" [ref=e776]
+                    - columnheader "Ventas" [ref=e777]
+                    - columnheader "Egresos" [ref=e778]
+                    - columnheader "Neto" [ref=e779]
+                    - columnheader "Margen" [ref=e780]
+                - rowgroup [ref=e781]:
+                  - row "Ene $56,336,451 $82,431,369 $-26,094,918 -46.3%" [ref=e782]:
+                    - cell "Ene" [ref=e783]
+                    - cell "$56,336,451" [ref=e784]:
+                      - generic [ref=e785]: $56,336,451
+                    - cell "$82,431,369" [ref=e786]:
+                      - generic [ref=e787]: $82,431,369
+                    - cell "$-26,094,918" [ref=e788]:
+                      - generic [ref=e789]: $-26,094,918
+                    - cell "-46.3%" [ref=e790]:
+                      - generic [ref=e793]: "-46.3%"
+                  - row "Feb $52,796,626 $99,931,444 $-47,134,818 -89.3%" [ref=e794]:
+                    - cell "Feb" [ref=e795]
+                    - cell "$52,796,626" [ref=e796]:
+                      - generic [ref=e797]: $52,796,626
+                    - cell "$99,931,444" [ref=e798]:
+                      - generic [ref=e799]: $99,931,444
+                    - cell "$-47,134,818" [ref=e800]:
+                      - generic [ref=e801]: $-47,134,818
+                    - cell "-89.3%" [ref=e802]:
+                      - generic [ref=e805]: "-89.3%"
+                  - row "Mar $89,707,544 $2,450,427 $87,257,117 97.3%" [ref=e806]:
+                    - cell "Mar" [ref=e807]
+                    - cell "$89,707,544" [ref=e808]:
+                      - generic [ref=e809]: $89,707,544
+                    - cell "$2,450,427" [ref=e810]:
+                      - generic [ref=e811]: $2,450,427
+                    - cell "$87,257,117" [ref=e812]:
+                      - generic [ref=e813]: $87,257,117
+                    - cell "97.3%" [ref=e814]:
+                      - generic [ref=e818]: 97.3%
+                  - row "Abr $42,010,977 $0 $42,010,977 100.0%" [ref=e819]:
+                    - cell "Abr" [ref=e820]
+                    - cell "$42,010,977" [ref=e821]:
+                      - generic [ref=e822]: $42,010,977
+                    - cell "$0" [ref=e823]:
+                      - generic [ref=e824]: $0
+                    - cell "$42,010,977" [ref=e825]:
+                      - generic [ref=e826]: $42,010,977
+                    - cell "100.0%" [ref=e827]:
+                      - generic [ref=e831]: 100.0%
+                  - row "May $0 $0 $0 0%" [ref=e832]:
+                    - cell "May" [ref=e833]
+                    - cell "$0" [ref=e834]:
+                      - generic [ref=e835]: $0
+                    - cell "$0" [ref=e836]:
+                      - generic [ref=e837]: $0
+                    - cell "$0" [ref=e838]:
+                      - generic [ref=e839]: $0
+                    - cell "0%" [ref=e840]:
+                      - generic [ref=e843]: 0%
+                  - row "Jun $0 $0 $0 0%" [ref=e844]:
+                    - cell "Jun" [ref=e845]
+                    - cell "$0" [ref=e846]:
+                      - generic [ref=e847]: $0
+                    - cell "$0" [ref=e848]:
+                      - generic [ref=e849]: $0
+                    - cell "$0" [ref=e850]:
+                      - generic [ref=e851]: $0
+                    - cell "0%" [ref=e852]:
+                      - generic [ref=e855]: 0%
+                  - row "Jul $0 $0 $0 0%" [ref=e856]:
+                    - cell "Jul" [ref=e857]
+                    - cell "$0" [ref=e858]:
+                      - generic [ref=e859]: $0
+                    - cell "$0" [ref=e860]:
+                      - generic [ref=e861]: $0
+                    - cell "$0" [ref=e862]:
+                      - generic [ref=e863]: $0
+                    - cell "0%" [ref=e864]:
+                      - generic [ref=e867]: 0%
+                  - row "Ago $0 $0 $0 0%" [ref=e868]:
+                    - cell "Ago" [ref=e869]
+                    - cell "$0" [ref=e870]:
+                      - generic [ref=e871]: $0
+                    - cell "$0" [ref=e872]:
+                      - generic [ref=e873]: $0
+                    - cell "$0" [ref=e874]:
+                      - generic [ref=e875]: $0
+                    - cell "0%" [ref=e876]:
+                      - generic [ref=e879]: 0%
+                  - row "Sep $0 $0 $0 0%" [ref=e880]:
+                    - cell "Sep" [ref=e881]
+                    - cell "$0" [ref=e882]:
+                      - generic [ref=e883]: $0
+                    - cell "$0" [ref=e884]:
+                      - generic [ref=e885]: $0
+                    - cell "$0" [ref=e886]:
+                      - generic [ref=e887]: $0
+                    - cell "0%" [ref=e888]:
+                      - generic [ref=e891]: 0%
+                  - row "Oct $0 $0 $0 0%" [ref=e892]:
+                    - cell "Oct" [ref=e893]
+                    - cell "$0" [ref=e894]:
+                      - generic [ref=e895]: $0
+                    - cell "$0" [ref=e896]:
+                      - generic [ref=e897]: $0
+                    - cell "$0" [ref=e898]:
+                      - generic [ref=e899]: $0
+                    - cell "0%" [ref=e900]:
+                      - generic [ref=e903]: 0%
+                  - row "Nov $0 $0 $0 0%" [ref=e904]:
+                    - cell "Nov" [ref=e905]
+                    - cell "$0" [ref=e906]:
+                      - generic [ref=e907]: $0
+                    - cell "$0" [ref=e908]:
+                      - generic [ref=e909]: $0
+                    - cell "$0" [ref=e910]:
+                      - generic [ref=e911]: $0
+                    - cell "0%" [ref=e912]:
+                      - generic [ref=e915]: 0%
+                  - row "Dic $0 $0 $0 0%" [ref=e916]:
+                    - cell "Dic" [ref=e917]
+                    - cell "$0" [ref=e918]:
+                      - generic [ref=e919]: $0
+                    - cell "$0" [ref=e920]:
+                      - generic [ref=e921]: $0
+                    - cell "$0" [ref=e922]:
+                      - generic [ref=e923]: $0
+                    - cell "0%" [ref=e924]:
+                      - generic [ref=e927]: 0%
+  - region "Notifications alt+T"
+  - alert [ref=e41]
+  - generic [ref=e928]: $25000k

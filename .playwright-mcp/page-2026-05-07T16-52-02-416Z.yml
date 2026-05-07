@@ -1,0 +1,382 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - img "Business Smart Hub" [ref=e9]
+        - heading "Business Smart Hub" [level=1] [ref=e10]:
+          - text: Business
+          - text: Smart Hub
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - text: Powered
+          - text: by
+        - img "Bizware Apps" [ref=e14]
+      - link "Sincronización" [ref=e16] [cursor=pointer]:
+        - /url: /sync
+        - generic [ref=e17]:
+          - img [ref=e18]
+          - generic [ref=e20]: Sincronización
+      - navigation [ref=e21]:
+        - generic [ref=e22]:
+          - button "PANELES" [ref=e23]:
+            - generic [ref=e24]:
+              - img [ref=e25]
+              - generic [ref=e30]: PANELES
+            - img [ref=e31]
+          - generic [ref=e33]:
+            - link "Dashboard de Negocio" [ref=e34] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e37]: Dashboard de Negocio
+            - link "Dashboard de Gastos" [ref=e38] [cursor=pointer]:
+              - /url: /dashboard/gastos
+              - generic [ref=e41]: Dashboard de Gastos
+        - button "INFORMES DE NEGOCIO" [active] [ref=e43]:
+          - generic [ref=e44]:
+            - img [ref=e45]
+            - generic [ref=e47]: INFORMES DE NEGOCIO
+          - img [ref=e48]
+        - button "DETALLE KAME" [ref=e156]:
+          - generic [ref=e157]:
+            - img [ref=e158]
+            - generic [ref=e160]: DETALLE KAME
+          - img [ref=e161]
+        - generic [ref=e276]:
+          - button "CONFIGURACIÓN" [ref=e277]:
+            - generic [ref=e278]:
+              - img [ref=e279]
+              - generic [ref=e282]: CONFIGURACIÓN
+            - img [ref=e283]
+          - generic [ref=e285]:
+            - link "Usuarios" [ref=e286] [cursor=pointer]:
+              - /url: /admin/users
+              - generic [ref=e289]: Usuarios
+            - link "Roles y Perfiles" [ref=e290] [cursor=pointer]:
+              - /url: /admin/roles
+              - generic [ref=e293]: Roles y Perfiles
+            - link "Configuración General" [ref=e294] [cursor=pointer]:
+              - /url: /settings
+              - generic [ref=e297]: Configuración General
+      - generic [ref=e300] [cursor=pointer]:
+        - generic [ref=e301]: JH
+        - generic [ref=e302]:
+          - paragraph [ref=e303]: JHOVANNY MERINO
+          - paragraph [ref=e304]: jmerino@grupobizware.com
+        - generic [ref=e305]:
+          - button [ref=e306]:
+            - img [ref=e307]
+          - button [ref=e311]:
+            - img [ref=e312]
+    - main [ref=e315]:
+      - main [ref=e317]:
+        - generic [ref=e318]:
+          - generic [ref=e319]:
+            - generic [ref=e320]:
+              - generic [ref=e321]:
+                - img [ref=e323]
+                - generic [ref=e327]: Business Intelligence
+              - heading "Análisis Ejecutivo" [level=1] [ref=e328]
+              - paragraph [ref=e329]: Vista consolidada de rentabilidad operativa y gestión estratégica.
+            - generic [ref=e330]:
+              - generic [ref=e331]:
+                - link "Ejecutivo" [ref=e332] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e333]
+                  - generic [ref=e338]: Ejecutivo
+                - link "Gastos" [ref=e339] [cursor=pointer]:
+                  - /url: /dashboard/gastos
+                  - img [ref=e340]
+                  - generic [ref=e343]: Gastos
+              - button "Filtros" [ref=e345]:
+                - img [ref=e346]
+                - generic [ref=e348]: Filtros
+              - button [ref=e349]:
+                - img [ref=e350]
+          - generic [ref=e355]:
+            - generic [ref=e497]:
+              - generic [ref=e501]:
+                - generic [ref=e502]:
+                  - paragraph [ref=e503]: Ventas Totales
+                  - heading "$240,851,598" [level=3] [ref=e504]
+                - img [ref=e506]
+              - generic [ref=e512]:
+                - generic [ref=e513]:
+                  - paragraph [ref=e514]: Total Egresos
+                  - heading "$184,813,240" [level=3] [ref=e515]
+                - img [ref=e517]
+              - generic [ref=e523]:
+                - generic [ref=e524]:
+                  - paragraph [ref=e525]: Costo total Empresa Salarios
+                  - heading "$274,860,647" [level=3] [ref=e526]
+                - img [ref=e528]
+              - generic [ref=e534]:
+                - generic [ref=e535]:
+                  - paragraph [ref=e536]: Margen Neto
+                  - heading "$56,038,358" [level=3] [ref=e537]
+                - img [ref=e539]
+            - generic [ref=e541]:
+              - generic [ref=e542]:
+                - heading "Performance Financiera - $240,851,598" [level=3] [ref=e544]
+                - generic [ref=e547]:
+                  - list [ref=e549]:
+                    - listitem [ref=e550]:
+                      - img "Egresos legend icon" [ref=e551]
+                      - text: Egresos
+                    - listitem [ref=e553]:
+                      - img "Neto legend icon" [ref=e554]
+                      - text: Neto
+                    - listitem [ref=e556]:
+                      - img "Ventas legend icon" [ref=e557]
+                      - text: Ventas
+                  - application [ref=e559]:
+                    - generic [ref=e589]:
+                      - generic [ref=e590]:
+                        - generic [ref=e592]: Ene
+                        - generic [ref=e594]: Feb
+                        - generic [ref=e596]: Mar
+                        - generic [ref=e598]: Abr
+                        - generic [ref=e600]: May
+                        - generic [ref=e602]: Jun
+                        - generic [ref=e604]: Jul
+                        - generic [ref=e606]: Ago
+                        - generic [ref=e608]: Sep
+                        - generic [ref=e610]: Oct
+                        - generic [ref=e612]: Nov
+                        - generic [ref=e614]: Dic
+                      - generic [ref=e615]:
+                        - generic [ref=e617]: $-50000k
+                        - generic [ref=e619]: $0k
+                        - generic [ref=e621]: $50000k
+                        - generic [ref=e623]: $100000k
+                        - generic [ref=e625]: $150000k
+              - generic [ref=e626]:
+                - heading "Salarios y Honorarios - $295,181,774" [level=3] [ref=e628]
+                - generic [ref=e631]:
+                  - list [ref=e633]:
+                    - listitem [ref=e634]:
+                      - img "Empresa legend icon" [ref=e635]
+                      - text: Empresa
+                    - listitem [ref=e637]:
+                      - img "Honorarios legend icon" [ref=e638]
+                      - text: Honorarios
+                  - application [ref=e640]:
+                    - generic [ref=e671]:
+                      - generic [ref=e672]:
+                        - generic [ref=e674]: Ene
+                        - generic [ref=e676]: Feb
+                        - generic [ref=e678]: Mar
+                        - generic [ref=e680]: Abr
+                        - generic [ref=e682]: May
+                        - generic [ref=e684]: Jun
+                        - generic [ref=e686]: Jul
+                        - generic [ref=e688]: Ago
+                        - generic [ref=e690]: Sep
+                        - generic [ref=e692]: Oct
+                        - generic [ref=e694]: Nov
+                        - generic [ref=e696]: Dic
+                      - generic [ref=e697]:
+                        - generic [ref=e699]: $0k
+                        - generic [ref=e701]: $20000k
+                        - generic [ref=e703]: $40000k
+                        - generic [ref=e705]: $60000k
+                        - generic [ref=e707]: $80000k
+              - generic [ref=e708]:
+                - heading "Bonos y HHEE - $5,692,480" [level=3] [ref=e710]
+                - generic [ref=e713]:
+                  - list [ref=e715]:
+                    - listitem [ref=e716]:
+                      - img "Bonos/Turnos legend icon" [ref=e717]
+                      - text: Bonos/Turnos
+                    - listitem [ref=e719]:
+                      - img "Horas Extra legend icon" [ref=e720]
+                      - text: Horas Extra
+                  - application [ref=e722]:
+                    - generic [ref=e747]:
+                      - generic [ref=e748]:
+                        - generic [ref=e750]: Ene
+                        - generic [ref=e752]: Feb
+                        - generic [ref=e754]: Mar
+                        - generic [ref=e756]: Abr
+                        - generic [ref=e758]: May
+                        - generic [ref=e760]: Jun
+                        - generic [ref=e762]: Jul
+                        - generic [ref=e764]: Ago
+                        - generic [ref=e766]: Sep
+                        - generic [ref=e768]: Oct
+                        - generic [ref=e770]: Nov
+                        - generic [ref=e772]: Dic
+                      - generic [ref=e773]:
+                        - generic [ref=e775]: $0k
+                        - generic [ref=e777]: $550k
+                        - generic [ref=e779]: $1100k
+                        - generic [ref=e781]: $1650k
+                        - generic [ref=e783]: $2200k
+            - generic [ref=e785]:
+              - heading "Composición de Egresos Totales - $184,813,240" [level=3] [ref=e787]
+              - generic [ref=e791]:
+                - list [ref=e793]:
+                  - listitem [ref=e794]:
+                    - img "Honorarios legend icon" [ref=e795]
+                    - text: Honorarios
+                  - listitem [ref=e797]:
+                    - img "Operacionales legend icon" [ref=e798]
+                    - text: Operacionales
+                  - listitem [ref=e800]:
+                    - img "Remuneraciones legend icon" [ref=e801]
+                    - text: Remuneraciones
+                - application [ref=e803]:
+                  - generic [ref=e831]:
+                    - generic [ref=e832]:
+                      - generic [ref=e834]: Ene
+                      - generic [ref=e836]: Feb
+                      - generic [ref=e838]: Mar
+                      - generic [ref=e840]: Abr
+                      - generic [ref=e842]: May
+                      - generic [ref=e844]: Jun
+                      - generic [ref=e846]: Jul
+                      - generic [ref=e848]: Ago
+                      - generic [ref=e850]: Sep
+                      - generic [ref=e852]: Oct
+                      - generic [ref=e854]: Nov
+                      - generic [ref=e856]: Dic
+                    - generic [ref=e857]:
+                      - generic [ref=e859]: $0k
+                      - generic [ref=e861]: $25000k
+                      - generic [ref=e863]: $50000k
+                      - generic [ref=e865]: $75000k
+                      - generic [ref=e867]: $100000k
+            - generic [ref=e868]:
+              - generic [ref=e871]:
+                - heading "Resumen Mensual" [level=3] [ref=e872]
+                - paragraph [ref=e873]: Detalle de ingresos y egresos por periodo
+              - table [ref=e875]:
+                - rowgroup [ref=e876]:
+                  - row "Mes Ventas Egresos Neto Margen" [ref=e877]:
+                    - columnheader "Mes" [ref=e878]
+                    - columnheader "Ventas" [ref=e879]
+                    - columnheader "Egresos" [ref=e880]
+                    - columnheader "Neto" [ref=e881]
+                    - columnheader "Margen" [ref=e882]
+                - rowgroup [ref=e883]:
+                  - row "Ene $56,336,451 $82,431,369 $-26,094,918 -46.3%" [ref=e884]:
+                    - cell "Ene" [ref=e885]
+                    - cell "$56,336,451" [ref=e886]:
+                      - generic [ref=e887]: $56,336,451
+                    - cell "$82,431,369" [ref=e888]:
+                      - generic [ref=e889]: $82,431,369
+                    - cell "$-26,094,918" [ref=e890]:
+                      - generic [ref=e891]: $-26,094,918
+                    - cell "-46.3%" [ref=e892]:
+                      - generic [ref=e895]: "-46.3%"
+                  - row "Feb $52,796,626 $99,931,444 $-47,134,818 -89.3%" [ref=e896]:
+                    - cell "Feb" [ref=e897]
+                    - cell "$52,796,626" [ref=e898]:
+                      - generic [ref=e899]: $52,796,626
+                    - cell "$99,931,444" [ref=e900]:
+                      - generic [ref=e901]: $99,931,444
+                    - cell "$-47,134,818" [ref=e902]:
+                      - generic [ref=e903]: $-47,134,818
+                    - cell "-89.3%" [ref=e904]:
+                      - generic [ref=e907]: "-89.3%"
+                  - row "Mar $89,707,544 $2,450,427 $87,257,117 97.3%" [ref=e908]:
+                    - cell "Mar" [ref=e909]
+                    - cell "$89,707,544" [ref=e910]:
+                      - generic [ref=e911]: $89,707,544
+                    - cell "$2,450,427" [ref=e912]:
+                      - generic [ref=e913]: $2,450,427
+                    - cell "$87,257,117" [ref=e914]:
+                      - generic [ref=e915]: $87,257,117
+                    - cell "97.3%" [ref=e916]:
+                      - generic [ref=e920]: 97.3%
+                  - row "Abr $42,010,977 $0 $42,010,977 100.0%" [ref=e921]:
+                    - cell "Abr" [ref=e922]
+                    - cell "$42,010,977" [ref=e923]:
+                      - generic [ref=e924]: $42,010,977
+                    - cell "$0" [ref=e925]:
+                      - generic [ref=e926]: $0
+                    - cell "$42,010,977" [ref=e927]:
+                      - generic [ref=e928]: $42,010,977
+                    - cell "100.0%" [ref=e929]:
+                      - generic [ref=e933]: 100.0%
+                  - row "May $0 $0 $0 0%" [ref=e934]:
+                    - cell "May" [ref=e935]
+                    - cell "$0" [ref=e936]:
+                      - generic [ref=e937]: $0
+                    - cell "$0" [ref=e938]:
+                      - generic [ref=e939]: $0
+                    - cell "$0" [ref=e940]:
+                      - generic [ref=e941]: $0
+                    - cell "0%" [ref=e942]:
+                      - generic [ref=e945]: 0%
+                  - row "Jun $0 $0 $0 0%" [ref=e946]:
+                    - cell "Jun" [ref=e947]
+                    - cell "$0" [ref=e948]:
+                      - generic [ref=e949]: $0
+                    - cell "$0" [ref=e950]:
+                      - generic [ref=e951]: $0
+                    - cell "$0" [ref=e952]:
+                      - generic [ref=e953]: $0
+                    - cell "0%" [ref=e954]:
+                      - generic [ref=e957]: 0%
+                  - row "Jul $0 $0 $0 0%" [ref=e958]:
+                    - cell "Jul" [ref=e959]
+                    - cell "$0" [ref=e960]:
+                      - generic [ref=e961]: $0
+                    - cell "$0" [ref=e962]:
+                      - generic [ref=e963]: $0
+                    - cell "$0" [ref=e964]:
+                      - generic [ref=e965]: $0
+                    - cell "0%" [ref=e966]:
+                      - generic [ref=e969]: 0%
+                  - row "Ago $0 $0 $0 0%" [ref=e970]:
+                    - cell "Ago" [ref=e971]
+                    - cell "$0" [ref=e972]:
+                      - generic [ref=e973]: $0
+                    - cell "$0" [ref=e974]:
+                      - generic [ref=e975]: $0
+                    - cell "$0" [ref=e976]:
+                      - generic [ref=e977]: $0
+                    - cell "0%" [ref=e978]:
+                      - generic [ref=e981]: 0%
+                  - row "Sep $0 $0 $0 0%" [ref=e982]:
+                    - cell "Sep" [ref=e983]
+                    - cell "$0" [ref=e984]:
+                      - generic [ref=e985]: $0
+                    - cell "$0" [ref=e986]:
+                      - generic [ref=e987]: $0
+                    - cell "$0" [ref=e988]:
+                      - generic [ref=e989]: $0
+                    - cell "0%" [ref=e990]:
+                      - generic [ref=e993]: 0%
+                  - row "Oct $0 $0 $0 0%" [ref=e994]:
+                    - cell "Oct" [ref=e995]
+                    - cell "$0" [ref=e996]:
+                      - generic [ref=e997]: $0
+                    - cell "$0" [ref=e998]:
+                      - generic [ref=e999]: $0
+                    - cell "$0" [ref=e1000]:
+                      - generic [ref=e1001]: $0
+                    - cell "0%" [ref=e1002]:
+                      - generic [ref=e1005]: 0%
+                  - row "Nov $0 $0 $0 0%" [ref=e1006]:
+                    - cell "Nov" [ref=e1007]
+                    - cell "$0" [ref=e1008]:
+                      - generic [ref=e1009]: $0
+                    - cell "$0" [ref=e1010]:
+                      - generic [ref=e1011]: $0
+                    - cell "$0" [ref=e1012]:
+                      - generic [ref=e1013]: $0
+                    - cell "0%" [ref=e1014]:
+                      - generic [ref=e1017]: 0%
+                  - row "Dic $0 $0 $0 0%" [ref=e1018]:
+                    - cell "Dic" [ref=e1019]
+                    - cell "$0" [ref=e1020]:
+                      - generic [ref=e1021]: $0
+                    - cell "$0" [ref=e1022]:
+                      - generic [ref=e1023]: $0
+                    - cell "$0" [ref=e1024]:
+                      - generic [ref=e1025]: $0
+                    - cell "0%" [ref=e1026]:
+                      - generic [ref=e1029]: 0%
+  - region "Notifications alt+T"
+  - alert [ref=e496]
+  - generic [ref=e1030]: $25000k

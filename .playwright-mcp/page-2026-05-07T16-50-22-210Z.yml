@@ -1,0 +1,382 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - img "Business Smart Hub" [ref=e9]
+        - heading "Business Smart Hub" [level=1] [ref=e10]:
+          - text: Business
+          - text: Smart Hub
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - text: Powered
+          - text: by
+        - img "Bizware Apps" [ref=e14]
+      - link "Sincronización" [ref=e16] [cursor=pointer]:
+        - /url: /sync
+        - generic [ref=e17]:
+          - img [ref=e18]
+          - generic [ref=e20]: Sincronización
+      - navigation [ref=e21]:
+        - generic [ref=e22]:
+          - button "PANELES" [ref=e23]:
+            - generic [ref=e24]:
+              - img [ref=e25]
+              - generic [ref=e30]: PANELES
+            - img [ref=e31]
+          - generic [ref=e33]:
+            - link "Dashboard de Negocio" [ref=e34] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e37]: Dashboard de Negocio
+            - link "Dashboard de Gastos" [ref=e38] [cursor=pointer]:
+              - /url: /dashboard/gastos
+              - generic [ref=e41]: Dashboard de Gastos
+        - generic [ref=e42]:
+          - button "INFORMES DE NEGOCIO" [ref=e43]:
+            - generic [ref=e44]:
+              - img [ref=e45]
+              - generic [ref=e47]: INFORMES DE NEGOCIO
+            - img [ref=e48]
+          - generic [ref=e50]:
+            - generic [ref=e51]:
+              - button "Compras y Gastos" [ref=e53]:
+                - generic [ref=e54]: Compras y Gastos
+                - img [ref=e55]
+              - generic [ref=e57]:
+                - link "Cuentas x Pagar" [ref=e58] [cursor=pointer]:
+                  - /url: /reports/business/ctas-pagar
+                  - generic [ref=e60]: Cuentas x Pagar
+                - link "Gastos Mayor Consol" [ref=e61] [cursor=pointer]:
+                  - /url: /reports/business/gastos-mayor-consol
+                  - generic [ref=e63]: Gastos Mayor Consol
+                - link "Libro de Compras Consol" [ref=e64] [cursor=pointer]:
+                  - /url: /reports/business/compras-consol
+                  - generic [ref=e66]: Libro de Compras Consol
+            - generic [ref=e67]:
+              - button "Modulo de Ventas" [ref=e69]:
+                - generic [ref=e70]: Modulo de Ventas
+                - img [ref=e71]
+              - generic [ref=e73]:
+                - link "Cotizado vs Facturado" [ref=e74] [cursor=pointer]:
+                  - /url: /reports/business/cotizado-vs-facturado
+                  - generic [ref=e76]: Cotizado vs Facturado
+                - link "Ventas vs Cobros" [ref=e77] [cursor=pointer]:
+                  - /url: /reports/business/ventas-vs-cobros
+                  - generic [ref=e79]: Ventas vs Cobros
+                - link "Libro de Ventas Consol" [ref=e80] [cursor=pointer]:
+                  - /url: /reports/business/ventas-consol
+                  - generic [ref=e82]: Libro de Ventas Consol
+            - generic [ref=e83]:
+              - button "Recursos Humanos" [ref=e85]:
+                - generic [ref=e86]: Recursos Humanos
+                - img [ref=e87]
+              - generic [ref=e89]:
+                - link "Bono turnos consol" [ref=e90] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-bono-turno-consol
+                  - generic [ref=e92]: Bono turnos consol
+                - link "Dias trabajados consol" [ref=e93] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-dias-trabajados-consol
+                  - generic [ref=e95]: Dias trabajados consol
+                - link "Honorarios consol" [ref=e96] [cursor=pointer]:
+                  - /url: /reports/business/honorarios-consol
+                  - generic [ref=e98]: Honorarios consol
+                - link "Horas extra consol" [ref=e99] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-horas-extra-consol
+                  - generic [ref=e101]: Horas extra consol
+                - link "Licencias consol" [ref=e102] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-licencias-consol
+                  - generic [ref=e104]: Licencias consol
+                - link "RRHH consol" [ref=e105] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-integrado-consol
+                  - generic [ref=e107]: RRHH consol
+                - link "Vacaciones consol" [ref=e108] [cursor=pointer]:
+                  - /url: /reports/business/vacaciones-consol
+                  - generic [ref=e110]: Vacaciones consol
+            - generic [ref=e111]:
+              - button "Valorizaciones" [ref=e113]:
+                - generic [ref=e114]: Valorizaciones
+                - img [ref=e115]
+              - link "Costo Hora Habil" [ref=e118] [cursor=pointer]:
+                - /url: /valuations/working-hour-cost
+                - generic [ref=e120]: Costo Hora Habil
+            - generic [ref=e121]:
+              - button "CONTABILIDAD" [ref=e123]:
+                - generic [ref=e124]: CONTABILIDAD
+                - img [ref=e125]
+              - generic [ref=e127]:
+                - link "Rendiciones Solicitadas" [ref=e128] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-solicitadas-consol
+                  - generic [ref=e130]: Rendiciones Solicitadas
+                - link "Rendiciones Procesadas" [ref=e131] [cursor=pointer]:
+                  - /url: /reports/business/rendiciones-procesadas-consol
+                  - generic [ref=e133]: Rendiciones Procesadas
+                - link "Impuesto Único" [ref=e134] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-impuesto-unico-consol
+                  - generic [ref=e136]: Impuesto Único
+                - link "Adicional Salud" [ref=e137] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-adicional-salud-consol
+                  - generic [ref=e139]: Adicional Salud
+                - link "Monto AFP" [ref=e140] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-afp-consol
+                  - generic [ref=e142]: Monto AFP
+                - link "Monto Anticipo" [ref=e143] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-anticipo-consol
+                  - generic [ref=e145]: Monto Anticipo
+                - link "Monto Movilización" [ref=e146] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-movilizacion-consol
+                  - generic [ref=e148]: Monto Movilización
+                - link "Monto SIS" [ref=e149] [cursor=pointer]:
+                  - /url: /reports/business/rrhh-sis-consol
+                  - generic [ref=e151]: Monto SIS
+                - link "Fondos por Rendir" [ref=e152] [cursor=pointer]:
+                  - /url: /reports/business/fondos-rendir
+                  - generic [ref=e154]: Fondos por Rendir
+        - generic [ref=e155]:
+          - button "DETALLE KAME" [ref=e156]:
+            - generic [ref=e157]:
+              - img [ref=e158]
+              - generic [ref=e160]: DETALLE KAME
+            - img [ref=e161]
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - button "Modulo de Ventas" [ref=e166]:
+                - generic [ref=e167]: Modulo de Ventas
+                - img [ref=e168]
+              - generic [ref=e170]:
+                - link "Cotizaciones x Venta (Kame)" [ref=e171] [cursor=pointer]:
+                  - /url: /reports/COTIZACIONES
+                  - generic [ref=e173]: Cotizaciones x Venta (Kame)
+                - link "Cuentas por Cobrar (Kame)" [ref=e174] [cursor=pointer]:
+                  - /url: /reports/CTAS_COBRAR
+                  - generic [ref=e176]: Cuentas por Cobrar (Kame)
+                - link "Libro de Ventas (Kame)" [ref=e177] [cursor=pointer]:
+                  - /url: /reports/VENTAS
+                  - generic [ref=e179]: Libro de Ventas (Kame)
+            - generic [ref=e180]:
+              - button "Compras y Gastos" [ref=e182]:
+                - generic [ref=e183]: Compras y Gastos
+                - img [ref=e184]
+              - generic [ref=e186]:
+                - link "Cuentas por Pagar (Kame)" [ref=e187] [cursor=pointer]:
+                  - /url: /reports/CTAS_PAGAR
+                  - generic [ref=e189]: Cuentas por Pagar (Kame)
+                - link "Gastos Consolidados (Kame)" [ref=e190] [cursor=pointer]:
+                  - /url: /reports/GASTOS_MAYOR
+                  - generic [ref=e192]: Gastos Consolidados (Kame)
+                - link "Libro de Compras (Kame)" [ref=e193] [cursor=pointer]:
+                  - /url: /reports/COMPRAS
+                  - generic [ref=e195]: Libro de Compras (Kame)
+                - link "Ordenes de Compra (Kame)" [ref=e196] [cursor=pointer]:
+                  - /url: /reports/OCS
+                  - generic [ref=e198]: Ordenes de Compra (Kame)
+                - link "OCs Facturadas (Kame)" [ref=e199] [cursor=pointer]:
+                  - /url: /reports/OC_FACTURADAS
+                  - generic [ref=e201]: OCs Facturadas (Kame)
+            - generic [ref=e202]:
+              - button "Recursos Humanos" [ref=e204]:
+                - generic [ref=e205]: Recursos Humanos
+                - img [ref=e206]
+              - generic [ref=e208]:
+                - link "Boletas Honorarios (Kame)" [ref=e209] [cursor=pointer]:
+                  - /url: /reports/HONORARIOS
+                  - generic [ref=e211]: Boletas Honorarios (Kame)
+                - link "Bono Turno (Kame)" [ref=e212] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_BONO_TURNO
+                  - generic [ref=e214]: Bono Turno (Kame)
+                - link "Costo Empresa (Kame)" [ref=e215] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_EMPRESA
+                  - generic [ref=e217]: Costo Empresa (Kame)
+                - link "Días Trabajados (Kame)" [ref=e218] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_TRABAJADOS
+                  - generic [ref=e220]: Días Trabajados (Kame)
+                - link "Días de Licencia (Kame)" [ref=e221] [cursor=pointer]:
+                  - /url: /reports/RRHH_DIAS_LICENCIA
+                  - generic [ref=e223]: Días de Licencia (Kame)
+                - link "Finiquitos (Kame)" [ref=e224] [cursor=pointer]:
+                  - /url: /reports/FINIQUITOS
+                  - generic [ref=e226]: Finiquitos (Kame)
+                - link "Horas Extra - Cantidad (Kame)" [ref=e227] [cursor=pointer]:
+                  - /url: /reports/RRHH_CANTIDAD_HORAS_EXTRA
+                  - generic [ref=e229]: Horas Extra - Cantidad (Kame)
+                - link "Horas Extra - Costo (Kame)" [ref=e230] [cursor=pointer]:
+                  - /url: /reports/RRHH_COSTO_HORAS_EXTRA
+                  - generic [ref=e232]: Horas Extra - Costo (Kame)
+                - link "Movimientos Personal (Kame)" [ref=e233] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVIMIENTOS_PERSONAL
+                  - generic [ref=e235]: Movimientos Personal (Kame)
+                - link "Total Líquido (Kame)" [ref=e236] [cursor=pointer]:
+                  - /url: /reports/RRHH_TOTAL_LIQUIDO
+                  - generic [ref=e238]: Total Líquido (Kame)
+                - link "Vacaciones (Kame)" [ref=e239] [cursor=pointer]:
+                  - /url: /reports/VACACIONES
+                  - generic [ref=e241]: Vacaciones (Kame)
+            - generic [ref=e242]:
+              - button "CONTABILIDAD" [ref=e244]:
+                - generic [ref=e245]: CONTABILIDAD
+                - img [ref=e246]
+              - generic [ref=e248]:
+                - link "Rendiciones Solicitadas (Kame)" [ref=e249] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_SOLICITADAS
+                  - generic [ref=e251]: Rendiciones Solicitadas (Kame)
+                - link "Rendiciones Procesadas (Kame)" [ref=e252] [cursor=pointer]:
+                  - /url: /reports/RENDICIONES_PROCESADAS
+                  - generic [ref=e254]: Rendiciones Procesadas (Kame)
+                - link "Fondos por Rendir (Kame)" [ref=e255] [cursor=pointer]:
+                  - /url: /reports/FONDOS_RENDIR
+                  - generic [ref=e257]: Fondos por Rendir (Kame)
+                - link "Impuesto Único (Kame)" [ref=e258] [cursor=pointer]:
+                  - /url: /reports/RRHH_IMPUESTO_UNICO
+                  - generic [ref=e260]: Impuesto Único (Kame)
+                - link "Adicional Salud (Kame)" [ref=e261] [cursor=pointer]:
+                  - /url: /reports/RRHH_ADICIONAL_SALUD
+                  - generic [ref=e263]: Adicional Salud (Kame)
+                - link "Monto AFP (Kame)" [ref=e264] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_AFP
+                  - generic [ref=e266]: Monto AFP (Kame)
+                - link "Monto Anticipo (Kame)" [ref=e267] [cursor=pointer]:
+                  - /url: /reports/RRHH_MONTO_ANTICIPO
+                  - generic [ref=e269]: Monto Anticipo (Kame)
+                - link "Monto Movilización (Kame)" [ref=e270] [cursor=pointer]:
+                  - /url: /reports/RRHH_MOVILIZACION
+                  - generic [ref=e272]: Monto Movilización (Kame)
+                - link "Monto SIS (Kame)" [ref=e273] [cursor=pointer]:
+                  - /url: /reports/RRHH_SIS
+                  - generic [ref=e275]: Monto SIS (Kame)
+        - generic [ref=e276]:
+          - button "CONFIGURACIÓN" [ref=e277]:
+            - generic [ref=e278]:
+              - img [ref=e279]
+              - generic [ref=e282]: CONFIGURACIÓN
+            - img [ref=e283]
+          - generic [ref=e285]:
+            - link "Usuarios" [ref=e286] [cursor=pointer]:
+              - /url: /admin/users
+              - generic [ref=e289]: Usuarios
+            - link "Roles y Perfiles" [ref=e290] [cursor=pointer]:
+              - /url: /admin/roles
+              - generic [ref=e293]: Roles y Perfiles
+            - link "Configuración General" [ref=e294] [cursor=pointer]:
+              - /url: /settings
+              - generic [ref=e297]: Configuración General
+      - generic [ref=e300] [cursor=pointer]:
+        - generic [ref=e301]: JH
+        - generic [ref=e302]:
+          - paragraph [ref=e303]: JHOVANNY MERINO
+          - paragraph [ref=e304]: jmerino@grupobizware.com
+        - generic [ref=e305]:
+          - button [ref=e306]:
+            - img [ref=e307]
+          - button [ref=e311]:
+            - img [ref=e312]
+    - main [ref=e315]:
+      - main [ref=e317]:
+        - generic [ref=e318]:
+          - generic [ref=e319]:
+            - generic [ref=e320]:
+              - generic [ref=e321]:
+                - img [ref=e323]
+                - generic [ref=e327]: Business Intelligence
+              - heading "Análisis Ejecutivo" [level=1] [ref=e328]
+              - paragraph [ref=e329]: Vista consolidada de rentabilidad operativa y gestión estratégica.
+            - generic [ref=e330]:
+              - generic [ref=e331]:
+                - link "Ejecutivo" [ref=e332] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e333]
+                  - generic [ref=e338]: Ejecutivo
+                - link "Gastos" [ref=e339] [cursor=pointer]:
+                  - /url: /dashboard/gastos
+                  - img [ref=e340]
+                  - generic [ref=e343]: Gastos
+              - button "Filtros" [ref=e345]:
+                - img [ref=e346]
+                - generic [ref=e348]: Filtros
+              - button [ref=e349]:
+                - img [ref=e350]
+          - generic [ref=e355]:
+            - generic [ref=e356]:
+              - generic [ref=e360]:
+                - generic [ref=e361]:
+                  - paragraph [ref=e362]: Ventas Totales
+                  - heading "$0" [level=3] [ref=e363]
+                - img [ref=e365]
+              - generic [ref=e371]:
+                - generic [ref=e372]:
+                  - paragraph [ref=e373]: Total Egresos
+                  - heading "$0" [level=3] [ref=e374]
+                - img [ref=e376]
+              - generic [ref=e382]:
+                - generic [ref=e383]:
+                  - paragraph [ref=e384]: Costo total Empresa Salarios
+                  - heading "$0" [level=3] [ref=e385]
+                - img [ref=e387]
+              - generic [ref=e393]:
+                - generic [ref=e394]:
+                  - paragraph [ref=e395]: Margen Neto
+                  - heading "$0" [level=3] [ref=e396]
+                - img [ref=e398]
+            - generic [ref=e400]:
+              - generic [ref=e401]:
+                - heading "Performance Financiera - $0" [level=3] [ref=e403]
+                - generic [ref=e406]:
+                  - list [ref=e408]:
+                    - listitem [ref=e409]:
+                      - img "Egresos legend icon" [ref=e410]
+                      - text: Egresos
+                    - listitem [ref=e412]:
+                      - img "Neto legend icon" [ref=e413]
+                      - text: Neto
+                    - listitem [ref=e415]:
+                      - img "Ventas legend icon" [ref=e416]
+                      - text: Ventas
+                  - application [ref=e418]
+              - generic [ref=e422]:
+                - heading "Salarios y Honorarios - $0" [level=3] [ref=e424]
+                - generic [ref=e427]:
+                  - list [ref=e429]:
+                    - listitem [ref=e430]:
+                      - img "Empresa legend icon" [ref=e431]
+                      - text: Empresa
+                    - listitem [ref=e433]:
+                      - img "Honorarios legend icon" [ref=e434]
+                      - text: Honorarios
+                  - application [ref=e436]
+              - generic [ref=e440]:
+                - heading "Bonos y HHEE - $0" [level=3] [ref=e442]
+                - generic [ref=e445]:
+                  - list [ref=e447]:
+                    - listitem [ref=e448]:
+                      - img "Bonos/Turnos legend icon" [ref=e449]
+                      - text: Bonos/Turnos
+                    - listitem [ref=e451]:
+                      - img "Horas Extra legend icon" [ref=e452]
+                      - text: Horas Extra
+                  - application [ref=e454]
+            - generic [ref=e459]:
+              - heading "Composición de Egresos Totales - $0" [level=3] [ref=e461]
+              - generic [ref=e465]:
+                - list [ref=e467]:
+                  - listitem [ref=e468]:
+                    - img "Honorarios legend icon" [ref=e469]
+                    - text: Honorarios
+                  - listitem [ref=e471]:
+                    - img "Operacionales legend icon" [ref=e472]
+                    - text: Operacionales
+                  - listitem [ref=e474]:
+                    - img "Remuneraciones legend icon" [ref=e475]
+                    - text: Remuneraciones
+                - application [ref=e477]
+            - generic [ref=e481]:
+              - generic [ref=e484]:
+                - heading "Resumen Mensual" [level=3] [ref=e485]
+                - paragraph [ref=e486]: Detalle de ingresos y egresos por periodo
+              - table [ref=e488]:
+                - rowgroup [ref=e489]:
+                  - row "Mes Ventas Egresos Neto Margen" [ref=e490]:
+                    - columnheader "Mes" [ref=e491]
+                    - columnheader "Ventas" [ref=e492]
+                    - columnheader "Egresos" [ref=e493]
+                    - columnheader "Neto" [ref=e494]
+                    - columnheader "Margen" [ref=e495]
+                - rowgroup
+  - region "Notifications alt+T"
+  - alert [ref=e496]

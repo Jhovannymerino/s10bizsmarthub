@@ -1,0 +1,35 @@
+- generic [ref=e1]:
+  - alert [ref=e15]
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e19]: S10 BizSmartHub
+      - generic [ref=e20]:
+        - generic [ref=e21]: Empresa
+        - button "🏢 GRUPO (Consolidado)" [ref=e22] [cursor=pointer]
+        - button "CMO GROUP" [ref=e24] [cursor=pointer]
+        - button "INTEGRAL" [ref=e25] [cursor=pointer]
+        - button "MEDARQ" [ref=e26] [cursor=pointer]
+        - button "AMERICANA" [ref=e27] [cursor=pointer]
+      - generic [ref=e28]:
+        - generic [ref=e29]: Año
+        - button "2026" [ref=e30] [cursor=pointer]
+        - button "2025" [ref=e31] [cursor=pointer]
+        - button "2024" [ref=e32] [cursor=pointer]
+      - navigation [ref=e33]:
+        - button "📊 P&L" [ref=e34] [cursor=pointer]
+        - button "💰 CxC Aging" [active] [ref=e35] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e36] [cursor=pointer]
+        - button "📋 GAV Detalle" [ref=e37] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e39] [cursor=pointer]
+    - generic [ref=e40]:
+      - generic [ref=e42]:
+        - heading "Cuentas por Cobrar — Aging" [level=1] [ref=e689]
+        - generic [ref=e44]: "Consolidado del Grupo · YTD 2026 · Fuente: S10 ERP"
+      - generic [ref=e690]:
+        - generic [ref=e691]: 📭
+        - generic [ref=e692]: Sin datos de CxC
+        - generic [ref=e693]:
+          - text: Ejecuta
+          - code [ref=e694]: node sync-agent.js
+          - text: desde la red CMO para cargar los datos.
+  - generic [ref=e285]: 4500K

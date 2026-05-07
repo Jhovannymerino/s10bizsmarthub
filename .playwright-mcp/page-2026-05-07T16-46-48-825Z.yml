@@ -1,0 +1,53 @@
+- generic [active] [ref=e1]:
+  - region "Notifications alt+T"
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - img "Hero Branding" [ref=e5]
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - img "Integral Logo" [ref=e10]
+          - generic [ref=e11]:
+            - heading "Internal Control" [level=2] [ref=e12]
+            - generic [ref=e13]: Integral Consultores
+        - generic [ref=e14]:
+          - heading "Gestión Inteligente de Proyectos." [level=1] [ref=e15]
+          - paragraph [ref=e16]: La plataforma definitiva para el control de horas, presupuestos y rentabilidad operativa.
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - img "Resource" [ref=e20]
+            - img "Resource" [ref=e22]
+            - img "Resource" [ref=e24]
+            - img "Resource" [ref=e26]
+          - paragraph [ref=e27]: +2.5k Profesionales usándolo
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - heading "Acceso Central" [level=2] [ref=e32]
+        - paragraph [ref=e33]: Bienvenido de nuevo al ecosistema
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: Identidad Digital
+          - generic [ref=e37]:
+            - img [ref=e38]
+            - textbox "sunombre@compañia.com" [ref=e41]
+        - generic [ref=e42]:
+          - generic [ref=e43]: Clave Secreta
+          - generic [ref=e44]:
+            - img [ref=e45]
+            - textbox "••••••••" [ref=e48]
+            - button [ref=e49]:
+              - img [ref=e50]
+        - generic [ref=e53]:
+          - generic [ref=e54] [cursor=pointer]:
+            - checkbox "Recordarme" [ref=e56]
+            - generic [ref=e57]: Recordarme
+          - link "¿Recuperar clave?" [ref=e58] [cursor=pointer]:
+            - /url: /forgot-password
+        - button "Entrar al sistema" [ref=e59]:
+          - generic [ref=e60]:
+            - text: Entrar al sistema
+            - img [ref=e61]
+      - generic [ref=e63]:
+        - paragraph [ref=e64]: Powered by
+        - img "Bizware Apps" [ref=e66]
+        - paragraph [ref=e67]: © 2026 Integral Control • v2.0.4
+  - alert [ref=e68]

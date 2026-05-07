@@ -1,0 +1,143 @@
+- generic [ref=e2]:
+  - alert [ref=e1]
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e19]: S10 BizSmartHub
+      - generic [ref=e20]:
+        - generic [ref=e21]: Empresa
+        - button "CMO GROUP" [ref=e22] [cursor=pointer]
+        - button "INTEGRAL" [ref=e23] [cursor=pointer]
+        - button "MEDARQ" [ref=e24] [cursor=pointer]
+        - button "AMERICANA" [active] [ref=e25] [cursor=pointer]
+      - generic [ref=e26]:
+        - generic [ref=e27]: Año
+        - button "2026" [ref=e28] [cursor=pointer]
+        - button "2025" [ref=e29] [cursor=pointer]
+        - button "2024" [ref=e30] [cursor=pointer]
+      - navigation [ref=e31]:
+        - button "📊 P&L" [ref=e32] [cursor=pointer]
+        - button "💰 CxC Aging" [ref=e33] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e34] [cursor=pointer]
+        - button "📋 GAV Detalle" [ref=e35] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e37] [cursor=pointer]
+    - generic [ref=e38]:
+      - generic [ref=e40]:
+        - heading "Estado de Resultados" [level=1] [ref=e41]
+        - generic [ref=e42]: "COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C. · YTD 2026 · Fuente: S10 ERP"
+      - generic [ref=e836]:
+        - generic [ref=e837]:
+          - generic [ref=e838]: Ingresos YTD
+          - generic [ref=e839]: S/ 160K
+        - generic [ref=e840]:
+          - generic [ref=e841]: Margen Bruto
+          - generic [ref=e842]: S/ 320K
+          - generic [ref=e843]: 200.2%
+        - generic [ref=e844]:
+          - generic [ref=e845]: EBITDA
+          - generic [ref=e846]: S/ 228K
+          - generic [ref=e847]: 142.4%
+        - generic [ref=e848]:
+          - generic [ref=e849]: GAV
+          - generic [ref=e850]: S/ 92K
+        - generic [ref=e851]:
+          - generic [ref=e852]: Utilidad Neta
+          - generic [ref=e853]: S/ 160K
+      - generic [ref=e854]:
+        - generic [ref=e855]: Ingresos vs EBITDA — Mensual
+        - img [ref=e858]:
+          - generic [ref=e863]:
+            - generic [ref=e865]: Ene
+            - generic [ref=e867]: Feb
+            - generic [ref=e869]: Mar
+          - generic [ref=e871]:
+            - generic [ref=e873]: 0K
+            - generic [ref=e875]: 30K
+            - generic [ref=e877]: 60K
+            - generic [ref=e879]: 90K
+            - generic [ref=e881]: 120K
+      - generic [ref=e900]:
+        - generic [ref=e901]:
+          - generic [ref=e902]: Detalle Mensual
+          - generic [ref=e903]: Click en Ingresos, Costo, GAV o Gastos para ver el desglose de cuentas
+        - table [ref=e905]:
+          - rowgroup [ref=e906]:
+            - row "Concepto Ene Feb Mar Abr YTD" [ref=e907]:
+              - columnheader "Concepto" [ref=e908]
+              - columnheader "Ene" [ref=e909]
+              - columnheader "Feb" [ref=e910]
+              - columnheader "Mar" [ref=e911]
+              - columnheader "Abr" [ref=e912]
+              - columnheader "YTD" [ref=e913]
+          - rowgroup [ref=e914]:
+            - row "Ingresos▶ 2 cuentas S/ 53K S/ 53K S/ 53K S/ 0 S/ 160K" [ref=e915] [cursor=pointer]:
+              - cell "Ingresos▶ 2 cuentas" [ref=e916]:
+                - text: Ingresos
+                - generic [ref=e917]: ▶ 2 cuentas
+              - cell "S/ 53K" [ref=e918]
+              - cell "S/ 53K" [ref=e919]
+              - cell "S/ 53K" [ref=e920]
+              - cell "S/ 0" [ref=e921]
+              - cell "S/ 160K" [ref=e922]
+            - row "Costo Directo▶ 8 cuentas S/ -75K S/ -38K S/ -36K S/ -10K S/ -160K" [ref=e923] [cursor=pointer]:
+              - cell "Costo Directo▶ 8 cuentas" [ref=e924]:
+                - text: Costo Directo
+                - generic [ref=e925]: ▶ 8 cuentas
+              - cell "S/ -75K" [ref=e926]
+              - cell "S/ -38K" [ref=e927]
+              - cell "S/ -36K" [ref=e928]
+              - cell "S/ -10K" [ref=e929]
+              - cell "S/ -160K" [ref=e930]
+            - row "Margen Bruto S/ 129K S/ 92K S/ 90K S/ 10K S/ 320K" [ref=e931]:
+              - cell "Margen Bruto" [ref=e932]
+              - cell "S/ 129K" [ref=e933]
+              - cell "S/ 92K" [ref=e934]
+              - cell "S/ 90K" [ref=e935]
+              - cell "S/ 10K" [ref=e936]
+              - cell "S/ 320K" [ref=e937]
+            - row "% Margen 241.3% 172.1% 168.3% 0.0% 200.2%" [ref=e938]:
+              - cell "% Margen" [ref=e939]
+              - cell "241.3%" [ref=e940]
+              - cell "172.1%" [ref=e941]
+              - cell "168.3%" [ref=e942]
+              - cell "0.0%" [ref=e943]
+              - cell "200.2%" [ref=e944]
+            - row "GAV▶ 18 cuentas S/ 13K S/ 37K S/ 32K S/ 10K S/ 92K" [ref=e945] [cursor=pointer]:
+              - cell "GAV▶ 18 cuentas" [ref=e946]:
+                - text: GAV
+                - generic [ref=e947]: ▶ 18 cuentas
+              - cell "S/ 13K" [ref=e948]
+              - cell "S/ 37K" [ref=e949]
+              - cell "S/ 32K" [ref=e950]
+              - cell "S/ 10K" [ref=e951]
+              - cell "S/ 92K" [ref=e952]
+            - row "EBITDA S/ 116K S/ 55K S/ 57K S/ 66 S/ 228K" [ref=e953]:
+              - cell "EBITDA" [ref=e954]
+              - cell "S/ 116K" [ref=e955]
+              - cell "S/ 55K" [ref=e956]
+              - cell "S/ 57K" [ref=e957]
+              - cell "S/ 66" [ref=e958]
+              - cell "S/ 228K" [ref=e959]
+            - row "% EBITDA 216.9% 102.8% 107.5% 0.0% 142.4%" [ref=e960]:
+              - cell "% EBITDA" [ref=e961]
+              - cell "216.9%" [ref=e962]
+              - cell "102.8%" [ref=e963]
+              - cell "107.5%" [ref=e964]
+              - cell "0.0%" [ref=e965]
+              - cell "142.4%" [ref=e966]
+            - row "Gastos Financieros▶ 4 cuentas S/ 62K S/ 1K S/ 4K S/ 66 S/ 68K" [ref=e967] [cursor=pointer]:
+              - cell "Gastos Financieros▶ 4 cuentas" [ref=e968]:
+                - text: Gastos Financieros
+                - generic [ref=e969]: ▶ 4 cuentas
+              - cell "S/ 62K" [ref=e970]
+              - cell "S/ 1K" [ref=e971]
+              - cell "S/ 4K" [ref=e972]
+              - cell "S/ 66" [ref=e973]
+              - cell "S/ 68K" [ref=e974]
+            - row "Utilidad Neta S/ 53K S/ 53K S/ 53K S/ 0 S/ 160K" [ref=e975]:
+              - cell "Utilidad Neta" [ref=e976]
+              - cell "S/ 53K" [ref=e977]
+              - cell "S/ 53K" [ref=e978]
+              - cell "S/ 53K" [ref=e979]
+              - cell "S/ 0" [ref=e980]
+              - cell "S/ 160K" [ref=e981]
+  - generic [ref=e177]: 30K

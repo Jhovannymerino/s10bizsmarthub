@@ -404,6 +404,16 @@ export class KpiService {
     return { transactions: txns, total: txns.length };
   }
 
+  async getCxPTransactions(companyId: string, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'cxp_transactions', 'current');
+    if (!cached) return { transactions: [], total: 0 };
+
+    let txns = cached.data as any[];
+    if (codTercero) txns = txns.filter((t: any) => String(t.CodTercero) === String(codTercero));
+
+    return { transactions: txns, total: txns.length };
+  }
+
   async getFacturasEmitidas(companyId: string, year: number) {
     const cached = await this.getSnapshot(companyId, 'facturas_emitidas', `${year}`);
     if (!cached) return { facturas: [], total: 0, year };

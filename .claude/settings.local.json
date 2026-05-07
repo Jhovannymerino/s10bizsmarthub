@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no root@72.62.16.28 ' *)"
+      "Bash(ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no root@72.62.16.28 ' *)",
+      "Bash(ssh root@72.62.16.28 \"cd /opt/apps/s10bizsmarthub && git pull && docker compose build s10biz-backend && docker compose up -d s10biz-backend && echo 'Deploy OK'\")",
+      "Bash(ssh root@72.62.16.28 'docker cp s10biz-api:/tmp/reset.sql /tmp/reset.sql && docker cp /tmp/reset.sql s10biz-db:/tmp/reset.sql && docker exec s10biz-db psql -U postgres -d s10biz_db -f /tmp/reset.sql && docker exec s10biz-db psql -U postgres -d s10biz_db -c \"SELECT length\\(\\\\\"passwordHash\\\\\"\\) as hash_len FROM \\\\\"User\\\\\" WHERE email = '\"'\"'admin@bizwareapps.com'\"'\"';\"')"
     ]
   }
 }

@@ -1,0 +1,130 @@
+- generic [ref=e1]:
+  - alert [ref=e15]
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e19]: S10 BizSmartHub
+      - generic [ref=e20]:
+        - generic [ref=e21]: Empresa
+        - button "🏢 GRUPO (Consolidado)" [ref=e22] [cursor=pointer]
+        - button "CMO GROUP" [ref=e24] [cursor=pointer]
+        - button "INTEGRAL" [ref=e25] [cursor=pointer]
+        - button "MEDARQ" [ref=e26] [cursor=pointer]
+        - button "AMERICANA" [ref=e27] [cursor=pointer]
+      - generic [ref=e28]:
+        - generic [ref=e29]: Año
+        - button "2026" [ref=e30] [cursor=pointer]
+        - button "2025" [ref=e31] [cursor=pointer]
+        - button "2024" [ref=e32] [cursor=pointer]
+      - navigation [ref=e33]:
+        - button "📊 P&L" [ref=e34] [cursor=pointer]
+        - button "💰 CxC Aging" [active] [ref=e35] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e36] [cursor=pointer]
+        - button "📋 GAV Detalle" [ref=e37] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e39] [cursor=pointer]
+    - generic [ref=e40]:
+      - generic [ref=e42]:
+        - heading "Cuentas por Cobrar — Aging" [level=1] [ref=e1049]
+        - generic [ref=e44]:
+          - text: "INTEGRAL CONSULTORES S.A.C. · YTD 2026 · Fuente: S10 ERP"
+          - generic [ref=e696]: · vs 2025
+      - generic [ref=e1050]:
+        - generic [ref=e1051]:
+          - generic [ref=e1052]: Cartera Total
+          - generic [ref=e1053]: S/ 1.48M
+        - generic [ref=e1054]:
+          - generic [ref=e1055]: 🔴
+          - generic [ref=e1056]: +90 días vencido
+          - generic [ref=e1057]: S/ 1.26M
+          - generic [ref=e1058]: 85.6%
+        - generic [ref=e1059]:
+          - generic [ref=e1060]: N° Clientes
+          - generic [ref=e1061]: "7"
+        - generic [ref=e1062]:
+          - generic [ref=e1063]: 🔴
+          - generic [ref=e1064]: DSO (Días de Cobro)
+          - generic [ref=e1065]: 201 días
+          - generic [ref=e1066]: Cartera / (Ingresos / 365)
+        - generic [ref=e1067]:
+          - generic [ref=e1068]: 🔴
+          - generic [ref=e1069]: Concentración Top 3
+          - generic [ref=e1070]: 90.5%
+          - generic [ref=e1071]: "% cartera en 3 principales clientes"
+      - generic [ref=e1072]:
+        - generic [ref=e1073]: Aging por Cliente
+        - table [ref=e1075]:
+          - rowgroup [ref=e1076]:
+            - row "Cliente 0-30 días 31-60 días 61-90 días +90 días Total % Cartera" [ref=e1077]:
+              - columnheader "Cliente" [ref=e1078]
+              - columnheader "0-30 días" [ref=e1079]
+              - columnheader "31-60 días" [ref=e1080]
+              - columnheader "61-90 días" [ref=e1081]
+              - columnheader "+90 días" [ref=e1082]
+              - columnheader "Total" [ref=e1083]
+              - columnheader "% Cartera" [ref=e1084]
+          - rowgroup [ref=e1085]:
+            - row "CONSTRUCTORA & INMOBILIARIA SAGITARIO Y ASOCIADOS S.A.C. - SAGITARIO & ASOCIADOS S.A.C. S/ 0 S/ 71K S/ 0 S/ 578K S/ 649K 43.9%" [ref=e1086]:
+              - cell "CONSTRUCTORA & INMOBILIARIA SAGITARIO Y ASOCIADOS S.A.C. - SAGITARIO & ASOCIADOS S.A.C." [ref=e1087]
+              - cell "S/ 0" [ref=e1088]
+              - cell "S/ 71K" [ref=e1089]
+              - cell "S/ 0" [ref=e1090]
+              - cell "S/ 578K" [ref=e1091]
+              - cell "S/ 649K" [ref=e1092]
+              - cell "43.9%" [ref=e1093]
+            - row "CHINA ROAD AND BRIDGE CORPORATION SUCURSAL PERU S/ 0 S/ 87K S/ 9K S/ 463K S/ 559K 37.8%" [ref=e1094]:
+              - cell "CHINA ROAD AND BRIDGE CORPORATION SUCURSAL PERU" [ref=e1095]
+              - cell "S/ 0" [ref=e1096]
+              - cell "S/ 87K" [ref=e1097]
+              - cell "S/ 9K" [ref=e1098]
+              - cell "S/ 463K" [ref=e1099]
+              - cell "S/ 559K" [ref=e1100]
+              - cell "37.8%" [ref=e1101]
+            - row "CONSORCIO RIO HUATANAY S/ 0 S/ 0 S/ 0 S/ 130K S/ 130K 8.8%" [ref=e1102]:
+              - cell "CONSORCIO RIO HUATANAY" [ref=e1103]
+              - cell "S/ 0" [ref=e1104]
+              - cell "S/ 0" [ref=e1105]
+              - cell "S/ 0" [ref=e1106]
+              - cell "S/ 130K" [ref=e1107]
+              - cell "S/ 130K" [ref=e1108]
+              - cell "8.8%" [ref=e1109]
+            - row "CMO GROUP S.A. S/ 0 S/ 0 S/ 0 S/ 75K S/ 75K 5.1%" [ref=e1110]:
+              - cell "CMO GROUP S.A." [ref=e1111]
+              - cell "S/ 0" [ref=e1112]
+              - cell "S/ 0" [ref=e1113]
+              - cell "S/ 0" [ref=e1114]
+              - cell "S/ 75K" [ref=e1115]
+              - cell "S/ 75K" [ref=e1116]
+              - cell "5.1%" [ref=e1117]
+            - row "CONSORCIO PENAL PUCALLPA S/ 0 S/ 0 S/ 30K S/ 0 S/ 30K 2.0%" [ref=e1118]:
+              - cell "CONSORCIO PENAL PUCALLPA" [ref=e1119]
+              - cell "S/ 0" [ref=e1120]
+              - cell "S/ 0" [ref=e1121]
+              - cell "S/ 30K" [ref=e1122]
+              - cell "S/ 0" [ref=e1123]
+              - cell "S/ 30K" [ref=e1124]
+              - cell "2.0%" [ref=e1125]
+            - row "INMAC PERU S.A.C. S/ 0 S/ 0 S/ 0 S/ 22K S/ 22K 1.5%" [ref=e1126]:
+              - cell "INMAC PERU S.A.C." [ref=e1127]
+              - cell "S/ 0" [ref=e1128]
+              - cell "S/ 0" [ref=e1129]
+              - cell "S/ 0" [ref=e1130]
+              - cell "S/ 22K" [ref=e1131]
+              - cell "S/ 22K" [ref=e1132]
+              - cell "1.5%" [ref=e1133]
+            - row "INGENIERIAS Y OBRAS DE CONSTRUCCION RIUMAR SPA S/ 3K S/ 14K S/ 0 S/ -2K S/ 14K 0.9%" [ref=e1134]:
+              - cell "INGENIERIAS Y OBRAS DE CONSTRUCCION RIUMAR SPA" [ref=e1135]
+              - cell "S/ 3K" [ref=e1136]
+              - cell "S/ 14K" [ref=e1137]
+              - cell "S/ 0" [ref=e1138]
+              - cell "S/ -2K" [ref=e1139]
+              - cell "S/ 14K" [ref=e1140]
+              - cell "0.9%" [ref=e1141]
+          - rowgroup [ref=e1142]:
+            - row "TOTAL S/ 3K S/ 172K S/ 39K S/ 1.26M S/ 1.48M 100%" [ref=e1143]:
+              - cell "TOTAL" [ref=e1144]
+              - cell "S/ 3K" [ref=e1145]
+              - cell "S/ 172K" [ref=e1146]
+              - cell "S/ 39K" [ref=e1147]
+              - cell "S/ 1.26M" [ref=e1148]
+              - cell "S/ 1.48M" [ref=e1149]
+              - cell "100%" [ref=e1150]
+  - generic [ref=e285]: 300K

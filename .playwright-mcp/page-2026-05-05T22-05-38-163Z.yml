@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e32]
+  - generic [ref=e46]:
+    - generic [ref=e47]:
+      - generic [ref=e49]: S10 BizSmartHub
+      - generic [ref=e50]:
+        - generic [ref=e51]: Empresa
+        - button "🏢 GRUPO (Consolidado)" [ref=e52] [cursor=pointer]
+        - button "CMO GROUP" [ref=e54] [cursor=pointer]
+        - button "INTEGRAL" [ref=e55] [cursor=pointer]
+        - button "MEDARQ" [ref=e56] [cursor=pointer]
+        - button "AMERICANA" [ref=e57] [cursor=pointer]
+      - generic [ref=e58]:
+        - generic [ref=e59]: Año
+        - button "2026" [ref=e60] [cursor=pointer]
+        - button "2025" [ref=e61] [cursor=pointer]
+        - button "2024" [ref=e62] [cursor=pointer]
+      - navigation [ref=e63]:
+        - button "📊 P&L" [ref=e64] [cursor=pointer]
+        - button "💰 CxC Aging" [ref=e65] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e66] [cursor=pointer]
+        - button "📋 GAV Detalle" [ref=e67] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e69] [cursor=pointer]
+    - generic [ref=e71]:
+      - generic [ref=e72]:
+        - heading "Estado de Resultados" [level=1] [ref=e73]
+        - generic [ref=e74]: "CMO GROUP S.A. · YTD 2026 · Fuente: S10 ERP"
+      - generic [ref=e75]: Cargando...

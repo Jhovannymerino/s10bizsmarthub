@@ -1,0 +1,103 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e5]: S10 BizSmartHub
+      - generic [ref=e6]:
+        - generic [ref=e7]: Empresa
+        - button "🏢 GRUPO (Consolidado)" [ref=e8] [cursor=pointer]
+        - button "CMO GROUP" [ref=e10] [cursor=pointer]
+        - button "INTEGRAL" [ref=e11] [cursor=pointer]
+        - button "MEDARQ" [ref=e12] [cursor=pointer]
+        - button "AMERICANA" [ref=e13] [cursor=pointer]
+      - generic [ref=e14]:
+        - generic [ref=e15]: Año
+        - button "2026" [ref=e16] [cursor=pointer]
+        - button "2025" [ref=e17] [cursor=pointer]
+        - button "2024" [ref=e18] [cursor=pointer]
+      - navigation [ref=e19]:
+        - button "📊 P&L" [ref=e20] [cursor=pointer]
+        - button "💰 CxC Aging" [ref=e21] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e22] [cursor=pointer]
+        - button "📋 GAV Detalle" [active] [ref=e23] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e25] [cursor=pointer]
+    - generic [ref=e26]:
+      - generic [ref=e28]:
+        - heading "Gastos de Admin. y Ventas" [level=1] [ref=e473]
+        - generic [ref=e30]:
+          - text: "INTEGRAL CONSULTORES S.A.C. · YTD 2026 · Fuente: S10 ERP"
+          - generic [ref=e33]: · vs 2025
+      - generic [ref=e474]:
+        - generic [ref=e475]:
+          - generic [ref=e476]: GAV por Categoría
+          - table [ref=e477]:
+            - rowgroup [ref=e478]:
+              - row "Categoría YTD % GAV % Ingresos" [ref=e479]:
+                - columnheader "Categoría" [ref=e480]
+                - columnheader "YTD" [ref=e481]
+                - columnheader "% GAV" [ref=e482]
+                - columnheader "% Ingresos" [ref=e483]
+            - rowgroup [ref=e484]:
+              - row "GASTOS GENERALES S/ 1.21M 55.0% 45.1%" [ref=e485]:
+                - cell "GASTOS GENERALES" [ref=e486]
+                - cell "S/ 1.21M" [ref=e487]
+                - cell "55.0%" [ref=e488]
+                - cell "45.1%" [ref=e489]
+              - row "GASTOS DE PERSONAL S/ 686K 31.2% 25.6%" [ref=e490]:
+                - cell "GASTOS DE PERSONAL" [ref=e491]
+                - cell "S/ 686K" [ref=e492]
+                - cell "31.2%" [ref=e493]
+                - cell "25.6%" [ref=e494]
+              - row "Uniformes e Impl.Seguridad, Otros Servicios y Gastos S/ 262K 11.9% 9.8%" [ref=e495]:
+                - cell "Uniformes e Impl.Seguridad, Otros Servicios y Gastos" [ref=e496]
+                - cell "S/ 262K" [ref=e497]
+                - cell "11.9%" [ref=e498]
+                - cell "9.8%" [ref=e499]
+              - row "INSUMOS S/ 42K 1.9% 1.6%" [ref=e500]:
+                - cell "INSUMOS" [ref=e501]
+                - cell "S/ 42K" [ref=e502]
+                - cell "1.9%" [ref=e503]
+                - cell "1.6%" [ref=e504]
+              - row "ALQUILER DE EQUIPOS S/ 240 0.0% 0.0%" [ref=e505]:
+                - cell "ALQUILER DE EQUIPOS" [ref=e506]
+                - cell "S/ 240" [ref=e507]
+                - cell "0.0%" [ref=e508]
+                - cell "0.0%" [ref=e509]
+            - rowgroup [ref=e510]:
+              - row "TOTAL S/ 2.20M 100% 82.0%" [ref=e511]:
+                - cell "TOTAL" [ref=e512]
+                - cell "S/ 2.20M" [ref=e513]
+                - cell "100%" [ref=e514]
+                - cell "82.0%" [ref=e515]
+        - generic [ref=e516]:
+          - generic [ref=e517]: Distribución GAV
+          - generic [ref=e519]:
+            - img [ref=e520]:
+              - generic [ref=e521]:
+                - generic [ref=e522]:
+                  - img [ref=e524]
+                  - img [ref=e526]
+                  - img [ref=e528]
+                  - img [ref=e530]
+                  - img [ref=e532]
+                - generic [ref=e533]:
+                  - generic [ref=e536]: 55.0%
+                  - generic [ref=e539]: 31.2%
+                  - generic [ref=e542]: 11.9%
+            - list [ref=e548]:
+              - listitem [ref=e549]:
+                - img [ref=e550]
+                - text: GASTOS GENERALES
+              - listitem [ref=e552]:
+                - img [ref=e553]
+                - text: GASTOS DE PERSONAL
+              - listitem [ref=e555]:
+                - img [ref=e556]
+                - text: Uniformes e Impl.Seguridad, Otros Servicios y Gastos
+              - listitem [ref=e558]:
+                - img [ref=e559]
+                - text: INSUMOS
+              - listitem [ref=e561]:
+                - img [ref=e562]
+                - text: ALQUILER DE EQUIPOS
+  - alert [ref=e32]
+  - generic [ref=e285]: 300K

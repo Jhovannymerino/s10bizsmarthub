@@ -1,0 +1,15 @@
+- generic [active] [ref=e2]:
+  - alert [ref=e1]
+  - generic [ref=e177]: 1500K
+  - generic [ref=e1922]:
+    - generic [ref=e1923]:
+      - generic [ref=e1924]: S10 BizSmartHub
+      - generic [ref=e1925]: Dashboard Financiero
+    - generic [ref=e1926]:
+      - generic [ref=e1927]:
+        - generic [ref=e1928]: Email
+        - textbox [ref=e1929]: admin@bizwareapps.com
+      - generic [ref=e1930]:
+        - generic [ref=e1931]: Contraseña
+        - textbox [ref=e1932]: Admin2026!
+      - button "Ingresar" [ref=e1933] [cursor=pointer]

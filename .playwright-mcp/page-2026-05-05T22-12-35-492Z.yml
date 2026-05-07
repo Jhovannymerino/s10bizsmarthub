@@ -1,0 +1,14 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: S10 BizSmartHub
+      - generic [ref=e6]: Dashboard Financiero
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]: Email
+        - textbox [ref=e10]: admin@bizwareapps.com
+      - generic [ref=e11]:
+        - generic [ref=e12]: Contraseña
+        - textbox [ref=e13]: Admin2026!
+      - button "Ingresar" [ref=e14] [cursor=pointer]
+  - alert [ref=e15]

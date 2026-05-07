@@ -1,0 +1,142 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - img "Business Smart Hub" [ref=e9]
+        - heading "Business Smart Hub" [level=1] [ref=e10]:
+          - text: Business
+          - text: Smart Hub
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - text: Powered
+          - text: by
+        - img "Bizware Apps" [ref=e14]
+      - link "Sincronización" [ref=e16] [cursor=pointer]:
+        - /url: /sync
+        - generic [ref=e17]:
+          - img [ref=e18]
+          - generic [ref=e20]: Sincronización
+      - navigation [ref=e21]
+      - generic [ref=e24] [cursor=pointer]:
+        - generic [ref=e25]: US
+        - generic [ref=e26]:
+          - paragraph [ref=e27]: Usuario
+          - paragraph [ref=e28]: user@kame.cl
+        - generic [ref=e29]:
+          - button [ref=e30]:
+            - img [ref=e31]
+          - button [ref=e35]:
+            - img [ref=e36]
+    - main [ref=e39]:
+      - main [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - img [ref=e47]
+                - generic [ref=e51]: Business Intelligence
+              - heading "Análisis Ejecutivo" [level=1] [ref=e52]
+              - paragraph [ref=e53]: Vista consolidada de rentabilidad operativa y gestión estratégica.
+            - generic [ref=e54]:
+              - generic [ref=e55]:
+                - link "Ejecutivo" [ref=e56] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e57]
+                  - generic [ref=e62]: Ejecutivo
+                - link "Gastos" [ref=e63] [cursor=pointer]:
+                  - /url: /dashboard/gastos
+                  - img [ref=e64]
+                  - generic [ref=e67]: Gastos
+              - button "Filtros" [ref=e69]:
+                - img [ref=e70]
+                - generic [ref=e72]: Filtros
+              - button [ref=e73]:
+                - img [ref=e74]
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - generic [ref=e84]:
+                - generic [ref=e85]:
+                  - paragraph [ref=e86]: Ventas Totales
+                  - heading "$0" [level=3] [ref=e87]
+                - img [ref=e89]
+              - generic [ref=e95]:
+                - generic [ref=e96]:
+                  - paragraph [ref=e97]: Total Egresos
+                  - heading "$0" [level=3] [ref=e98]
+                - img [ref=e100]
+              - generic [ref=e106]:
+                - generic [ref=e107]:
+                  - paragraph [ref=e108]: Costo total Empresa Salarios
+                  - heading "$0" [level=3] [ref=e109]
+                - img [ref=e111]
+              - generic [ref=e117]:
+                - generic [ref=e118]:
+                  - paragraph [ref=e119]: Margen Neto
+                  - heading "$0" [level=3] [ref=e120]
+                - img [ref=e122]
+            - generic [ref=e124]:
+              - generic [ref=e125]:
+                - heading "Performance Financiera - $0" [level=3] [ref=e127]
+                - generic [ref=e130]:
+                  - list [ref=e132]:
+                    - listitem [ref=e133]:
+                      - img "Egresos legend icon" [ref=e134]
+                      - text: Egresos
+                    - listitem [ref=e136]:
+                      - img "Neto legend icon" [ref=e137]
+                      - text: Neto
+                    - listitem [ref=e139]:
+                      - img "Ventas legend icon" [ref=e140]
+                      - text: Ventas
+                  - application [ref=e142]
+              - generic [ref=e146]:
+                - heading "Salarios y Honorarios - $0" [level=3] [ref=e148]
+                - generic [ref=e151]:
+                  - list [ref=e153]:
+                    - listitem [ref=e154]:
+                      - img "Empresa legend icon" [ref=e155]
+                      - text: Empresa
+                    - listitem [ref=e157]:
+                      - img "Honorarios legend icon" [ref=e158]
+                      - text: Honorarios
+                  - application [ref=e160]
+              - generic [ref=e164]:
+                - heading "Bonos y HHEE - $0" [level=3] [ref=e166]
+                - generic [ref=e169]:
+                  - list [ref=e171]:
+                    - listitem [ref=e172]:
+                      - img "Bonos/Turnos legend icon" [ref=e173]
+                      - text: Bonos/Turnos
+                    - listitem [ref=e175]:
+                      - img "Horas Extra legend icon" [ref=e176]
+                      - text: Horas Extra
+                  - application [ref=e178]
+            - generic [ref=e183]:
+              - heading "Composición de Egresos Totales - $0" [level=3] [ref=e185]
+              - generic [ref=e189]:
+                - list [ref=e191]:
+                  - listitem [ref=e192]:
+                    - img "Honorarios legend icon" [ref=e193]
+                    - text: Honorarios
+                  - listitem [ref=e195]:
+                    - img "Operacionales legend icon" [ref=e196]
+                    - text: Operacionales
+                  - listitem [ref=e198]:
+                    - img "Remuneraciones legend icon" [ref=e199]
+                    - text: Remuneraciones
+                - application [ref=e201]
+            - generic [ref=e205]:
+              - generic [ref=e208]:
+                - heading "Resumen Mensual" [level=3] [ref=e209]
+                - paragraph [ref=e210]: Detalle de ingresos y egresos por periodo
+              - table [ref=e212]:
+                - rowgroup [ref=e213]:
+                  - row "Mes Ventas Egresos Neto Margen" [ref=e214]:
+                    - columnheader "Mes" [ref=e215]
+                    - columnheader "Ventas" [ref=e216]
+                    - columnheader "Egresos" [ref=e217]
+                    - columnheader "Neto" [ref=e218]
+                    - columnheader "Margen" [ref=e219]
+                - rowgroup
+  - region "Notifications alt+T"
+  - alert [ref=e220]

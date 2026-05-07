@@ -147,6 +147,29 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable, ac.NroAsientoContable
 `;
 
+const QUERY_CXP_TRANSACTIONS = (codEmpresa) => `
+SELECT
+  ac.NroAsientoContable                                    AS NroAsiento,
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
+  YEAR(ac.FechaAplicacionContable)                         AS Anio,
+  MONTH(ac.FechaAplicacionContable)                        AS Mes,
+  pcd.CodCuenta                                            AS CodCuenta,
+  ISNULL(ac.Glosa, '')                                     AS Glosa,
+  ISNULL(ac.Debito, 0)                                     AS Debito,
+  ISNULL(ac.Credito, 0)                                    AS Credito,
+  ISNULL(i.Descripcion, '')                                AS Tercero,
+  ISNULL(CAST(ac.CodIdentificador AS VARCHAR(20)), '')     AS CodTercero
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) = '42'
+  AND ac.FechaAplicacionContable >= DATEADD(YEAR, -2, GETDATE())
+ORDER BY ac.FechaAplicacionContable, ac.NroAsientoContable
+`;
+
 // Facturas emitidas: electrónicas (131, 125 vinculadas), NC (134, 128), docs sin CP (060)
 // Excluye: 071=Préstamos, 058=Transferencias bancarias, 075=Devoluciones
 const TIPOS_EMITIDAS = `'060','125','128','131','134'`;
@@ -379,7 +402,7 @@ async function main() {
 
     try {
       // Run all queries in parallel
-      const [plResult, cxcResult, cxpResult, cajaResult, gavResult, txResult, cxcTxResult, emitResult, reciResult, honorResult] = await Promise.all([
+      const [plResult, cxcResult, cxpResult, cajaResult, gavResult, txResult, cxcTxResult, cxpTxResult, emitResult, reciResult, honorResult] = await Promise.all([
         pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_CXC(company.codEmpresa)),
         pool.request().query(QUERY_CXP(company.codEmpresa)),
@@ -387,6 +410,7 @@ async function main() {
         pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_TRANSACTIONS(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_CXC_TRANSACTIONS(company.codEmpresa)),
+        pool.request().query(QUERY_CXP_TRANSACTIONS(company.codEmpresa)),
         pool.request().query(QUERY_FACTURAS_EMITIDAS(company.codEmpresa, year, company.claseIngreso)),
         pool.request().query(QUERY_FACTURAS_RECIBIDAS(company.codEmpresa, year)),
         pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
@@ -403,6 +427,7 @@ async function main() {
       console.log(`  GAV rows: ${gavResult.recordset.length}`);
       console.log(`  Transactions: ${txResult.recordset.length}`);
       console.log(`  CxC Transactions: ${cxcTxResult.recordset.length}`);
+      console.log(`  CxP Transactions: ${cxpTxResult.recordset.length}`);
       const dupEmit  = emitidas.filter(r => r.EsDuplicado).length;
       const dupReci  = recibidas.filter(r => r.EsDuplicado).length;
       const dupHonor = honorarios.filter(r => r.EsDuplicado).length;
@@ -424,6 +449,7 @@ async function main() {
           gav: gavResult.recordset,
           transactions: txResult.recordset,
           cxc_transactions: cxcTxResult.recordset,
+          cxp_transactions: cxpTxResult.recordset,
           facturas_emitidas: emitidas,
           facturas_recibidas: recibidas,
           honorarios_recibidos: honorarios,

@@ -1,0 +1,72 @@
+- generic [ref=e2]:
+  - alert [ref=e1]
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e19]: S10 BizSmartHub
+      - generic [ref=e20]:
+        - generic [ref=e21]: Empresa
+        - button "CMO GROUP" [ref=e22] [cursor=pointer]
+        - button "INTEGRAL" [ref=e23] [cursor=pointer]
+        - button "MEDARQ" [ref=e24] [cursor=pointer]
+        - button "AMERICANA" [ref=e25] [cursor=pointer]
+      - generic [ref=e26]:
+        - generic [ref=e27]: Año
+        - button "2026" [ref=e28] [cursor=pointer]
+        - button "2025" [ref=e29] [cursor=pointer]
+        - button "2024" [ref=e30] [cursor=pointer]
+      - navigation [ref=e31]:
+        - button "📊 P&L" [ref=e32] [cursor=pointer]
+        - button "💰 CxC Aging" [active] [ref=e33] [cursor=pointer]
+        - button "🏦 Posición Caja" [ref=e34] [cursor=pointer]
+        - button "📋 GAV Detalle" [ref=e35] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e37] [cursor=pointer]
+    - generic [ref=e38]:
+      - generic [ref=e40]:
+        - heading "Cuentas por Cobrar — Aging" [level=1] [ref=e1002]
+        - generic [ref=e42]: "COMPAÑÍA AMERICANA DE CONSTRUCCIÓN Y EQUIPAMIENTO S.A.C. · YTD 2026 · Fuente: S10 ERP"
+      - generic [ref=e1003]:
+        - generic [ref=e1004]:
+          - generic [ref=e1005]: Cartera Total
+          - generic [ref=e1006]: S/ 3.01M
+        - generic [ref=e1007]:
+          - generic [ref=e1008]: +90 días (vencido)
+          - generic [ref=e1009]: S/ 3.01M
+          - generic [ref=e1010]: 100.3%
+        - generic [ref=e1011]:
+          - generic [ref=e1012]: Clientes
+          - generic [ref=e1013]: "2"
+      - generic [ref=e1014]:
+        - generic [ref=e1015]: Aging por Cliente
+        - table [ref=e1017]:
+          - rowgroup [ref=e1018]:
+            - row "Cliente 0-30 días 31-60 días 61-90 días +90 días Total" [ref=e1019]:
+              - columnheader "Cliente" [ref=e1020]
+              - columnheader "0-30 días" [ref=e1021]
+              - columnheader "31-60 días" [ref=e1022]
+              - columnheader "61-90 días" [ref=e1023]
+              - columnheader "+90 días" [ref=e1024]
+              - columnheader "Total" [ref=e1025]
+          - rowgroup [ref=e1026]:
+            - row "CONSULTORIA & CONSTRUCCION GRUPO PERGOLA S.A.C. S/ 0 S/ 0 S/ 0 S/ 3.00M S/ 3.00M" [ref=e1027]:
+              - cell "CONSULTORIA & CONSTRUCCION GRUPO PERGOLA S.A.C." [ref=e1028]
+              - cell "S/ 0" [ref=e1029]
+              - cell "S/ 0" [ref=e1030]
+              - cell "S/ 0" [ref=e1031]
+              - cell "S/ 3.00M" [ref=e1032]
+              - cell "S/ 3.00M" [ref=e1033]
+            - row "CONSORCIO ROLOPOM CORPORIS II S/ -7K S/ -323 S/ 38 S/ 10K S/ 3K" [ref=e1034]:
+              - cell "CONSORCIO ROLOPOM CORPORIS II" [ref=e1035]
+              - cell "S/ -7K" [ref=e1036]
+              - cell "S/ -323" [ref=e1037]
+              - cell "S/ 38" [ref=e1038]
+              - cell "S/ 10K" [ref=e1039]
+              - cell "S/ 3K" [ref=e1040]
+          - rowgroup [ref=e1041]:
+            - row "TOTAL S/ -7K S/ -323 S/ 38 S/ 3.01M S/ 3.01M" [ref=e1042]:
+              - cell "TOTAL" [ref=e1043]
+              - cell "S/ -7K" [ref=e1044]
+              - cell "S/ -323" [ref=e1045]
+              - cell "S/ 38" [ref=e1046]
+              - cell "S/ 3.01M" [ref=e1047]
+              - cell "S/ 3.01M" [ref=e1048]
+  - generic [ref=e177]: 30K

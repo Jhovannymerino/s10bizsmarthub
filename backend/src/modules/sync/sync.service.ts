@@ -138,7 +138,7 @@ export class SyncService {
   // El servicio corre en host:3299 y ejecuta sync-vpn.sh fuera de Docker
   // ─────────────────────────────────────────────
 
-  private readonly TRIGGER_URL = 'http://172.17.0.1:3299';
+  private readonly TRIGGER_URL = 'http://host.docker.internal:3299';
   private readonly SYNC_KEY = process.env.SYNC_API_KEY ?? '';
 
   async triggerVpnSync(years: number[] = [new Date().getFullYear()]) {

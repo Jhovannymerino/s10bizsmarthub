@@ -173,6 +173,64 @@ function NoDataBanner({ kpi }: { kpi: string }) {
   );
 }
 
+function DocPreview({ companyId, nroD, onClose }: { companyId: string; nroD: number; onClose: () => void }) {
+  const [doc, setDoc] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch(`${API}/kpi/${companyId}/documento?nroD=${nroD}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => { setDoc(d); setLoading(false); }).catch(() => setLoading(false));
+  }, [companyId, nroD]);
+
+  const TIPO_LABEL: Record<string, string> = { emitida: 'Factura Emitida', recibida: 'Factura Recibida', honorario: 'Honorario' };
+  const d = doc?.doc;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', width: 520, padding: '1.5rem', maxHeight: '80vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ fontWeight: 700, color: '#2BB4BB', fontSize: '0.9rem' }}>
+            {loading ? 'Cargando documento...' : doc ? `${TIPO_LABEL[doc.tipo] || doc.tipo} · NroD ${nroD}` : `NroD ${nroD} — sin documento asociado`}
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8B97A8', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+        </div>
+        {!loading && d && (() => {
+          const rows = [
+            ['Serie-Número', `${d.Serie || '—'}-${d.Numero}`],
+            ['Fecha', d.FechaDocumento],
+            ['Vencimiento', d.FechaVencimiento],
+            ['Tipo', d.TipoDocumento],
+            ['Cliente / Proveedor', d.Cliente || d.Proveedor || '—'],
+            ['RUC', d.RucCliente || d.RucProveedor || '—'],
+            ['Neto', fmt(d.TotalNeto)],
+            ['IGV', fmt(d.TotalImpuesto)],
+            ['Total', fmt(d.Total)],
+            ['Pagado', fmt(d.TotalPagado)],
+            ['Saldo', fmt(d.Saldo ?? d.TotalSaldo)],
+            ['Estado', d.Estado],
+            ...(d.Observacion ? [['Observación', d.Observacion]] : []),
+            ...(d.Categoria ? [['Categoría', d.Categoria]] : []),
+          ];
+          return (
+            <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
+              <tbody>
+                {rows.map(([k, v]) => v && v !== '—' && v !== fmt(0) ? (
+                  <tr key={k} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '0.4rem 0.5rem', color: '#8B97A8', fontWeight: 600, whiteSpace: 'nowrap', width: '40%' }}>{k}</td>
+                    <td style={{ padding: '0.4rem 0.5rem', color: '#F8FAFC' }}>{v}</td>
+                  </tr>
+                ) : null)}
+              </tbody>
+            </table>
+          );
+        })()}
+        {!loading && !d && doc !== null && (
+          <div style={{ color: '#8B97A8', fontSize: '0.82rem' }}>Este asiento no tiene documento fuente registrado (asiento manual, planilla, ajuste o depreciación).</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: {
   companyId: string; year: number; codCuenta: string; descripcion: string; onClose: () => void;
 }) {
@@ -181,6 +239,7 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [mesFilter, setMesFilter] = useState<number | null>(null);
+  const [docPreview, setDocPreview] = useState<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -256,6 +315,7 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
                   <th>Débito</th>
                   <th>Crédito</th>
                   <th>Neto</th>
+                  <th>Documento</th>
                 </tr>
               </thead>
               <tbody>
@@ -270,6 +330,14 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
                       <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
                       <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
                       <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
+                      <td>
+                        {t.NroD ? (
+                          <button onClick={() => setDocPreview(t.NroD)}
+                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: '#2BB4BB', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                            #{t.NroD}
+                          </button>
+                        ) : <span style={{ color: '#4B5563', fontSize: '0.7rem' }}>—</span>}
+                      </td>
                     </tr>
                   );
                 })}
@@ -280,10 +348,14 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
                   <td>{fmt(totalDeb)}</td>
                   <td>{fmt(totalCred)}</td>
                   <td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td>
+                  <td />
                 </tr>
               </tfoot>
             </table>
           </div>
+        )}
+        {docPreview !== null && (
+          <DocPreview companyId={companyId} nroD={docPreview} onClose={() => setDocPreview(null)} />
         )}
       </div>
     </div>

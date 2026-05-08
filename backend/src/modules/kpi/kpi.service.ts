@@ -401,6 +401,27 @@ export class KpiService {
     return { transactions: txns, total: txns.length };
   }
 
+  async getDocumentoByNroD(companyId: string, nroD: string) {
+    const nroDUpper = nroD.toUpperCase();
+    const years = [new Date().getFullYear(), new Date().getFullYear() - 1];
+    const snapTypes = [
+      { key: 'facturas_emitidas', tipo: 'emitida' },
+      { key: 'facturas_recibidas', tipo: 'recibida' },
+      { key: 'honorarios_recibidos', tipo: 'honorario' },
+    ];
+    for (const year of years) {
+      for (const { key, tipo } of snapTypes) {
+        const snap = await this.getSnapshot(companyId, key, `${year}`);
+        if (!snap) continue;
+        const doc = (snap.data as any[]).find(
+          (d: any) => d.NroD && String(d.NroD).toUpperCase() === nroDUpper,
+        );
+        if (doc) return { tipo, year, doc };
+      }
+    }
+    return null;
+  }
+
   async getCxCTransactions(companyId: string, codTercero?: string) {
     const cached = await this.getSnapshot(companyId, 'cxc_transactions', 'current');
     if (!cached) return { transactions: [], total: 0 };

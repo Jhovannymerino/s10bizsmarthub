@@ -124,6 +124,15 @@ export class KpiController {
     return this.kpiService.getGAV(companyId, y);
   }
 
+  /** Documento fuente (factura/boleta/honorario) por NroD */
+  @Get(':companyId/documento')
+  getDocumentoByNroD(
+    @Param('companyId') companyId: string,
+    @Query('nroD') nroD: string,
+  ) {
+    return this.kpiService.getDocumentoByNroD(companyId, nroD);
+  }
+
   /** Fecha y hora del último sync exitoso para la empresa/año */
   @Get(':companyId/last-sync')
   getLastSync(

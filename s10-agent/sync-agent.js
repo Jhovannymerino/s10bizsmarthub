@@ -197,7 +197,8 @@ SELECT
   doc.Total - ISNULL(doc.TotalPagado, 0)                     AS Saldo,
   ISNULL(doc.DescripcionEstado, '')                          AS Estado,
   ISNULL(doc.Observacion, '')                                AS Observacion,
-  CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento
+  CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento,
+  CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%' THEN 1 ELSE 0 END AS EsNotaCredito
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 LEFT JOIN (
   SELECT DISTINCT ac.NroD
@@ -233,7 +234,8 @@ SELECT
   doc.Total - ISNULL(doc.TotalPagado, 0)                     AS TotalSaldo,
   ISNULL(doc.DescripcionEstado, '')                          AS Estado,
   ISNULL(doc.DescripcionCategoria, '')                       AS Categoria,
-  CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento
+  CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento,
+  CASE WHEN doc.CodTipoDocumento = '004' THEN 1 ELSE 0 END  AS EsNotaCredito
 FROM CMO.dbo.vw_12DocumentosPorPagar doc
 LEFT JOIN (
   SELECT DISTINCT ac.NroD

@@ -1769,11 +1769,14 @@ export default function DashboardPage() {
             const tipo = d.TipoDocumento || '';
             return nombre.toLowerCase().includes(q) || num.toLowerCase().includes(q) || tipo.toLowerCase().includes(q);
           });
-          const totalMonto = filtrada.reduce((s: number, d: any) => s + (d.Total || 0), 0);
-          const totalNeto = filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
+          // NC amounts stored positive in S10 — must subtract to get net
+          const ncSign = (d: any) => d.EsNotaCredito ? -1 : 1;
+          const totalMonto = filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.Total || 0), 0);
+          const totalNeto  = filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.TotalNeto || 0), 0);
           const totalSaldo = docsTab === 'emitidas'
-            ? filtrada.reduce((s: number, d: any) => s + (d.Saldo || 0), 0)
-            : filtrada.reduce((s: number, d: any) => s + (d.TotalSaldo || 0), 0);
+            ? filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.Saldo || 0), 0)
+            : filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.TotalSaldo || 0), 0);
+          const ncCount = filtrada.filter((d: any) => d.EsNotaCredito).length;
           return (
             <div>
               {/* Sub-tabs */}
@@ -1818,7 +1821,7 @@ export default function DashboardPage() {
                       {docsTab === 'emitidas' ? 'Facturas emitidas a clientes' : docsTab === 'recibidas' ? 'Facturas y boletas recibidas' : 'Recibos por Honorarios Profesionales'}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.2rem' }}>
-                      {filtrada.length} documentos · Neto {fmt(totalNeto)} · Total c/IGV {fmt(totalMonto)} · Pendiente {fmt(totalSaldo)}
+                      {filtrada.length - ncCount} docs{ncCount > 0 ? ` · ${ncCount} NC (restadas)` : ''} · Neto {fmt(totalNeto)} · Total c/IGV {fmt(totalMonto)} · Pendiente {fmt(totalSaldo)}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -1915,19 +1918,21 @@ export default function DashboardPage() {
                         {filtrada.map((d: any, i: number) => {
                           const sinAsiento = d.SinAsiento === 1;
                           const esDuplicado = d.EsDuplicado === 1;
+                          const esNC = d.EsNotaCredito === 1;
                           return (
-                          <tr key={i} style={{ background: esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
+                          <tr key={i} style={{ background: esNC ? 'rgba(239,68,68,0.04)' : esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {esNC && <span title="Nota de Crédito — resta del total facturado" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.75rem' }}>NC</span>}
                               {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
                               {sinAsiento && <span title="Sin asiento contable en cuenta de ingreso" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
-                            <td style={{ fontSize: '0.72rem', color: '#2BB4BB', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
+                            <td style={{ fontSize: '0.72rem', color: esNC ? '#EF4444' : '#2BB4BB', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Cliente}>{d.Cliente || '—'}</td>
-                            <td>{fmt(d.TotalNeto)}</td>
+                            <td style={{ color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.TotalNeto)}</td>
                             <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
-                            <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
+                            <td style={{ fontWeight: 600, color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.Total)}</td>
                             <td style={{ color: '#10B981' }}>{fmt(d.TotalPagado)}</td>
                             <td className={(d.Saldo || 0) > 0 ? 'negative' : ''}>{fmt(d.Saldo)}</td>
                           </tr>
@@ -1936,9 +1941,9 @@ export default function DashboardPage() {
                       </tbody>
                       <tfoot>
                         <tr className="total-row">
-                          <td colSpan={4}>TOTAL ({filtrada.length})</td>
-                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0))}</td>
-                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
+                          <td colSpan={4}>NETO ({filtrada.length - ncCount} fact.{ncCount > 0 ? ` − ${ncCount} NC` : ''})</td>
+                          <td>{fmt(totalNeto)}</td>
+                          <td>{fmt(filtrada.filter((d:any)=>!d.EsNotaCredito).reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
                           <td>{fmt(totalMonto)}</td>
                           <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalPagado || 0), 0))}</td>
                           <td>{fmt(totalSaldo)}</td>
@@ -1965,20 +1970,22 @@ export default function DashboardPage() {
                         {filtrada.map((d: any, i: number) => {
                           const sinAsiento = d.SinAsiento === 1;
                           const esDuplicado = d.EsDuplicado === 1;
+                          const esNC = d.EsNotaCredito === 1;
                           return (
-                          <tr key={i} style={{ background: esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
+                          <tr key={i} style={{ background: esNC ? 'rgba(239,68,68,0.04)' : esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {esNC && <span title="Nota de Crédito — resta del total de compras" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.75rem' }}>NC</span>}
                               {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
                               {sinAsiento && <span title="Sin asiento contable en cuenta de costo/gasto" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
                             <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#EF4444' : '#8B97A8' }}>{d.FechaVencimiento}</td>
-                            <td style={{ fontSize: '0.72rem', color: '#2BB4BB', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
+                            <td style={{ fontSize: '0.72rem', color: esNC ? '#EF4444' : '#2BB4BB', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Proveedor}>{d.Proveedor || '—'}</td>
-                            <td>{fmt(d.TotalNeto)}</td>
+                            <td style={{ color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.TotalNeto)}</td>
                             <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
-                            <td style={{ fontWeight: 600 }}>{fmt(d.Total)}</td>
+                            <td style={{ fontWeight: 600, color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.Total)}</td>
                             <td style={{ color: '#10B981' }}>{fmt(d.TotalPagado)}</td>
                             <td className={(d.TotalSaldo || 0) > 0 ? 'negative' : ''}>{fmt(d.TotalSaldo)}</td>
                           </tr>
@@ -1987,9 +1994,9 @@ export default function DashboardPage() {
                       </tbody>
                       <tfoot>
                         <tr className="total-row">
-                          <td colSpan={5}>TOTAL ({filtrada.length})</td>
-                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0))}</td>
-                          <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
+                          <td colSpan={5}>NETO ({filtrada.length - ncCount} fact.{ncCount > 0 ? ` − ${ncCount} NC` : ''})</td>
+                          <td>{fmt(totalNeto)}</td>
+                          <td>{fmt(filtrada.filter((d:any)=>!d.EsNotaCredito).reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
                           <td>{fmt(totalMonto)}</td>
                           <td>{fmt(filtrada.reduce((s: number, d: any) => s + (d.TotalPagado || 0), 0))}</td>
                           <td>{fmt(totalSaldo)}</td>

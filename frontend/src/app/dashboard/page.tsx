@@ -179,6 +179,7 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [mesFilter, setMesFilter] = useState<number | null>(null);
 
   useEffect(() => {
@@ -196,7 +197,7 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
       .then(d => { setTxns(d.transactions || []); setLoading(false); })
       .catch(() => { setFetchError(true); setLoading(false); })
       .finally(() => clearTimeout(timer));
-  }, [companyId, year, codCuenta]);
+  }, [companyId, year, codCuenta, retryCount]);
 
   const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
   const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
@@ -230,8 +231,14 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando asientos...</div>
         ) : fetchError ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#EF4444', fontSize: '0.85rem' }}>
-            Error al cargar los datos. Verifica tu conexión o vuelve a intentarlo.
+          <div style={{ textAlign: 'center', padding: '3rem' }}>
+            <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              Error al cargar los datos. El servidor puede estar ocupado.
+            </div>
+            <button onClick={() => setRetryCount(c => c + 1)}
+              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+              ↻ Reintentar
+            </button>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>

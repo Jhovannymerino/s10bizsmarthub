@@ -742,7 +742,7 @@ ORDER BY SinDocumento DESC
 
 // Auditoría: detalle de asientos sin NroD (año en curso)
 const QUERY_AUDIT_SIN_DOC_TXN = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT TOP 500
+SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   LEFT(pcd.CodCuenta, 2)                                   AS Clase,
@@ -767,7 +767,7 @@ ORDER BY ABS(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) DESC
 
 // Auditoría: asientos descuadrados (Débito ≠ Crédito por NroAsiento)
 const QUERY_AUDIT_DESCUADRES = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT TOP 100
+SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS Fecha,
   COUNT(*)                                                  AS Lineas,
@@ -787,7 +787,7 @@ ORDER BY Descuadre DESC
 
 // Auditoría: movimientos atípicos >100K en una línea
 const QUERY_AUDIT_ATIPICOS = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT TOP 200
+SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,

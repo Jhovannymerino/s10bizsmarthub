@@ -486,13 +486,20 @@ ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
 // Tributos por pagar (clase 40): IGV, Renta, AFP, ONP, ESSALUD, etc.
-const QUERY_TRIBUTOS = (codEmpresa) => `
+// Muestra actividad del año (provisionado/pagado) + saldo histórico acumulado.
+// HAVING incluye cuentas con actividad en el año o con saldo pendiente, evitando
+// el problema de filtrado cuando el neto histórico acumulado es cero.
+const QUERY_TRIBUTOS = (codEmpresa, year) => `
 SELECT
   pcd.CodCuenta,
   pcd.Descripcion                                          AS DesTributo,
   SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))   AS SaldoPorPagar,
-  SUM(ISNULL(ac.Credito,0))                               AS TotalProvisionado,
-  SUM(ISNULL(ac.Debito,0))                                AS TotalPagado,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      THEN ISNULL(ac.Credito,0) ELSE 0 END)               AS ProvisionadoAnio,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      THEN ISNULL(ac.Debito,0) ELSE 0 END)                AS PagadoAnio,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      THEN ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0) ELSE 0 END) AS SaldoAnio,
   MAX(ac.FechaAplicacionContable)                          AS UltimoMovimiento
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
@@ -500,8 +507,10 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '40'
 GROUP BY pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
-ORDER BY SaldoPorPagar DESC
+HAVING SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+           THEN ISNULL(ac.Credito,0) ELSE 0 END) > 0
+   OR ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
+ORDER BY SaldoPorPagar DESC, ProvisionadoAnio DESC
 `;
 
 // Detalle transacciones tributos para drilldown (año de sync)
@@ -765,22 +774,30 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ABS(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) DESC
 `;
 
-// Auditoría: asientos descuadrados (Débito ≠ Crédito por NroAsiento)
+// Auditoría: documentos con contabilización desbalanceada.
+// Agrupa por NroD (documento fuente), no por UUID de línea. Detecta documentos
+// donde la suma de débitos ≠ suma de créditos en todos sus asientos, lo que
+// indica una contabilización incompleta o con error de monto.
 const QUERY_AUDIT_DESCUADRES = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
-  CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS Fecha,
+  ac.NroD,
+  MIN(CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)) AS Fecha,
   COUNT(*)                                                  AS Lineas,
+  COUNT(DISTINCT LEFT(pcd.CodCuenta,2))                    AS Clases,
   SUM(ISNULL(ac.Debito,0))                                 AS TotalDebito,
   SUM(ISNULL(ac.Credito,0))                                AS TotalCredito,
   ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) AS Descuadre,
-  LEFT(MAX(ISNULL(ac.Glosa,'')), 60)                       AS Glosa
+  LEFT(MAX(ISNULL(ac.Glosa,'')), 60)                       AS Glosa,
+  MAX(ISNULL(i.Descripcion,''))                            AS Tercero
 FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND ISNULL(ac.Glosa,'') NOT LIKE '%Apertura%'
-  AND ISNULL(ac.Glosa,'') NOT LIKE '%Cierre%'
-GROUP BY ac.NroAsientoContable
+  AND ac.NroD IS NOT NULL
+GROUP BY ac.NroD
 HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 1
 ORDER BY Descuadre DESC
 `;
@@ -797,6 +814,10 @@ SELECT
   ISNULL(ac.Glosa, '')                                     AS Glosa,
   ISNULL(ac.Debito, 0)                                     AS Debito,
   ISNULL(ac.Credito, 0)                                    AS Credito,
+  CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
+       THEN ISNULL(ac.Debito,0)
+       ELSE ISNULL(ac.Credito,0)
+  END                                                      AS Monto,
   ISNULL(i.Descripcion, '')                                AS Tercero,
   CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END              AS SinDocumento
 FROM CMO.dbo.AsientoContable ac
@@ -809,7 +830,8 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
   AND (ISNULL(ac.Debito,0) > 100000 OR ISNULL(ac.Credito,0) > 100000)
   AND ISNULL(ac.Glosa,'') NOT LIKE '%Apertura%'
   AND ISNULL(ac.Glosa,'') NOT LIKE '%Cierre%'
-ORDER BY (ISNULL(ac.Debito,0) + ISNULL(ac.Credito,0)) DESC
+ORDER BY CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
+              THEN ISNULL(ac.Debito,0) ELSE ISNULL(ac.Credito,0) END DESC
 `;
 
 // Auditoría: conciliación ingresos contables vs documentos emitidos por mes
@@ -850,6 +872,108 @@ LEFT JOIN (
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
 ORDER BY m.Mes
+`;
+
+// ─────────────────────────────────────────────
+// QUERIES NUEVAS — Patrimonio, Inventarios, Laboral TXN, Tesorería
+// ─────────────────────────────────────────────
+
+// Patrimonio neto: clases 50-59 (capital, reservas, resultados acumulados)
+const QUERY_PATRIMONIO = (codEmpresa) => `
+SELECT
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  LEFT(pcd.CodCuenta, 4)                                   AS GrupoCuenta,
+  pcd.CodCuenta,
+  pcd.Descripcion                                          AS DesCuenta,
+  SUM(ISNULL(ac.Debito, 0))                                AS TotalDebito,
+  SUM(ISNULL(ac.Credito, 0))                               AS TotalCredito,
+  SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))  AS SaldoNeto
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) IN ('50','51','52','53','54','55','56','57','58','59')
+GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
+ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
+`;
+
+// Inventarios y existencias: clases 20-29 con saldo histórico y movimiento del año
+const QUERY_INVENTARIOS = (codEmpresa, year) => `
+SELECT
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  LEFT(pcd.CodCuenta, 4)                                   AS GrupoCuenta,
+  pcd.CodCuenta,
+  pcd.Descripcion                                          AS DesCuenta,
+  SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))  AS SaldoHistorico,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      THEN ISNULL(ac.Debito,0) ELSE 0 END)                 AS IngresoAnio,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      THEN ISNULL(ac.Credito,0) ELSE 0 END)                AS SalidaAnio,
+  MAX(ac.FechaAplicacionContable)                          AS UltimoMovimiento
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) IN ('20','21','22','23','24','25','26','27','28','29')
+GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
+   OR SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+         THEN ISNULL(ac.Debito,0) + ISNULL(ac.Credito,0) ELSE 0 END) > 0.01
+ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
+`;
+
+// Detalle transacciones laborales (clase 41) para drilldown
+const QUERY_LABORAL_TXN = (codEmpresa, year) => `
+SELECT
+  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.NroD                                                  AS NroD,
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
+  YEAR(ac.FechaAplicacionContable)                         AS Anio,
+  MONTH(ac.FechaAplicacionContable)                        AS Mes,
+  pcd.CodCuenta                                            AS CodCuenta,
+  pcd.Descripcion                                          AS DesCuenta,
+  ISNULL(ac.Glosa, '')                                     AS Glosa,
+  ISNULL(ac.Debito, 0)                                     AS Debito,
+  ISNULL(ac.Credito, 0)                                    AS Credito,
+  ISNULL(i.Descripcion, '')                                AS Tercero
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) = '41'
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
+ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+`;
+
+// Tesorería: posición bancaria con saldo inicial, entradas/salidas del año y saldo final.
+// Muestra la posición real de cada cuenta bancaria con apertura y cierre del período.
+const QUERY_TESORERIA = (codEmpresa, year) => `
+SELECT
+  pcd.CodCuenta                                            AS CodBanco,
+  pcd.Descripcion                                          AS DesBanco,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) < ${year}
+      THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END)  AS SaldoInicial,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      THEN ISNULL(ac.Debito,0) ELSE 0 END)                AS EntradasAnio,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      THEN ISNULL(ac.Credito,0) ELSE 0 END)               AS SalidasAnio,
+  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))   AS SaldoFinal,
+  MAX(ac.FechaAplicacionContable)                          AS UltimoMovimiento,
+  COUNT(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN 1 END) AS MovimientosAnio,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+      AND ac.NroD IS NULL THEN 1 ELSE 0 END)              AS SinDocumentoAnio
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) = '10'
+GROUP BY pcd.CodCuenta, pcd.Descripcion
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
+   OR COUNT(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN 1 END) > 0
+ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 `;
 
 // ─────────────────────────────────────────────
@@ -927,30 +1051,38 @@ async function main() {
         pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
       ]);
 
-      // Batch 2 — módulos nuevos: Balance, Otras CxC/CxP, Tributos, Laboral, Activo Fijo
-      console.log('  → Batch 2: Balance, Otras CxC/CxP, Tributos, Activo Fijo...');
+      // Batch 2 — módulos nuevos: Balance, Otras CxC/CxP, Tributos, Laboral, Activo Fijo,
+      //           Patrimonio, Inventarios
+      console.log('  → Batch 2: Balance, Otras CxC/CxP, Tributos, Activo Fijo, Patrimonio, Inventarios...');
       const [
         balanceResult, otrasCxcResult, otrasCxcTxnResult,
         otrasCxpResult, otrasCxpTxnResult,
         tributosResult, tributosTxnResult,
-        laboralResult, activoFijoResult,
+        laboralResult, laboralTxnResult,
+        activoFijoResult,
+        patrimonioResult, inventariosResult,
       ] = await Promise.all([
         pool.request().query(QUERY_BALANCE(company.codEmpresa)),
         pool.request().query(QUERY_OTRAS_CXC(company.codEmpresa)),
         pool.request().query(QUERY_OTRAS_CXC_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_OTRAS_CXP(company.codEmpresa)),
         pool.request().query(QUERY_OTRAS_CXP_TXN(company.codEmpresa, year)),
-        pool.request().query(QUERY_TRIBUTOS(company.codEmpresa)),
+        pool.request().query(QUERY_TRIBUTOS(company.codEmpresa, year)),
         pool.request().query(QUERY_TRIBUTOS_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_LABORAL(company.codEmpresa)),
+        pool.request().query(QUERY_LABORAL_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_ACTIVO_FIJO(company.codEmpresa)),
+        pool.request().query(QUERY_PATRIMONIO(company.codEmpresa)),
+        pool.request().query(QUERY_INVENTARIOS(company.codEmpresa, year)),
       ]);
 
-      // Batch 3 — Préstamos, Transferencias, Caja saldos/detalle, Gastos naturaleza, Auditoría
-      console.log('  → Batch 3: Préstamos, Transferencias, Caja saldos, Gastos, Auditoría...');
+      // Batch 3 — Préstamos, Transferencias, Caja saldos/detalle, Gastos naturaleza,
+      //           Tesorería, Auditoría
+      console.log('  → Batch 3: Préstamos, Transferencias, Caja, Tesorería, Gastos, Auditoría...');
       const [
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
         cajaSaldosResult, cajaTxnResult,
+        tesoreriaResult,
         gastosNatResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
@@ -961,6 +1093,7 @@ async function main() {
         pool.request().query(QUERY_TRANSFERENCIAS(company.codEmpresa)),
         pool.request().query(QUERY_CAJA_SALDOS(company.codEmpresa)),
         pool.request().query(QUERY_CAJA_TXN(company.codEmpresa, year)),
+        pool.request().query(QUERY_TESORERIA(company.codEmpresa, year)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
@@ -985,6 +1118,10 @@ async function main() {
       logRow('Otras CxP', otrasCxpResult.recordset);
       logRow('Tributos', tributosResult.recordset);
       logRow('Activo Fijo', activoFijoResult.recordset);
+      logRow('Patrimonio', patrimonioResult.recordset);
+      logRow('Inventarios', inventariosResult.recordset);
+      logRow('Laboral TXN', laboralTxnResult.recordset);
+      logRow('Tesorería', tesoreriaResult.recordset);
       logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
@@ -1022,12 +1159,16 @@ async function main() {
           tributos: tributosResult.recordset,
           tributos_txn: tributosTxnResult.recordset,
           laboral: laboralResult.recordset,
+          laboral_txn: laboralTxnResult.recordset,
           activo_fijo: activoFijoResult.recordset,
+          patrimonio: patrimonioResult.recordset,
+          inventarios: inventariosResult.recordset,
           prestamos_otorgados: prestamosOtorgResult.recordset,
           prestamos_recibidos: prestamosReciResult.recordset,
           transferencias: transferenciasResult.recordset,
           caja_saldos: cajaSaldosResult.recordset,
           caja_txn: cajaTxnResult.recordset,
+          tesoreria: tesoreriaResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,

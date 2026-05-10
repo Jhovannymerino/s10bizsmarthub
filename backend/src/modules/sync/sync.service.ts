@@ -56,6 +56,11 @@ export class SyncService {
       audit_descuadres?: any[];
       audit_atipicos?: any[];
       audit_conciliacion?: any[];
+      // Nuevos módulos
+      laboral_txn?: any[];
+      patrimonio?: any[];
+      inventarios?: any[];
+      tesoreria?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -162,6 +167,26 @@ export class SyncService {
       if (data.laboral?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'laboral', 'current', year, null, data.laboral);
         logs.push({ kpiType: 'laboral', rowsProcessed: data.laboral.length, status: 'success' });
+      }
+
+      if (data.laboral_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'laboral_txn', period, year, null, data.laboral_txn);
+        logs.push({ kpiType: 'laboral_txn', rowsProcessed: data.laboral_txn.length, status: 'success' });
+      }
+
+      if (data.patrimonio?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'patrimonio', 'current', year, null, data.patrimonio);
+        logs.push({ kpiType: 'patrimonio', rowsProcessed: data.patrimonio.length, status: 'success' });
+      }
+
+      if (data.inventarios?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'inventarios', period, year, null, data.inventarios);
+        logs.push({ kpiType: 'inventarios', rowsProcessed: data.inventarios.length, status: 'success' });
+      }
+
+      if (data.tesoreria?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'tesoreria', period, year, null, data.tesoreria);
+        logs.push({ kpiType: 'tesoreria', rowsProcessed: data.tesoreria.length, status: 'success' });
       }
 
       if (data.activo_fijo?.length) {

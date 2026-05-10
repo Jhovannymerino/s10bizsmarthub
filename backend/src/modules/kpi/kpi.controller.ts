@@ -243,6 +243,43 @@ export class KpiController {
     return this.kpiService.getCajaTxn(companyId, y, codCuenta);
   }
 
+  /** Tesorería — posición bancaria con saldo inicial, entradas/salidas y saldo final */
+  @Get(':companyId/tesoreria')
+  getTesoreria(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getTesoreria(companyId, y);
+  }
+
+  /** Patrimonio neto — clases 50-59 (capital, reservas, resultados acumulados) */
+  @Get(':companyId/patrimonio')
+  getPatrimonio(@Param('companyId') companyId: string) {
+    return this.kpiService.getPatrimonio(companyId);
+  }
+
+  /** Inventarios — clases 20-29 con saldo histórico y movimiento del año */
+  @Get(':companyId/inventarios')
+  getInventarios(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getInventarios(companyId, y);
+  }
+
+  /** Detalle de transacciones laborales (clase 41) */
+  @Get(':companyId/laboral-transactions')
+  getLaboralTxn(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('codCuenta') codCuenta?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getLaboralTxn(companyId, y, codCuenta);
+  }
+
   /** Gastos por naturaleza — clases 60-68 por mes */
   @Get(':companyId/gastos-naturaleza')
   getGastosNaturaleza(

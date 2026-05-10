@@ -637,12 +637,71 @@ export class KpiService {
     const cached = await this.getSnapshot(companyId, 'caja_saldos', 'current');
     if (!cached) return { rows: [], totalSaldo: 0 };
     const rows = cached.data as any[];
-    const totalSaldo = rows.reduce((s: number, r: any) => s + (parseFloat(r.Saldo) || 0), 0);
+    const totalSaldo = rows.reduce((s: number, r: any) => s + (parseFloat(r.SaldoActual) || 0), 0);
     return { rows, totalSaldo: round(totalSaldo), syncedAt: cached.syncedAt };
   }
 
   async getCajaTxn(companyId: string, year: number, codCuenta?: string) {
     const cached = await this.getSnapshot(companyId, 'caja_txn', `${year}`);
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    return { transactions: txns, total: txns.length };
+  }
+
+  // ─────────────────────────────────────────────
+  // Tesorería — posición bancaria con apertura/cierre por año
+  // ─────────────────────────────────────────────
+
+  async getTesoreria(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'tesoreria', `${year}`);
+    if (!cached) return { bancos: [], totalSaldoFinal: 0, year };
+    const bancos = cached.data as any[];
+    const totalSaldoFinal = bancos.reduce((s: number, r: any) => s + (parseFloat(r.SaldoFinal) || 0), 0);
+    const totalEntradasAnio = bancos.reduce((s: number, r: any) => s + (parseFloat(r.EntradasAnio) || 0), 0);
+    const totalSalidasAnio = bancos.reduce((s: number, r: any) => s + (parseFloat(r.SalidasAnio) || 0), 0);
+    const totalSaldoInicial = bancos.reduce((s: number, r: any) => s + (parseFloat(r.SaldoInicial) || 0), 0);
+    return {
+      bancos,
+      totalSaldoInicial: round(totalSaldoInicial),
+      totalEntradasAnio: round(totalEntradasAnio),
+      totalSalidasAnio: round(totalSalidasAnio),
+      totalSaldoFinal: round(totalSaldoFinal),
+      year,
+      syncedAt: cached.syncedAt,
+    };
+  }
+
+  // ─────────────────────────────────────────────
+  // Patrimonio — clases 50-59 (capital, reservas, resultados)
+  // ─────────────────────────────────────────────
+
+  async getPatrimonio(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'patrimonio', 'current');
+    if (!cached) return { rows: [], totalPatrimonio: 0 };
+    const rows = cached.data as any[];
+    const totalPatrimonio = rows.reduce((s: number, r: any) => s + (parseFloat(r.SaldoNeto) || 0), 0);
+    return { rows, totalPatrimonio: round(totalPatrimonio), syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
+  // Inventarios — clases 20-29 con saldo histórico y movimiento del año
+  // ─────────────────────────────────────────────
+
+  async getInventarios(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'inventarios', `${year}`);
+    if (!cached) return { rows: [], totalSaldo: 0, year };
+    const rows = cached.data as any[];
+    const totalSaldo = rows.reduce((s: number, r: any) => s + (parseFloat(r.SaldoHistorico) || 0), 0);
+    return { rows, totalSaldo: round(totalSaldo), year, syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
+  // Laboral TXN — detalle de transacciones clase 41
+  // ─────────────────────────────────────────────
+
+  async getLaboralTxn(companyId: string, year: number, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'laboral_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));

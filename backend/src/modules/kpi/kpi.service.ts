@@ -695,6 +695,16 @@ export class KpiService {
     return { rows: cached.data as any[], year, syncedAt: cached.syncedAt };
   }
 
+  async getAvailableYears(companyId: string) {
+    const rows = await this.prisma.kpiSnapshot.findMany({
+      where: { companyId, kpiType: 'pl' },
+      select: { year: true },
+      distinct: ['year'],
+      orderBy: { year: 'desc' },
+    });
+    return { years: rows.map((r) => r.year) };
+  }
+
   async getLastSync(companyId: string, year: number) {
     const snaps = await this.prisma.kpiSnapshot.findMany({
       where: { companyId, year },

@@ -17,7 +17,7 @@ const COMPANIES = [
 const GRUPO = { codEmpresa: 'GRUPO', shortName: 'GRUPO', fullName: 'Consolidado del Grupo' };
 
 const CURRENT_YEAR = new Date().getFullYear();
-const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];
+const MIN_YEAR = 2025;
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 const COLORS_PIE = ['#207E83', '#F59E0B', '#10B981', '#2BB4BB', '#8E44AD', '#F97316', '#148F77', '#EF4444'];
 const COLORS_EMPRESA = ['#207E83', '#F59E0B', '#10B981', '#2BB4BB'];
@@ -764,6 +764,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<typeof COMPANIES[0] | typeof GRUPO>(COMPANIES[0]);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'unavailable' | 'error'>('idle');
   const [syncMsg, setSyncMsg] = useState('');
   const [pl, setPL] = useState<any>(null);
@@ -823,6 +824,29 @@ export default function DashboardPage() {
       } catch { /* ignore */ }
     }
   }, []);
+
+  // Cargar años disponibles según empresa seleccionada
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    if (isGrupo) {
+      const grupoYears: number[] = [];
+      for (let y = CURRENT_YEAR; y >= MIN_YEAR; y--) grupoYears.push(y);
+      setAvailableYears(grupoYears);
+      if (!grupoYears.includes(selectedYear)) setSelectedYear(grupoYears[0]);
+      return;
+    }
+    fetchApi(`/kpi/${selectedCompany.codEmpresa}/available-years`, token)
+      .then((data) => {
+        const years: number[] = data?.years?.length ? data.years : [CURRENT_YEAR];
+        setAvailableYears(years);
+        if (!years.includes(selectedYear)) setSelectedYear(years[0]);
+      })
+      .catch(() => {
+        const fallback = [CURRENT_YEAR];
+        setAvailableYears(fallback);
+      });
+  }, [selectedCompany]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -1135,7 +1159,7 @@ export default function DashboardPage() {
         <div style={{ padding: '0.625rem 0.625rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="sidebar-section-label">Período</div>
           <div style={{ display: 'flex', gap: '0.3rem' }}>
-            {YEARS.map((y) => (
+            {availableYears.map((y) => (
               <button key={y} onClick={() => setSelectedYear(y)}
                 style={{
                   flex: 1,

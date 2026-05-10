@@ -292,6 +292,12 @@ export class KpiController {
     return this.kpiService.getAuditConciliacion(companyId, y);
   }
 
+  /** Años disponibles (con datos sincronizados) para una empresa */
+  @Get(':companyId/available-years')
+  getAvailableYears(@Param('companyId') companyId: string) {
+    return this.kpiService.getAvailableYears(companyId);
+  }
+
   /** Fecha y hora del último sync exitoso para la empresa/año */
   @Get(':companyId/last-sync')
   getLastSync(

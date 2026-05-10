@@ -120,7 +120,7 @@ HAVING SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) > 0
 ORDER BY SaldoTotal DESC
 `;
 
-const QUERY_CXC_TRANSACTIONS = (codEmpresa) => `
+const QUERY_CXC_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
@@ -140,11 +140,11 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '12'
-  AND ac.FechaAplicacionContable >= DATEADD(YEAR, -2, GETDATE())
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
-const QUERY_CXP_TRANSACTIONS = (codEmpresa) => `
+const QUERY_CXP_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
@@ -164,7 +164,7 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '42'
-  AND ac.FechaAplicacionContable >= DATEADD(YEAR, -2, GETDATE())
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
@@ -402,8 +402,8 @@ ORDER BY Clase, SaldoTotal DESC
 `;
 
 // Detalle de transacciones de Otras CxC para drilldown (últimos 2 años)
-const QUERY_OTRAS_CXC_TXN = (codEmpresa) => `
-SELECT TOP 2000
+const QUERY_OTRAS_CXC_TXN = (codEmpresa, year) => `
+SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -424,7 +424,7 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('13','14','16','17','18')
-  AND ac.FechaAplicacionContable >= DATEADD(YEAR, -2, GETDATE())
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
@@ -458,9 +458,9 @@ HAVING ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
 ORDER BY Clase, SaldoTotal DESC
 `;
 
-// Detalle transacciones Otras CxP para drilldown (últimos 2 años)
-const QUERY_OTRAS_CXP_TXN = (codEmpresa) => `
-SELECT TOP 2000
+// Detalle transacciones Otras CxP para drilldown (año de sync)
+const QUERY_OTRAS_CXP_TXN = (codEmpresa, year) => `
+SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -481,7 +481,7 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('43','44','45','46','47')
-  AND ac.FechaAplicacionContable >= DATEADD(YEAR, -2, GETDATE())
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
@@ -504,9 +504,9 @@ HAVING ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
 ORDER BY SaldoPorPagar DESC
 `;
 
-// Detalle transacciones tributos para drilldown (últimos 2 años)
-const QUERY_TRIBUTOS_TXN = (codEmpresa) => `
-SELECT TOP 1000
+// Detalle transacciones tributos para drilldown (año de sync)
+const QUERY_TRIBUTOS_TXN = (codEmpresa, year) => `
+SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -522,7 +522,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '40'
-  AND ac.FechaAplicacionContable >= DATEADD(YEAR, -2, GETDATE())
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
@@ -695,9 +695,9 @@ GROUP BY pcd.CodCuenta, pcd.Descripcion
 ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 `;
 
-// Transacciones bancarias detalle para drilldown (últimos 2 años, clase 10)
-const QUERY_CAJA_TXN = (codEmpresa) => `
-SELECT TOP 1000
+// Transacciones bancarias detalle para drilldown (año de sync, clase 10)
+const QUERY_CAJA_TXN = (codEmpresa, year) => `
+SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -717,7 +717,7 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '10'
-  AND ac.FechaAplicacionContable >= DATEADD(YEAR, -2, GETDATE())
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
@@ -920,8 +920,8 @@ async function main() {
         pool.request().query(QUERY_CAJA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_TRANSACTIONS(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
-        pool.request().query(QUERY_CXC_TRANSACTIONS(company.codEmpresa)),
-        pool.request().query(QUERY_CXP_TRANSACTIONS(company.codEmpresa)),
+        pool.request().query(QUERY_CXC_TRANSACTIONS(company.codEmpresa, year)),
+        pool.request().query(QUERY_CXP_TRANSACTIONS(company.codEmpresa, year)),
         pool.request().query(QUERY_FACTURAS_EMITIDAS(company.codEmpresa, year, company.claseIngreso)),
         pool.request().query(QUERY_FACTURAS_RECIBIDAS(company.codEmpresa, year)),
         pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
@@ -937,11 +937,11 @@ async function main() {
       ] = await Promise.all([
         pool.request().query(QUERY_BALANCE(company.codEmpresa)),
         pool.request().query(QUERY_OTRAS_CXC(company.codEmpresa)),
-        pool.request().query(QUERY_OTRAS_CXC_TXN(company.codEmpresa)),
+        pool.request().query(QUERY_OTRAS_CXC_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_OTRAS_CXP(company.codEmpresa)),
-        pool.request().query(QUERY_OTRAS_CXP_TXN(company.codEmpresa)),
+        pool.request().query(QUERY_OTRAS_CXP_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_TRIBUTOS(company.codEmpresa)),
-        pool.request().query(QUERY_TRIBUTOS_TXN(company.codEmpresa)),
+        pool.request().query(QUERY_TRIBUTOS_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_LABORAL(company.codEmpresa)),
         pool.request().query(QUERY_ACTIVO_FIJO(company.codEmpresa)),
       ]);
@@ -960,7 +960,7 @@ async function main() {
         pool.request().query(QUERY_PRESTAMOS_RECIBIDOS(company.codEmpresa)),
         pool.request().query(QUERY_TRANSFERENCIAS(company.codEmpresa)),
         pool.request().query(QUERY_CAJA_SALDOS(company.codEmpresa)),
-        pool.request().query(QUERY_CAJA_TXN(company.codEmpresa)),
+        pool.request().query(QUERY_CAJA_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),

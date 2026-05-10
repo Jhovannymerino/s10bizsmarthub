@@ -817,6 +817,142 @@ function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
   );
 }
 
+function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, onClose }: {
+  companyId: string; year: number; codCuenta: string; descripcion: string; endpoint: string; onClose: () => void;
+}) {
+  const [txns, setTxns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [mesFilter, setMesFilter] = useState<number | null>(null);
+
+  useEffect(() => {
+    setLoading(true); setFetchError(false);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const params = new URLSearchParams({ year: String(year), codCuenta });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    fetch(`${API}/kpi/${companyId}/${endpoint}?${params}`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: ctrl.signal,
+    })
+      .then(r => r.json())
+      .then(d => { setTxns(d.transactions || []); setLoading(false); })
+      .catch(() => { setFetchError(true); setLoading(false); })
+      .finally(() => clearTimeout(timer));
+  }, [companyId, year, codCuenta, endpoint, retryCount]);
+
+  const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
+  const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
+  const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
+  const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {year} · {filtered.length} movimientos</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <button onClick={() => setMesFilter(null)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>Todos</button>
+          {mesesPresentes.map(m => (
+            <button key={m} onClick={() => setMesFilter(m)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === m ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === m ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === m ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>{MESES[m - 1]}</button>
+          ))}
+        </div>
+        {loading ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando asientos...</div>
+        : fetchError ? (
+          <div style={{ textAlign: 'center', padding: '3rem' }}>
+            <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
+            <button onClick={() => setRetryCount(c => c + 1)} style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>↻ Reintentar</button>
+          </div>
+        ) : filtered.length === 0 ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>Sin asientos para esta cuenta en {year}.</div>
+        : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+              <thead><tr><th>Fecha</th><th>Nro. Asiento</th><th style={{ minWidth: 240 }}>Glosa</th><th style={{ minWidth: 140 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th></tr></thead>
+              <tbody>
+                {filtered.map((t: any, i: number) => {
+                  const neto = (t.Debito || 0) - (t.Credito || 0);
+                  return (
+                    <tr key={i}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
+                      <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
+                      <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.Tercero || '—'}</td>
+                      <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot><tr className="total-row"><td colSpan={4}>TOTAL</td><td>{fmt(totalDeb)}</td><td>{fmt(totalCred)}</td><td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td></tr></tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: {
+  companyId: string; year: number; clase: string; desClase: string; onClose: () => void;
+}) {
+  const [txns, setTxns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    fetch(`${API}/kpi/${companyId}/audit/sin-doc-transactions?year=${year}&clase=${clase}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(d => { setTxns(d.transactions || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [companyId, year, clase]);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 980, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>Clase {clase} — Asientos sin documento fuente</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>{desClase} · {year} · {txns.length} asientos sin NroD</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+        </div>
+        {loading ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando...</div>
+        : txns.length === 0 ? <div style={{ textAlign: 'center', padding: '3rem', color: '#10B981', fontSize: '0.85rem' }}>✓ Sin asientos sin documento para esta clase.</div>
+        : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+              <thead><tr><th>Fecha</th><th>Nro. Asiento</th><th>Cuenta</th><th style={{ minWidth: 200 }}>Glosa</th><th>Tercero</th><th>Débito</th><th>Crédito</th><th>Monto</th></tr></thead>
+              <tbody>
+                {txns.map((t: any, i: number) => (
+                  <tr key={i}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{String(t.NroAsiento).slice(0, 8)}…</td>
+                    <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{t.CodCuenta}</td>
+                    <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
+                    <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.Tercero || '—'}</td>
+                    <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                    <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                    <td style={{ fontWeight: 600, color: '#F59E0B' }}>{fmt(t.Monto)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot><tr className="total-row"><td colSpan={7}>TOTAL MONTO SIN DOC</td><td>{fmt(txns.reduce((s: number, t: any) => s + (t.Monto || 0), 0))}</td></tr></tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Waterfall chart ──────────────────────────
 function buildWaterfallData(ytd: any) {
   const ing = ytd.ingresos || 0;
@@ -912,7 +1048,8 @@ export default function DashboardPage() {
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
   const [cxpTxDrill, setCxPTxDrill] = useState<{ proveedor: string; codProveedor: string } | null>(null);
   const [cajaTxDrill, setCajaTxDrill] = useState<{ codBanco: string; desBanco: string } | null>(null);
-  const [genericTxDrill, setGenericTxDrill] = useState<{ codCuenta: string; descripcion: string } | null>(null);
+  const [accountTxDrill, setAccountTxDrill] = useState<{ codCuenta: string; descripcion: string; endpoint: string } | null>(null);
+  const [auditSinDocDrill, setAuditSinDocDrill] = useState<{ clase: string; desClase: string } | null>(null);
   const [gavDrill, setGavDrill] = useState<{ cod: string; descripcion: string; meses: Record<number, number>; ytd: number } | null>(null);
   const [cxcSearch, setCxcSearch] = useState('');
   const [cxpSearch, setCxpSearch] = useState('');
@@ -1236,13 +1373,23 @@ export default function DashboardPage() {
           onClose={() => setCajaTxDrill(null)}
         />
       )}
-      {genericTxDrill && (
-        <TransactionModal
+      {accountTxDrill && (
+        <AccountTxnModal
           companyId={selectedCompany.codEmpresa}
           year={selectedYear}
-          codCuenta={genericTxDrill.codCuenta}
-          descripcion={genericTxDrill.descripcion}
-          onClose={() => setGenericTxDrill(null)}
+          codCuenta={accountTxDrill.codCuenta}
+          descripcion={accountTxDrill.descripcion}
+          endpoint={accountTxDrill.endpoint}
+          onClose={() => setAccountTxDrill(null)}
+        />
+      )}
+      {auditSinDocDrill && (
+        <AuditSinDocModal
+          companyId={selectedCompany.codEmpresa}
+          year={selectedYear}
+          clase={auditSinDocDrill.clase}
+          desClase={auditSinDocDrill.desClase}
+          onClose={() => setAuditSinDocDrill(null)}
         />
       )}
 
@@ -2739,12 +2886,13 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Cuenta</th><th>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
+                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 180 }}>Descripción Cuenta</th><th style={{ minWidth: 160 }}>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
                     <tbody>
                       {otrasCxCData.rows.map((r: any, i: number) => (
                         <tr key={i}>
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
+                          <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
                           <td style={{ color: '#10B981' }}>{fmt(r.Dias_0_30)}</td>
                           <td style={{ color: '#F59E0B' }}>{fmt(r.Dias_31_60)}</td>
                           <td style={{ color: '#F97316' }}>{fmt(r.Dias_61_90)}</td>
@@ -2753,7 +2901,7 @@ export default function DashboardPage() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot><tr className="total-row"><td colSpan={6}>TOTAL</td>
+                    <tfoot><tr className="total-row"><td colSpan={7}>TOTAL</td>
                       <td>{fmt(otrasCxCData.rows.reduce((s: number, r: any) => s + (r.SaldoTotal || 0), 0))}</td>
                     </tr></tfoot>
                   </table>
@@ -2773,12 +2921,13 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Cuenta</th><th>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
+                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 180 }}>Descripción Cuenta</th><th style={{ minWidth: 160 }}>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
                     <tbody>
                       {otrasCxPData.rows.map((r: any, i: number) => (
                         <tr key={i}>
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
+                          <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
                           <td style={{ color: '#10B981' }}>{fmt(r.Dias_0_30)}</td>
                           <td style={{ color: '#F59E0B' }}>{fmt(r.Dias_31_60)}</td>
                           <td style={{ color: '#F97316' }}>{fmt(r.Dias_61_90)}</td>
@@ -2787,7 +2936,7 @@ export default function DashboardPage() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot><tr className="total-row"><td colSpan={6}>TOTAL</td>
+                    <tfoot><tr className="total-row"><td colSpan={7}>TOTAL</td>
                       <td>{fmt(otrasCxPData.rows.reduce((s: number, r: any) => s + (r.SaldoTotal || 0), 0))}</td>
                     </tr></tfoot>
                   </table>
@@ -2807,18 +2956,18 @@ export default function DashboardPage() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Tipo Doc</th><th>Serie/Número</th><th>Deudor</th><th>Fecha</th><th>Vcto</th><th>Días Vcdo</th><th>Total</th><th>Saldo Pendiente</th></tr></thead>
+                    <thead><tr><th>N°</th><th style={{ minWidth: 200 }}>Deudor</th><th style={{ minWidth: 200 }}>Observación</th><th>Fecha</th><th>Vcto</th><th>Días Vcdo</th><th>Monto</th><th>Saldo Pendiente</th></tr></thead>
                     <tbody>
                       {prestamosData.otorgados.rows.map((r: any, i: number) => (
                         <tr key={i}>
-                          <td style={{ color: '#8B97A8' }}>{r.CodTipoDoc}</td>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{r.SerieDocumento}-{r.NroDocumento}</td>
-                          <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#8B97A8' }}>{r.Numero}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Beneficiario}>{r.Beneficiario || '—'}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8', fontSize: '0.75rem' }} title={r.Observacion}>{r.Observacion || '—'}</td>
                           <td style={{ whiteSpace: 'nowrap' }}>{r.FechaDocumento}</td>
                           <td style={{ whiteSpace: 'nowrap' }}>{r.FechaVencimiento || '—'}</td>
                           <td style={{ color: (r.DiasVencido || 0) > 90 ? '#EF4444' : (r.DiasVencido || 0) > 30 ? '#F59E0B' : '#10B981' }}>{r.DiasVencido ?? '—'}</td>
-                          <td>{fmt(r.Total)}</td>
-                          <td style={{ fontWeight: 600, color: '#F59E0B' }}>{fmt(r.SaldoPendiente)}</td>
+                          <td>{fmt(r.Monto)}</td>
+                          <td style={{ fontWeight: 600, color: r.SaldoPendiente > 0 ? '#F59E0B' : '#10B981' }}>{fmt(r.SaldoPendiente)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2836,17 +2985,17 @@ export default function DashboardPage() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Tipo Doc</th><th>Serie/Número</th><th>Acreedor</th><th>Fecha</th><th>Vcto</th><th>Total</th><th>Saldo Pendiente</th></tr></thead>
+                    <thead><tr><th>N°</th><th style={{ minWidth: 200 }}>Prestamista</th><th style={{ minWidth: 200 }}>Observación</th><th>Fecha</th><th>Vcto</th><th>Monto</th><th>Saldo Pendiente</th></tr></thead>
                     <tbody>
                       {prestamosData.recibidos.rows.map((r: any, i: number) => (
                         <tr key={i}>
-                          <td style={{ color: '#8B97A8' }}>{r.CodTipoDoc}</td>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{r.SerieDocumento}-{r.NroDocumento}</td>
-                          <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#8B97A8' }}>{r.Numero}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Prestamista}>{r.Prestamista || '—'}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8', fontSize: '0.75rem' }} title={r.Observacion}>{r.Observacion || '—'}</td>
                           <td style={{ whiteSpace: 'nowrap' }}>{r.FechaDocumento}</td>
                           <td style={{ whiteSpace: 'nowrap' }}>{r.FechaVencimiento || '—'}</td>
-                          <td>{fmt(r.Total)}</td>
-                          <td style={{ fontWeight: 600, color: '#EF4444' }}>{fmt(r.SaldoPendiente)}</td>
+                          <td>{fmt(r.Monto)}</td>
+                          <td style={{ fontWeight: 600, color: r.SaldoPendiente > 0 ? '#EF4444' : '#10B981' }}>{fmt(r.SaldoPendiente)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2873,7 +3022,7 @@ export default function DashboardPage() {
                     <thead><tr><th>Cuenta</th><th>Descripción</th><th>Provisionado {selectedYear}</th><th>Pagado {selectedYear}</th><th>Saldo Año</th><th>Saldo Histórico</th><th>Último Mov.</th></tr></thead>
                     <tbody>
                       {tributosData.rows.map((r: any, i: number) => (
-                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesTributo })} title="Ver asientos">
+                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesTributo, endpoint: 'tributos-transactions' })} title="Ver asientos">
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td>{r.DesTributo}</td>
                           <td>{fmt(r.ProvisionadoAnio)}</td>
@@ -2912,7 +3061,7 @@ export default function DashboardPage() {
                     <thead><tr><th>Cuenta</th><th>Descripción</th><th>Provisionado</th><th>Pagado</th><th>Saldo por Pagar</th><th>Último Mov.</th></tr></thead>
                     <tbody>
                       {laboralData.rows.map((r: any, i: number) => (
-                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesConcepto })} title="Ver asientos">
+                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesConcepto, endpoint: 'laboral-transactions' })} title="Ver asientos">
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td>{r.DesConcepto}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalProvisionado)}</td>
@@ -2953,8 +3102,8 @@ export default function DashboardPage() {
                       {activoFijoData.rows.map((r: any, i: number) => {
                         const pctDep = r.ValorBruto > 0 ? ((r.DepreciacionAcum || 0) / r.ValorBruto * 100) : 0;
                         return (
-                          <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesActivo })} title="Ver movimientos">
-                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                          <tr key={i}>
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
                             <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
                             <td>{fmt(r.ValorBruto)}</td>
                             <td style={{ color: '#F59E0B' }}>{fmt(r.DepreciacionAcum)}</td>
@@ -3033,9 +3182,9 @@ export default function DashboardPage() {
                     <thead><tr><th>Clase</th><th>Cuenta</th><th style={{ minWidth: 260 }}>Descripción</th><th>Total Débito</th><th>Total Crédito</th><th>Saldo Neto</th></tr></thead>
                     <tbody>
                       {patrimonioData.rows.map((r: any, i: number) => (
-                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesCuenta })} title="Ver asientos">
+                        <tr key={i}>
                           <td style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{r.Clase}</td>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
                           <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesCuenta}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalCredito)}</td>
@@ -3183,13 +3332,16 @@ export default function DashboardPage() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Clase</th><th>Sin Doc</th><th>Total</th><th>% Sin Doc</th><th>Monto Sin Doc</th></tr></thead>
+                    <thead><tr><th>Clase</th><th style={{ minWidth: 160 }}>Descripción</th><th>Sin Doc</th><th>Total</th><th>% Sin Doc</th><th>Monto Sin Doc</th></tr></thead>
                     <tbody>
                       {auditData.sinDoc.resumen.map((r: any, i: number) => {
                         const pctSD = r.TotalAsientos > 0 ? (r.SinDocumento / r.TotalAsientos * 100) : 0;
                         return (
-                          <tr key={i}>
-                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.Clase}</td>
+                          <tr key={i} style={{ cursor: r.SinDocumento > 0 ? 'pointer' : 'default' }}
+                            onClick={r.SinDocumento > 0 ? () => setAuditSinDocDrill({ clase: r.Clase, desClase: r.DescClase || `Clase ${r.Clase}` }) : undefined}
+                            title={r.SinDocumento > 0 ? 'Ver asientos sin documento' : undefined}>
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.Clase}{r.SinDocumento > 0 && <span style={{ fontSize: '0.65rem', marginLeft: '0.3rem' }}>▶</span>}</td>
+                            <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DescClase || '—'}</td>
                             <td style={{ color: r.SinDocumento > 0 ? '#F59E0B' : '#10B981' }}>{r.SinDocumento}</td>
                             <td style={{ color: '#8B97A8' }}>{r.TotalAsientos}</td>
                             <td style={{ color: pctSD > 20 ? '#EF4444' : pctSD > 5 ? '#F59E0B' : '#10B981' }}>{pctSD.toFixed(1)}%</td>
@@ -3199,7 +3351,7 @@ export default function DashboardPage() {
                       })}
                     </tbody>
                     <tfoot><tr className="total-row">
-                      <td>TOTAL</td>
+                      <td colSpan={2}>TOTAL</td>
                       <td>{auditData.sinDoc.resumen.reduce((s: number, r: any) => s + (r.SinDocumento || 0), 0)}</td>
                       <td>{auditData.sinDoc.resumen.reduce((s: number, r: any) => s + (r.TotalAsientos || 0), 0)}</td>
                       <td></td>

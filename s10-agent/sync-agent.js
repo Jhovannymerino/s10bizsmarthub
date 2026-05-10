@@ -403,7 +403,7 @@ ORDER BY Clase, SaldoTotal DESC
 
 // Detalle de transacciones de Otras CxC para drilldown (últimos 2 años)
 const QUERY_OTRAS_CXC_TXN = (codEmpresa) => `
-SELECT
+SELECT TOP 2000
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -460,7 +460,7 @@ ORDER BY Clase, SaldoTotal DESC
 
 // Detalle transacciones Otras CxP para drilldown (últimos 2 años)
 const QUERY_OTRAS_CXP_TXN = (codEmpresa) => `
-SELECT
+SELECT TOP 2000
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -506,7 +506,7 @@ ORDER BY SaldoPorPagar DESC
 
 // Detalle transacciones tributos para drilldown (últimos 2 años)
 const QUERY_TRIBUTOS_TXN = (codEmpresa) => `
-SELECT
+SELECT TOP 1000
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -697,7 +697,7 @@ ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 
 // Transacciones bancarias detalle para drilldown (últimos 2 años, clase 10)
 const QUERY_CAJA_TXN = (codEmpresa) => `
-SELECT
+SELECT TOP 1000
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,

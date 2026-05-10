@@ -554,10 +554,13 @@ export class KpiService {
   // Tributos — clase 40 saldos + detalle
   // ─────────────────────────────────────────────
 
-  async getTributos(companyId: string) {
-    const cached = await this.getSnapshot(companyId, 'tributos', 'current');
+  async getTributos(companyId: string, year?: number) {
+    // Try year-specific snapshot first; fall back to 'current' for backwards compat
+    const period = year ? `${year}` : 'current';
+    let cached = await this.getSnapshot(companyId, 'tributos', period);
+    if (!cached && period !== 'current') cached = await this.getSnapshot(companyId, 'tributos', 'current');
     if (!cached) return { rows: [], message: 'No data. Run sync first.' };
-    return { rows: cached.data as any[], syncedAt: cached.syncedAt };
+    return { rows: cached.data as any[], year, syncedAt: cached.syncedAt };
   }
 
   async getTributosTxn(companyId: string, year: number, codCuenta?: string) {

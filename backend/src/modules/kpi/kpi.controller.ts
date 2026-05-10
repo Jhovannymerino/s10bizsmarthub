@@ -179,10 +179,14 @@ export class KpiController {
     return this.kpiService.getOtrasCxPTransactions(companyId, y, codCuenta, codTercero);
   }
 
-  /** Tributos — clase 40 saldos por cuenta */
+  /** Tributos — clase 40 saldos por cuenta (year-aware si se pasa ?year=) */
   @Get(':companyId/tributos')
-  getTributos(@Param('companyId') companyId: string) {
-    return this.kpiService.getTributos(companyId);
+  getTributos(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : undefined;
+    return this.kpiService.getTributos(companyId, y);
   }
 
   /** Tributos — detalle de transacciones */

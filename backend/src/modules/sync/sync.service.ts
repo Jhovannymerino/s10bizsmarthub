@@ -155,7 +155,7 @@ export class SyncService {
       }
 
       if (data.tributos?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'tributos', 'current', year, null, data.tributos);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'tributos', period, year, null, data.tributos);
         logs.push({ kpiType: 'tributos', rowsProcessed: data.tributos.length, status: 'success' });
       }
 

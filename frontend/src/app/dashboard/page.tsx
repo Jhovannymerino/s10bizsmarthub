@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -814,6 +814,8 @@ export default function DashboardPage() {
   const [patrimonioData, setPatrimonioData] = useState<any>(null);
   const [inventariosData, setInventariosData] = useState<any>(null);
   const [newTabLoading, setNewTabLoading] = useState(false);
+  // Cache key: tabName → `${companyId}:${year}` (year-dependent) or `${companyId}` (static)
+  const loadedRef = useRef<Record<string, string>>({});
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
 
@@ -855,6 +857,7 @@ export default function DashboardPage() {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
 
+    loadedRef.current = {};
     setLoading(true);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
@@ -937,78 +940,72 @@ export default function DashboardPage() {
     if (!token) return;
     const id = selectedCompany.codEmpresa;
 
-    const already = {
-      balance: balanceData, otras_cxc: otrasCxCData, otras_cxp: otrasCxPData,
-      prestamos: prestamosData, tributos: tributosData, laboral: laboralData,
-      activo_fijo: activoFijoData, tesoreria: tesoreriaData, patrimonio: patrimonioData, inventarios: inventariosData,
-      gastos_nat: gastosNatData, caja_saldos: cajaSaldosData, audit: auditData,
-    } as Record<string, any>;
-    if (already[activeTab]) return;
+    // Year-dependent tabs: cache key includes year; static tabs: cache key is company only
+    const yearDependent = new Set(['gastos_nat','audit','tesoreria','inventarios','tributos']);
+    const cacheKey = yearDependent.has(activeTab) ? `${id}:${selectedYear}` : id;
+    if (loadedRef.current[activeTab] === cacheKey) return;
 
     setNewTabLoading(true);
+    const done = (setter: () => void) => { setter(); loadedRef.current[activeTab] = cacheKey; setNewTabLoading(false); };
 
     if (activeTab === 'balance') {
       fetchApi(`/kpi/${id}/balance`, token)
-        .then(d => { setBalanceData(d); setNewTabLoading(false); })
-        .catch(() => { setBalanceData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setBalanceData(d)))
+        .catch(() => done(() => setBalanceData({ rows: [] })));
     } else if (activeTab === 'otras_cxc') {
       fetchApi(`/kpi/${id}/otras-cxc`, token)
-        .then(d => { setOtrasCxCData(d); setNewTabLoading(false); })
-        .catch(() => { setOtrasCxCData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setOtrasCxCData(d)))
+        .catch(() => done(() => setOtrasCxCData({ rows: [] })));
     } else if (activeTab === 'otras_cxp') {
       fetchApi(`/kpi/${id}/otras-cxp`, token)
-        .then(d => { setOtrasCxPData(d); setNewTabLoading(false); })
-        .catch(() => { setOtrasCxPData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setOtrasCxPData(d)))
+        .catch(() => done(() => setOtrasCxPData({ rows: [] })));
     } else if (activeTab === 'prestamos') {
       Promise.all([
         fetchApi(`/kpi/${id}/prestamos-otorgados`, token),
         fetchApi(`/kpi/${id}/prestamos-recibidos`, token),
-      ]).then(([ot, re]) => {
-        setPrestamosData({ otorgados: ot, recibidos: re });
-        setNewTabLoading(false);
-      }).catch(() => { setPrestamosData({ otorgados: { rows: [] }, recibidos: { rows: [] } }); setNewTabLoading(false); });
+      ]).then(([ot, re]) => done(() => setPrestamosData({ otorgados: ot, recibidos: re })))
+        .catch(() => done(() => setPrestamosData({ otorgados: { rows: [] }, recibidos: { rows: [] } })));
     } else if (activeTab === 'tributos') {
-      fetchApi(`/kpi/${id}/tributos`, token)
-        .then(d => { setTributosData(d); setNewTabLoading(false); })
-        .catch(() => { setTributosData({ rows: [] }); setNewTabLoading(false); });
+      fetchApi(`/kpi/${id}/tributos?year=${selectedYear}`, token)
+        .then(d => done(() => setTributosData(d)))
+        .catch(() => done(() => setTributosData({ rows: [] })));
     } else if (activeTab === 'laboral') {
       fetchApi(`/kpi/${id}/laboral`, token)
-        .then(d => { setLaboralData(d); setNewTabLoading(false); })
-        .catch(() => { setLaboralData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setLaboralData(d)))
+        .catch(() => done(() => setLaboralData({ rows: [] })));
     } else if (activeTab === 'activo_fijo') {
       fetchApi(`/kpi/${id}/activo-fijo`, token)
-        .then(d => { setActivoFijoData(d); setNewTabLoading(false); })
-        .catch(() => { setActivoFijoData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setActivoFijoData(d)))
+        .catch(() => done(() => setActivoFijoData({ rows: [] })));
     } else if (activeTab === 'tesoreria') {
       fetchApi(`/kpi/${id}/tesoreria?year=${selectedYear}`, token)
-        .then(d => { setTesoreriaData(d); setNewTabLoading(false); })
-        .catch(() => { setTesoreriaData({ bancos: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setTesoreriaData(d)))
+        .catch(() => done(() => setTesoreriaData({ bancos: [] })));
     } else if (activeTab === 'patrimonio') {
       fetchApi(`/kpi/${id}/patrimonio`, token)
-        .then(d => { setPatrimonioData(d); setNewTabLoading(false); })
-        .catch(() => { setPatrimonioData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setPatrimonioData(d)))
+        .catch(() => done(() => setPatrimonioData({ rows: [] })));
     } else if (activeTab === 'inventarios') {
       fetchApi(`/kpi/${id}/inventarios?year=${selectedYear}`, token)
-        .then(d => { setInventariosData(d); setNewTabLoading(false); })
-        .catch(() => { setInventariosData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setInventariosData(d)))
+        .catch(() => done(() => setInventariosData({ rows: [] })));
     } else if (activeTab === 'gastos_nat') {
       fetchApi(`/kpi/${id}/gastos-naturaleza?year=${selectedYear}`, token)
-        .then(d => { setGastosNatData(d); setNewTabLoading(false); })
-        .catch(() => { setGastosNatData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setGastosNatData(d)))
+        .catch(() => done(() => setGastosNatData({ rows: [] })));
     } else if (activeTab === 'caja_saldos') {
       fetchApi(`/kpi/${id}/caja-saldos`, token)
-        .then(d => { setCajaSaldosData(d); setNewTabLoading(false); })
-        .catch(() => { setCajaSaldosData({ rows: [] }); setNewTabLoading(false); });
+        .then(d => done(() => setCajaSaldosData(d)))
+        .catch(() => done(() => setCajaSaldosData({ rows: [] })));
     } else if (activeTab === 'audit') {
       Promise.all([
         fetchApi(`/kpi/${id}/audit/sin-doc?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/audit/descuadres?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/audit/atipicos?year=${selectedYear}`, token),
         fetchApi(`/kpi/${id}/audit/conciliacion?year=${selectedYear}`, token),
-      ]).then(([sd, desc, at, conc]) => {
-        setAuditData({ sinDoc: sd, descuadres: desc, atipicos: at, conciliacion: conc });
-        setNewTabLoading(false);
-      }).catch(() => { setAuditData({}); setNewTabLoading(false); });
+      ]).then(([sd, desc, at, conc]) => done(() => setAuditData({ sinDoc: sd, descuadres: desc, atipicos: at, conciliacion: conc })))
+        .catch(() => done(() => setAuditData({})));
     }
   }, [activeTab, selectedCompany, selectedYear, isGrupo]);
 
@@ -2565,19 +2562,19 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>{balanceData.rows.length} cuentas con saldo · Acumulado histórico</div>
                   <ExportBtn onClick={() => exportCSV('balance.csv',
-                    ['CodCuenta','Descripcion','Clase','Saldo'],
-                    balanceData.rows.map((r: any) => [r.CodCuenta, r.Descripcion, r.Clase, r.Saldo]))} />
+                    ['CodCuenta','DesCuenta','Clase','SaldoNeto'],
+                    balanceData.rows.map((r: any) => [r.CodCuenta, r.DesCuenta, r.Clase, r.SaldoNeto]))} />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 280 }}>Descripción</th><th>Clase</th><th>Saldo</th></tr></thead>
+                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 280 }}>Descripción</th><th>Clase</th><th>Saldo Neto</th></tr></thead>
                     <tbody>
                       {balanceData.rows.map((r: any, i: number) => (
                         <tr key={i}>
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                          <td>{r.Descripcion}</td>
+                          <td>{r.DesCuenta}</td>
                           <td style={{ color: '#8B97A8' }}>{r.Clase}</td>
-                          <td style={{ fontWeight: 600, color: (r.Saldo || 0) < 0 ? '#EF4444' : '#10B981' }}>{fmt(r.Saldo)}</td>
+                          <td style={{ fontWeight: 600, color: (r.SaldoNeto || 0) < 0 ? '#EF4444' : '#10B981' }}>{fmt(r.SaldoNeto)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2814,7 +2811,7 @@ export default function DashboardPage() {
                         return (
                           <tr key={i}>
                             <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                            <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Descripcion}</td>
+                            <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
                             <td>{fmt(r.ValorBruto)}</td>
                             <td style={{ color: '#F59E0B' }}>{fmt(r.DepreciacionAcum)}</td>
                             <td style={{ fontWeight: 600, color: r.ValorNeto > 0 ? '#10B981' : '#8B97A8' }}>{fmt(r.ValorNeto)}</td>
@@ -2976,7 +2973,7 @@ export default function DashboardPage() {
                         const byGrupo: Record<string, { grupo: string; desc: string; meses: Record<number, number>; ytd: number }> = {};
                         for (const r of gastosNatData.rows) {
                           const k = r.CodGrupo || r.CodCuenta;
-                          if (!byGrupo[k]) byGrupo[k] = { grupo: k, desc: r.Descripcion, meses: {}, ytd: 0 };
+                          if (!byGrupo[k]) byGrupo[k] = { grupo: k, desc: r.DesCuenta || r.Descripcion, meses: {}, ytd: 0 };
                           byGrupo[k].meses[r.Mes] = (byGrupo[k].meses[r.Mes] || 0) + (r.Monto || 0);
                           byGrupo[k].ytd += r.Monto || 0;
                         }

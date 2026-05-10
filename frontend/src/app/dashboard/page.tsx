@@ -3372,16 +3372,18 @@ export default function DashboardPage() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Fecha</th><th>Nro. Asiento</th><th>Débito</th><th>Crédito</th><th>Descuadre</th><th>Glosa</th></tr></thead>
+                    <thead><tr><th>Fecha</th><th>NroD (doc)</th><th>Líneas</th><th style={{ minWidth: 160 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Descuadre</th><th style={{ minWidth: 180 }}>Glosa</th></tr></thead>
                     <tbody>
                       {auditData.descuadres.rows.map((r: any, i: number) => (
                         <tr key={i}>
                           <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{r.NroAsientoContable}</td>
-                          <td>{fmt(r.TotalDebito)}</td>
-                          <td>{fmt(r.TotalCredito)}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#2BB4BB' }} title={r.NroD}>{r.NroD ? String(r.NroD).slice(0, 8) + '…' : '—'}</td>
+                          <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.Lineas}</td>
+                          <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ color: r.TotalDebito > 0 ? '#10B981' : '#8B97A8' }}>{r.TotalDebito > 0 ? fmt(r.TotalDebito) : '—'}</td>
+                          <td style={{ color: r.TotalCredito > 0 ? '#EF4444' : '#8B97A8' }}>{r.TotalCredito > 0 ? fmt(r.TotalCredito) : '—'}</td>
                           <td style={{ fontWeight: 700, color: '#EF4444' }}>{fmt(r.Descuadre)}</td>
-                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
+                          <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -3400,16 +3402,18 @@ export default function DashboardPage() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Fecha</th><th>Cuenta</th><th>Glosa</th><th>Débito</th><th>Crédito</th><th>Tercero</th></tr></thead>
+                    <thead><tr><th>Fecha</th><th>NroD</th><th>Cuenta</th><th style={{ minWidth: 160 }}>Desc. Cuenta</th><th style={{ minWidth: 160 }}>Glosa</th><th>Débito</th><th>Crédito</th><th style={{ minWidth: 140 }}>Tercero</th></tr></thead>
                     <tbody>
                       {auditData.atipicos.rows.map((r: any, i: number) => (
                         <tr key={i}>
                           <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#8B97A8' }} title={r.NroD}>{r.NroD ? String(r.NroD).slice(0, 8) + '…' : '—'}</td>
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{r.CodCuenta}</td>
-                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
+                          <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
+                          <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
                           <td style={{ color: r.Debito > 0 ? '#10B981' : '#8B97A8' }}>{r.Debito > 0 ? fmt(r.Debito) : '—'}</td>
                           <td style={{ color: r.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{r.Credito > 0 ? fmt(r.Credito) : '—'}</td>
-                          <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Tercero || '—'}</td>
+                          <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Tercero || '—'}</td>
                         </tr>
                       ))}
                     </tbody>

@@ -693,6 +693,130 @@ function DetalleModal({ title, rows, activeMeses, companyId, year, onClose }: {
   );
 }
 
+function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
+  companyId: string; year: number; codBanco: string; desBanco: string; onClose: () => void;
+}) {
+  const [txns, setTxns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [mesFilter, setMesFilter] = useState<number | null>(null);
+  const [docPreview, setDocPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setFetchError(false);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const params = new URLSearchParams({ year: String(year), codCuenta: codBanco });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    fetch(`${API}/kpi/${companyId}/caja-transactions?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: ctrl.signal,
+    })
+      .then(r => r.json())
+      .then(d => { setTxns(d.transactions || []); setLoading(false); })
+      .catch(() => { setFetchError(true); setLoading(false); })
+      .finally(() => clearTimeout(timer));
+  }, [companyId, year, codBanco, retryCount]);
+
+  const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
+  const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
+  const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
+  const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={onClose}>
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codBanco} — {desBanco}</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Movimientos bancarios clase 10 · {year} · {filtered.length} asientos</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <button onClick={() => setMesFilter(null)}
+            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
+            Todos
+          </button>
+          {mesesPresentes.map(m => (
+            <button key={m} onClick={() => setMesFilter(m)}
+              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === m ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === m ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === m ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
+              {MESES[m - 1]}
+            </button>
+          ))}
+        </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando movimientos...</div>
+        ) : fetchError ? (
+          <div style={{ textAlign: 'center', padding: '3rem' }}>
+            <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
+            <button onClick={() => setRetryCount(c => c + 1)}
+              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+              ↻ Reintentar
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
+            Sin movimientos para esta cuenta bancaria en {year}.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Nro. Asiento</th><th style={{ minWidth: 240 }}>Glosa</th>
+                  <th style={{ minWidth: 140 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th><th>Documento</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((t: any, i: number) => {
+                  const neto = (t.Debito || 0) - (t.Credito || 0);
+                  return (
+                    <tr key={i}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
+                      <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
+                      <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.Tercero || '—'}</td>
+                      <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
+                      <td>
+                        {t.NroD ? (
+                          <button onClick={() => setDocPreview(String(t.NroD))}
+                            title={String(t.NroD)}
+                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: '#2BB4BB', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                            🔗 {String(t.NroD).slice(-8)}
+                          </button>
+                        ) : <span style={{ color: '#4B5563', fontSize: '0.7rem' }}>—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="total-row">
+                  <td colSpan={4}>TOTAL</td>
+                  <td>{fmt(totalDeb)}</td>
+                  <td>{fmt(totalCred)}</td>
+                  <td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+        {docPreview !== null && (
+          <DocPreview companyId={companyId} nroD={docPreview} onClose={() => setDocPreview(null)} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Waterfall chart ──────────────────────────
 function buildWaterfallData(ytd: any) {
   const ing = ytd.ingresos || 0;
@@ -787,6 +911,8 @@ export default function DashboardPage() {
   const [drillDown, setDrillDown] = useState<{ title: string; rows: any[] } | null>(null);
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
   const [cxpTxDrill, setCxPTxDrill] = useState<{ proveedor: string; codProveedor: string } | null>(null);
+  const [cajaTxDrill, setCajaTxDrill] = useState<{ codBanco: string; desBanco: string } | null>(null);
+  const [genericTxDrill, setGenericTxDrill] = useState<{ codCuenta: string; descripcion: string } | null>(null);
   const [gavDrill, setGavDrill] = useState<{ cod: string; descripcion: string; meses: Record<number, number>; ytd: number } | null>(null);
   const [cxcSearch, setCxcSearch] = useState('');
   const [cxpSearch, setCxpSearch] = useState('');
@@ -1099,6 +1225,24 @@ export default function DashboardPage() {
           year={selectedYear}
           cat={gavDrill}
           onClose={() => setGavDrill(null)}
+        />
+      )}
+      {cajaTxDrill && (
+        <CajaTxnModal
+          companyId={selectedCompany.codEmpresa}
+          year={selectedYear}
+          codBanco={cajaTxDrill.codBanco}
+          desBanco={cajaTxDrill.desBanco}
+          onClose={() => setCajaTxDrill(null)}
+        />
+      )}
+      {genericTxDrill && (
+        <TransactionModal
+          companyId={selectedCompany.codEmpresa}
+          year={selectedYear}
+          codCuenta={genericTxDrill.codCuenta}
+          descripcion={genericTxDrill.descripcion}
+          onClose={() => setGenericTxDrill(null)}
         />
       )}
 
@@ -2729,8 +2873,8 @@ export default function DashboardPage() {
                     <thead><tr><th>Cuenta</th><th>Descripción</th><th>Provisionado {selectedYear}</th><th>Pagado {selectedYear}</th><th>Saldo Año</th><th>Saldo Histórico</th><th>Último Mov.</th></tr></thead>
                     <tbody>
                       {tributosData.rows.map((r: any, i: number) => (
-                        <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesTributo })} title="Ver asientos">
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td>{r.DesTributo}</td>
                           <td>{fmt(r.ProvisionadoAnio)}</td>
                           <td style={{ color: '#10B981' }}>{fmt(r.PagadoAnio)}</td>
@@ -2768,8 +2912,8 @@ export default function DashboardPage() {
                     <thead><tr><th>Cuenta</th><th>Descripción</th><th>Provisionado</th><th>Pagado</th><th>Saldo por Pagar</th><th>Último Mov.</th></tr></thead>
                     <tbody>
                       {laboralData.rows.map((r: any, i: number) => (
-                        <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesConcepto })} title="Ver asientos">
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td>{r.DesConcepto}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalProvisionado)}</td>
                           <td style={{ color: '#10B981' }}>{fmt(r.TotalPagado)}</td>
@@ -2809,8 +2953,8 @@ export default function DashboardPage() {
                       {activoFijoData.rows.map((r: any, i: number) => {
                         const pctDep = r.ValorBruto > 0 ? ((r.DepreciacionAcum || 0) / r.ValorBruto * 100) : 0;
                         return (
-                          <tr key={i}>
-                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesActivo })} title="Ver movimientos">
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                             <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
                             <td>{fmt(r.ValorBruto)}</td>
                             <td style={{ color: '#F59E0B' }}>{fmt(r.DepreciacionAcum)}</td>
@@ -2846,8 +2990,8 @@ export default function DashboardPage() {
                     <thead><tr><th>Cuenta</th><th style={{ minWidth: 240 }}>Banco</th><th>Saldo Inicial</th><th>Entradas {selectedYear}</th><th>Salidas {selectedYear}</th><th>Saldo Final</th><th>Movim.</th><th>Sin Doc.</th></tr></thead>
                     <tbody>
                       {tesoreriaData.bancos.map((r: any, i: number) => (
-                        <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodBanco}</td>
+                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setCajaTxDrill({ codBanco: r.CodBanco, desBanco: r.DesBanco })} title="Ver movimientos bancarios">
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodBanco} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesBanco}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.SaldoInicial)}</td>
                           <td style={{ color: '#10B981' }}>{fmt(r.EntradasAnio)}</td>
@@ -2889,9 +3033,9 @@ export default function DashboardPage() {
                     <thead><tr><th>Clase</th><th>Cuenta</th><th style={{ minWidth: 260 }}>Descripción</th><th>Total Débito</th><th>Total Crédito</th><th>Saldo Neto</th></tr></thead>
                     <tbody>
                       {patrimonioData.rows.map((r: any, i: number) => (
-                        <tr key={i}>
+                        <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setGenericTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesCuenta })} title="Ver asientos">
                           <td style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{r.Clase}</td>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesCuenta}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalCredito)}</td>

@@ -648,7 +648,7 @@ export class KpiService {
     const cached = await this.getSnapshot(companyId, 'caja_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
-    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodBanco ?? t.CodCuenta).startsWith(codCuenta));
     return { transactions: txns, total: txns.length };
   }
 

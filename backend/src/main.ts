@@ -5,10 +5,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
-  // Aumentar límite para payloads de transacciones (hasta 1336 asientos por empresa)
   const { json, urlencoded } = await import('express');
-  app.use(json({ limit: '20mb' }));
-  app.use(urlencoded({ limit: '20mb', extended: true }));
+  app.use(json({ limit: '100mb' }));
+  app.use(urlencoded({ limit: '100mb', extended: true }));
 
   // CORS
   app.enableCors({

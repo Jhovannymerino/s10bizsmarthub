@@ -929,11 +929,12 @@ function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: {
         : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
-              <thead><tr><th>Fecha</th><th>Cuenta</th><th style={{ minWidth: 200 }}>Glosa</th><th>Tercero</th><th>Débito</th><th>Crédito</th><th>Monto</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Nro. Asiento</th><th>Cuenta</th><th style={{ minWidth: 200 }}>Glosa</th><th>Tercero</th><th>Débito</th><th>Crédito</th><th>Monto</th></tr></thead>
               <tbody>
                 {txns.map((t: any, i: number) => (
                   <tr key={i}>
                     <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{String(t.NroAsiento).slice(0, 8)}…</td>
                     <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{t.CodCuenta}</td>
                     <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
                     <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.Tercero || '—'}</td>
@@ -943,7 +944,7 @@ function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: {
                   </tr>
                 ))}
               </tbody>
-              <tfoot><tr className="total-row"><td colSpan={6}>TOTAL MONTO SIN DOC</td><td>{fmt(txns.reduce((s: number, t: any) => s + (t.Monto || 0), 0))}</td></tr></tfoot>
+              <tfoot><tr className="total-row"><td colSpan={7}>TOTAL MONTO SIN DOC</td><td>{fmt(txns.reduce((s: number, t: any) => s + (t.Monto || 0), 0))}</td></tr></tfoot>
             </table>
           </div>
         )}

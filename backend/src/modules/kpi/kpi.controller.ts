@@ -70,18 +70,22 @@ export class KpiController {
   @Get(':companyId/cxc-transactions')
   getCxCTransactions(
     @Param('companyId') companyId: string,
+    @Query('year') year?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    return this.kpiService.getCxCTransactions(companyId, codTercero);
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getCxCTransactions(companyId, y, codTercero);
   }
 
   /** Detalle de asientos CxP (clase 42) por proveedor */
   @Get(':companyId/cxp-transactions')
   getCxPTransactions(
     @Param('companyId') companyId: string,
+    @Query('year') year?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    return this.kpiService.getCxPTransactions(companyId, codTercero);
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getCxPTransactions(companyId, y, codTercero);
   }
 
   /** Facturas emitidas (AgrupamientoDocumento vía NotaDeVenta) */
@@ -149,10 +153,12 @@ export class KpiController {
   @Get(':companyId/otras-cxc-transactions')
   getOtrasCxCTransactions(
     @Param('companyId') companyId: string,
+    @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    return this.kpiService.getOtrasCxCTransactions(companyId, codCuenta, codTercero);
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getOtrasCxCTransactions(companyId, y, codCuenta, codTercero);
   }
 
   /** Otras CxP — aging clases 43,44,45,46,47 */
@@ -165,10 +171,12 @@ export class KpiController {
   @Get(':companyId/otras-cxp-transactions')
   getOtrasCxPTransactions(
     @Param('companyId') companyId: string,
+    @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    return this.kpiService.getOtrasCxPTransactions(companyId, codCuenta, codTercero);
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getOtrasCxPTransactions(companyId, y, codCuenta, codTercero);
   }
 
   /** Tributos — clase 40 saldos por cuenta */
@@ -181,9 +189,11 @@ export class KpiController {
   @Get(':companyId/tributos-transactions')
   getTributosTxn(
     @Param('companyId') companyId: string,
+    @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
   ) {
-    return this.kpiService.getTributosTxn(companyId, codCuenta);
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getTributosTxn(companyId, y, codCuenta);
   }
 
   /** Laboral — clase 41 (CTS, remuneraciones por pagar) */
@@ -226,9 +236,11 @@ export class KpiController {
   @Get(':companyId/caja-transactions')
   getCajaTxn(
     @Param('companyId') companyId: string,
+    @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
   ) {
-    return this.kpiService.getCajaTxn(companyId, codCuenta);
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getCajaTxn(companyId, y, codCuenta);
   }
 
   /** Gastos por naturaleza — clases 60-68 por mes */

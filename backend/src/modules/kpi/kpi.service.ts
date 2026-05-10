@@ -422,8 +422,8 @@ export class KpiService {
     return null;
   }
 
-  async getCxCTransactions(companyId: string, codTercero?: string) {
-    const cached = await this.getSnapshot(companyId, 'cxc_transactions', 'current');
+  async getCxCTransactions(companyId: string, year: number, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'cxc_transactions', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
 
     let txns = cached.data as any[];
@@ -432,8 +432,8 @@ export class KpiService {
     return { transactions: txns, total: txns.length };
   }
 
-  async getCxPTransactions(companyId: string, codTercero?: string) {
-    const cached = await this.getSnapshot(companyId, 'cxp_transactions', 'current');
+  async getCxPTransactions(companyId: string, year: number, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'cxp_transactions', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
 
     let txns = cached.data as any[];
@@ -522,8 +522,8 @@ export class KpiService {
     return { rows: cached.data as any[], syncedAt: cached.syncedAt };
   }
 
-  async getOtrasCxCTransactions(companyId: string, codCuenta?: string, codTercero?: string) {
-    const cached = await this.getSnapshot(companyId, 'otras_cxc_txn', 'current');
+  async getOtrasCxCTransactions(companyId: string, year: number, codCuenta?: string, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'otras_cxc_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
@@ -541,8 +541,8 @@ export class KpiService {
     return { rows: cached.data as any[], syncedAt: cached.syncedAt };
   }
 
-  async getOtrasCxPTransactions(companyId: string, codCuenta?: string, codTercero?: string) {
-    const cached = await this.getSnapshot(companyId, 'otras_cxp_txn', 'current');
+  async getOtrasCxPTransactions(companyId: string, year: number, codCuenta?: string, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'otras_cxp_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
@@ -560,8 +560,8 @@ export class KpiService {
     return { rows: cached.data as any[], syncedAt: cached.syncedAt };
   }
 
-  async getTributosTxn(companyId: string, codCuenta?: string) {
-    const cached = await this.getSnapshot(companyId, 'tributos_txn', 'current');
+  async getTributosTxn(companyId: string, year: number, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'tributos_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
@@ -641,8 +641,8 @@ export class KpiService {
     return { rows, totalSaldo: round(totalSaldo), syncedAt: cached.syncedAt };
   }
 
-  async getCajaTxn(companyId: string, codCuenta?: string) {
-    const cached = await this.getSnapshot(companyId, 'caja_txn', 'current');
+  async getCajaTxn(companyId: string, year: number, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'caja_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));

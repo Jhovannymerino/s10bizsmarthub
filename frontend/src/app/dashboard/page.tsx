@@ -366,8 +366,8 @@ function TransactionModal({ companyId, year, codCuenta, descripcion, onClose }: 
   );
 }
 
-function CxCTransactionModal({ companyId, cliente, codCliente, onClose }: {
-  companyId: string; cliente: string; codCliente: string; onClose: () => void;
+function CxCTransactionModal({ companyId, year, cliente, codCliente, onClose }: {
+  companyId: string; year: number; cliente: string; codCliente: string; onClose: () => void;
 }) {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -375,14 +375,14 @@ function CxCTransactionModal({ companyId, cliente, codCliente, onClose }: {
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const params = new URLSearchParams({ codTercero: String(codCliente) });
+    const params = new URLSearchParams({ year: String(year), codTercero: String(codCliente) });
     fetch(`${API}/kpi/${companyId}/cxc-transactions?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then(d => { setTxns(d.transactions || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [companyId, codCliente]);
+  }, [companyId, year, codCliente]);
 
   const aniosPresentes = Array.from(new Set(txns.map((t: any) => t.Anio as number))).sort((a, b) => b - a);
   const filtered = anioFilter ? txns.filter((t: any) => t.Anio === anioFilter) : txns;
@@ -459,8 +459,8 @@ function CxCTransactionModal({ companyId, cliente, codCliente, onClose }: {
   );
 }
 
-function CxPTransactionModal({ companyId, proveedor, codProveedor, onClose }: {
-  companyId: string; proveedor: string; codProveedor: string; onClose: () => void;
+function CxPTransactionModal({ companyId, year, proveedor, codProveedor, onClose }: {
+  companyId: string; year: number; proveedor: string; codProveedor: string; onClose: () => void;
 }) {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -468,14 +468,14 @@ function CxPTransactionModal({ companyId, proveedor, codProveedor, onClose }: {
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const params = new URLSearchParams({ codTercero: String(codProveedor) });
+    const params = new URLSearchParams({ year: String(year), codTercero: String(codProveedor) });
     fetch(`${API}/kpi/${companyId}/cxp-transactions?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then(d => { setTxns(d.transactions || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [companyId, codProveedor]);
+  }, [companyId, year, codProveedor]);
 
   const aniosPresentes = Array.from(new Set(txns.map((t: any) => t.Anio as number))).sort((a, b) => b - a);
   const filtered = anioFilter ? txns.filter((t: any) => t.Anio === anioFilter) : txns;
@@ -1065,6 +1065,7 @@ export default function DashboardPage() {
       {cxcTxDrill && (
         <CxCTransactionModal
           companyId={selectedCompany.codEmpresa}
+          year={selectedYear}
           cliente={cxcTxDrill.cliente}
           codCliente={cxcTxDrill.codCliente}
           onClose={() => setCxCTxDrill(null)}
@@ -1073,6 +1074,7 @@ export default function DashboardPage() {
       {cxpTxDrill && (
         <CxPTransactionModal
           companyId={selectedCompany.codEmpresa}
+          year={selectedYear}
           proveedor={cxpTxDrill.proveedor}
           codProveedor={cxpTxDrill.codProveedor}
           onClose={() => setCxPTxDrill(null)}

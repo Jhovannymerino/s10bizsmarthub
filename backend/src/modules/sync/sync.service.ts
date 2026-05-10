@@ -98,12 +98,12 @@ export class SyncService {
       }
 
       if (data.cxc_transactions?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_transactions', 'current', year, null, data.cxc_transactions);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_transactions', period, year, null, data.cxc_transactions);
         logs.push({ kpiType: 'cxc_transactions', rowsProcessed: data.cxc_transactions.length, status: 'success' });
       }
 
       if (data.cxp_transactions?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'cxp_transactions', 'current', year, null, data.cxp_transactions);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cxp_transactions', period, year, null, data.cxp_transactions);
         logs.push({ kpiType: 'cxp_transactions', rowsProcessed: data.cxp_transactions.length, status: 'success' });
       }
 
@@ -135,7 +135,7 @@ export class SyncService {
       }
 
       if (data.otras_cxc_txn?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxc_txn', 'current', year, null, data.otras_cxc_txn);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxc_txn', period, year, null, data.otras_cxc_txn);
         logs.push({ kpiType: 'otras_cxc_txn', rowsProcessed: data.otras_cxc_txn.length, status: 'success' });
       }
 
@@ -145,7 +145,7 @@ export class SyncService {
       }
 
       if (data.otras_cxp_txn?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxp_txn', 'current', year, null, data.otras_cxp_txn);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxp_txn', period, year, null, data.otras_cxp_txn);
         logs.push({ kpiType: 'otras_cxp_txn', rowsProcessed: data.otras_cxp_txn.length, status: 'success' });
       }
 
@@ -155,7 +155,7 @@ export class SyncService {
       }
 
       if (data.tributos_txn?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'tributos_txn', 'current', year, null, data.tributos_txn);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'tributos_txn', period, year, null, data.tributos_txn);
         logs.push({ kpiType: 'tributos_txn', rowsProcessed: data.tributos_txn.length, status: 'success' });
       }
 
@@ -190,7 +190,7 @@ export class SyncService {
       }
 
       if (data.caja_txn?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'caja_txn', 'current', year, null, data.caja_txn);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'caja_txn', period, year, null, data.caja_txn);
         logs.push({ kpiType: 'caja_txn', rowsProcessed: data.caja_txn.length, status: 'success' });
       }
 

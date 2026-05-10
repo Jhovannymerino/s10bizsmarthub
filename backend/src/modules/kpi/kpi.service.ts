@@ -34,7 +34,7 @@ export class KpiService {
   ) {
     return this.prisma.kpiSnapshot.upsert({
       where: { companyId_kpiType_period: { companyId, kpiType, period } },
-      update: { data, syncedAt: new Date(), companyName },
+      update: { data, year, syncedAt: new Date(), companyName },
       create: { companyId, companyName, kpiType, period, year, month, data },
     });
   }

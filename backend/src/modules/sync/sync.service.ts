@@ -35,6 +35,27 @@ export class SyncService {
       facturas_emitidas?: any[];
       facturas_recibidas?: any[];
       honorarios_recibidos?: any[];
+      // Nuevos
+      balance?: any[];
+      otras_cxc?: any[];
+      otras_cxc_txn?: any[];
+      otras_cxp?: any[];
+      otras_cxp_txn?: any[];
+      tributos?: any[];
+      tributos_txn?: any[];
+      laboral?: any[];
+      activo_fijo?: any[];
+      prestamos_otorgados?: any[];
+      prestamos_recibidos?: any[];
+      transferencias?: any[];
+      caja_saldos?: any[];
+      caja_txn?: any[];
+      gastos_naturaleza?: any[];
+      audit_sin_doc?: any[];
+      audit_sin_doc_txn?: any[];
+      audit_descuadres?: any[];
+      audit_atipicos?: any[];
+      audit_conciliacion?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -99,6 +120,112 @@ export class SyncService {
       if (data.honorarios_recibidos?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'honorarios_recibidos', `${year}`, year, null, data.honorarios_recibidos);
         logs.push({ kpiType: 'honorarios_recibidos', rowsProcessed: data.honorarios_recibidos.length, status: 'success' });
+      }
+
+      // ── Nuevos módulos ──────────────────────────────────────────────
+
+      if (data.balance?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'balance', 'current', year, null, data.balance);
+        logs.push({ kpiType: 'balance', rowsProcessed: data.balance.length, status: 'success' });
+      }
+
+      if (data.otras_cxc?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxc', 'current', year, null, data.otras_cxc);
+        logs.push({ kpiType: 'otras_cxc', rowsProcessed: data.otras_cxc.length, status: 'success' });
+      }
+
+      if (data.otras_cxc_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxc_txn', 'current', year, null, data.otras_cxc_txn);
+        logs.push({ kpiType: 'otras_cxc_txn', rowsProcessed: data.otras_cxc_txn.length, status: 'success' });
+      }
+
+      if (data.otras_cxp?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxp', 'current', year, null, data.otras_cxp);
+        logs.push({ kpiType: 'otras_cxp', rowsProcessed: data.otras_cxp.length, status: 'success' });
+      }
+
+      if (data.otras_cxp_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'otras_cxp_txn', 'current', year, null, data.otras_cxp_txn);
+        logs.push({ kpiType: 'otras_cxp_txn', rowsProcessed: data.otras_cxp_txn.length, status: 'success' });
+      }
+
+      if (data.tributos?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'tributos', 'current', year, null, data.tributos);
+        logs.push({ kpiType: 'tributos', rowsProcessed: data.tributos.length, status: 'success' });
+      }
+
+      if (data.tributos_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'tributos_txn', 'current', year, null, data.tributos_txn);
+        logs.push({ kpiType: 'tributos_txn', rowsProcessed: data.tributos_txn.length, status: 'success' });
+      }
+
+      if (data.laboral?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'laboral', 'current', year, null, data.laboral);
+        logs.push({ kpiType: 'laboral', rowsProcessed: data.laboral.length, status: 'success' });
+      }
+
+      if (data.activo_fijo?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'activo_fijo', 'current', year, null, data.activo_fijo);
+        logs.push({ kpiType: 'activo_fijo', rowsProcessed: data.activo_fijo.length, status: 'success' });
+      }
+
+      if (data.prestamos_otorgados?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'prestamos_otorgados', 'current', year, null, data.prestamos_otorgados);
+        logs.push({ kpiType: 'prestamos_otorgados', rowsProcessed: data.prestamos_otorgados.length, status: 'success' });
+      }
+
+      if (data.prestamos_recibidos?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'prestamos_recibidos', 'current', year, null, data.prestamos_recibidos);
+        logs.push({ kpiType: 'prestamos_recibidos', rowsProcessed: data.prestamos_recibidos.length, status: 'success' });
+      }
+
+      if (data.transferencias?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'transferencias', 'current', year, null, data.transferencias);
+        logs.push({ kpiType: 'transferencias', rowsProcessed: data.transferencias.length, status: 'success' });
+      }
+
+      if (data.caja_saldos?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'caja_saldos', 'current', year, null, data.caja_saldos);
+        logs.push({ kpiType: 'caja_saldos', rowsProcessed: data.caja_saldos.length, status: 'success' });
+      }
+
+      if (data.caja_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'caja_txn', 'current', year, null, data.caja_txn);
+        logs.push({ kpiType: 'caja_txn', rowsProcessed: data.caja_txn.length, status: 'success' });
+      }
+
+      if (data.gastos_naturaleza?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'gastos_naturaleza', period, year, null, data.gastos_naturaleza);
+        logs.push({ kpiType: 'gastos_naturaleza', rowsProcessed: data.gastos_naturaleza.length, status: 'success' });
+      }
+
+      if (data.audit_sin_doc?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'audit_sin_doc', period, year, null, data.audit_sin_doc);
+        logs.push({ kpiType: 'audit_sin_doc', rowsProcessed: data.audit_sin_doc.length, status: 'success' });
+      }
+
+      if (data.audit_sin_doc_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'audit_sin_doc_txn', period, year, null, data.audit_sin_doc_txn);
+        logs.push({ kpiType: 'audit_sin_doc_txn', rowsProcessed: data.audit_sin_doc_txn.length, status: 'success' });
+      }
+
+      if (data.audit_descuadres?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'audit_descuadres', period, year, null, data.audit_descuadres);
+        logs.push({ kpiType: 'audit_descuadres', rowsProcessed: data.audit_descuadres.length, status: 'success' });
+      } else {
+        // Always save even if empty so front knows the check ran
+        await this.kpiService.saveSnapshot(companyId, companyName, 'audit_descuadres', period, year, null, []);
+        logs.push({ kpiType: 'audit_descuadres', rowsProcessed: 0, status: 'success' });
+      }
+
+      if (data.audit_atipicos?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'audit_atipicos', period, year, null, data.audit_atipicos);
+        logs.push({ kpiType: 'audit_atipicos', rowsProcessed: data.audit_atipicos.length, status: 'success' });
+      }
+
+      if (data.audit_conciliacion?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'audit_conciliacion', period, year, null, data.audit_conciliacion);
+        logs.push({ kpiType: 'audit_conciliacion', rowsProcessed: data.audit_conciliacion.length, status: 'success' });
       }
 
       // Write sync logs

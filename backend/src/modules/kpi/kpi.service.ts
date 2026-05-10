@@ -502,6 +502,199 @@ export class KpiService {
     };
   }
 
+  // ─────────────────────────────────────────────
+  // Balance General — saldos acumulados por subcuenta (sin filtro de año)
+  // ─────────────────────────────────────────────
+
+  async getBalance(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'balance', 'current');
+    if (!cached) return { rows: [], message: 'No data. Run sync first.' };
+    return { rows: cached.data as any[], syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
+  // Otras CxC — clases 13,14,16,17,18 aging + detalle
+  // ─────────────────────────────────────────────
+
+  async getOtrasCxC(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'otras_cxc', 'current');
+    if (!cached) return { rows: [], message: 'No data. Run sync first.' };
+    return { rows: cached.data as any[], syncedAt: cached.syncedAt };
+  }
+
+  async getOtrasCxCTransactions(companyId: string, codCuenta?: string, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'otras_cxc_txn', 'current');
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    if (codTercero) txns = txns.filter((t: any) => String(t.CodTercero) === codTercero);
+    return { transactions: txns, total: txns.length };
+  }
+
+  // ─────────────────────────────────────────────
+  // Otras CxP — clases 43,44,45,46,47 aging + detalle
+  // ─────────────────────────────────────────────
+
+  async getOtrasCxP(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'otras_cxp', 'current');
+    if (!cached) return { rows: [], message: 'No data. Run sync first.' };
+    return { rows: cached.data as any[], syncedAt: cached.syncedAt };
+  }
+
+  async getOtrasCxPTransactions(companyId: string, codCuenta?: string, codTercero?: string) {
+    const cached = await this.getSnapshot(companyId, 'otras_cxp_txn', 'current');
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    if (codTercero) txns = txns.filter((t: any) => String(t.CodTercero) === codTercero);
+    return { transactions: txns, total: txns.length };
+  }
+
+  // ─────────────────────────────────────────────
+  // Tributos — clase 40 saldos + detalle
+  // ─────────────────────────────────────────────
+
+  async getTributos(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'tributos', 'current');
+    if (!cached) return { rows: [], message: 'No data. Run sync first.' };
+    return { rows: cached.data as any[], syncedAt: cached.syncedAt };
+  }
+
+  async getTributosTxn(companyId: string, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'tributos_txn', 'current');
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    return { transactions: txns, total: txns.length };
+  }
+
+  // ─────────────────────────────────────────────
+  // Laboral — clase 41 (CTS, remuneraciones)
+  // ─────────────────────────────────────────────
+
+  async getLaboral(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'laboral', 'current');
+    if (!cached) return { rows: [], message: 'No data. Run sync first.' };
+    return { rows: cached.data as any[], syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
+  // Activo Fijo — clase 33 vs 39 (valor bruto, depreciación, valor neto)
+  // ─────────────────────────────────────────────
+
+  async getActivoFijo(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'activo_fijo', 'current');
+    if (!cached) return { rows: [], message: 'No data. Run sync first.' };
+    const rows = cached.data as any[];
+    const totalBruto = rows.reduce((s: number, r: any) => s + (parseFloat(r.ValorBruto) || 0), 0);
+    const totalDeprec = rows.reduce((s: number, r: any) => s + (parseFloat(r.DepreciacionAcum) || 0), 0);
+    const totalNeto = rows.reduce((s: number, r: any) => s + (parseFloat(r.ValorNeto) || 0), 0);
+    return {
+      rows,
+      totalBruto: round(totalBruto),
+      totalDeprec: round(totalDeprec),
+      totalNeto: round(totalNeto),
+      syncedAt: cached.syncedAt,
+    };
+  }
+
+  // ─────────────────────────────────────────────
+  // Préstamos — otorgados (tipo 071 CxC) y recibidos (tipo 071 CxP)
+  // ─────────────────────────────────────────────
+
+  async getPrestamosOtorgados(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'prestamos_otorgados', 'current');
+    if (!cached) return { rows: [], total: 0 };
+    const rows = cached.data as any[];
+    const total = rows.reduce((s: number, r: any) => s + (parseFloat(r.SaldoPendiente) || 0), 0);
+    return { rows, total: round(total), syncedAt: cached.syncedAt };
+  }
+
+  async getPrestamosRecibidos(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'prestamos_recibidos', 'current');
+    if (!cached) return { rows: [], total: 0 };
+    const rows = cached.data as any[];
+    const total = rows.reduce((s: number, r: any) => s + (parseFloat(r.SaldoPendiente) || 0), 0);
+    return { rows, total: round(total), syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
+  // Transferencias — tipo 058 inter-empresa / bancos
+  // ─────────────────────────────────────────────
+
+  async getTransferencias(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'transferencias', 'current');
+    if (!cached) return { rows: [], total: 0 };
+    const rows = cached.data as any[];
+    return { rows, total: rows.length, syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
+  // Caja Saldos — saldos bancarios acumulados (sin filtro año)
+  // ─────────────────────────────────────────────
+
+  async getCajaSaldos(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'caja_saldos', 'current');
+    if (!cached) return { rows: [], totalSaldo: 0 };
+    const rows = cached.data as any[];
+    const totalSaldo = rows.reduce((s: number, r: any) => s + (parseFloat(r.Saldo) || 0), 0);
+    return { rows, totalSaldo: round(totalSaldo), syncedAt: cached.syncedAt };
+  }
+
+  async getCajaTxn(companyId: string, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'caja_txn', 'current');
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    return { transactions: txns, total: txns.length };
+  }
+
+  // ─────────────────────────────────────────────
+  // Gastos por Naturaleza — clases 60-68 por mes
+  // ─────────────────────────────────────────────
+
+  async getGastosNaturaleza(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'gastos_naturaleza', `${year}`);
+    if (!cached) return { rows: [], year };
+    return { rows: cached.data as any[], year, syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
+  // Auditoría — sin documento, descuadres, atípicos, conciliación
+  // ─────────────────────────────────────────────
+
+  async getAuditSinDoc(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'audit_sin_doc', `${year}`);
+    if (!cached) return { resumen: [], year };
+    return { resumen: cached.data as any[], year, syncedAt: cached.syncedAt };
+  }
+
+  async getAuditSinDocTxn(companyId: string, year: number, clase?: string) {
+    const cached = await this.getSnapshot(companyId, 'audit_sin_doc_txn', `${year}`);
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (clase) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(clase));
+    return { transactions: txns, total: txns.length };
+  }
+
+  async getAuditDescuadres(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'audit_descuadres', `${year}`);
+    if (!cached) return { rows: [], year };
+    return { rows: cached.data as any[], count: (cached.data as any[]).length, year, syncedAt: cached.syncedAt };
+  }
+
+  async getAuditAtipicos(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'audit_atipicos', `${year}`);
+    if (!cached) return { rows: [], year };
+    return { rows: cached.data as any[], year, syncedAt: cached.syncedAt };
+  }
+
+  async getAuditConciliacion(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'audit_conciliacion', `${year}`);
+    if (!cached) return { rows: [], year };
+    return { rows: cached.data as any[], year, syncedAt: cached.syncedAt };
+  }
+
   async getLastSync(companyId: string, year: number) {
     const snaps = await this.prisma.kpiSnapshot.findMany({
       where: { companyId, year },

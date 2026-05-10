@@ -772,7 +772,7 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'gastos_nat' | 'caja_saldos' | 'audit'>('pl');
   const [userRole, setUserRole] = useState<string>('viewer');
   const [userEmail, setUserEmail] = useState<string>('');
   // ── Admin: gestión de usuarios ──
@@ -798,6 +798,18 @@ export default function DashboardPage() {
   const [docsOnlySinAsiento, setDocsOnlySinAsiento] = useState(false);
   const [docsOnlyDuplicados, setDocsOnlyDuplicados] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  // ── Nuevos módulos (lazy-loaded al seleccionar el tab) ──
+  const [balanceData, setBalanceData] = useState<any>(null);
+  const [otrasCxCData, setOtrasCxCData] = useState<any>(null);
+  const [otrasCxPData, setOtrasCxPData] = useState<any>(null);
+  const [prestamosData, setPrestamosData] = useState<{ otorgados: any; recibidos: any } | null>(null);
+  const [tributosData, setTributosData] = useState<any>(null);
+  const [laboralData, setLaboralData] = useState<any>(null);
+  const [activoFijoData, setActivoFijoData] = useState<any>(null);
+  const [gastosNatData, setGastosNatData] = useState<any>(null);
+  const [cajaSaldosData, setCajaSaldosData] = useState<any>(null);
+  const [auditData, setAuditData] = useState<any>(null);
+  const [newTabLoading, setNewTabLoading] = useState(false);
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
 
@@ -818,6 +830,9 @@ export default function DashboardPage() {
 
     setLoading(true);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
+    setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
+    setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
+    setCajaSaldosData(null); setAuditData(null);
 
     if (isGrupo) {
       Promise.all([
@@ -885,6 +900,76 @@ export default function DashboardPage() {
         });
       })
       .catch(() => {});
+  }, [activeTab, selectedCompany, selectedYear, isGrupo]);
+
+  // ── Lazy load nuevos módulos ──────────────────
+  useEffect(() => {
+    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','gastos_nat','caja_saldos','audit'];
+    if (!NEW_TABS.includes(activeTab) || isGrupo) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+
+    const already = {
+      balance: balanceData, otras_cxc: otrasCxCData, otras_cxp: otrasCxPData,
+      prestamos: prestamosData, tributos: tributosData, laboral: laboralData,
+      activo_fijo: activoFijoData, gastos_nat: gastosNatData, caja_saldos: cajaSaldosData, audit: auditData,
+    } as Record<string, any>;
+    if (already[activeTab]) return;
+
+    setNewTabLoading(true);
+
+    if (activeTab === 'balance') {
+      fetchApi(`/kpi/${id}/balance`, token)
+        .then(d => { setBalanceData(d); setNewTabLoading(false); })
+        .catch(() => { setBalanceData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'otras_cxc') {
+      fetchApi(`/kpi/${id}/otras-cxc`, token)
+        .then(d => { setOtrasCxCData(d); setNewTabLoading(false); })
+        .catch(() => { setOtrasCxCData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'otras_cxp') {
+      fetchApi(`/kpi/${id}/otras-cxp`, token)
+        .then(d => { setOtrasCxPData(d); setNewTabLoading(false); })
+        .catch(() => { setOtrasCxPData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'prestamos') {
+      Promise.all([
+        fetchApi(`/kpi/${id}/prestamos-otorgados`, token),
+        fetchApi(`/kpi/${id}/prestamos-recibidos`, token),
+      ]).then(([ot, re]) => {
+        setPrestamosData({ otorgados: ot, recibidos: re });
+        setNewTabLoading(false);
+      }).catch(() => { setPrestamosData({ otorgados: { rows: [] }, recibidos: { rows: [] } }); setNewTabLoading(false); });
+    } else if (activeTab === 'tributos') {
+      fetchApi(`/kpi/${id}/tributos`, token)
+        .then(d => { setTributosData(d); setNewTabLoading(false); })
+        .catch(() => { setTributosData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'laboral') {
+      fetchApi(`/kpi/${id}/laboral`, token)
+        .then(d => { setLaboralData(d); setNewTabLoading(false); })
+        .catch(() => { setLaboralData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'activo_fijo') {
+      fetchApi(`/kpi/${id}/activo-fijo`, token)
+        .then(d => { setActivoFijoData(d); setNewTabLoading(false); })
+        .catch(() => { setActivoFijoData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'gastos_nat') {
+      fetchApi(`/kpi/${id}/gastos-naturaleza?year=${selectedYear}`, token)
+        .then(d => { setGastosNatData(d); setNewTabLoading(false); })
+        .catch(() => { setGastosNatData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'caja_saldos') {
+      fetchApi(`/kpi/${id}/caja-saldos`, token)
+        .then(d => { setCajaSaldosData(d); setNewTabLoading(false); })
+        .catch(() => { setCajaSaldosData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'audit') {
+      Promise.all([
+        fetchApi(`/kpi/${id}/audit/sin-doc?year=${selectedYear}`, token),
+        fetchApi(`/kpi/${id}/audit/descuadres?year=${selectedYear}`, token),
+        fetchApi(`/kpi/${id}/audit/atipicos?year=${selectedYear}`, token),
+        fetchApi(`/kpi/${id}/audit/conciliacion?year=${selectedYear}`, token),
+      ]).then(([sd, desc, at, conc]) => {
+        setAuditData({ sinDoc: sd, descuadres: desc, atipicos: at, conciliacion: conc });
+        setNewTabLoading(false);
+      }).catch(() => { setAuditData({}); setNewTabLoading(false); });
+    }
   }, [activeTab, selectedCompany, selectedYear, isGrupo]);
 
   if (error) return (
@@ -1163,6 +1248,32 @@ export default function DashboardPage() {
               {tab === 'docs' && '🧾  Documentos'}
             </button>
           ))}
+          {!isGrupo && (
+            <>
+              <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Balance Sheet</div>
+              {(['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','caja_saldos','gastos_nat'] as const).map((tab) => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  {tab === 'balance'    && '⚖️  Balance General'}
+                  {tab === 'otras_cxc' && '📌  Otras CxC'}
+                  {tab === 'otras_cxp' && '📋  Otras CxP'}
+                  {tab === 'prestamos' && '💳  Préstamos'}
+                  {tab === 'tributos'  && '🏛️  Tributos'}
+                  {tab === 'laboral'   && '👷  Laboral'}
+                  {tab === 'activo_fijo' && '🏗️  Activo Fijo'}
+                  {tab === 'caja_saldos' && '🏦  Saldos Banco'}
+                  {tab === 'gastos_nat'  && '📊  Gastos Naturaleza'}
+                </button>
+              ))}
+              <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Auditoría</div>
+              <button onClick={() => setActiveTab('audit')}
+                className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                🔍  Módulo Auditoría
+              </button>
+            </>
+          )}
           {userRole === 'admin' && (
             <>
               <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Configuración</div>
@@ -1229,17 +1340,37 @@ export default function DashboardPage() {
               {activeTab === 'cxp'   && 'Gestión de Pagos'}
               {activeTab === 'caja'  && 'Tesorería'}
               {activeTab === 'gav'   && 'Gastos Operativos'}
-              {activeTab === 'docs'  && 'Documentos'}
-              {activeTab === 'admin' && 'Administración'}
+              {activeTab === 'docs'       && 'Documentos'}
+              {activeTab === 'admin'      && 'Administración'}
+              {activeTab === 'balance'    && 'Balance Sheet'}
+              {activeTab === 'otras_cxc'  && 'Cuentas por Cobrar'}
+              {activeTab === 'otras_cxp'  && 'Cuentas por Pagar'}
+              {activeTab === 'prestamos'  && 'Financiero'}
+              {activeTab === 'tributos'   && 'Tributario'}
+              {activeTab === 'laboral'    && 'Laboral'}
+              {activeTab === 'activo_fijo' && 'Activos'}
+              {activeTab === 'gastos_nat' && 'Contabilidad'}
+              {activeTab === 'caja_saldos' && 'Tesorería'}
+              {activeTab === 'audit'      && 'Control Interno'}
             </div>
             <h1 className="page-title">
               {activeTab === 'pl'    && (isGrupo ? 'Análisis Ejecutivo' : 'Estado de Resultados')}
-              {activeTab === 'cxc'   && 'Cuentas por Cobrar'}
-              {activeTab === 'cxp'   && 'Cuentas por Pagar'}
+              {activeTab === 'cxc'   && 'Cuentas por Cobrar (Clase 12)'}
+              {activeTab === 'cxp'   && 'Cuentas por Pagar (Clase 42)'}
               {activeTab === 'caja'  && 'Posición de Caja'}
               {activeTab === 'gav'   && 'GAV Detalle'}
               {activeTab === 'docs'  && 'Documentos del Período'}
               {activeTab === 'admin' && 'Usuarios del Sistema'}
+              {activeTab === 'balance'    && 'Balance General'}
+              {activeTab === 'otras_cxc'  && 'Otras CxC (Clases 13,14,16,17,18)'}
+              {activeTab === 'otras_cxp'  && 'Otras CxP (Clases 43–47)'}
+              {activeTab === 'prestamos'  && 'Préstamos (Tipo 071)'}
+              {activeTab === 'tributos'   && 'Tributos por Pagar (Clase 40)'}
+              {activeTab === 'laboral'    && 'Obligaciones Laborales (Clase 41)'}
+              {activeTab === 'activo_fijo' && 'Activo Fijo (Clase 33/39)'}
+              {activeTab === 'gastos_nat' && 'Gastos por Naturaleza (Clases 60–68)'}
+              {activeTab === 'caja_saldos' && 'Saldos Bancarios Acumulados'}
+              {activeTab === 'audit'      && 'Módulo de Auditoría'}
             </h1>
             <div style={{ color: '#8B97A8', fontSize: '0.8rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span>{selectedCompany.fullName}</span>
@@ -2367,6 +2498,493 @@ export default function DashboardPage() {
             </div>
           );
         })()}
+        {/* ═══ Loading banner para nuevos módulos ═══ */}
+        {newTabLoading && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '2rem', color: '#8B97A8' }}>
+            <span style={{ fontSize: '1.2rem', animation: 'spin 1.5s linear infinite' }}>⟳</span>
+            Cargando datos...
+          </div>
+        )}
+
+        {/* ═══ Balance General ═══ */}
+        {activeTab === 'balance' && !newTabLoading && (
+          <div className="kpi-card">
+            {!balanceData?.rows?.length ? <NoDataBanner kpi="Balance General" /> : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>{balanceData.rows.length} cuentas con saldo · Acumulado histórico</div>
+                  <ExportBtn onClick={() => exportCSV('balance.csv',
+                    ['CodCuenta','Descripcion','Clase','Saldo'],
+                    balanceData.rows.map((r: any) => [r.CodCuenta, r.Descripcion, r.Clase, r.Saldo]))} />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 280 }}>Descripción</th><th>Clase</th><th>Saldo</th></tr></thead>
+                    <tbody>
+                      {balanceData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td>{r.Descripcion}</td>
+                          <td style={{ color: '#8B97A8' }}>{r.Clase}</td>
+                          <td style={{ fontWeight: 600, color: (r.Saldo || 0) < 0 ? '#EF4444' : '#10B981' }}>{fmt(r.Saldo)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Otras CxC ═══ */}
+        {activeTab === 'otras_cxc' && !newTabLoading && (
+          <div className="kpi-card">
+            {!otrasCxCData?.rows?.length ? <NoDataBanner kpi="Otras CxC" /> : (
+              <>
+                <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                  Clases 13 (cuentas relacionadas), 14 (personal), 16 (anticipos), 17 (entregas), 18 (otros activos)
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
+                    <tbody>
+                      {otrasCxCData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ color: '#10B981' }}>{fmt(r.Dias_0_30)}</td>
+                          <td style={{ color: '#F59E0B' }}>{fmt(r.Dias_31_60)}</td>
+                          <td style={{ color: '#F97316' }}>{fmt(r.Dias_61_90)}</td>
+                          <td style={{ color: '#EF4444' }}>{fmt(r.Dias_90_mas)}</td>
+                          <td style={{ fontWeight: 600 }}>{fmt(r.SaldoTotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row"><td colSpan={6}>TOTAL</td>
+                      <td>{fmt(otrasCxCData.rows.reduce((s: number, r: any) => s + (r.SaldoTotal || 0), 0))}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Otras CxP ═══ */}
+        {activeTab === 'otras_cxp' && !newTabLoading && (
+          <div className="kpi-card">
+            {!otrasCxPData?.rows?.length ? <NoDataBanner kpi="Otras CxP" /> : (
+              <>
+                <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                  Clases 43 (comerciales relacionadas), 44 (personal), 45 (tributos), 46 (obligaciones financieras), 47 (beneficios)
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
+                    <tbody>
+                      {otrasCxPData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ color: '#10B981' }}>{fmt(r.Dias_0_30)}</td>
+                          <td style={{ color: '#F59E0B' }}>{fmt(r.Dias_31_60)}</td>
+                          <td style={{ color: '#F97316' }}>{fmt(r.Dias_61_90)}</td>
+                          <td style={{ color: '#EF4444' }}>{fmt(r.Dias_90_mas)}</td>
+                          <td style={{ fontWeight: 600 }}>{fmt(r.SaldoTotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row"><td colSpan={6}>TOTAL</td>
+                      <td>{fmt(otrasCxPData.rows.reduce((s: number, r: any) => s + (r.SaldoTotal || 0), 0))}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Préstamos ═══ */}
+        {activeTab === 'prestamos' && !newTabLoading && (
+          <>
+            <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>Préstamos Otorgados (tipo 071 — Activo)</div>
+              {!prestamosData?.otorgados?.rows?.length ? (
+                <div style={{ color: '#8B97A8', fontSize: '0.85rem', padding: '1rem 0' }}>Sin préstamos otorgados registrados.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Tipo Doc</th><th>Serie/Número</th><th>Deudor</th><th>Fecha</th><th>Vcto</th><th>Días Vcdo</th><th>Total</th><th>Saldo Pendiente</th></tr></thead>
+                    <tbody>
+                      {prestamosData.otorgados.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ color: '#8B97A8' }}>{r.CodTipoDoc}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{r.SerieDocumento}-{r.NroDocumento}</td>
+                          <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{r.FechaDocumento}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{r.FechaVencimiento || '—'}</td>
+                          <td style={{ color: (r.DiasVencido || 0) > 90 ? '#EF4444' : (r.DiasVencido || 0) > 30 ? '#F59E0B' : '#10B981' }}>{r.DiasVencido ?? '—'}</td>
+                          <td>{fmt(r.Total)}</td>
+                          <td style={{ fontWeight: 600, color: '#F59E0B' }}>{fmt(r.SaldoPendiente)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row"><td colSpan={7}>TOTAL PENDIENTE</td>
+                      <td>{fmt(prestamosData.otorgados.total)}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className="kpi-card">
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>Préstamos Recibidos (tipo 071 — Pasivo)</div>
+              {!prestamosData?.recibidos?.rows?.length ? (
+                <div style={{ color: '#8B97A8', fontSize: '0.85rem', padding: '1rem 0' }}>Sin préstamos recibidos registrados.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Tipo Doc</th><th>Serie/Número</th><th>Acreedor</th><th>Fecha</th><th>Vcto</th><th>Total</th><th>Saldo Pendiente</th></tr></thead>
+                    <tbody>
+                      {prestamosData.recibidos.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ color: '#8B97A8' }}>{r.CodTipoDoc}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{r.SerieDocumento}-{r.NroDocumento}</td>
+                          <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{r.FechaDocumento}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{r.FechaVencimiento || '—'}</td>
+                          <td>{fmt(r.Total)}</td>
+                          <td style={{ fontWeight: 600, color: '#EF4444' }}>{fmt(r.SaldoPendiente)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row"><td colSpan={6}>TOTAL PENDIENTE</td>
+                      <td>{fmt(prestamosData.recibidos.total)}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ═══ Tributos ═══ */}
+        {activeTab === 'tributos' && !newTabLoading && (
+          <div className="kpi-card">
+            {!tributosData?.rows?.length ? <NoDataBanner kpi="Tributos" /> : (
+              <>
+                <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                  Clase 40 — IGV, Renta, ONP, EsSalud, AFP, etc. Saldo acreedor = por pagar.
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Total Provisionado</th><th>Total Pagado</th><th>Saldo por Pagar</th></tr></thead>
+                    <tbody>
+                      {tributosData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td>{r.Descripcion}</td>
+                          <td>{fmt(r.TotalProvisionado)}</td>
+                          <td style={{ color: '#10B981' }}>{fmt(r.TotalPagado)}</td>
+                          <td style={{ fontWeight: 600, color: (r.SaldoPorPagar || 0) > 0 ? '#F59E0B' : '#10B981' }}>{fmt(r.SaldoPorPagar)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row">
+                      <td colSpan={4}>TOTAL POR PAGAR</td>
+                      <td>{fmt(tributosData.rows.reduce((s: number, r: any) => s + (r.SaldoPorPagar || 0), 0))}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Laboral ═══ */}
+        {activeTab === 'laboral' && !newTabLoading && (
+          <div className="kpi-card">
+            {!laboralData?.rows?.length ? <NoDataBanner kpi="Laboral" /> : (
+              <>
+                <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                  Clase 41 — Remuneraciones por pagar, CTS, gratificaciones, participaciones.
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Saldo</th></tr></thead>
+                    <tbody>
+                      {laboralData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td>{r.Descripcion}</td>
+                          <td style={{ fontWeight: 600, color: (r.Saldo || 0) > 0 ? '#F59E0B' : '#10B981' }}>{fmt(r.Saldo)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row">
+                      <td colSpan={2}>TOTAL</td>
+                      <td>{fmt(laboralData.rows.reduce((s: number, r: any) => s + (r.Saldo || 0), 0))}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Activo Fijo ═══ */}
+        {activeTab === 'activo_fijo' && !newTabLoading && (
+          <div className="kpi-card">
+            {!activoFijoData?.rows?.length ? <NoDataBanner kpi="Activo Fijo" /> : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <KpiCard label="Valor Bruto" value={fmt(activoFijoData.totalBruto)} signal="neutral" />
+                  <KpiCard label="Depreciación Acum." value={fmt(activoFijoData.totalDeprec)} signal="neutral" />
+                  <KpiCard label="Valor Neto" value={fmt(activoFijoData.totalNeto)} signal={activoFijoData.totalNeto > 0 ? 'green' : 'neutral'} />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Valor Bruto</th><th>Depreciación</th><th>Valor Neto</th><th>% Depreciado</th></tr></thead>
+                    <tbody>
+                      {activoFijoData.rows.map((r: any, i: number) => {
+                        const pctDep = r.ValorBruto > 0 ? ((r.DepreciacionAcum || 0) / r.ValorBruto * 100) : 0;
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                            <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Descripcion}</td>
+                            <td>{fmt(r.ValorBruto)}</td>
+                            <td style={{ color: '#F59E0B' }}>{fmt(r.DepreciacionAcum)}</td>
+                            <td style={{ fontWeight: 600, color: r.ValorNeto > 0 ? '#10B981' : '#8B97A8' }}>{fmt(r.ValorNeto)}</td>
+                            <td style={{ color: pctDep >= 80 ? '#EF4444' : '#8B97A8' }}>{pctDep.toFixed(0)}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Gastos por Naturaleza ═══ */}
+        {activeTab === 'gastos_nat' && !newTabLoading && (
+          <div className="kpi-card">
+            {!gastosNatData?.rows?.length ? <NoDataBanner kpi="Gastos por Naturaleza" /> : (
+              <>
+                <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                  Clases 60–68: compras, personal, servicios, tributos, provisiones, etc.
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+                    <thead>
+                      <tr>
+                        <th>Grupo</th><th style={{ minWidth: 200 }}>Descripción</th>
+                        {MESES.map(m => <th key={m}>{m}</th>)}
+                        <th>YTD</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const byGrupo: Record<string, { grupo: string; desc: string; meses: Record<number, number>; ytd: number }> = {};
+                        for (const r of gastosNatData.rows) {
+                          const k = r.CodGrupo || r.CodCuenta;
+                          if (!byGrupo[k]) byGrupo[k] = { grupo: k, desc: r.Descripcion, meses: {}, ytd: 0 };
+                          byGrupo[k].meses[r.Mes] = (byGrupo[k].meses[r.Mes] || 0) + (r.Monto || 0);
+                          byGrupo[k].ytd += r.Monto || 0;
+                        }
+                        return Object.values(byGrupo).sort((a, b) => b.ytd - a.ytd).map((g, i) => (
+                          <tr key={i}>
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{g.grupo}</td>
+                            <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.desc}</td>
+                            {Array.from({ length: 12 }, (_, m) => (
+                              <td key={m + 1} style={{ color: '#8B97A8' }}>{g.meses[m + 1] ? fmt(g.meses[m + 1]) : '—'}</td>
+                            ))}
+                            <td style={{ fontWeight: 600 }}>{fmt(g.ytd)}</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Saldos Bancarios Acumulados ═══ */}
+        {activeTab === 'caja_saldos' && !newTabLoading && (
+          <div className="kpi-card">
+            {!cajaSaldosData?.rows?.length ? <NoDataBanner kpi="Saldos Bancarios" /> : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>Clase 10 — Saldo acumulado total (sin filtro de año)</div>
+                  <KpiCard label="Total Caja" value={fmt(cajaSaldosData.totalSaldo)} signal={cajaSaldosData.totalSaldo >= 0 ? 'green' : 'red'} />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 260 }}>Banco / Descripción</th><th>Saldo</th><th>Sin Doc.</th></tr></thead>
+                    <tbody>
+                      {cajaSaldosData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td>{r.Descripcion}</td>
+                          <td style={{ fontWeight: 600, color: (r.Saldo || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.Saldo)}</td>
+                          <td style={{ color: (r.SinDocumento || 0) > 0 ? '#F59E0B' : '#8B97A8' }}>{r.SinDocumento || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row"><td colSpan={2}>TOTAL</td><td>{fmt(cajaSaldosData.totalSaldo)}</td><td /></tr></tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Módulo Auditoría ═══ */}
+        {activeTab === 'audit' && !newTabLoading && (
+          <>
+            {/* Sin documento */}
+            <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                🔴 Asientos sin documento fuente (NroD = NULL) · {selectedYear}
+              </div>
+              {!auditData?.sinDoc?.resumen?.length ? (
+                <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Sin hallazgos en este período.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Clase</th><th>Sin Doc</th><th>Total</th><th>% Sin Doc</th><th>Monto Sin Doc</th></tr></thead>
+                    <tbody>
+                      {auditData.sinDoc.resumen.map((r: any, i: number) => {
+                        const pctSD = r.TotalAsientos > 0 ? (r.SinDocumento / r.TotalAsientos * 100) : 0;
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.Clase}</td>
+                            <td style={{ color: r.SinDocumento > 0 ? '#F59E0B' : '#10B981' }}>{r.SinDocumento}</td>
+                            <td style={{ color: '#8B97A8' }}>{r.TotalAsientos}</td>
+                            <td style={{ color: pctSD > 20 ? '#EF4444' : pctSD > 5 ? '#F59E0B' : '#10B981' }}>{pctSD.toFixed(1)}%</td>
+                            <td style={{ fontWeight: 600 }}>{fmt(r.MontoSinDoc)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot><tr className="total-row">
+                      <td>TOTAL</td>
+                      <td>{auditData.sinDoc.resumen.reduce((s: number, r: any) => s + (r.SinDocumento || 0), 0)}</td>
+                      <td>{auditData.sinDoc.resumen.reduce((s: number, r: any) => s + (r.TotalAsientos || 0), 0)}</td>
+                      <td></td>
+                      <td>{fmt(auditData.sinDoc.resumen.reduce((s: number, r: any) => s + (r.MontoSinDoc || 0), 0))}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Descuadres */}
+            <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                ⚠️ Asientos descuadrados (Débito ≠ Crédito) · {selectedYear}
+              </div>
+              {!auditData?.descuadres?.rows?.length ? (
+                <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Todos los asientos están cuadrados. Sin hallazgos.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Fecha</th><th>Nro. Asiento</th><th>Débito</th><th>Crédito</th><th>Descuadre</th><th>Glosa</th></tr></thead>
+                    <tbody>
+                      {auditData.descuadres.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{r.NroAsientoContable}</td>
+                          <td>{fmt(r.TotalDebito)}</td>
+                          <td>{fmt(r.TotalCredito)}</td>
+                          <td style={{ fontWeight: 700, color: '#EF4444' }}>{fmt(r.Descuadre)}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Atípicos */}
+            <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                🔶 Asientos atípicos (montos &gt; S/100,000) · {selectedYear}
+              </div>
+              {!auditData?.atipicos?.rows?.length ? (
+                <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Sin asientos atípicos en este período.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Fecha</th><th>Cuenta</th><th>Glosa</th><th>Débito</th><th>Crédito</th><th>Tercero</th></tr></thead>
+                    <tbody>
+                      {auditData.atipicos.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{r.CodCuenta}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
+                          <td style={{ color: r.Debito > 0 ? '#10B981' : '#8B97A8' }}>{r.Debito > 0 ? fmt(r.Debito) : '—'}</td>
+                          <td style={{ color: r.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{r.Credito > 0 ? fmt(r.Credito) : '—'}</td>
+                          <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Tercero || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Conciliación ingresos */}
+            <div className="kpi-card">
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                📊 Conciliación Ingresos vs Documentos Emitidos · {selectedYear}
+              </div>
+              {!auditData?.conciliacion?.rows?.length ? (
+                <div style={{ color: '#8B97A8', fontSize: '0.85rem' }}>Sin datos de conciliación.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Mes</th><th>Ingresos Contables</th><th>Facturas Emitidas</th><th>Notas de Crédito</th><th>Neto Docs</th><th>Diferencia</th></tr></thead>
+                    <tbody>
+                      {auditData.conciliacion.rows.map((r: any, i: number) => {
+                        const diff = (r.IngresosContables || 0) - (r.NetoDocumentos || 0);
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontWeight: 500 }}>{MESES[(r.Mes || 1) - 1]}</td>
+                            <td>{fmt(r.IngresosContables)}</td>
+                            <td style={{ color: '#10B981' }}>{fmt(r.FacturasEmitidas)}</td>
+                            <td style={{ color: '#EF4444' }}>{fmt(r.NotasCredito)}</td>
+                            <td>{fmt(r.NetoDocumentos)}</td>
+                            <td style={{ fontWeight: 700, color: Math.abs(diff) < 1 ? '#10B981' : Math.abs(diff) < 10000 ? '#F59E0B' : '#EF4444' }}>
+                              {Math.abs(diff) < 1 ? '✓' : fmt(diff)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot><tr className="total-row">
+                      <td>TOTAL</td>
+                      {(['IngresosContables','FacturasEmitidas','NotasCredito','NetoDocumentos'] as const).map(k => (
+                        <td key={k}>{fmt(auditData.conciliacion.rows.reduce((s: number, r: any) => s + (r[k] || 0), 0))}</td>
+                      ))}
+                      <td style={{ color: (() => {
+                        const d = auditData.conciliacion.rows.reduce((s: number, r: any) => s + (r.IngresosContables||0) - (r.NetoDocumentos||0), 0);
+                        return Math.abs(d) < 1 ? '#10B981' : Math.abs(d) < 50000 ? '#F59E0B' : '#EF4444';
+                      })() }}>
+                        {fmt(auditData.conciliacion.rows.reduce((s: number, r: any) => s + (r.IngresosContables||0) - (r.NetoDocumentos||0), 0))}
+                      </td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         </div>{/* end relative z-1 */}
       </div>
     </div>

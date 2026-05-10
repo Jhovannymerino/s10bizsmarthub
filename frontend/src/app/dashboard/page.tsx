@@ -773,7 +773,7 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'gastos_nat' | 'caja_saldos' | 'audit'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'audit'>('pl');
   const [userRole, setUserRole] = useState<string>('viewer');
   const [userEmail, setUserEmail] = useState<string>('');
   // ── Admin: gestión de usuarios ──
@@ -810,6 +810,9 @@ export default function DashboardPage() {
   const [gastosNatData, setGastosNatData] = useState<any>(null);
   const [cajaSaldosData, setCajaSaldosData] = useState<any>(null);
   const [auditData, setAuditData] = useState<any>(null);
+  const [tesoreriaData, setTesoreriaData] = useState<any>(null);
+  const [patrimonioData, setPatrimonioData] = useState<any>(null);
+  const [inventariosData, setInventariosData] = useState<any>(null);
   const [newTabLoading, setNewTabLoading] = useState(false);
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
@@ -856,7 +859,7 @@ export default function DashboardPage() {
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
-    setCajaSaldosData(null); setAuditData(null);
+    setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null);
 
     if (isGrupo) {
       Promise.all([
@@ -928,7 +931,7 @@ export default function DashboardPage() {
 
   // ── Lazy load nuevos módulos ──────────────────
   useEffect(() => {
-    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','gastos_nat','caja_saldos','audit'];
+    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','gastos_nat','caja_saldos','audit'];
     if (!NEW_TABS.includes(activeTab) || isGrupo) return;
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -937,7 +940,8 @@ export default function DashboardPage() {
     const already = {
       balance: balanceData, otras_cxc: otrasCxCData, otras_cxp: otrasCxPData,
       prestamos: prestamosData, tributos: tributosData, laboral: laboralData,
-      activo_fijo: activoFijoData, gastos_nat: gastosNatData, caja_saldos: cajaSaldosData, audit: auditData,
+      activo_fijo: activoFijoData, tesoreria: tesoreriaData, patrimonio: patrimonioData, inventarios: inventariosData,
+      gastos_nat: gastosNatData, caja_saldos: cajaSaldosData, audit: auditData,
     } as Record<string, any>;
     if (already[activeTab]) return;
 
@@ -975,6 +979,18 @@ export default function DashboardPage() {
       fetchApi(`/kpi/${id}/activo-fijo`, token)
         .then(d => { setActivoFijoData(d); setNewTabLoading(false); })
         .catch(() => { setActivoFijoData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'tesoreria') {
+      fetchApi(`/kpi/${id}/tesoreria?year=${selectedYear}`, token)
+        .then(d => { setTesoreriaData(d); setNewTabLoading(false); })
+        .catch(() => { setTesoreriaData({ bancos: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'patrimonio') {
+      fetchApi(`/kpi/${id}/patrimonio`, token)
+        .then(d => { setPatrimonioData(d); setNewTabLoading(false); })
+        .catch(() => { setPatrimonioData({ rows: [] }); setNewTabLoading(false); });
+    } else if (activeTab === 'inventarios') {
+      fetchApi(`/kpi/${id}/inventarios?year=${selectedYear}`, token)
+        .then(d => { setInventariosData(d); setNewTabLoading(false); })
+        .catch(() => { setInventariosData({ rows: [] }); setNewTabLoading(false); });
     } else if (activeTab === 'gastos_nat') {
       fetchApi(`/kpi/${id}/gastos-naturaleza?year=${selectedYear}`, token)
         .then(d => { setGastosNatData(d); setNewTabLoading(false); })
@@ -1277,7 +1293,7 @@ export default function DashboardPage() {
           {!isGrupo && (
             <>
               <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Balance Sheet</div>
-              {(['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','caja_saldos','gastos_nat'] as const).map((tab) => (
+              {(['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','caja_saldos','gastos_nat'] as const).map((tab) => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -1288,6 +1304,9 @@ export default function DashboardPage() {
                   {tab === 'tributos'  && '🏛️  Tributos'}
                   {tab === 'laboral'   && '👷  Laboral'}
                   {tab === 'activo_fijo' && '🏗️  Activo Fijo'}
+                  {tab === 'tesoreria'   && '🏦  Tesorería'}
+                  {tab === 'patrimonio'  && '🏛️  Patrimonio'}
+                  {tab === 'inventarios' && '📦  Inventarios'}
                   {tab === 'caja_saldos' && '🏦  Saldos Banco'}
                   {tab === 'gastos_nat'  && '📊  Gastos Naturaleza'}
                 </button>
@@ -1375,8 +1394,11 @@ export default function DashboardPage() {
               {activeTab === 'tributos'   && 'Tributario'}
               {activeTab === 'laboral'    && 'Laboral'}
               {activeTab === 'activo_fijo' && 'Activos'}
+              {activeTab === 'tesoreria'   && 'Tesorería'}
+              {activeTab === 'patrimonio'  && 'Patrimonio'}
+              {activeTab === 'inventarios' && 'Inventarios'}
               {activeTab === 'gastos_nat' && 'Contabilidad'}
-              {activeTab === 'caja_saldos' && 'Tesorería'}
+              {activeTab === 'caja_saldos' && 'Saldos Bancarios'}
               {activeTab === 'audit'      && 'Control Interno'}
             </div>
             <h1 className="page-title">
@@ -1394,6 +1416,9 @@ export default function DashboardPage() {
               {activeTab === 'tributos'   && 'Tributos por Pagar (Clase 40)'}
               {activeTab === 'laboral'    && 'Obligaciones Laborales (Clase 41)'}
               {activeTab === 'activo_fijo' && 'Activo Fijo (Clase 33/39)'}
+              {activeTab === 'tesoreria'   && `Tesorería — Posición Bancaria ${selectedYear}`}
+              {activeTab === 'patrimonio'  && 'Patrimonio Neto (Clases 50–59)'}
+              {activeTab === 'inventarios' && `Inventarios y Existencias (Clases 20–29) · ${selectedYear}`}
               {activeTab === 'gastos_nat' && 'Gastos por Naturaleza (Clases 60–68)'}
               {activeTab === 'caja_saldos' && 'Saldos Bancarios Acumulados'}
               {activeTab === 'audit'      && 'Módulo de Auditoría'}
@@ -2704,21 +2729,27 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Total Provisionado</th><th>Total Pagado</th><th>Saldo por Pagar</th></tr></thead>
+                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Provisionado {selectedYear}</th><th>Pagado {selectedYear}</th><th>Saldo Año</th><th>Saldo Histórico</th><th>Último Mov.</th></tr></thead>
                     <tbody>
                       {tributosData.rows.map((r: any, i: number) => (
                         <tr key={i}>
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                          <td>{r.Descripcion}</td>
-                          <td>{fmt(r.TotalProvisionado)}</td>
-                          <td style={{ color: '#10B981' }}>{fmt(r.TotalPagado)}</td>
+                          <td>{r.DesTributo}</td>
+                          <td>{fmt(r.ProvisionadoAnio)}</td>
+                          <td style={{ color: '#10B981' }}>{fmt(r.PagadoAnio)}</td>
+                          <td style={{ color: (r.SaldoAnio || 0) > 0 ? '#F59E0B' : '#10B981' }}>{fmt(r.SaldoAnio)}</td>
                           <td style={{ fontWeight: 600, color: (r.SaldoPorPagar || 0) > 0 ? '#F59E0B' : '#10B981' }}>{fmt(r.SaldoPorPagar)}</td>
+                          <td style={{ color: '#8B97A8', fontSize: '0.72rem' }}>{r.UltimoMovimiento ? String(r.UltimoMovimiento).slice(0, 10) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot><tr className="total-row">
-                      <td colSpan={4}>TOTAL POR PAGAR</td>
+                      <td colSpan={2}>TOTAL</td>
+                      <td>{fmt(tributosData.rows.reduce((s: number, r: any) => s + (r.ProvisionadoAnio || 0), 0))}</td>
+                      <td>{fmt(tributosData.rows.reduce((s: number, r: any) => s + (r.PagadoAnio || 0), 0))}</td>
+                      <td>{fmt(tributosData.rows.reduce((s: number, r: any) => s + (r.SaldoAnio || 0), 0))}</td>
                       <td>{fmt(tributosData.rows.reduce((s: number, r: any) => s + (r.SaldoPorPagar || 0), 0))}</td>
+                      <td></td>
                     </tr></tfoot>
                   </table>
                 </div>
@@ -2737,19 +2768,25 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Saldo</th></tr></thead>
+                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Provisionado</th><th>Pagado</th><th>Saldo por Pagar</th><th>Último Mov.</th></tr></thead>
                     <tbody>
                       {laboralData.rows.map((r: any, i: number) => (
                         <tr key={i}>
                           <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                          <td>{r.Descripcion}</td>
-                          <td style={{ fontWeight: 600, color: (r.Saldo || 0) > 0 ? '#F59E0B' : '#10B981' }}>{fmt(r.Saldo)}</td>
+                          <td>{r.DesConcepto}</td>
+                          <td style={{ color: '#8B97A8' }}>{fmt(r.TotalProvisionado)}</td>
+                          <td style={{ color: '#10B981' }}>{fmt(r.TotalPagado)}</td>
+                          <td style={{ fontWeight: 600, color: (r.SaldoPorPagar || 0) > 0 ? '#F59E0B' : '#10B981' }}>{fmt(r.SaldoPorPagar)}</td>
+                          <td style={{ color: '#8B97A8', fontSize: '0.72rem' }}>{r.UltimoMovimiento ? String(r.UltimoMovimiento).slice(0, 10) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot><tr className="total-row">
                       <td colSpan={2}>TOTAL</td>
-                      <td>{fmt(laboralData.rows.reduce((s: number, r: any) => s + (r.Saldo || 0), 0))}</td>
+                      <td>{fmt(laboralData.rows.reduce((s: number, r: any) => s + (r.TotalProvisionado || 0), 0))}</td>
+                      <td>{fmt(laboralData.rows.reduce((s: number, r: any) => s + (r.TotalPagado || 0), 0))}</td>
+                      <td>{fmt(laboralData.rows.reduce((s: number, r: any) => s + (r.SaldoPorPagar || 0), 0))}</td>
+                      <td></td>
                     </tr></tfoot>
                   </table>
                 </div>
@@ -2786,6 +2823,130 @@ export default function DashboardPage() {
                         );
                       })}
                     </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Tesorería ═══ */}
+        {activeTab === 'tesoreria' && !newTabLoading && (
+          <div className="kpi-card">
+            {!tesoreriaData?.bancos?.length ? <NoDataBanner kpi="Tesorería" /> : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <KpiCard label="Saldo Inicial" value={fmt(tesoreriaData.totalSaldoInicial)} signal="neutral" />
+                  <KpiCard label={`Entradas ${selectedYear}`} value={fmt(tesoreriaData.totalEntradasAnio)} signal="green" />
+                  <KpiCard label={`Salidas ${selectedYear}`} value={fmt(tesoreriaData.totalSalidasAnio)} signal="neutral" />
+                  <KpiCard label="Saldo Final" value={fmt(tesoreriaData.totalSaldoFinal)} signal={tesoreriaData.totalSaldoFinal >= 0 ? 'green' : 'red'} />
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                  Clase 10 — Posición bancaria {selectedYear}: saldo antes del año, entradas/salidas del período y saldo neto acumulado.
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 240 }}>Banco</th><th>Saldo Inicial</th><th>Entradas {selectedYear}</th><th>Salidas {selectedYear}</th><th>Saldo Final</th><th>Movim.</th><th>Sin Doc.</th></tr></thead>
+                    <tbody>
+                      {tesoreriaData.bancos.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodBanco}</td>
+                          <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesBanco}</td>
+                          <td style={{ color: '#8B97A8' }}>{fmt(r.SaldoInicial)}</td>
+                          <td style={{ color: '#10B981' }}>{fmt(r.EntradasAnio)}</td>
+                          <td style={{ color: '#EF4444' }}>{fmt(r.SalidasAnio)}</td>
+                          <td style={{ fontWeight: 600, color: (r.SaldoFinal || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.SaldoFinal)}</td>
+                          <td style={{ color: '#8B97A8' }}>{r.MovimientosAnio || 0}</td>
+                          <td style={{ color: (r.SinDocumentoAnio || 0) > 0 ? '#F59E0B' : '#8B97A8' }}>{r.SinDocumentoAnio || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row">
+                      <td colSpan={2}>TOTAL</td>
+                      <td>{fmt(tesoreriaData.totalSaldoInicial)}</td>
+                      <td>{fmt(tesoreriaData.totalEntradasAnio)}</td>
+                      <td>{fmt(tesoreriaData.totalSalidasAnio)}</td>
+                      <td>{fmt(tesoreriaData.totalSaldoFinal)}</td>
+                      <td colSpan={2}></td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Patrimonio ═══ */}
+        {activeTab === 'patrimonio' && !newTabLoading && (
+          <div className="kpi-card">
+            {!patrimonioData?.rows?.length ? <NoDataBanner kpi="Patrimonio" /> : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>
+                    Clases 50–59: capital social, reservas, resultados acumulados y del ejercicio.
+                  </div>
+                  <KpiCard label="Patrimonio Neto" value={fmt(patrimonioData.totalPatrimonio)} signal={patrimonioData.totalPatrimonio >= 0 ? 'green' : 'red'} />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Clase</th><th>Cuenta</th><th style={{ minWidth: 260 }}>Descripción</th><th>Total Débito</th><th>Total Crédito</th><th>Saldo Neto</th></tr></thead>
+                    <tbody>
+                      {patrimonioData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{r.Clase}</td>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesCuenta}</td>
+                          <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
+                          <td style={{ color: '#8B97A8' }}>{fmt(r.TotalCredito)}</td>
+                          <td style={{ fontWeight: 600, color: (r.SaldoNeto || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.SaldoNeto)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row">
+                      <td colSpan={5}>PATRIMONIO NETO TOTAL</td>
+                      <td>{fmt(patrimonioData.totalPatrimonio)}</td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Inventarios ═══ */}
+        {activeTab === 'inventarios' && !newTabLoading && (
+          <div className="kpi-card">
+            {!inventariosData?.rows?.length ? <NoDataBanner kpi="Inventarios" /> : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>
+                    Clases 20–29: mercaderías, materias primas, suministros, existencias por recibir.
+                  </div>
+                  <KpiCard label="Saldo Inventarios" value={fmt(inventariosData.totalSaldo)} signal={inventariosData.totalSaldo > 0 ? 'green' : 'neutral'} />
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                    <thead><tr><th>Clase</th><th>Cuenta</th><th style={{ minWidth: 240 }}>Descripción</th><th>Saldo Histórico</th><th>Ingreso {selectedYear}</th><th>Salida {selectedYear}</th><th>Último Mov.</th></tr></thead>
+                    <tbody>
+                      {inventariosData.rows.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{r.Clase}</td>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                          <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesCuenta}</td>
+                          <td style={{ fontWeight: 600 }}>{fmt(r.SaldoHistorico)}</td>
+                          <td style={{ color: '#10B981' }}>{fmt(r.IngresoAnio)}</td>
+                          <td style={{ color: '#EF4444' }}>{fmt(r.SalidaAnio)}</td>
+                          <td style={{ color: '#8B97A8', fontSize: '0.72rem' }}>{r.UltimoMovimiento ? String(r.UltimoMovimiento).slice(0, 10) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr className="total-row">
+                      <td colSpan={3}>TOTAL</td>
+                      <td>{fmt(inventariosData.totalSaldo)}</td>
+                      <td>{fmt(inventariosData.rows.reduce((s: number, r: any) => s + (r.IngresoAnio || 0), 0))}</td>
+                      <td>{fmt(inventariosData.rows.reduce((s: number, r: any) => s + (r.SalidaAnio || 0), 0))}</td>
+                      <td></td>
+                    </tr></tfoot>
                   </table>
                 </div>
               </>
@@ -2853,9 +3014,9 @@ export default function DashboardPage() {
                     <tbody>
                       {cajaSaldosData.rows.map((r: any, i: number) => (
                         <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                          <td>{r.Descripcion}</td>
-                          <td style={{ fontWeight: 600, color: (r.Saldo || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.Saldo)}</td>
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodBanco}</td>
+                          <td>{r.DesBanco}</td>
+                          <td style={{ fontWeight: 600, color: (r.SaldoActual || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.SaldoActual)}</td>
                           <td style={{ color: (r.SinDocumento || 0) > 0 ? '#F59E0B' : '#8B97A8' }}>{r.SinDocumento || 0}</td>
                         </tr>
                       ))}

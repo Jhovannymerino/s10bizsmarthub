@@ -61,11 +61,24 @@ export class SyncService {
       patrimonio?: any[];
       inventarios?: any[];
       tesoreria?: any[];
+      ob_saldos_banco?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
     const period = `${year}`;
     const logs: any[] = [];
+
+    // Auto-upsert Company para que la app refleje todas las empresas sincronizadas
+    // (corrige hallazgo D-05: tabla Company solo tenía 1 registro mientras se sincronizaban 4).
+    try {
+      await this.prisma.company.upsert({
+        where: { codEmpresa: companyId },
+        update: { name: companyName, claseIngreso, active: true },
+        create: { codEmpresa: companyId, name: companyName, claseIngreso, active: true },
+      });
+    } catch (e) {
+      this.logger.warn(`No se pudo upsertar Company ${companyId}: ${(e as any).message}`);
+    }
 
     try {
       if (data.pl?.length) {
@@ -222,6 +235,11 @@ export class SyncService {
       if (data.gastos_naturaleza?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'gastos_naturaleza', period, year, null, data.gastos_naturaleza);
         logs.push({ kpiType: 'gastos_naturaleza', rowsProcessed: data.gastos_naturaleza.length, status: 'success' });
+      }
+
+      if (data.ob_saldos_banco?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'ob_saldos_banco', 'current', year, null, data.ob_saldos_banco);
+        logs.push({ kpiType: 'ob_saldos_banco', rowsProcessed: data.ob_saldos_banco.length, status: 'success' });
       }
 
       if (data.audit_sin_doc?.length) {

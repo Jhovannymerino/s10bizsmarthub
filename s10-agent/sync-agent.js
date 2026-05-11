@@ -554,36 +554,33 @@ HAVING ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
 ORDER BY SaldoPorPagar DESC
 `;
 
-// Activo Fijo (clase 33) con depreciación acumulada (clase 39)
+// Activo Fijo (clase 33) y Depreciación Acumulada (clase 39)
+// CORRECCIÓN (mayo 2026): la versión anterior usaba REPLACE(33,39) que NO mapea
+// la numeración real del PCG en S10 (33611→39137, 33621→39135, etc.).
+// Esta versión devuelve ambas clases en filas separadas con su saldo natural.
+// El backend agrega a nivel empresa: Valor Neto = Σ(clase 33) − Σ(clase 39).
 const QUERY_ACTIVO_FIJO = (codEmpresa) => `
 SELECT
-  af.CodCuenta,
-  af.Descripcion                                           AS DesActivo,
-  af.ValorBruto,
-  ISNULL(dep.DepAcum, 0)                                  AS DepreciacionAcum,
-  af.ValorBruto - ISNULL(dep.DepAcum, 0)                  AS ValorNeto
-FROM (
-  SELECT pcd.CodCuenta, pcd.Descripcion,
-         SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) AS ValorBruto
-  FROM CMO.dbo.AsientoContable ac
-  JOIN CMO.dbo.PlanContableDetalle pcd
-    ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-  WHERE ac.CodEmpresa = '${codEmpresa}'
-    AND LEFT(pcd.CodCuenta, 2) = '33'
-  GROUP BY pcd.CodCuenta, pcd.Descripcion
-  HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.5
-) af
-LEFT JOIN (
-  SELECT pcd2.CodCuenta,
-         ABS(SUM(ISNULL(ac2.Credito,0)) - SUM(ISNULL(ac2.Debito,0))) AS DepAcum
-  FROM CMO.dbo.AsientoContable ac2
-  JOIN CMO.dbo.PlanContableDetalle pcd2
-    ON ac2.NroPlanContableDetalle = pcd2.NroPlanContableDetalle
-  WHERE ac2.CodEmpresa = '${codEmpresa}'
-    AND LEFT(pcd2.CodCuenta, 2) = '39'
-  GROUP BY pcd2.CodCuenta
-) dep ON dep.CodCuenta = REPLACE(af.CodCuenta, '33', '39')
-ORDER BY af.ValorBruto DESC
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  pcd.CodCuenta,
+  pcd.Descripcion                                          AS DesActivo,
+  COUNT(*)                                                  AS NumAsientos,
+  ROUND(SUM(ISNULL(ac.Debito, 0)), 2)                      AS TotalDebito,
+  ROUND(SUM(ISNULL(ac.Credito, 0)), 2)                     AS TotalCredito,
+  -- Saldo en su naturaleza: clase 33 deudor (Db-Cr), clase 39 acreedor (Cr-Db)
+  ROUND(
+    CASE WHEN LEFT(pcd.CodCuenta, 2) = '33'
+         THEN SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))
+         ELSE SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))
+    END, 2)                                                AS Saldo
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) IN ('33', '39')
+GROUP BY pcd.CodCuenta, pcd.Descripcion
+HAVING ABS(SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))) > 0.5
+ORDER BY pcd.CodCuenta
 `;
 
 // Préstamos otorgados (docs tipo 071 emitidos) — todos los años, con estado de pago
@@ -948,6 +945,34 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
+// OB_CuentaBancoPeriodo: saldos iniciales bancarios reales según el módulo
+// de conciliación bancaria de S10 (paralelo a AsientoContable).
+// Permite distinguir saldo contable (caja_saldos) vs saldo bancario real (BalanceReal)
+// y detectar inconsistencias entre el libro y el extracto bancario.
+const QUERY_OB_SALDOS_BANCO = (codEmpresa, year) => `
+SELECT
+  cb.BankAccount_ID                                        AS BankAccountId,
+  cb.NoCuenta                                              AS NoCuenta,
+  LEFT(cb.Descripcion, 80)                                 AS DesBanco,
+  cb.CodMoneda                                             AS Moneda,
+  cb.CodIdentificador                                      AS CodIdentificador,
+  ROUND(ISNULL(cb.BalanceActual, 0), 2)                    AS BalanceActual,
+  ROUND(ISNULL(cb.BalanceReal, 0), 2)                      AS BalanceReal,
+  ROUND(ISNULL(cb.BalanceBanco, 0), 2)                     AS BalanceBanco,
+  ROUND(ISNULL(cb.LimiteCredito, 0), 2)                    AS LimiteCredito,
+  ROUND(ISNULL(cbp.SaldoInicial, 0), 2)                    AS SaldoInicialPeriodo,
+  ROUND(ISNULL(cbp.SaldoAnterior, 0), 2)                   AS SaldoAnterior,
+  ROUND(ISNULL(cbp.Saldo, 0), 2)                           AS SaldoPeriodo,
+  cbp.NroPeriodoContable                                   AS NroPeriodoContable,
+  cb.Activo                                                AS Activo
+FROM CMO.dbo.OB_CuentaBanco cb
+LEFT JOIN CMO.dbo.OB_CuentaBancoPeriodo cbp
+  ON cb.BankAccount_ID = cbp.BankAccount_ID
+WHERE cb.CodIdentificador = '${codEmpresa}'
+  AND cb.Activo = 1
+ORDER BY ABS(ISNULL(cb.BalanceActual, 0)) DESC
+`;
+
 // Tesorería: posición bancaria con saldo inicial, entradas/salidas del año y saldo final.
 // Muestra la posición real de cada cuenta bancaria con apertura y cierre del período.
 const QUERY_TESORERIA = (codEmpresa, year) => `
@@ -1082,7 +1107,7 @@ async function main() {
       const [
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
         cajaSaldosResult, cajaTxnResult,
-        tesoreriaResult,
+        tesoreriaResult, obSaldosBancoResult,
         gastosNatResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
@@ -1094,6 +1119,7 @@ async function main() {
         pool.request().query(QUERY_CAJA_SALDOS(company.codEmpresa)),
         pool.request().query(QUERY_CAJA_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_TESORERIA(company.codEmpresa, year)),
+        pool.request().query(QUERY_OB_SALDOS_BANCO(company.codEmpresa, year)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
@@ -1122,6 +1148,7 @@ async function main() {
       logRow('Inventarios', inventariosResult.recordset);
       logRow('Laboral TXN', laboralTxnResult.recordset);
       logRow('Tesorería', tesoreriaResult.recordset);
+      logRow('OB Saldos Banco', obSaldosBancoResult.recordset);
       logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
@@ -1169,6 +1196,7 @@ async function main() {
           caja_saldos: cajaSaldosResult.recordset,
           caja_txn: cajaTxnResult.recordset,
           tesoreria: tesoreriaResult.recordset,
+          ob_saldos_banco: obSaldosBancoResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,

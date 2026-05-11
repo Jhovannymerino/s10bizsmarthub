@@ -3135,26 +3135,82 @@ export default function DashboardPage() {
                   <KpiCard label="Depreciación Acum." value={fmt(activoFijoData.totalDeprec)} signal="neutral" />
                   <KpiCard label="Valor Neto" value={fmt(activoFijoData.totalNeto)} signal={activoFijoData.totalNeto > 0 ? 'green' : 'neutral'} />
                 </div>
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Cuenta</th><th>Descripción</th><th>Valor Bruto</th><th>Depreciación</th><th>Valor Neto</th><th>% Depreciado</th></tr></thead>
-                    <tbody>
-                      {activoFijoData.rows.map((r: any, i: number) => {
-                        const pctDep = r.ValorBruto > 0 ? ((r.DepreciacionAcum || 0) / r.ValorBruto * 100) : 0;
-                        return (
-                          <tr key={i}>
-                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                            <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
-                            <td>{fmt(r.ValorBruto)}</td>
-                            <td style={{ color: '#F59E0B' }}>{fmt(r.DepreciacionAcum)}</td>
-                            <td style={{ fontWeight: 600, color: r.ValorNeto > 0 ? '#10B981' : '#8B97A8' }}>{fmt(r.ValorNeto)}</td>
-                            <td style={{ color: pctDep >= 80 ? '#EF4444' : '#8B97A8' }}>{pctDep.toFixed(0)}%</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                {/* Formato nuevo (post-fix mayo 2026): rows separados por Clase */}
+                {activoFijoData.activos ? (
+                  <>
+                    <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '0.75rem' }}>
+                      Activo Fijo (clase 33) + Depreciación Acumulada (clase 39) según S10
+                    </div>
+                    <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#F8FAFC', marginBottom: '0.5rem' }}>
+                        Valor Bruto del Activo Fijo (clase 33)
+                      </div>
+                      <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                        <thead><tr><th>Cuenta</th><th>Descripción</th><th># Asientos</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Bruto</th></tr></thead>
+                        <tbody>
+                          {activoFijoData.activos.map((r: any, i: number) => (
+                            <tr key={i}>
+                              <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                              <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
+                              <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.NumAsientos}</td>
+                              <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
+                              <td style={{ color: '#8B97A8' }}>{fmt(r.TotalCredito)}</td>
+                              <td style={{ fontWeight: 600, color: (r.Saldo || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.Saldo)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot><tr className="total-row"><td colSpan={5}>TOTAL BRUTO</td><td>{fmt(activoFijoData.totalBruto)}</td></tr></tfoot>
+                      </table>
+                    </div>
+                    {activoFijoData.depreciaciones?.length > 0 && (
+                      <div style={{ overflowX: 'auto' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#F8FAFC', marginBottom: '0.5rem' }}>
+                          Depreciación Acumulada (clase 39)
+                        </div>
+                        <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                          <thead><tr><th>Cuenta</th><th>Descripción</th><th># Asientos</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Depreciación</th></tr></thead>
+                          <tbody>
+                            {activoFijoData.depreciaciones.map((r: any, i: number) => (
+                              <tr key={i}>
+                                <td style={{ fontFamily: 'monospace', color: '#F59E0B' }}>{r.CodCuenta}</td>
+                                <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
+                                <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.NumAsientos}</td>
+                                <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
+                                <td style={{ color: '#8B97A8' }}>{fmt(r.TotalCredito)}</td>
+                                <td style={{ fontWeight: 600, color: (r.Saldo || 0) >= 0 ? '#F59E0B' : '#EF4444' }} title={r.Saldo < 0 ? 'Saldo INVERSO — depreciación con Db>Cr (error contable)' : ''}>
+                                  {fmt(r.Saldo)} {r.Saldo < 0 && '⚠️'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot><tr className="total-row"><td colSpan={5}>TOTAL DEPRECIACIÓN</td><td>{fmt(activoFijoData.totalDeprec)}</td></tr></tfoot>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Formato antiguo - backwards compat */
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                      <thead><tr><th>Cuenta</th><th>Descripción</th><th>Valor Bruto</th><th>Depreciación</th><th>Valor Neto</th><th>% Depreciado</th></tr></thead>
+                      <tbody>
+                        {activoFijoData.rows.map((r: any, i: number) => {
+                          const pctDep = r.ValorBruto > 0 ? ((r.DepreciacionAcum || 0) / r.ValorBruto * 100) : 0;
+                          return (
+                            <tr key={i}>
+                              <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                              <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
+                              <td>{fmt(r.ValorBruto)}</td>
+                              <td style={{ color: '#F59E0B' }}>{fmt(r.DepreciacionAcum)}</td>
+                              <td style={{ fontWeight: 600, color: r.ValorNeto > 0 ? '#10B981' : '#8B97A8' }}>{fmt(r.ValorNeto)}</td>
+                              <td style={{ color: pctDep >= 80 ? '#EF4444' : '#8B97A8' }}>{pctDep.toFixed(0)}%</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </>
             )}
           </div>

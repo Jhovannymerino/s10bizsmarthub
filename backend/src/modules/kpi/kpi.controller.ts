@@ -212,6 +212,12 @@ export class KpiController {
     return this.kpiService.getActivoFijo(companyId);
   }
 
+  /** Saldos bancarios desde módulo OB_CuentaBanco — saldo contable vs banco real */
+  @Get(':companyId/ob-saldos-banco')
+  getObSaldosBanco(@Param('companyId') companyId: string) {
+    return this.kpiService.getObSaldosBanco(companyId);
+  }
+
   /** Préstamos otorgados — tipo 071 en CxC */
   @Get(':companyId/prestamos-otorgados')
   getPrestamosOtorgados(@Param('companyId') companyId: string) {

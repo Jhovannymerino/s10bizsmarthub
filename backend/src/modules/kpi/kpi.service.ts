@@ -589,6 +589,28 @@ export class KpiService {
     const cached = await this.getSnapshot(companyId, 'activo_fijo', 'current');
     if (!cached) return { rows: [], message: 'No data. Run sync first.' };
     const rows = cached.data as any[];
+
+    // Formato nuevo (mayo 2026): rows con campo Clase ('33' o '39')
+    // y Saldo en naturaleza (positivo). Compatible con formato antiguo
+    // por si quedan snapshots viejos en BD.
+    const hasNewFormat = rows.some((r: any) => r.Clase === '33' || r.Clase === '39');
+
+    if (hasNewFormat) {
+      const activos = rows.filter((r: any) => r.Clase === '33');
+      const depreciaciones = rows.filter((r: any) => r.Clase === '39');
+      const totalBruto = activos.reduce((s: number, r: any) => s + (parseFloat(r.Saldo) || 0), 0);
+      const totalDeprec = depreciaciones.reduce((s: number, r: any) => s + (parseFloat(r.Saldo) || 0), 0);
+      const totalNeto = totalBruto - totalDeprec;
+      return {
+        rows, activos, depreciaciones,
+        totalBruto: round(totalBruto),
+        totalDeprec: round(totalDeprec),
+        totalNeto: round(totalNeto),
+        syncedAt: cached.syncedAt,
+      };
+    }
+
+    // Formato antiguo (será reemplazado tras el próximo sync)
     const totalBruto = rows.reduce((s: number, r: any) => s + (parseFloat(r.ValorBruto) || 0), 0);
     const totalDeprec = rows.reduce((s: number, r: any) => s + (parseFloat(r.DepreciacionAcum) || 0), 0);
     const totalNeto = rows.reduce((s: number, r: any) => s + (parseFloat(r.ValorNeto) || 0), 0);
@@ -597,6 +619,23 @@ export class KpiService {
       totalBruto: round(totalBruto),
       totalDeprec: round(totalDeprec),
       totalNeto: round(totalNeto),
+      syncedAt: cached.syncedAt,
+    };
+  }
+
+  async getObSaldosBanco(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'ob_saldos_banco', 'current');
+    if (!cached) return { rows: [], message: 'No data. Run sync first.' };
+    const rows = cached.data as any[];
+    const totalBalanceActual = rows.reduce((s: number, r: any) => s + (parseFloat(r.BalanceActual) || 0), 0);
+    const totalBalanceReal = rows.reduce((s: number, r: any) => s + (parseFloat(r.BalanceReal) || 0), 0);
+    const totalSaldoInicial = rows.reduce((s: number, r: any) => s + (parseFloat(r.SaldoInicialPeriodo) || 0), 0);
+    return {
+      rows,
+      totalBalanceActual: round(totalBalanceActual),
+      totalBalanceReal: round(totalBalanceReal),
+      totalSaldoInicial: round(totalSaldoInicial),
+      discrepanciaTotal: round(totalBalanceActual - totalBalanceReal),
       syncedAt: cached.syncedAt,
     };
   }

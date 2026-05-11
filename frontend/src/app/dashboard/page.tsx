@@ -43,6 +43,30 @@ function yoyPct(curr: number, prev: number): number {
   return ((curr - prev) / Math.abs(prev)) * 100;
 }
 
+// ─── Mapa de clases del PCG peruano (mejora UX en módulos de auditoría) ───
+const CLASE_NAMES: Record<string, string> = {
+  '10': 'Efectivo y Equivalentes (Caja y Bancos)',
+  '12': 'Cuentas por Cobrar Comerciales',
+  '13': 'CxC Comerciales — Relacionadas',
+  '14': 'CxC al Personal y Accionistas',
+  '16': 'Cuentas por Cobrar Diversas',
+  '17': 'Entregas a Rendir',
+  '18': 'Servicios Pagados por Anticipado',
+  '40': 'Tributos por Pagar',
+  '41': 'Remuneraciones y Participaciones por Pagar',
+  '42': 'Cuentas por Pagar Comerciales',
+  '43': 'CxP Comerciales — Relacionadas',
+  '44': 'CxP a Directores y Gerentes',
+  '45': 'Obligaciones Financieras',
+  '46': 'Cuentas por Pagar Diversas',
+  '47': 'CxP Diversas — Relacionadas',
+  '70': 'Ingresos por Ventas',
+  '75': 'Otros Ingresos de Gestión',
+  '91': 'Costos Directos (Costo de Producción/Venta)',
+  '94': 'Gastos Administrativos',
+  '97': 'Gastos Financieros',
+};
+
 // ─── CSV Export ───────────────────────────────
 function exportCSV(filename: string, headers: string[], rows: (string | number | null | undefined)[][]) {
   const BOM = '﻿';
@@ -817,8 +841,8 @@ function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
   );
 }
 
-function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, onClose }: {
-  companyId: string; year: number; codCuenta: string; descripcion: string; endpoint: string; onClose: () => void;
+function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, codTercero, onClose }: {
+  companyId: string; year: number; codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; onClose: () => void;
 }) {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -830,6 +854,7 @@ function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, on
     setLoading(true); setFetchError(false);
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const params = new URLSearchParams({ year: String(year), codCuenta });
+    if (codTercero) params.set('codTercero', codTercero);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     fetch(`${API}/kpi/${companyId}/${endpoint}?${params}`, {
@@ -839,7 +864,7 @@ function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, on
       .then(d => { setTxns(d.transactions || []); setLoading(false); })
       .catch(() => { setFetchError(true); setLoading(false); })
       .finally(() => clearTimeout(timer));
-  }, [companyId, year, codCuenta, endpoint, retryCount]);
+  }, [companyId, year, codCuenta, codTercero, endpoint, retryCount]);
 
   const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
   const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
@@ -1048,7 +1073,7 @@ export default function DashboardPage() {
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
   const [cxpTxDrill, setCxPTxDrill] = useState<{ proveedor: string; codProveedor: string } | null>(null);
   const [cajaTxDrill, setCajaTxDrill] = useState<{ codBanco: string; desBanco: string } | null>(null);
-  const [accountTxDrill, setAccountTxDrill] = useState<{ codCuenta: string; descripcion: string; endpoint: string } | null>(null);
+  const [accountTxDrill, setAccountTxDrill] = useState<{ codCuenta: string; descripcion: string; endpoint: string; codTercero?: string } | null>(null);
   const [auditSinDocDrill, setAuditSinDocDrill] = useState<{ clase: string; desClase: string } | null>(null);
   const [gavDrill, setGavDrill] = useState<{ cod: string; descripcion: string; meses: Record<number, number>; ytd: number } | null>(null);
   const [cxcSearch, setCxcSearch] = useState('');
@@ -1380,6 +1405,7 @@ export default function DashboardPage() {
           codCuenta={accountTxDrill.codCuenta}
           descripcion={accountTxDrill.descripcion}
           endpoint={accountTxDrill.endpoint}
+          codTercero={accountTxDrill.codTercero}
           onClose={() => setAccountTxDrill(null)}
         />
       )}
@@ -2889,8 +2915,15 @@ export default function DashboardPage() {
                     <thead><tr><th>Cuenta</th><th style={{ minWidth: 180 }}>Descripción Cuenta</th><th style={{ minWidth: 160 }}>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
                     <tbody>
                       {otrasCxCData.rows.map((r: any, i: number) => (
-                        <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                        <tr key={i} style={{ cursor: 'pointer' }}
+                          onClick={() => setAccountTxDrill({
+                            codCuenta: r.CodCuenta,
+                            descripcion: `${r.DesCuenta || ''}${r.Tercero ? ' · ' + r.Tercero : ''}`,
+                            endpoint: 'otras-cxc-transactions',
+                            codTercero: r.CodTercero ? String(r.CodTercero) : undefined,
+                          })}
+                          title="Ver asientos">
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
                           <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
                           <td style={{ color: '#10B981' }}>{fmt(r.Dias_0_30)}</td>
@@ -2924,8 +2957,15 @@ export default function DashboardPage() {
                     <thead><tr><th>Cuenta</th><th style={{ minWidth: 180 }}>Descripción Cuenta</th><th style={{ minWidth: 160 }}>Tercero</th><th>0–30 días</th><th>31–60</th><th>61–90</th><th>+90 días</th><th>Total</th></tr></thead>
                     <tbody>
                       {otrasCxPData.rows.map((r: any, i: number) => (
-                        <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                        <tr key={i} style={{ cursor: 'pointer' }}
+                          onClick={() => setAccountTxDrill({
+                            codCuenta: r.CodCuenta,
+                            descripcion: `${r.DesCuenta || ''}${r.Tercero ? ' · ' + r.Tercero : ''}`,
+                            endpoint: 'otras-cxp-transactions',
+                            codTercero: r.CodTercero ? String(r.CodTercero) : undefined,
+                          })}
+                          title="Ver asientos">
+                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                           <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
                           <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
                           <td style={{ color: '#10B981' }}>{fmt(r.Dias_0_30)}</td>
@@ -3265,8 +3305,8 @@ export default function DashboardPage() {
                       {(() => {
                         const byGrupo: Record<string, { grupo: string; desc: string; meses: Record<number, number>; ytd: number }> = {};
                         for (const r of gastosNatData.rows) {
-                          const k = r.CodGrupo || r.CodCuenta;
-                          if (!byGrupo[k]) byGrupo[k] = { grupo: k, desc: r.DesCuenta || r.Descripcion, meses: {}, ytd: 0 };
+                          const k = r.GrupoCuenta || String(r.CodCuenta).slice(0, 4);
+                          if (!byGrupo[k]) byGrupo[k] = { grupo: k, desc: r.DesCuenta || '', meses: {}, ytd: 0 };
                           byGrupo[k].meses[r.Mes] = (byGrupo[k].meses[r.Mes] || 0) + (r.Monto || 0);
                           byGrupo[k].ytd += r.Monto || 0;
                         }
@@ -3338,10 +3378,10 @@ export default function DashboardPage() {
                         const pctSD = r.TotalAsientos > 0 ? (r.SinDocumento / r.TotalAsientos * 100) : 0;
                         return (
                           <tr key={i} style={{ cursor: r.SinDocumento > 0 ? 'pointer' : 'default' }}
-                            onClick={r.SinDocumento > 0 ? () => setAuditSinDocDrill({ clase: r.Clase, desClase: r.DescClase || `Clase ${r.Clase}` }) : undefined}
+                            onClick={r.SinDocumento > 0 ? () => setAuditSinDocDrill({ clase: r.Clase, desClase: CLASE_NAMES[r.Clase] || `Clase ${r.Clase}` }) : undefined}
                             title={r.SinDocumento > 0 ? 'Ver asientos sin documento' : undefined}>
                             <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.Clase}{r.SinDocumento > 0 && <span style={{ fontSize: '0.65rem', marginLeft: '0.3rem' }}>▶</span>}</td>
-                            <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DescClase || '—'}</td>
+                            <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={CLASE_NAMES[r.Clase] || r.DescClase}>{CLASE_NAMES[r.Clase] || r.DescClase || '—'}</td>
                             <td style={{ color: r.SinDocumento > 0 ? '#F59E0B' : '#10B981' }}>{r.SinDocumento}</td>
                             <td style={{ color: '#8B97A8' }}>{r.TotalAsientos}</td>
                             <td style={{ color: pctSD > 20 ? '#EF4444' : pctSD > 5 ? '#F59E0B' : '#10B981' }}>{pctSD.toFixed(1)}%</td>

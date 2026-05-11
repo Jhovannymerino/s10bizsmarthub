@@ -27,10 +27,12 @@ RUN npm install --omit=dev --legacy-peer-deps
 
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
-# Copy generated Prisma client from builder (prisma is a devDependency)
+# Copy generated Prisma client and CLI from builder (prisma is a devDependency)
 COPY --from=builder /usr/src/app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /usr/src/app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /usr/src/app/node_modules/prisma ./node_modules/prisma
 
 EXPOSE 3202
 
-CMD ["node", "dist/main"]
+# Apply schema changes (new indexes) before starting the app
+CMD sh -c "npx prisma db push --skip-generate 2>/dev/null || true && node dist/main"

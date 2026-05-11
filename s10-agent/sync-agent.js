@@ -2037,10 +2037,28 @@ function markDups(rows) {
 // Main
 // ─────────────────────────────────────────────
 
+// Whitelist de codEmpresa válidos para evitar interpolación no controlada en queries
+const VALID_COMPANY_IDS = new Set(CONFIG.COMPANIES.map((c) => c.codEmpresa));
+
+function sanitizeYear(raw) {
+  const y = parseInt(raw, 10);
+  if (isNaN(y) || y < 2018 || y > new Date().getFullYear() + 1) {
+    throw new Error(`Año inválido: ${raw}. Rango permitido: 2018-${new Date().getFullYear() + 1}`);
+  }
+  return y;
+}
+
+function sanitizeCompanyId(raw) {
+  if (raw && !VALID_COMPANY_IDS.has(String(raw))) {
+    throw new Error(`codEmpresa desconocido: ${raw}. Usar uno de: ${[...VALID_COMPANY_IDS].join(', ')}`);
+  }
+  return raw;
+}
+
 async function main() {
   const args = parseArgs();
-  const year = parseInt(args.year || new Date().getFullYear(), 10);
-  const targetCompany = args.company;
+  const year = sanitizeYear(args.year || new Date().getFullYear());
+  const targetCompany = sanitizeCompanyId(args.company);
 
   const companies = targetCompany
     ? CONFIG.COMPANIES.filter((c) => c.codEmpresa === targetCompany)
@@ -2064,6 +2082,12 @@ async function main() {
       encrypt: false,
       trustServerCertificate: true,
       enableArithAbort: true,
+    },
+    pool: {
+      max: 30,      // Batch 3 lanza hasta 27 queries en paralelo
+      min: 2,
+      acquireTimeoutMillis: 60000,
+      idleTimeoutMillis: 30000,
     },
     connectionTimeout: 30000,
     requestTimeout: 300000,

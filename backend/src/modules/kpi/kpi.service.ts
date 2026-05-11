@@ -8,19 +8,52 @@ const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', '
 export class KpiService {
   private readonly logger = new Logger(KpiService.name);
 
+  // TTL in-memory cache: avoids repeated DB hits for same snapshot within 5 min
+  private readonly snapshotCache = new Map<string, { value: any; expiresAt: number }>();
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000;
+
   constructor(
     private prisma: PrismaService,
     private s10: S10Service,
   ) {}
+
+  private cacheKey(companyId: string, kpiType: string, period: string): string {
+    return `${companyId}|${kpiType}|${period}`;
+  }
+
+  private cacheGet(key: string): any | null {
+    const entry = this.snapshotCache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) { this.snapshotCache.delete(key); return null; }
+    return entry.value;
+  }
+
+  private cacheSet(key: string, value: any): void {
+    this.snapshotCache.set(key, { value, expiresAt: Date.now() + this.CACHE_TTL_MS });
+  }
+
+  // Call after sync to invalidate stale entries for a company
+  invalidateSnapshotCache(companyId?: string): void {
+    if (!companyId) { this.snapshotCache.clear(); return; }
+    for (const key of this.snapshotCache.keys()) {
+      if (key.startsWith(`${companyId}|`)) this.snapshotCache.delete(key);
+    }
+  }
 
   // ─────────────────────────────────────────────
   // Snapshot helpers
   // ─────────────────────────────────────────────
 
   async getSnapshot(companyId: string, kpiType: string, period: string) {
-    return this.prisma.kpiSnapshot.findUnique({
+    const key = this.cacheKey(companyId, kpiType, period);
+    const hit = this.cacheGet(key);
+    if (hit !== null) return hit;
+
+    const result = await this.prisma.kpiSnapshot.findUnique({
       where: { companyId_kpiType_period: { companyId, kpiType, period } },
     });
+    if (result !== null) this.cacheSet(key, result);
+    return result;
   }
 
   async saveSnapshot(
@@ -32,11 +65,14 @@ export class KpiService {
     month: number | null,
     data: any,
   ) {
-    return this.prisma.kpiSnapshot.upsert({
+    const result = await this.prisma.kpiSnapshot.upsert({
       where: { companyId_kpiType_period: { companyId, kpiType, period } },
       update: { data, year, syncedAt: new Date(), companyName },
       create: { companyId, companyName, kpiType, period, year, month, data },
     });
+    // Keep cache warm with fresh data
+    this.cacheSet(this.cacheKey(companyId, kpiType, period), result);
+    return result;
   }
 
   // ─────────────────────────────────────────────
@@ -56,7 +92,12 @@ export class KpiService {
   async getDashboard(companyId: string, year: number) {
     const period = `${year}`;
 
-    const cached = await this.getSnapshot(companyId, 'pl', period);
+    // Fetch current + prev year snapshots in parallel to cut latency in half
+    const [cached, prevCached] = await Promise.all([
+      this.getSnapshot(companyId, 'pl', period),
+      this.getSnapshot(companyId, 'pl', `${year - 1}`),
+    ]);
+
     let dashboard: any;
 
     if (cached) {
@@ -72,7 +113,6 @@ export class KpiService {
     }
 
     // Comparativo YoY: mismo período del año anterior (no año completo)
-    const prevCached = await this.getSnapshot(companyId, 'pl', `${year - 1}`);
     let prevYear: any = null;
 
     const prevCachedData = prevCached?.data as any;

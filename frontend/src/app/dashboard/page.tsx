@@ -46,13 +46,17 @@ function buildWaterfallData(ytd: any) {
   ];
 }
 
-function WaterfallChart({ ytd }: { ytd: any }) {
-  const data = buildWaterfallData(ytd);
-  const getColor = (type: string, value: number) => {
-    if (type === 'total') return value >= 0 ? '#10B981' : '#EF4444';
-    if (type === 'expense') return '#EF4444';
-    return '#207E83';
-  };
+const getWfColor = (type: string, value: number) => {
+  if (type === 'total') return value >= 0 ? '#10B981' : '#EF4444';
+  if (type === 'expense') return '#EF4444';
+  return '#207E83';
+};
+
+const WaterfallChart = React.memo(function WaterfallChart({ ytd }: { ytd: any }) {
+  const data = React.useMemo(() => buildWaterfallData(ytd), [
+    ytd?.ingresos, ytd?.costoDirecto, ytd?.margenBruto,
+    ytd?.gav, ytd?.ebitda, ytd?.gastosFinancieros, ytd?.utilidadNeta,
+  ]);
 
   return (
     <ResponsiveContainer width="100%" height={240}>
@@ -67,16 +71,16 @@ function WaterfallChart({ ytd }: { ytd: any }) {
         <Bar dataKey="base" stackId="wf" fill="transparent" />
         <Bar dataKey="value" stackId="wf" radius={[3, 3, 0, 0]}>
           {data.map((entry, i) => (
-            <Cell key={i} fill={getColor(entry.type, entry.value)} />
+            <Cell key={i} fill={getWfColor(entry.type, entry.value)} />
           ))}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
-}
+});
 
 // ─── YoY badge ────────────────────────────────
-function YoYBadge({ curr, prev }: { curr: number; prev: number | undefined }) {
+const YoYBadge = React.memo(function YoYBadge({ curr, prev }: { curr: number; prev: number | undefined }) {
   if (!prev && prev !== 0) return null;
   const delta = yoyPct(curr, prev);
   const color = delta >= 0 ? '#10B981' : '#EF4444';
@@ -86,7 +90,7 @@ function YoYBadge({ curr, prev }: { curr: number; prev: number | undefined }) {
       {arrow} {Math.abs(delta).toFixed(1)}%
     </span>
   );
-}
+});
 
 // ═══════════════════════════════════════════════
 // MAIN PAGE
@@ -204,11 +208,15 @@ export default function DashboardPage() {
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
     setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null); setConciliacionData(null);
 
+    // Cancel any in-flight requests from previous company/year selection
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+
     if (isGrupo) {
       Promise.all([
-        fetchApi(`/kpi/consolidado?year=${selectedYear}`, token),
-        fetchApi(`/kpi/scorecard?year=${selectedYear}`, token),
-        fetchApi(`/kpi/${COMPANIES[0].codEmpresa}/cxc`, token),
+        fetchApi(`/kpi/consolidado?year=${selectedYear}`, token, signal),
+        fetchApi(`/kpi/scorecard?year=${selectedYear}`, token, signal),
+        fetchApi(`/kpi/${COMPANIES[0].codEmpresa}/cxc`, token, signal),
       ])
         .then(([conData, scData, cxcData]) => {
           setConsolidado(conData?.ytd ? conData : null);
@@ -217,6 +225,7 @@ export default function DashboardPage() {
           setLoading(false);
         })
         .catch((err) => {
+          if (err.name === 'AbortError') return;
           if (err.message === 'unauthorized') { router.push('/login'); return; }
           setError(err.message);
           setLoading(false);
@@ -225,12 +234,12 @@ export default function DashboardPage() {
       const id = selectedCompany.codEmpresa;
       setLastSync(null);
       Promise.all([
-        fetchApi(`/kpi/${id}/dashboard?year=${selectedYear}`, token),
-        fetchApi(`/kpi/${id}/cxc`, token),
-        fetchApi(`/kpi/${id}/cxp`, token),
-        fetchApi(`/kpi/${id}/caja?year=${selectedYear}`, token),
-        fetchApi(`/kpi/${id}/gav?year=${selectedYear}`, token),
-        fetchApi(`/kpi/${id}/last-sync?year=${selectedYear}`, token),
+        fetchApi(`/kpi/${id}/dashboard?year=${selectedYear}`, token, signal),
+        fetchApi(`/kpi/${id}/cxc`, token, signal),
+        fetchApi(`/kpi/${id}/cxp`, token, signal),
+        fetchApi(`/kpi/${id}/caja?year=${selectedYear}`, token, signal),
+        fetchApi(`/kpi/${id}/gav?year=${selectedYear}`, token, signal),
+        fetchApi(`/kpi/${id}/last-sync?year=${selectedYear}`, token, signal),
       ])
         .then(([plData, cxcData, cxpData, cajaData, gavData, syncData]) => {
           setPL(plData?.plMonthly ? plData : null);
@@ -242,11 +251,14 @@ export default function DashboardPage() {
           setLoading(false);
         })
         .catch((err) => {
+          if (err.name === 'AbortError') return;
           if (err.message === 'unauthorized') { router.push('/login'); return; }
           setError(err.message);
           setLoading(false);
         });
     }
+
+    return () => ctrl.abort();
   }, [router, selectedCompany, selectedYear]);
 
   useEffect(() => {

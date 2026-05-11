@@ -1,0 +1,14 @@
+[Unit]
+Description=S10 BizSmartHub Sync Trigger
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/apps/s10bizsmarthub/sync-trigger.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/s10-sync.log
+StandardError=append:/var/log/s10-sync.log
+
+[Install]
+WantedBy=multi-user.target

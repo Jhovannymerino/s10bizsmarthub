@@ -76,6 +76,8 @@ export class SyncService {
       pagos_trabajadores?: any[];
       cts_depositos?: any[];
       laboral_metricas?: any[];
+      // Validación forense — objeto con 25 resultados por empresa
+      validation_forense?: Record<string, any>;
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -350,6 +352,13 @@ export class SyncService {
       if (data.audit_conciliacion?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'audit_conciliacion', period, year, null, data.audit_conciliacion);
         logs.push({ kpiType: 'audit_conciliacion', rowsProcessed: data.audit_conciliacion.length, status: 'success' });
+      }
+
+      // Validación forense — siempre guardar para que el dashboard pueda comparar
+      if (data.validation_forense && typeof data.validation_forense === 'object') {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'validation_forense', period, year, null, data.validation_forense);
+        const okCount = Object.values(data.validation_forense).filter((v: any) => v?.ok === true).length;
+        logs.push({ kpiType: 'validation_forense', rowsProcessed: okCount, status: 'success' });
       }
 
       // Write sync logs

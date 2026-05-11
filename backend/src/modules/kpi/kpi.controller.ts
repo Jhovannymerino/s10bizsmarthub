@@ -412,4 +412,20 @@ export class KpiController {
     const y = year ? parseInt(year, 10) : new Date().getFullYear();
     return this.kpiService.getLastSync(companyId, y);
   }
+
+  /** Validación forense — 25 validaciones de auditoría sincronizadas desde S10 */
+  @Get('consolidado/validation-forense')
+  getValidacionForenseConsolidado(@Query('year') year?: string) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getValidacionForenseConsolidado(y);
+  }
+
+  @Get(':companyId/validation-forense')
+  getValidacionForense(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getValidacionForense(companyId, y);
+  }
 }

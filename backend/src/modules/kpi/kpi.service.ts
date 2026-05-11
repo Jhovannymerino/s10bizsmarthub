@@ -1134,6 +1134,79 @@ export class KpiService {
 
     return { year, companies: results };
   }
+
+  // ─────────────────────────────────────────────
+  // Validación Forense — 25 validaciones por empresa
+  // ─────────────────────────────────────────────
+
+  async getValidacionForense(companyId: string, year: number) {
+    const period = `${year}`;
+    const snap = await this.getSnapshot(companyId, 'validation_forense', period);
+    if (!snap) {
+      return { syncedAt: null, year, data: null, message: 'No hay datos de validación forense. Ejecute el sync primero.' };
+    }
+
+    const raw = snap.data as Record<string, any>;
+
+    const LABELS: Record<string, string> = {
+      V01_partida_doble: 'V01 — Partida doble (Σ Débito = Σ Crédito)',
+      V02_apertura: 'V02 — Asientos de apertura por año',
+      V03_patrimonio: 'V03 — Saldos patrimonio (clases 50-59)',
+      V04_facturas_sin_asiento_top: 'V04 — Facturas emitidas sin asiento contable (top 50)',
+      V04b_facturas_sin_asiento_resumen: 'V04b — Facturas sin asiento (resumen por año)',
+      V05_ingresos_sin_doc: 'V05 — Ingresos contables sin NroD',
+      V06_sueldos_aging: 'V06 — Sueldos por pagar (cta 4111) — aging',
+      V07_cts_depositos: 'V07 — CTS depósitos (cta 4151) — may/nov',
+      V08_participaciones: 'V08 — Participaciones DL 892 (cta 413x)',
+      V09_bancos_detalle: 'V09 — Saldos bancarios contables (clase 10) multi-año',
+      V10_ob_cuentas_banco: 'V10 — Cuentas bancarias módulo OB',
+      V11_bancarizacion: 'V11 — Bancarización Ley 28194',
+      V12_pergola_aging: 'V12 — CxC cliente PERGOLA (aging)',
+      V13_cxc_concentracion: 'V13 — Concentración CxC top 20 clientes',
+      V14_intercompany: 'V14 — Intercompañía (clases 14/16/17 grupo)',
+      V15_activo_fijo: 'V15 — Activo fijo coherencia (33/39/68)',
+      V16_trazabilidad_pago: 'V16 — Trazabilidad OB_Pago ↔ DetalleAsignación',
+      V17_reconciliacion_ingr: 'V17 — Reconciliación ingresos contables vs facturas',
+      V18_tributos: 'V18 — Tributos por pagar (clase 40)',
+      V19_balance_resumen: 'V19 — Balance resumen por clase',
+      V20_fechas_anomalas: 'V20 — Asientos con fechas anómalas',
+      V21_identificadores_dup: 'V21 — Identificadores con nombres duplicados',
+      V22_conciliacion_estado: 'V22 — Estado de conciliación bancaria OB',
+      V23_pl_anual: 'V23 — P&L anual (ingresos, gastos, utilidad)',
+      V24_ob_vs_contable: 'V24 — Coherencia OB_Pago vs Contable clase 10',
+      V25_pcd_criticas: 'V25 — Cuentas críticas en PlanContableDetalle',
+    };
+
+    const summary = Object.entries(LABELS).map(([id, label]) => {
+      const v = raw[id];
+      return {
+        id,
+        label,
+        ok: v?.ok ?? false,
+        rowCount: v?.rows?.length ?? 0,
+        error: v?.error ?? null,
+      };
+    });
+
+    const okCount = summary.filter((s) => s.ok).length;
+    const errorCount = summary.filter((s) => !s.ok).length;
+
+    return {
+      syncedAt: snap.syncedAt,
+      year,
+      summary: { total: summary.length, ok: okCount, errors: errorCount },
+      validations: summary,
+      raw,
+    };
+  }
+
+  async getValidacionForenseConsolidado(year: number) {
+    const companies = await this.prisma.company.findMany({ where: { active: true } });
+    const results = await Promise.all(
+      companies.map((co) => this.getValidacionForense(co.codEmpresa, year).then((r) => ({ ...r, companyId: co.codEmpresa, companyName: co.name }))),
+    );
+    return { year, companies: results };
+  }
 }
 
 function round(n: number, decimals = 2): number {

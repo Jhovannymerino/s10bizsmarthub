@@ -1641,6 +1641,11 @@ export default function DashboardPage() {
                 style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                 🔍  Módulo Auditoría
               </button>
+              <button onClick={() => router.push('/dashboard/audit')}
+                className="sidebar-link"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                🧪  Validación Forense S10
+              </button>
             </>
           )}
           {userRole === 'admin' && (

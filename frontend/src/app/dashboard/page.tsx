@@ -3868,7 +3868,7 @@ export default function DashboardPage() {
                     <div>
                       <div className="kpi-label">Matriz de Validación Forense</div>
                       <div style={{ color: '#F8FAFC', fontWeight: 700, fontSize: '0.95rem' }}>
-                        {isGrupo ? 'GRUPO CONSOLIDADO' : selectedCompany} · {selectedYear}
+                        {isGrupo ? 'GRUPO CONSOLIDADO' : selectedCompany.shortName} · {selectedYear}
                       </div>
                     </div>
                     {vfd.syncedAt && (

@@ -1052,6 +1052,7 @@ export default function DashboardPage() {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'unavailable' | 'error'>('idle');
   const [syncMsg, setSyncMsg] = useState('');
+  const [syncProgress, setSyncProgress] = useState<any>(null);
   const [pl, setPL] = useState<any>(null);
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
@@ -1525,41 +1526,44 @@ export default function DashboardPage() {
               if (!token) return;
               setSyncStatus('running');
               setSyncMsg('Iniciando sincronización...');
+              setSyncProgress(null);
               try {
-                const res = await fetch(`${API}/sync/trigger?years=${CURRENT_YEAR},${CURRENT_YEAR - 1}`, {
+                // Triggear todos los años disponibles (2022 → año actual)
+                const res = await fetch(`${API}/sync/trigger`, {
                   method: 'POST', headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();
                 if (data.status === 'unavailable') {
                   setSyncStatus('unavailable');
                   setSyncMsg(data.message || 'Servicio no disponible');
-                  setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 10000);
+                  setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 10000);
                   return;
                 }
                 if (data.status === 'busy') {
-                  setSyncMsg('Ya hay un sync en progreso...');
+                  setSyncMsg('Sync en progreso — monitoreando...');
                 } else {
                   setSyncMsg('Conectando a S10 vía VPN...');
                 }
-                // Poll status hasta que termine
+                // Poll cada 4 s para actualizar progreso
                 const poll = setInterval(async () => {
                   try {
                     const st = await fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } });
                     const s = await st.json();
+                    setSyncProgress(s);
                     if (!s.running) {
                       clearInterval(poll);
                       setSyncStatus('done');
                       setSyncMsg('');
-                      setTimeout(() => setSyncStatus('idle'), 8000);
+                      setTimeout(() => { setSyncStatus('idle'); setSyncProgress(null); }, 12000);
                     }
-                  } catch { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); }
-                }, 8000);
-                // Safety timeout 10 min
-                setTimeout(() => { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); }, 600000);
+                  } catch { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }
+                }, 4000);
+                // Safety timeout 25 min (5 años × ~5 min c/u)
+                setTimeout(() => { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 1500000);
               } catch {
                 setSyncStatus('error');
                 setSyncMsg('No se pudo conectar al servidor.');
-                setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); }, 6000);
+                setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 6000);
               }
             }}
             style={{
@@ -1585,9 +1589,81 @@ export default function DashboardPage() {
            : syncStatus === 'unavailable' ? '⚠ No disponible'
            : '↻ Sincronizar datos'}
           </button>
-          {syncMsg && (
+
+          {/* Panel de progreso detallado */}
+          {syncStatus === 'running' && syncProgress?.totalYears > 0 && (() => {
+            const p = syncProgress;
+            const done = p.completedYears?.length ?? 0;
+            const total = p.totalYears ?? 1;
+            const pct = Math.round((done / total) * 100);
+            const elapsed = p.elapsed ?? 0;
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+            const estimatedTotal = done > 0 ? Math.round(elapsed / done * total) : null;
+            const remaining = estimatedTotal ? Math.max(0, estimatedTotal - elapsed) : null;
+            const remainingStr = remaining !== null
+              ? (remaining > 60 ? `~${Math.ceil(remaining / 60)}m` : `~${remaining}s`)
+              : '…';
+
+            return (
+              <div style={{ marginTop: '0.6rem', background: 'rgba(0,0,0,0.25)', borderRadius: '0.5rem', padding: '0.65rem 0.7rem', border: '1px solid rgba(245,158,11,0.15)' }}>
+                {/* Barra de progreso años */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#F59E0B', fontWeight: 700 }}>AÑO {done + 1}/{total}</span>
+                  <span style={{ fontSize: '0.6rem', color: '#8B97A8' }}>{elapsedStr} transcurrido{remaining !== null ? ` · ${remainingStr} restante` : ''}</span>
+                </div>
+                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: '0.45rem' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #F59E0B, #FBBF24)', borderRadius: 4, transition: 'width 0.6s ease' }} />
+                </div>
+
+                {/* Año actual */}
+                {p.currentYear && (
+                  <div style={{ fontSize: '0.68rem', color: '#E5E7EB', fontWeight: 600, marginBottom: '0.2rem' }}>
+                    📅 {p.currentYear}
+                    {p.currentBatch && <span style={{ color: '#9CA3AF', fontWeight: 400 }}> · {p.currentBatch}</span>}
+                  </div>
+                )}
+
+                {/* Empresa actual */}
+                {p.currentCompany && (
+                  <div style={{ fontSize: '0.63rem', color: '#9CA3AF', marginBottom: '0.3rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    🏢 {p.currentCompany}
+                  </div>
+                )}
+
+                {/* Empresas completadas en el año actual */}
+                {p.companiesDone?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.2rem', marginBottom: '0.3rem' }}>
+                    {p.companiesDone.map((c: string) => (
+                      <span key={c} style={{ fontSize: '0.55rem', background: 'rgba(16,185,129,0.15)', color: '#10B981', borderRadius: 3, padding: '1px 5px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        ✓ {c.split(' ')[0]}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Años completados */}
+                {p.completedYears?.length > 0 && (
+                  <div style={{ fontSize: '0.6rem', color: '#6B7280', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.3rem', marginTop: '0.15rem' }}>
+                    Completados: {p.completedYears.join(', ')}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Mensaje simple cuando no hay progreso detallado aún */}
+          {syncMsg && !(syncStatus === 'running' && syncProgress?.totalYears > 0) && (
             <div style={{ fontSize: '0.65rem', color: syncStatus === 'unavailable' ? '#F59E0B' : '#8B97A8', marginTop: '0.4rem', lineHeight: 1.4, padding: '0 0.1rem' }}>
               {syncMsg}
+            </div>
+          )}
+
+          {/* Resumen final cuando done */}
+          {syncStatus === 'done' && syncProgress?.completedYears?.length > 0 && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.62rem', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderRadius: '0.4rem', padding: '0.4rem 0.5rem', border: '1px solid rgba(16,185,129,0.15)' }}>
+              ✓ {syncProgress.completedYears.length} años sincronizados: {syncProgress.completedYears.join(', ')}
             </div>
           )}
         </div>
@@ -1699,13 +1775,35 @@ export default function DashboardPage() {
         <div className="bg-blur-indigo" />
         <div style={{ position: 'relative', zIndex: 1 }}>
         {/* ── Sync running banner ── */}
-        {syncStatus === 'running' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 1rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#F59E0B' }}>
-            <span style={{ fontSize: '1rem', animation: 'spin 2s linear infinite' }}>⟳</span>
-            <span style={{ fontWeight: 600 }}>Sincronización en progreso</span>
-            <span style={{ color: '#8B97A8', fontSize: '0.75rem' }}>Los datos se actualizarán al completar. Puedes seguir navegando.</span>
-          </div>
-        )}
+        {syncStatus === 'running' && (() => {
+          const sp = syncProgress;
+          const elapsed = sp?.elapsed ?? 0;
+          const done = sp?.completedYears?.length ?? 0;
+          const total = sp?.totalYears ?? 0;
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+          const estRemaining = done > 0 ? Math.round(elapsed / done * (total - done)) : null;
+          const fmtTime = (s: number) => s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+          return (
+            <div style={{ padding: '0.75rem 1rem', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#F59E0B' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1rem', animation: 'spin 2s linear infinite' }}>⟳</span>
+                <span style={{ fontWeight: 600 }}>Sincronización en progreso</span>
+                {total > 0 && <span style={{ color: '#8B97A8', fontSize: '0.75rem' }}>AÑO {done + 1}/{total} · {elapsed > 0 ? `${fmtTime(elapsed)} transcurrido` : ''}{estRemaining ? ` · ~${fmtTime(estRemaining)} restante` : ''}</span>}
+              </div>
+              {total > 0 && (
+                <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '4px', height: '4px', marginBottom: '0.5rem', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: '#F59E0B', borderRadius: '4px', transition: 'width 1s ease' }} />
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.75rem', color: '#8B97A8' }}>
+                {sp?.currentYear && <span>Año: <span style={{ color: '#F59E0B', fontWeight: 600 }}>{sp.currentYear}</span></span>}
+                {sp?.currentCompany && <span>Empresa: <span style={{ color: '#CBD5E1' }}>{sp.currentCompany}</span></span>}
+                {sp?.currentBatch && <span>Lote: <span style={{ color: '#CBD5E1' }}>{sp.currentBatch}</span></span>}
+                {sp?.companiesDone?.length > 0 && <span>En este año: <span style={{ color: '#22C55E' }}>{sp.companiesDone.length} empresa{sp.companiesDone.length !== 1 ? 's' : ''} listas</span></span>}
+              </div>
+            </div>
+          );
+        })()}
         <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div className="page-section-label">

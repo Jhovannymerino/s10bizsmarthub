@@ -18,7 +18,14 @@
       "mcp__playwright__browser_drop",
       "mcp__playwright__browser_select_option",
       "mcp__playwright__browser_handle_dialog",
-      "Bash(curl -s *)"
+      "Bash(curl -s *)",
+      "Bash(ssh -o StrictHostKeyChecking=accept-new root@72.62.16.28 *)",
+      "Bash(ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30 root@72.62.16.28 *)",
+      "Bash(ssh root@72.62.16.28 *)",
+      "Bash(ping *)",
+      "Bash(ip *)",
+      "Bash(pgrep *)",
+      "Bash(timeout *)"
     ]
   }
 }

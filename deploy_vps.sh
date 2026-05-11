@@ -119,6 +119,27 @@ ENVEOF
 
 log "  ✓ .env configurado"
 
+# ── 4b. Instalar sync-trigger como servicio systemd ──────────
+log ""
+log "── Paso 4b: Instalando sync-trigger systemd service ──"
+
+ssh $SSH_OPTS "$VPS" "
+  set -e
+  # Copiar sync-trigger.js al lugar que espera el service file
+  cp $VPS_APP_DIR/vps-infra/sync-trigger.js $VPS_APP_DIR/sync-trigger.js
+
+  # Instalar unit file
+  cp $VPS_APP_DIR/vps-infra/s10-sync-trigger.service /etc/systemd/system/s10-sync-trigger.service
+
+  systemctl daemon-reload
+  systemctl enable s10-sync-trigger
+  systemctl restart s10-sync-trigger
+  sleep 2
+  systemctl is-active s10-sync-trigger && echo '✓ s10-sync-trigger activo' || echo '✗ fallo al iniciar'
+" 2>&1 | tee -a "\$LOG_FILE"
+
+log "  ✓ sync-trigger service instalado"
+
 # ── 5. Actualizar docker-compose.prod.yml con password real ─
 ssh $SSH_OPTS "$VPS" "
   sed -i 's/DB_PASSWORD:-s10biz2026/DB_PASSWORD:-7949413b5c1997927dd3b57c/g' $VPS_APP_DIR/docker-compose.prod.yml
@@ -218,8 +239,30 @@ log "── Paso 8: Levantando contenedores ──"
 ssh $SSH_OPTS "$VPS" "
   cd $VPS_APP_DIR
 
-  echo 'Building & starting containers...'
-  docker compose -f docker-compose.prod.yml up -d --build 2>&1
+  # Detectar qué cambió para minimizar builds y uso de RAM
+  CHANGED_BACKEND=\$(git diff HEAD~1 HEAD --name-only 2>/dev/null | grep -c '^backend/' || echo 0)
+  CHANGED_FRONTEND=\$(git diff HEAD~1 HEAD --name-only 2>/dev/null | grep -c '^frontend/' || echo 0)
+
+  echo \"Cambios detectados — backend: \$CHANGED_BACKEND, frontend: \$CHANGED_FRONTEND\"
+
+  # DB siempre levanta sin rebuild
+  docker compose -f docker-compose.prod.yml up -d s10biz-db
+
+  if [ \"\$CHANGED_BACKEND\" -gt 0 ] || ! docker ps --filter 'name=s10biz-api' --filter 'status=running' -q | grep -q .; then
+    echo 'Rebuilding backend...'
+    docker compose -f docker-compose.prod.yml up -d --build s10biz-backend
+  else
+    echo 'Backend sin cambios — saltando rebuild'
+    docker compose -f docker-compose.prod.yml up -d s10biz-backend
+  fi
+
+  if [ \"\$CHANGED_FRONTEND\" -gt 0 ] || ! docker ps --filter 'name=s10biz-web' --filter 'status=running' -q | grep -q .; then
+    echo 'Rebuilding frontend...'
+    docker compose -f docker-compose.prod.yml up -d --build s10biz-frontend
+  else
+    echo 'Frontend sin cambios — saltando rebuild'
+    docker compose -f docker-compose.prod.yml up -d s10biz-frontend
+  fi
 
   echo ''
   echo 'Estado de contenedores s10biz:'

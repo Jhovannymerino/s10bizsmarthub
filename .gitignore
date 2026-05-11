@@ -5,3 +5,17 @@ dist/
 !.env.example
 *.log
 .DS_Store
+
+# Playwright MCP temp files
+.playwright-mcp/
+
+# Archivos de auditoría temporales en raíz
+audit_query*.js
+run_audit.sh
+
+# Output de análisis locales
+s10-agent/validation-output.json
+s10-agent/validation-analysis.txt
+
+# Directorio vpn-sync duplicado (usar s10-agent/sync-agent.js)
+s10-agent/vpn-sync/

@@ -623,6 +623,50 @@ export class KpiService {
     };
   }
 
+  async getCajaBancoCompleto(companyId: string, year: number) {
+    // Fase A.5: visión 360° del módulo caja-banco completo
+    const [
+      librosCajaSnap, cajaSnap, asignMetricasSnap, pagosSinAsignSnap, compensacionesSnap,
+    ] = await Promise.all([
+      this.getSnapshot(companyId, 'ob_libros_caja', 'current'),
+      this.getSnapshot(companyId, 'ob_caja', `${year}`),
+      this.getSnapshot(companyId, 'ob_asignaciones_metricas', `${year}`),
+      this.getSnapshot(companyId, 'pagos_sin_asignacion', `${year}`),
+      this.getSnapshot(companyId, 'compensaciones', 'current'),
+    ]);
+
+    const libros = (librosCajaSnap?.data as any[]) ?? [];
+    const cajas = (cajaSnap?.data as any[]) ?? [];
+    const asignMetricasArr = (asignMetricasSnap?.data as any[]) ?? [];
+    const metricas = asignMetricasArr[0] ?? {};
+    const pagosSinAsign = (pagosSinAsignSnap?.data as any[]) ?? [];
+    const compensaciones = (compensacionesSnap?.data as any[]) ?? [];
+
+    const librosActivos = libros.filter(l => l.Activo).length;
+    const librosConOperaciones = libros.filter(l => l.NumOperaciones > 0).length;
+    const totalMontoCajas = cajas.reduce((s, c) => s + (parseFloat(c.MontoTotal) || 0), 0);
+    const totalMontoPagosSinAsign = pagosSinAsign.reduce((s, p) => s + (parseFloat(p.Monto) || 0), 0);
+    const totalMontoCompensaciones = compensaciones.reduce((s, c) => s + (parseFloat(c.Monto) || 0), 0);
+
+    return {
+      libros,
+      cajas,
+      metricas,
+      pagosSinAsign,
+      compensaciones,
+      librosActivos,
+      librosConOperaciones,
+      totalLibros: libros.length,
+      totalCajas: cajas.length,
+      totalMontoCajas: round(totalMontoCajas),
+      totalCompensaciones: compensaciones.length,
+      totalMontoCompensaciones: round(totalMontoCompensaciones),
+      totalPagosSinAsignacion: pagosSinAsign.length,
+      totalMontoPagosSinAsign: round(totalMontoPagosSinAsign),
+      syncedAt: (cajaSnap?.syncedAt ?? librosCajaSnap?.syncedAt) ?? null,
+    };
+  }
+
   async getObPagos(companyId: string, year: number) {
     const cached = await this.getSnapshot(companyId, 'ob_pagos', `${year}`);
     if (!cached) return { rows: [], total: 0, totalMonto: 0 };

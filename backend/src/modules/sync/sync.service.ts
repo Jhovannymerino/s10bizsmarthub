@@ -65,6 +65,11 @@ export class SyncService {
       conciliacion_bancaria?: any[];
       movs_sin_conciliar?: any[];
       ob_pagos?: any[];
+      ob_libros_caja?: any[];
+      ob_caja?: any[];
+      ob_asignaciones_metricas?: any[];
+      pagos_sin_asignacion?: any[];
+      compensaciones?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -260,6 +265,28 @@ export class SyncService {
       if (data.ob_pagos?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'ob_pagos', period, year, null, data.ob_pagos);
         logs.push({ kpiType: 'ob_pagos', rowsProcessed: data.ob_pagos.length, status: 'success' });
+      }
+
+      // Fase A.5: módulo caja-banco completo
+      if (data.ob_libros_caja?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'ob_libros_caja', 'current', year, null, data.ob_libros_caja);
+        logs.push({ kpiType: 'ob_libros_caja', rowsProcessed: data.ob_libros_caja.length, status: 'success' });
+      }
+      if (data.ob_caja?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'ob_caja', period, year, null, data.ob_caja);
+        logs.push({ kpiType: 'ob_caja', rowsProcessed: data.ob_caja.length, status: 'success' });
+      }
+      if (data.ob_asignaciones_metricas !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'ob_asignaciones_metricas', period, year, null, data.ob_asignaciones_metricas);
+        logs.push({ kpiType: 'ob_asignaciones_metricas', rowsProcessed: data.ob_asignaciones_metricas.length, status: 'success' });
+      }
+      if (data.pagos_sin_asignacion !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'pagos_sin_asignacion', period, year, null, data.pagos_sin_asignacion);
+        logs.push({ kpiType: 'pagos_sin_asignacion', rowsProcessed: data.pagos_sin_asignacion.length, status: 'success' });
+      }
+      if (data.compensaciones?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'compensaciones', 'current', year, null, data.compensaciones);
+        logs.push({ kpiType: 'compensaciones', rowsProcessed: data.compensaciones.length, status: 'success' });
       }
 
       if (data.audit_sin_doc?.length) {

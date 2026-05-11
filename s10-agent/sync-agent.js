@@ -945,6 +945,112 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
+// FASE A.5 — Módulo de Caja-Banco completo
+
+// QUERY_OB_LIBROS_CAJA: catálogo de libros de caja por empresa
+const QUERY_OB_LIBROS_CAJA = (codEmpresa) => `
+SELECT
+  lc.LibroCaja_ID                                  AS LibroCajaId,
+  ISNULL(lc.Nombre, '')                            AS Nombre,
+  ISNULL(lc.Descripcion, '')                       AS Descripcion,
+  lc.BankAccount_ID                                AS BankAccountId,
+  ISNULL(cb.Descripcion, '')                       AS BancoDescripcion,
+  ISNULL(cb.NoCuenta, '')                          AS NoCuenta,
+  lc.CodMoneda                                     AS Moneda,
+  CONVERT(VARCHAR(10), lc.FechaInicial, 103)       AS FechaInicial,
+  CONVERT(VARCHAR(10), lc.FechaFinal, 103)         AS FechaFinal,
+  lc.Activo                                        AS Activo,
+  lc.Predeterminado                                AS Predeterminado,
+  lc.ProcesoAutomatico                             AS ProcesoAutomatico,
+  (SELECT COUNT(*) FROM CMO.dbo.OB_Caja c WHERE c.LibroCaja_ID = lc.LibroCaja_ID) AS NumOperaciones
+FROM CMO.dbo.OB_LibroCaja lc
+LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON lc.BankAccount_ID = cb.BankAccount_ID
+WHERE lc.CodIdentificadorEmpresa = '${codEmpresa}'
+ORDER BY lc.Activo DESC, lc.FechaInicial DESC
+`;
+
+// QUERY_OB_CAJA: operaciones de caja agrupadas con totales
+const QUERY_OB_CAJA = (codEmpresa, year) => `
+SELECT TOP 500
+  c.Caja_ID                                        AS CajaId,
+  c.LibroCaja_ID                                   AS LibroCajaId,
+  LEFT(ISNULL(lc.Nombre, ''), 60)                  AS LibroNombre,
+  CONVERT(VARCHAR(10), c.FechaEstado, 103)         AS Fecha,
+  ROUND(ISNULL(c.BalanceInicial, 0), 2)            AS BalanceInicial,
+  ROUND(ISNULL(c.BalanceFinal, 0), 2)              AS BalanceFinal,
+  ROUND(ISNULL(c.DiferenciaEstado, 0), 2)          AS Diferencia,
+  ISNULL(c.EstadoDoc, '')                          AS EstadoDoc,
+  (SELECT COUNT(*) FROM CMO.dbo.OB_DetalleCaja dc WHERE dc.Caja_ID = c.Caja_ID) AS NumLineas,
+  (SELECT ROUND(SUM(ISNULL(dc.Monto,0)), 2) FROM CMO.dbo.OB_DetalleCaja dc WHERE dc.Caja_ID = c.Caja_ID) AS MontoTotal
+FROM CMO.dbo.OB_Caja c
+LEFT JOIN CMO.dbo.OB_LibroCaja lc ON c.LibroCaja_ID = lc.LibroCaja_ID
+WHERE c.CodIdentificador = '${codEmpresa}'
+  AND YEAR(c.FechaEstado) = ${year}
+ORDER BY c.FechaEstado DESC
+`;
+
+// QUERY_OB_ASIGNACIONES_METRICAS: análisis agregado de OB_DetalleAsignacion por empresa
+// Esta tabla es el VÍNCULO clave entre Pago↔Factura↔Asiento.
+// Métrica crítica: pagos en OB_Pago SIN DetalleAsignacion = pagos sin sustento documental.
+const QUERY_OB_ASIGNACIONES_METRICAS = (codEmpresa, year) => `
+SELECT
+  COUNT(DISTINCT p.Pago_ID)                        AS PagosTotalAnio,
+  COUNT(DISTINCT da.Pago_ID)                       AS PagosConAsignacion,
+  COUNT(DISTINCT p.Pago_ID) - COUNT(DISTINCT da.Pago_ID) AS PagosSinAsignacion,
+  COUNT(da.DetalleAsignacion_ID)                   AS TotalAsignaciones,
+  ROUND(ISNULL(SUM(da.Monto), 0), 2)               AS MontoTotalAsignado,
+  ROUND(ISNULL(SUM(da.MontoRetencion), 0), 2)      AS MontoTotalRetencion,
+  ROUND(ISNULL(SUM(da.MontoPercepcion), 0), 2)     AS MontoTotalPercepcion,
+  COUNT(DISTINCT CASE WHEN da.Factura_ID > 0 THEN da.DetalleAsignacion_ID END) AS AsignAFacturas,
+  COUNT(DISTINCT CASE WHEN da.DetalleCaja_ID > 0 THEN da.DetalleAsignacion_ID END) AS AsignACaja,
+  COUNT(DISTINCT CASE WHEN da.NroCompensacionDocumento IS NOT NULL THEN da.DetalleAsignacion_ID END) AS AsignConCompensacion
+FROM CMO.dbo.OB_Pago p
+LEFT JOIN CMO.dbo.OB_DetalleAsignacion da ON p.Pago_ID = da.Pago_ID
+WHERE p.CodIdentificador = '${codEmpresa}'
+  AND YEAR(p.FechaTrx) = ${year}
+`;
+
+// QUERY_PAGOS_SIN_ASIGNACION: detalle de pagos sin sustento documental (TOP 100)
+const QUERY_PAGOS_SIN_ASIGNACION = (codEmpresa, year) => `
+SELECT TOP 100
+  CONVERT(VARCHAR(10), p.FechaTrx, 103)            AS Fecha,
+  ISNULL(p.NoDocumento, '')                        AS NoDocumento,
+  ISNULL(p.NoCheque, '')                           AS NoCheque,
+  LEFT(ISNULL(p.Descripcion, ''), 80)              AS Descripcion,
+  ROUND(ISNULL(p.PayAmt, 0), 2)                    AS Monto,
+  ISNULL(cb.Descripcion, '')                       AS Banco,
+  ISNULL(p.EstadoDoc, '')                          AS Estado,
+  ISNULL(p.NumeroOperacion, '')                    AS NumOperacion
+FROM CMO.dbo.OB_Pago p
+LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
+WHERE p.CodIdentificador = '${codEmpresa}'
+  AND YEAR(p.FechaTrx) = ${year}
+  AND NOT EXISTS (SELECT 1 FROM CMO.dbo.OB_DetalleAsignacion da WHERE da.Pago_ID = p.Pago_ID)
+  AND ISNULL(p.PayAmt, 0) > 0
+ORDER BY p.PayAmt DESC
+`;
+
+// QUERY_COMPENSACIONES: compensaciones intercompañía / netos entre documentos
+const QUERY_COMPENSACIONES = (codEmpresa) => `
+SELECT TOP 200
+  cdp.NroCDP                                       AS NroCDP,
+  cdp.NroCompensacionDocumento                     AS NroCompensacion,
+  CONVERT(VARCHAR(10), cdp.CreacionFecha, 103)     AS FechaCreacion,
+  cdp.CreacionUsuario                              AS UsuarioCreacion,
+  ROUND(ISNULL(da.Monto, 0), 2)                    AS Monto,
+  ROUND(ISNULL(da.MontoPago, 0), 2)                AS MontoPago,
+  da.Factura_ID                                    AS FacturaId,
+  da.Pago_ID                                       AS PagoId,
+  ISNULL(p.NoDocumento, '')                        AS PagoDocumento,
+  ISNULL(p.CodIdentificador, '')                   AS PagoCodIdentificador,
+  LEFT(ISNULL(p.Descripcion, ''), 60)              AS PagoDescripcion
+FROM CMO.dbo.CompensacionDocumentoPago cdp
+LEFT JOIN CMO.dbo.OB_DetalleAsignacion da ON cdp.NroDCP = da.NroDCP
+LEFT JOIN CMO.dbo.OB_Pago p ON da.Pago_ID = p.Pago_ID
+WHERE p.CodIdentificador = '${codEmpresa}'
+ORDER BY cdp.CreacionFecha DESC
+`;
+
 // OB_Pago — Libro de Pagos del módulo de Tesorería de S10.
 // Esto es el módulo donde la empresa registra CADA PAGO emitido (cheque, transferencia,
 // detracción, planilla, etc.). Es paralelo a AsientoContable pero con detalle operativo
@@ -1210,6 +1316,8 @@ async function main() {
         cajaSaldosResult, cajaTxnResult,
         tesoreriaResult, obSaldosBancoResult,
         conciliacionBancariaResult, movsSinConciliarResult, obPagosResult,
+        obLibrosCajaResult, obCajaResult, obAsignMetricasResult,
+        pagosSinAsignacionResult, compensacionesResult,
         gastosNatResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
@@ -1225,6 +1333,11 @@ async function main() {
         pool.request().query(QUERY_CONCILIACION_BANCARIA(company.codEmpresa)),
         pool.request().query(QUERY_MOVIMIENTOS_SIN_CONCILIAR(company.codEmpresa)),
         pool.request().query(QUERY_OB_PAGOS(company.codEmpresa, year)),
+        pool.request().query(QUERY_OB_LIBROS_CAJA(company.codEmpresa)),
+        pool.request().query(QUERY_OB_CAJA(company.codEmpresa, year)),
+        pool.request().query(QUERY_OB_ASIGNACIONES_METRICAS(company.codEmpresa, year)),
+        pool.request().query(QUERY_PAGOS_SIN_ASIGNACION(company.codEmpresa, year)),
+        pool.request().query(QUERY_COMPENSACIONES(company.codEmpresa)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
@@ -1257,6 +1370,11 @@ async function main() {
       logRow('Conciliación Bancaria', conciliacionBancariaResult.recordset);
       logRow('Movs sin Conciliar', movsSinConciliarResult.recordset);
       logRow('OB Pagos (libro pagos)', obPagosResult.recordset);
+      logRow('OB Libros Caja', obLibrosCajaResult.recordset);
+      logRow('OB Caja (operaciones)', obCajaResult.recordset);
+      logRow('OB Asignaciones métricas', obAsignMetricasResult.recordset);
+      logRow('Pagos sin asignación', pagosSinAsignacionResult.recordset);
+      logRow('Compensaciones', compensacionesResult.recordset);
       logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
@@ -1308,6 +1426,11 @@ async function main() {
           conciliacion_bancaria: conciliacionBancariaResult.recordset,
           movs_sin_conciliar: movsSinConciliarResult.recordset,
           ob_pagos: obPagosResult.recordset,
+          ob_libros_caja: obLibrosCajaResult.recordset,
+          ob_caja: obCajaResult.recordset,
+          ob_asignaciones_metricas: obAsignMetricasResult.recordset,
+          pagos_sin_asignacion: pagosSinAsignacionResult.recordset,
+          compensaciones: compensacionesResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,

@@ -234,6 +234,16 @@ export class KpiController {
     return this.kpiService.getObPagos(companyId, y);
   }
 
+  /** Caja-Banco completo — Fase A.5: libros, operaciones, asignaciones, compensaciones */
+  @Get(':companyId/caja-banco-completo')
+  getCajaBancoCompleto(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getCajaBancoCompleto(companyId, y);
+  }
+
   /** Préstamos otorgados — tipo 071 en CxC */
   @Get(':companyId/prestamos-otorgados')
   getPrestamosOtorgados(@Param('companyId') companyId: string) {

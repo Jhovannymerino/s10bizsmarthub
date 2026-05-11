@@ -1059,7 +1059,7 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense'>('pl');
   const [userRole, setUserRole] = useState<string>('viewer');
   const [userEmail, setUserEmail] = useState<string>('');
   // ── Admin: gestión de usuarios ──
@@ -1099,6 +1099,8 @@ export default function DashboardPage() {
   const [gastosNatData, setGastosNatData] = useState<any>(null);
   const [cajaSaldosData, setCajaSaldosData] = useState<any>(null);
   const [auditData, setAuditData] = useState<any>(null);
+  const [validacionForenseData, setValidacionForenseData] = useState<any>(null);
+  const [validacionForenseExpanded, setValidacionForenseExpanded] = useState<string | null>(null);
   const [tesoreriaData, setTesoreriaData] = useState<any>(null);
   const [patrimonioData, setPatrimonioData] = useState<any>(null);
   const [inventariosData, setInventariosData] = useState<any>(null);
@@ -1300,6 +1302,10 @@ export default function DashboardPage() {
         fetchApi(`/kpi/${id}/audit/conciliacion?year=${selectedYear}`, token),
       ]).then(([sd, desc, at, conc]) => done(() => setAuditData({ sinDoc: sd, descuadres: desc, atipicos: at, conciliacion: conc })))
         .catch(() => done(() => setAuditData({})));
+    } else if (activeTab === 'validation_forense') {
+      fetchApi(`/kpi/${id}/validation-forense?year=${selectedYear}`, token)
+        .then(d => done(() => setValidacionForenseData(d)))
+        .catch(() => done(() => setValidacionForenseData(null)));
     }
   }, [activeTab, selectedCompany, selectedYear, isGrupo]);
 
@@ -1717,8 +1723,8 @@ export default function DashboardPage() {
                 style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                 🔍  Módulo Auditoría
               </button>
-              <button onClick={() => router.push('/dashboard/audit')}
-                className="sidebar-link"
+              <button onClick={() => setActiveTab('validation_forense')}
+                className={`sidebar-link ${activeTab === 'validation_forense' ? 'active' : ''}`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                 🧪  Validación Forense S10
               </button>
@@ -1827,7 +1833,8 @@ export default function DashboardPage() {
               {activeTab === 'gastos_nat' && 'Contabilidad'}
               {activeTab === 'caja_saldos' && 'Saldos Bancarios'}
               {activeTab === 'conciliacion' && 'Control Interno'}
-              {activeTab === 'audit'      && 'Control Interno'}
+              {activeTab === 'audit'             && 'Control Interno'}
+              {activeTab === 'validation_forense' && 'Control Interno'}
             </div>
             <h1 className="page-title">
               {activeTab === 'pl'    && (isGrupo ? 'Análisis Ejecutivo' : 'Estado de Resultados')}
@@ -1850,7 +1857,8 @@ export default function DashboardPage() {
               {activeTab === 'gastos_nat' && 'Gastos por Naturaleza (Clases 60–68)'}
               {activeTab === 'caja_saldos' && 'Saldos Bancarios Acumulados'}
               {activeTab === 'conciliacion' && 'Conciliación Bancaria — Estado del Módulo S10'}
-              {activeTab === 'audit'      && 'Módulo de Auditoría'}
+              {activeTab === 'audit'             && 'Módulo de Auditoría'}
+              {activeTab === 'validation_forense' && 'Validación Forense S10'}
             </h1>
             <div style={{ color: '#8B97A8', fontSize: '0.8rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span>{selectedCompany.fullName}</span>
@@ -3792,6 +3800,184 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+
+        {/* ═══ Validación Forense S10 ═══ */}
+        {activeTab === 'validation_forense' && !newTabLoading && (() => {
+          const VALIDATION_INFO: Record<string, { categoria: string; riesgo: string; norma: string }> = {
+            V01_partida_doble:                { categoria: 'Integridad Contable', riesgo: 'CRÍTICO', norma: 'NIIF / Partida Doble' },
+            V02_apertura:                     { categoria: 'Integridad Contable', riesgo: 'ALTO',    norma: 'NIC 1' },
+            V03_patrimonio:                   { categoria: 'Patrimonio',          riesgo: 'CRÍTICO', norma: 'Art. 220 LGS / NIC 1' },
+            V04_facturas_sin_asiento_top:     { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / Bancarización' },
+            V04b_facturas_sin_asiento_resumen:{ categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15' },
+            V05_ingresos_sin_doc:             { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / Art. 24-A LIR' },
+            V06_sueldos_aging:                { categoria: 'Laboral',             riesgo: 'ALTO',    norma: 'DL 728' },
+            V07_cts_depositos:                { categoria: 'Laboral',             riesgo: 'ALTO',    norma: 'DL 650' },
+            V08_participaciones:              { categoria: 'Laboral',             riesgo: 'MEDIO',   norma: 'DL 892' },
+            V09_bancos_detalle:               { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'NIIF 7' },
+            V10_ob_cuentas_banco:             { categoria: 'Caja y Bancos',       riesgo: 'MEDIO',   norma: 'Control Interno' },
+            V11_bancarizacion:                { categoria: 'Cumplimiento',        riesgo: 'ALTO',    norma: 'Ley 28194' },
+            V12_pergola_aging:                { categoria: 'Cuentas por Cobrar',  riesgo: 'ALTO',    norma: 'NIIF 9' },
+            V13_cxc_concentracion:            { categoria: 'Cuentas por Cobrar',  riesgo: 'MEDIO',   norma: 'NIIF 9' },
+            V14_intercompany:                 { categoria: 'Intercompañía',       riesgo: 'CRÍTICO', norma: 'Art. 32-A LIR / NIC 24' },
+            V15_activo_fijo:                  { categoria: 'Activo Fijo',         riesgo: 'MEDIO',   norma: 'NIC 16' },
+            V16_trazabilidad_pago:            { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'Control Interno' },
+            V17_reconciliacion_ingr:          { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / NIIF 9' },
+            V18_tributos:                     { categoria: 'Tributario',          riesgo: 'ALTO',    norma: 'Código Tributario' },
+            V19_balance_resumen:              { categoria: 'Balance General',     riesgo: 'MEDIO',   norma: 'NIC 1' },
+            V20_fechas_anomalas:              { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'Control Interno' },
+            V21_identificadores_dup:          { categoria: 'Calidad de Datos',    riesgo: 'BAJO',    norma: 'Control Interno' },
+            V22_conciliacion_estado:          { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'Control Interno' },
+            V23_pl_anual:                     { categoria: 'P&L',                 riesgo: 'MEDIO',   norma: 'NIIF 15 / NIC 1' },
+            V24_ob_vs_contable:               { categoria: 'Coherencia Modular',  riesgo: 'ALTO',    norma: 'Control Interno' },
+            V25_pcd_criticas:                 { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'PCGR Perú' },
+          };
+          const RIESGO_STYLE: Record<string, React.CSSProperties> = {
+            CRÍTICO: { background: 'rgba(239,68,68,0.15)',   color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' },
+            ALTO:    { background: 'rgba(245,158,11,0.15)',  color: '#FBB040', border: '1px solid rgba(245,158,11,0.3)' },
+            MEDIO:   { background: 'rgba(234,179,8,0.12)',   color: '#FACC15', border: '1px solid rgba(234,179,8,0.25)' },
+            BAJO:    { background: 'rgba(16,185,129,0.12)',  color: '#34D399', border: '1px solid rgba(16,185,129,0.25)' },
+          };
+          const vfd = validacionForenseData;
+          return (
+            <>
+              {/* Summary cards */}
+              {vfd?.summary && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div className="kpi-card" style={{ textAlign: 'center' }}>
+                    <div className="kpi-label">Validaciones ejecutadas</div>
+                    <div className="kpi-value" style={{ fontSize: '2rem', color: '#F8FAFC' }}>{vfd.summary.total}</div>
+                  </div>
+                  <div className="kpi-card" style={{ textAlign: 'center' }}>
+                    <div className="kpi-label">Sin errores SQL</div>
+                    <div className="kpi-value" style={{ fontSize: '2rem', color: '#10B981' }}>{vfd.summary.ok}</div>
+                  </div>
+                  <div className="kpi-card" style={{ textAlign: 'center' }}>
+                    <div className="kpi-label">Con error de ejecución</div>
+                    <div className="kpi-value" style={{ fontSize: '2rem', color: vfd.summary.errors > 0 ? '#EF4444' : '#10B981' }}>{vfd.summary.errors}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* No data */}
+              {!vfd && <NoDataBanner kpi="Validación Forense" />}
+
+              {/* Matrix */}
+              {vfd?.validations && (
+                <div className="kpi-card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div className="kpi-label">Matriz de Validación Forense</div>
+                      <div style={{ color: '#F8FAFC', fontWeight: 700, fontSize: '0.95rem' }}>
+                        {isGrupo ? 'GRUPO CONSOLIDADO' : selectedCompany} · {selectedYear}
+                      </div>
+                    </div>
+                    {vfd.syncedAt && (
+                      <span style={{ fontSize: '0.7rem', color: '#8B97A8' }}>
+                        Sync: {new Date(vfd.syncedAt).toLocaleString('es-PE')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="table-s10">
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'center', width: 36 }}>#</th>
+                          <th style={{ textAlign: 'left' }}>Validación</th>
+                          <th style={{ textAlign: 'left' }}>Categoría</th>
+                          <th style={{ textAlign: 'center' }}>Riesgo</th>
+                          <th style={{ textAlign: 'left' }}>Norma</th>
+                          <th>Registros</th>
+                          <th style={{ textAlign: 'center' }}>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vfd.validations.map((v: any, idx: number) => {
+                          const info = VALIDATION_INFO[v.id] ?? { categoria: '—', riesgo: 'MEDIO', norma: '—' };
+                          const isExpanded = validacionForenseExpanded === v.id;
+                          const rawRows = vfd.raw?.[v.id]?.rows ?? [];
+                          return (
+                            <React.Fragment key={v.id}>
+                              <tr data-clickable
+                                onClick={() => setValidacionForenseExpanded(isExpanded ? null : v.id)}
+                                style={{ background: isExpanded ? 'rgba(32,126,131,0.1)' : undefined }}
+                              >
+                                <td style={{ textAlign: 'center', color: '#8B97A8', fontFamily: 'monospace', fontSize: '0.7rem' }}>{idx + 1}</td>
+                                <td style={{ textAlign: 'left' }}>
+                                  <span style={{ fontWeight: 600, color: '#F8FAFC' }}>{v.label}</span>
+                                </td>
+                                <td style={{ textAlign: 'left', color: '#8B97A8', fontSize: '0.78rem' }}>{info.categoria}</td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, ...RIESGO_STYLE[info.riesgo] }}>
+                                    {info.riesgo}
+                                  </span>
+                                </td>
+                                <td style={{ textAlign: 'left', color: '#8B97A8', fontSize: '0.72rem', fontStyle: 'italic' }}>{info.norma}</td>
+                                <td style={{ fontFamily: 'monospace' }}>{v.rowCount.toLocaleString()}</td>
+                                <td style={{ textAlign: 'center' }}>
+                                  {v.error
+                                    ? <span style={{ color: '#EF4444', fontWeight: 700, fontSize: '0.7rem' }}>ERROR</span>
+                                    : <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span>
+                                  }
+                                </td>
+                              </tr>
+
+                              {isExpanded && rawRows.length > 0 && (
+                                <tr>
+                                  <td colSpan={7} style={{ padding: 0 }}>
+                                    <div style={{ background: 'rgba(32,126,131,0.06)', borderLeft: '3px solid #207E83', overflowX: 'auto', maxHeight: 280 }}>
+                                      <table className="table-s10" style={{ fontSize: '0.72rem' }}>
+                                        <thead>
+                                          <tr>
+                                            {Object.keys(rawRows[0]).map((k) => (
+                                              <th key={k} style={{ textAlign: 'left' }}>{k}</th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {rawRows.slice(0, 50).map((row: any, ri: number) => (
+                                            <tr key={ri}>
+                                              {Object.values(row).map((val: any, vi: number) => (
+                                                <td key={vi} style={{ textAlign: 'left', whiteSpace: 'nowrap', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                  {val === null || val === undefined ? '—' : String(val)}
+                                                </td>
+                                              ))}
+                                            </tr>
+                                          ))}
+                                          {rawRows.length > 50 && (
+                                            <tr><td colSpan={Object.keys(rawRows[0]).length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                              {isExpanded && v.error && (
+                                <tr>
+                                  <td colSpan={7} style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', borderLeft: '3px solid #EF4444', color: '#F87171', fontSize: '0.78rem', textAlign: 'left' }}>
+                                    Error SQL: {v.error}
+                                  </td>
+                                </tr>
+                              )}
+                              {isExpanded && !v.error && rawRows.length === 0 && (
+                                <tr>
+                                  <td colSpan={7} style={{ padding: '0.75rem 1rem', background: 'rgba(16,185,129,0.06)', borderLeft: '3px solid #10B981', color: '#34D399', fontSize: '0.78rem', textAlign: 'left' }}>
+                                    Sin hallazgos — resultado limpio para esta validación.
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         </div>{/* end relative z-1 */}
       </div>

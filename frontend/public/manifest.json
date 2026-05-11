@@ -1,0 +1,28 @@
+{
+  "name": "S10 BizSmartHub",
+  "short_name": "BizSmartHub",
+  "description": "KPI financieros del Grupo desde S10 ERP",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#050a12",
+  "background_color": "#050a12",
+  "lang": "es",
+  "categories": ["finance", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "P&L",
+      "url": "/dashboard",
+      "description": "Estado de Resultados"
+    }
+  ]
+}

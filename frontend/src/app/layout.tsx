@@ -1,12 +1,32 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'S10 BizSmartHub',
-  description: 'KPI financieros desde S10 ERP',
+  description: 'KPI financieros del Grupo desde S10 ERP',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'BizSmartHub',
+  },
+  icons: {
+    icon: '/icons/icon.svg',
+    apple: '/icons/icon.svg',
+  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const viewport: Viewport = {
+  themeColor: '#050a12',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
       <head>
@@ -23,6 +43,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
           }
         `}</style>
+        {/* PWA: service worker registration */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').catch(function(){});
+            });
+          }
+        ` }} />
       </head>
       <body style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}>{children}</body>
     </html>

@@ -25,6 +25,7 @@ import { NoDataBanner } from './_components/NoDataBanner';
 import { ExportBtn } from './_components/ExportBtn';
 import { SearchInput } from './_components/SearchInput';
 import { SortTh } from './_components/SortTh';
+import { SkeletonLoader } from './_components/SkeletonLoader';
 
 // ─── Waterfall chart ──────────────────────────
 function buildWaterfallData(ytd: any) {
@@ -111,7 +112,7 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense'>('pl');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense'>('inicio');
   const [userRole, setUserRole] = useState<string>('viewer');
   const [userEmail, setUserEmail] = useState<string>('');
   // ── Admin: gestión de usuarios ──
@@ -158,6 +159,8 @@ export default function DashboardPage() {
   const [inventariosData, setInventariosData] = useState<any>(null);
   const [conciliacionData, setConciliacionData] = useState<any>(null);
   const [newTabLoading, setNewTabLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState<Record<string, boolean>>({ balance: false, auditoria: false });
   // Cache key: tabName → `${companyId}:${year}` (year-dependent) or `${companyId}` (static)
   const loadedRef = useRef<Record<string, string>>({});
 
@@ -423,8 +426,35 @@ export default function DashboardPage() {
     { key: 'utilidadNetaPct',   label: '% Margen Neto',      fmt: 'pct' },
   ];
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as typeof activeTab);
+    setSidebarOpen(false);
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#050a12' }}>
+    <div style={{ display: 'flex', minHeight: '100dvh', background: '#050a12' } as React.CSSProperties}>
+
+      {/* ── Mobile top bar ── */}
+      <div className="mobile-topbar">
+        <div className="mobile-topbar-brand">
+          <div className="brand-avatar">S</div>
+          <div className="mobile-topbar-info">
+            <div className="mobile-topbar-company">{selectedCompany.shortName}</div>
+            <div className="mobile-topbar-year">{selectedYear}</div>
+          </div>
+        </div>
+        <div className="mobile-topbar-actions">
+          <div className={`mobile-sync-dot${syncStatus === 'running' ? ' running' : syncStatus === 'error' ? ' error' : ''}`} title={syncStatus} />
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(o => !o)} aria-label="Abrir menú">
+            {sidebarOpen ? '✕' : '☰'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Sidebar overlay backdrop (mobile) ── */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay open" onClick={() => setSidebarOpen(false)} />
+      )}
       {drillDown && (
         <DetalleModal
           title={drillDown.title}
@@ -492,7 +522,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Sidebar ── */}
-      <div className="sidebar">
+      <div className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-inner">
 
         {/* Logo */}
@@ -520,7 +550,7 @@ export default function DashboardPage() {
         <div style={{ padding: '0.75rem 0.625rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="sidebar-section-label">Empresa</div>
           <button
-            onClick={() => { setSelectedCompany(GRUPO); setActiveTab('pl'); }}
+            onClick={() => { setSelectedCompany(GRUPO); setActiveTab('pl'); setSidebarOpen(false); }}
             style={{
               display: 'block', width: '100%', textAlign: 'left',
               background: isGrupo ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'none',
@@ -540,7 +570,7 @@ export default function DashboardPage() {
             const active = !isGrupo && selectedCompany.codEmpresa === co.codEmpresa;
             return (
               <button key={co.codEmpresa}
-                onClick={() => { setSelectedCompany(co); setActiveTab('pl'); }}
+                onClick={() => { setSelectedCompany(co); setActiveTab('pl'); setSidebarOpen(false); }}
                 style={{
                   display: 'block', width: '100%', textAlign: 'left',
                   background: active ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'none',
@@ -737,10 +767,18 @@ export default function DashboardPage() {
 
         {/* Nav principal */}
         <nav style={{ flex: 1, padding: '0.5rem 0', overflow: 'auto' }}>
-          <div className="sidebar-section-label">Paneles</div>
+
+          {/* Inicio */}
+          <button onClick={() => handleTabChange('inicio')}
+            className={`sidebar-link ${activeTab === 'inicio' ? 'active' : ''}`}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+            🏠  Inicio
+          </button>
+
+          <div className="sidebar-section-label" style={{ marginTop: '0.5rem' }}>Resultados</div>
           {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).map((tab) => (
             <button key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
               className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
             >
@@ -752,11 +790,20 @@ export default function DashboardPage() {
               {tab === 'docs' && '🧾  Documentos'}
             </button>
           ))}
+
           {!isGrupo && (
             <>
-              <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Balance Sheet</div>
-              {(['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','caja_saldos','gastos_nat'] as const).map((tab) => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
+              {/* Balance Sheet — collapsible */}
+              <div
+                className="sidebar-section-label nav-group-header"
+                style={{ marginTop: '0.75rem' }}
+                onClick={() => setNavCollapsed(s => ({ ...s, balance: !s.balance }))}
+              >
+                Balance & Ops
+                <span className={`nav-group-arrow${!navCollapsed.balance ? ' open' : ''}`}>›</span>
+              </div>
+              {!navCollapsed.balance && (['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','caja_saldos','gastos_nat'] as const).map((tab) => (
+                <button key={tab} onClick={() => handleTabChange(tab)}
                   className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                   {tab === 'balance'    && '⚖️  Balance General'}
@@ -773,22 +820,35 @@ export default function DashboardPage() {
                   {tab === 'gastos_nat'  && '📊  Gastos Naturaleza'}
                 </button>
               ))}
-              <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Auditoría</div>
-              <button onClick={() => setActiveTab('conciliacion')}
-                className={`sidebar-link ${activeTab === 'conciliacion' ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                🏦  Conciliación Bancaria
-              </button>
-              <button onClick={() => setActiveTab('audit')}
-                className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                🔍  Módulo Auditoría
-              </button>
-              <button onClick={() => setActiveTab('validation_forense')}
-                className={`sidebar-link ${activeTab === 'validation_forense' ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                🧪  Validación Forense S10
-              </button>
+
+              {/* Auditoría — collapsible */}
+              <div
+                className="sidebar-section-label nav-group-header"
+                style={{ marginTop: '0.75rem' }}
+                onClick={() => setNavCollapsed(s => ({ ...s, auditoria: !s.auditoria }))}
+              >
+                Auditoría
+                <span className={`nav-group-arrow${!navCollapsed.auditoria ? ' open' : ''}`}>›</span>
+              </div>
+              {!navCollapsed.auditoria && (
+                <>
+                  <button onClick={() => handleTabChange('conciliacion')}
+                    className={`sidebar-link ${activeTab === 'conciliacion' ? 'active' : ''}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                    🏦  Conciliación Bancaria
+                  </button>
+                  <button onClick={() => handleTabChange('audit')}
+                    className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                    🔍  Módulo Auditoría
+                  </button>
+                  <button onClick={() => handleTabChange('validation_forense')}
+                    className={`sidebar-link ${activeTab === 'validation_forense' ? 'active' : ''}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                    🧪  Validación Forense S10
+                  </button>
+                </>
+              )}
             </>
           )}
           {userRole === 'admin' && (
@@ -836,11 +896,48 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Main content ── */}
-      <div className="main-content" style={{ width: 'calc(100% - 272px)', position: 'relative' }}>
+      <div className="main-content" style={{ width: 'calc(100% - 272px)', position: 'relative', flex: 1 }}>
+        {/* Tab loading bar */}
+        {newTabLoading && <div className="tab-loading-bar" />}
         {/* Decorative background blurs */}
         <div className="bg-blur-primary" />
         <div className="bg-blur-indigo" />
         <div style={{ position: 'relative', zIndex: 1 }}>
+
+        {/* ── Company pills (desktop only) ── */}
+        <div className="company-pills-strip">
+          <button
+            className={`company-pill${isGrupo ? ' active' : ''}`}
+            onClick={() => { setSelectedCompany(GRUPO); setActiveTab('inicio'); setSidebarOpen(false); }}
+          >
+            🏢 GRUPO
+          </button>
+          {COMPANIES.map((co) => (
+            <button
+              key={co.codEmpresa}
+              className={`company-pill${!isGrupo && selectedCompany.codEmpresa === co.codEmpresa ? ' active' : ''}`}
+              onClick={() => { setSelectedCompany(co); setActiveTab('inicio'); setSidebarOpen(false); }}
+            >
+              {co.shortName}
+            </button>
+          ))}
+          <div style={{ flex: 1 }} />
+          <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+            {availableYears.map((y) => (
+              <button key={y} onClick={() => setSelectedYear(y)}
+                style={{
+                  padding: '0.3rem 0.625rem', borderRadius: '0.4rem', border: '1px solid',
+                  borderColor: selectedYear === y ? 'transparent' : 'rgba(255,255,255,0.08)',
+                  background: selectedYear === y ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'rgba(255,255,255,0.03)',
+                  color: selectedYear === y ? '#fff' : 'var(--text-muted)',
+                  fontSize: '0.72rem', fontWeight: selectedYear === y ? 700 : 400,
+                  cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                }}
+              >{y}</button>
+            ))}
+          </div>
+        </div>
+
         {/* ── Sync running banner ── */}
         {syncStatus === 'running' && (() => {
           const sp = syncProgress;
@@ -871,9 +968,57 @@ export default function DashboardPage() {
             </div>
           );
         })()}
+        {/* ── Breadcrumb ── */}
+        {activeTab !== 'inicio' && (
+          <div className="breadcrumb" style={{ marginBottom: '1.25rem' }}>
+            <span
+              style={{ cursor: 'pointer', color: 'var(--primary-light)', opacity: 0.7 }}
+              onClick={() => handleTabChange('inicio')}
+            >
+              Inicio
+            </span>
+            <span className="breadcrumb-sep">›</span>
+            <span style={{ opacity: 0.6 }}>{selectedCompany.shortName}</span>
+            <span className="breadcrumb-sep">›</span>
+            <span className="breadcrumb-current">
+              {activeTab === 'pl' && 'P&L'}
+              {activeTab === 'cxc' && 'CxC Aging'}
+              {activeTab === 'cxp' && 'CxP Aging'}
+              {activeTab === 'caja' && 'Posición Caja'}
+              {activeTab === 'gav' && 'GAV Detalle'}
+              {activeTab === 'docs' && 'Documentos'}
+              {activeTab === 'admin' && 'Administración'}
+              {activeTab === 'balance' && 'Balance General'}
+              {activeTab === 'otras_cxc' && 'Otras CxC'}
+              {activeTab === 'otras_cxp' && 'Otras CxP'}
+              {activeTab === 'prestamos' && 'Préstamos'}
+              {activeTab === 'tributos' && 'Tributos'}
+              {activeTab === 'laboral' && 'Laboral'}
+              {activeTab === 'activo_fijo' && 'Activo Fijo'}
+              {activeTab === 'tesoreria' && 'Tesorería'}
+              {activeTab === 'patrimonio' && 'Patrimonio'}
+              {activeTab === 'inventarios' && 'Inventarios'}
+              {activeTab === 'gastos_nat' && 'Gastos Naturaleza'}
+              {activeTab === 'caja_saldos' && 'Saldos Banco'}
+              {activeTab === 'conciliacion' && 'Conciliación'}
+              {activeTab === 'audit' && 'Auditoría'}
+              {activeTab === 'validation_forense' && 'Validación Forense'}
+            </span>
+            {lastSync && (
+              <>
+                <span className="breadcrumb-sep" style={{ marginLeft: 'auto' }} />
+                <span style={{ color: '#10B981', fontSize: '0.65rem', fontWeight: 600, marginLeft: 'auto' }}>
+                  ● {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </>
+            )}
+          </div>
+        )}
+
         <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div className="page-section-label">
+              {activeTab === 'inicio' && (isGrupo ? 'Consolidado del Grupo' : 'Resumen Ejecutivo')}
               {activeTab === 'pl'    && (isGrupo ? 'Consolidado del Grupo' : 'Business Intelligence')}
               {activeTab === 'cxc'   && 'Gestión de Cartera'}
               {activeTab === 'cxp'   && 'Gestión de Pagos'}
@@ -898,6 +1043,7 @@ export default function DashboardPage() {
               {activeTab === 'validation_forense' && 'Control Interno'}
             </div>
             <h1 className="page-title">
+              {activeTab === 'inicio' && (isGrupo ? 'Dashboard Ejecutivo' : selectedCompany.shortName)}
               {activeTab === 'pl'    && (isGrupo ? 'Análisis Ejecutivo' : 'Estado de Resultados')}
               {activeTab === 'cxc'   && 'Cuentas por Cobrar (Clase 12)'}
               {activeTab === 'cxp'   && 'Cuentas por Pagar (Clase 42)'}
@@ -928,24 +1074,129 @@ export default function DashboardPage() {
               <span style={{ opacity: 0.4 }}>·</span>
               <span>Fuente: S10 ERP</span>
               {prevYear && <><span style={{ opacity: 0.4 }}>·</span><span>vs {prevYear.year}</span></>}
-              {lastSync && (
-                <>
-                  <span style={{ opacity: 0.4 }}>·</span>
-                  <span style={{ color: '#10B981', fontWeight: 600 }}>
-                    ● Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </>
-              )}
             </div>
           </div>
-          {loading && (
-            <div style={{ padding: '0.4rem 0.875rem', background: 'rgba(32,126,131,0.1)', border: '1px solid rgba(32,126,131,0.2)', borderRadius: '2rem', fontSize: '0.72rem', color: '#2BB4BB', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>
-              ⏳ Cargando...
+          {/* Tab loading indicator */}
+          {newTabLoading && (
+            <div style={{ padding: '0.35rem 0.75rem', background: 'rgba(32,126,131,0.1)', border: '1px solid rgba(32,126,131,0.2)', borderRadius: '2rem', fontSize: '0.68rem', color: '#2BB4BB', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>
+              ● Cargando
             </div>
           )}
         </div>
 
+        {/* ═══ INICIO / Home Tab ═══ */}
+        {activeTab === 'inicio' && (
+          <div>
+            {loading ? <SkeletonLoader /> : (
+              <>
+                {/* KPI summary cards */}
+                {ytd ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
+                    <KpiCard label="Ingresos YTD" value={fmt(ytd.ingresos)} signal="neutral"
+                      sub={prevYear ? `Ant: ${fmt(prevYear.ytd?.ingresos)}` : `${selectedYear}`} />
+                    <KpiCard label="Margen Bruto" value={pct(ytd.margenBrutoPct)} signal={semaforo('margenBrutoPct', ytd.margenBrutoPct)}
+                      sub={fmt(ytd.margenBruto)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.margenBrutoPct)}` : undefined} />
+                    <KpiCard label="EBITDA" value={fmt(ytd.ebitda)} signal={semaforo('ebitdaPct', ytd.ebitdaPct)}
+                      sub={pct(ytd.ebitdaPct)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.ebitdaPct)}` : undefined} />
+                    <KpiCard label="Utilidad Neta" value={fmt(ytd.utilidadNeta)} signal={semaforo('margenNetoPct', ytd.margenNetoPct ?? 0)}
+                      sub={pct(ytd.margenNetoPct ?? 0)} />
+                    {cxc && <KpiCard label="CxC Total" value={fmt(cxc.totalSaldo)} signal={dso && dso > 60 ? 'danger' : dso && dso > 45 ? 'warning' : 'ok'}
+                      sub={dso ? `DSO ${dso}d` : 'sin DSO'} />}
+                    {saldoCaja != null && <KpiCard label="Saldo Caja" value={fmt(saldoCaja)} signal={saldoCaja > 0 ? 'ok' : 'danger'}
+                      sub={runway ? `Runway ${runway}m` : 'sin runway'} />}
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '1.75rem' }}>
+                    <SkeletonLoader />
+                  </div>
+                )}
+
+                {/* Per-company scorecard when GRUPO */}
+                {isGrupo && scorecard?.companies?.length > 0 && (
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <div className="page-section-label" style={{ marginBottom: '0.75rem' }}>Scorecard por Empresa · {selectedYear}</div>
+                    <div className="home-kpi-grid">
+                      {scorecard.companies.map((emp: any) => {
+                        const co = COMPANIES.find(c => c.codEmpresa === emp.codEmpresa);
+                        return (
+                          <div
+                            key={emp.codEmpresa}
+                            className="home-company-card"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => { if (co) { setSelectedCompany(co); setActiveTab('pl'); } }}
+                          >
+                            <div className="home-company-name">{co?.shortName || emp.name?.split(' ')[0] || emp.codEmpresa}</div>
+                            <div className="home-metric-row">
+                              <span className="home-metric-label">Ingresos</span>
+                              <span className="home-metric-value">{fmt(emp.ytd?.ingresos ?? 0)}</span>
+                            </div>
+                            <div className="home-metric-row">
+                              <span className="home-metric-label">Margen</span>
+                              <span className="home-metric-value" style={{ color: (emp.ytd?.margenBrutoPct ?? 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                                {pct(emp.ytd?.margenBrutoPct ?? 0)}
+                              </span>
+                            </div>
+                            <div className="home-metric-row">
+                              <span className="home-metric-label">EBITDA</span>
+                              <span className="home-metric-value" style={{ color: (emp.ytd?.ebitda ?? 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                                {fmt(emp.ytd?.ebitda ?? 0)}
+                              </span>
+                            </div>
+                            <div className="home-metric-row">
+                              <span className="home-metric-label">Utilidad</span>
+                              <span className="home-metric-value" style={{ color: (emp.ytd?.utilidadNeta ?? 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                                {fmt(emp.ytd?.utilidadNeta ?? 0)}
+                              </span>
+                            </div>
+                            {emp.dso !== null && (
+                              <div className="home-metric-row">
+                                <span className="home-metric-label">DSO</span>
+                                <span className="home-metric-value" style={{ color: emp.dso > 60 ? 'var(--red)' : emp.dso > 45 ? 'var(--yellow)' : 'var(--green)' }}>
+                                  {emp.dso}d
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick access cards */}
+                <div className="page-section-label" style={{ marginBottom: '0.75rem' }}>Acceso Rápido</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                  {([
+                    { tab: 'pl',   icon: '📊', label: 'P&L', desc: 'Estado de Resultados' },
+                    { tab: 'cxc',  icon: '💰', label: 'CxC',  desc: 'Cuentas por Cobrar' },
+                    { tab: 'cxp',  icon: '🏪', label: 'CxP',  desc: 'Cuentas por Pagar' },
+                    { tab: 'caja', icon: '🏦', label: 'Caja', desc: 'Posición de Caja' },
+                    { tab: 'gav',  icon: '📋', label: 'GAV',  desc: 'Gastos Operativos' },
+                    { tab: 'docs', icon: '🧾', label: 'Docs', desc: 'Documentos' },
+                  ] as const).map(item => (
+                    <button key={item.tab} onClick={() => handleTabChange(item.tab)}
+                      style={{
+                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                        borderRadius: '0.75rem', padding: '1rem 0.75rem', cursor: 'pointer',
+                        textAlign: 'center', transition: 'all 0.15s', color: 'var(--text-primary)',
+                        fontFamily: "'Inter', sans-serif",
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(32,126,131,0.1)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(32,126,131,0.25)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                    >
+                      <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>{item.icon}</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.15rem' }}>{item.label}</div>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* ═══ P&L Tab ═══ */}
+        {activeTab === 'pl' && loading && <SkeletonLoader />}
         {activeTab === 'pl' && !ytd && !loading && <NoDataBanner kpi="P&L" />}
         {activeTab === 'pl' && ytd && (
           <>
@@ -1231,6 +1482,7 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ CxC Tab ═══ */}
+        {activeTab === 'cxc' && loading && <SkeletonLoader />}
         {activeTab === 'cxc' && !cxc && !loading && <NoDataBanner kpi="CxC" />}
         {activeTab === 'cxc' && cxc && (
           <>
@@ -1327,6 +1579,7 @@ export default function DashboardPage() {
             Selecciona una empresa para ver sus cuentas por pagar.
           </div>
         )}
+        {activeTab === 'cxp' && !isGrupo && loading && <SkeletonLoader />}
         {activeTab === 'cxp' && !isGrupo && !cxp && !loading && <NoDataBanner kpi="CxP" />}
         {activeTab === 'cxp' && !isGrupo && cxp && (() => {
           const dpo = (cxp.totalSaldo && ytd?.costoDirecto && Math.abs(ytd.costoDirecto) > 0)
@@ -1423,6 +1676,7 @@ export default function DashboardPage() {
         })()}
 
         {/* ═══ Caja Tab ═══ */}
+        {activeTab === 'caja' && loading && <SkeletonLoader />}
         {activeTab === 'caja' && !caja && !loading && <NoDataBanner kpi="Caja" />}
         {activeTab === 'caja' && caja && (
           <>
@@ -1774,6 +2028,7 @@ export default function DashboardPage() {
         })()}
 
         {/* ═══ GAV Tab ═══ */}
+        {activeTab === 'gav' && loading && <SkeletonLoader />}
         {activeTab === 'gav' && !gav && !loading && <NoDataBanner kpi="GAV" />}
         {activeTab === 'gav' && gav && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -2047,13 +2302,8 @@ export default function DashboardPage() {
             </div>
           );
         })()}
-        {/* ═══ Loading banner para nuevos módulos ═══ */}
-        {newTabLoading && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '2rem', color: '#8B97A8' }}>
-            <span style={{ fontSize: '1.2rem', animation: 'spin 1.5s linear infinite' }}>⟳</span>
-            Cargando datos...
-          </div>
-        )}
+        {/* ═══ Skeleton para módulos lazy-loaded ═══ */}
+        {newTabLoading && <SkeletonLoader />}
 
         {/* ═══ Balance General ═══ */}
         {activeTab === 'balance' && !newTabLoading && (
@@ -3053,6 +3303,36 @@ export default function DashboardPage() {
 
         </div>{/* end relative z-1 */}
       </div>
+
+      {/* ── Mobile bottom nav ── */}
+      <nav className="mobile-bottomnav" aria-label="Navegación principal">
+        <div className="mobile-bottomnav-inner">
+          {([
+            { key: 'inicio', icon: '🏠', label: 'Inicio' },
+            { key: 'pl',     icon: '📊', label: 'P&L' },
+            { key: 'cxc',   icon: '💰', label: 'CxC' },
+            { key: 'caja',  icon: '🏦', label: 'Caja' },
+          ] as const).map(item => (
+            <button
+              key={item.key}
+              className={`bottomnav-item${activeTab === item.key ? ' active' : ''}`}
+              onClick={() => handleTabChange(item.key)}
+            >
+              <span className="bottomnav-icon">{item.icon}</span>
+              <span className="bottomnav-label">{item.label}</span>
+            </button>
+          ))}
+          <button
+            className="bottomnav-item"
+            onClick={() => setSidebarOpen(o => !o)}
+            aria-label="Más opciones"
+          >
+            <span className="bottomnav-icon">☰</span>
+            <span className="bottomnav-label">Más</span>
+          </button>
+        </div>
+      </nav>
+
     </div>
   );
 }

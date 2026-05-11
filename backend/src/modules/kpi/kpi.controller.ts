@@ -3,6 +3,10 @@ import { KpiService } from './kpi.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyAccessGuard } from '../auth/company-access.guard';
 
+function parseYear(year?: string): number {
+  return year ? parseInt(year, 10) : new Date().getFullYear();
+}
+
 @Controller('kpi')
 @UseGuards(JwtAuthGuard, CompanyAccessGuard)
 export class KpiController {
@@ -11,14 +15,14 @@ export class KpiController {
   /** Consolidado de todas las empresas del grupo */
   @Get('consolidado')
   getConsolidado(@Query('year') year?: string) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getConsolidado(y);
   }
 
   /** Scorecard: KPIs clave de todas las empresas en una sola llamada */
   @Get('scorecard')
   getScorecard(@Query('year') year?: string) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getScorecard(y);
   }
 
@@ -28,7 +32,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getDashboard(companyId, y);
   }
 
@@ -50,7 +54,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getCaja(companyId, y);
   }
 
@@ -62,7 +66,7 @@ export class KpiController {
     @Query('codCuenta') codCuenta?: string,
     @Query('mes') mes?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getTransactions(companyId, y, codCuenta, mes ? parseInt(mes) : undefined);
   }
 
@@ -73,7 +77,7 @@ export class KpiController {
     @Query('year') year?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getCxCTransactions(companyId, y, codTercero);
   }
 
@@ -84,7 +88,7 @@ export class KpiController {
     @Query('year') year?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getCxPTransactions(companyId, y, codTercero);
   }
 
@@ -94,7 +98,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getFacturasEmitidas(companyId, y);
   }
 
@@ -104,7 +108,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getFacturasRecibidas(companyId, y);
   }
 
@@ -114,7 +118,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getHonorariosRecibidos(companyId, y);
   }
 
@@ -124,7 +128,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getGAV(companyId, y);
   }
 
@@ -157,7 +161,7 @@ export class KpiController {
     @Query('codCuenta') codCuenta?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getOtrasCxCTransactions(companyId, y, codCuenta, codTercero);
   }
 
@@ -175,7 +179,7 @@ export class KpiController {
     @Query('codCuenta') codCuenta?: string,
     @Query('codTercero') codTercero?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getOtrasCxPTransactions(companyId, y, codCuenta, codTercero);
   }
 
@@ -196,7 +200,7 @@ export class KpiController {
     @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getTributosTxn(companyId, y, codCuenta);
   }
 
@@ -230,7 +234,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getObPagos(companyId, y);
   }
 
@@ -240,7 +244,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getCajaBancoCompleto(companyId, y);
   }
 
@@ -250,7 +254,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getBancarizacion(companyId, y);
   }
 
@@ -260,7 +264,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getAuditoriaLaboral(companyId, y);
   }
 
@@ -295,7 +299,7 @@ export class KpiController {
     @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getCajaTxn(companyId, y, codCuenta);
   }
 
@@ -305,7 +309,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getTesoreria(companyId, y);
   }
 
@@ -321,7 +325,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getInventarios(companyId, y);
   }
 
@@ -332,7 +336,7 @@ export class KpiController {
     @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getLaboralTxn(companyId, y, codCuenta);
   }
 
@@ -342,7 +346,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getGastosNaturaleza(companyId, y);
   }
 
@@ -352,7 +356,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getAuditSinDoc(companyId, y);
   }
 
@@ -363,7 +367,7 @@ export class KpiController {
     @Query('year') year?: string,
     @Query('clase') clase?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getAuditSinDocTxn(companyId, y, clase);
   }
 
@@ -373,7 +377,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getAuditDescuadres(companyId, y);
   }
 
@@ -383,7 +387,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getAuditAtipicos(companyId, y);
   }
 
@@ -393,7 +397,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getAuditConciliacion(companyId, y);
   }
 
@@ -409,14 +413,14 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getLastSync(companyId, y);
   }
 
   /** Validación forense — 25 validaciones de auditoría sincronizadas desde S10 */
   @Get('consolidado/validation-forense')
   getValidacionForenseConsolidado(@Query('year') year?: string) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getValidacionForenseConsolidado(y);
   }
 
@@ -425,7 +429,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
   ) {
-    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    const y = parseYear(year);
     return this.kpiService.getValidacionForense(companyId, y);
   }
 }

@@ -904,39 +904,6 @@ export default function DashboardPage() {
         <div className="bg-blur-indigo" />
         <div style={{ position: 'relative', zIndex: 1 }}>
 
-        {/* ── Company pills (desktop only) ── */}
-        <div className="company-pills-strip">
-          <button
-            className={`company-pill${isGrupo ? ' active' : ''}`}
-            onClick={() => { setSelectedCompany(GRUPO); setActiveTab('inicio'); setSidebarOpen(false); }}
-          >
-            🏢 GRUPO
-          </button>
-          {COMPANIES.map((co) => (
-            <button
-              key={co.codEmpresa}
-              className={`company-pill${!isGrupo && selectedCompany.codEmpresa === co.codEmpresa ? ' active' : ''}`}
-              onClick={() => { setSelectedCompany(co); setActiveTab('inicio'); setSidebarOpen(false); }}
-            >
-              {co.shortName}
-            </button>
-          ))}
-          <div style={{ flex: 1 }} />
-          <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
-            {availableYears.map((y) => (
-              <button key={y} onClick={() => setSelectedYear(y)}
-                style={{
-                  padding: '0.3rem 0.625rem', borderRadius: '0.4rem', border: '1px solid',
-                  borderColor: selectedYear === y ? 'transparent' : 'rgba(255,255,255,0.08)',
-                  background: selectedYear === y ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'rgba(255,255,255,0.03)',
-                  color: selectedYear === y ? '#fff' : 'var(--text-muted)',
-                  fontSize: '0.72rem', fontWeight: selectedYear === y ? 700 : 400,
-                  cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                }}
-              >{y}</button>
-            ))}
-          </div>
-        </div>
 
         {/* ── Sync running banner ── */}
         {syncStatus === 'running' && (() => {

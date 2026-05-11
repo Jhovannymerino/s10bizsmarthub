@@ -525,96 +525,26 @@ export default function DashboardPage() {
       <div className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-inner">
 
-        {/* Logo */}
-        <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 0 2px rgba(255,255,255,0.08), 0 8px 20px rgba(32,126,131,0.3)' }}>S</div>
-            <div>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: '0.95rem', color: '#F8FAFC', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                S10 <span style={{ color: '#2BB4BB' }}>BizSmartHub</span>
-              </div>
-              <div style={{ fontSize: '0.52rem', color: '#8B97A8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.1rem' }}>Dashboard Financiero</div>
+        {/* Logo + status */}
+        <div style={{ padding: '1.125rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 0 2px rgba(255,255,255,0.08), 0 8px 20px rgba(32,126,131,0.3)' }}>S</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: '0.9rem', color: '#F8FAFC', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              S10 <span style={{ color: '#2BB4BB' }}>BizSmartHub</span>
             </div>
+            <div style={{ fontSize: '0.5rem', color: '#8B97A8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.1rem' }}>Dashboard Financiero</div>
           </div>
-          {/* Sync badge */}
-          <div className={`sync-badge${syncStatus === 'error' || syncStatus === 'unavailable' ? ' offline' : ''}`} style={{ width: '100%', justifyContent: 'center' }}>
-            {syncStatus === 'running'     ? '⏳ Sincronizando...'
-           : syncStatus === 'done'        ? '✓ Datos actualizados'
-           : syncStatus === 'error'       ? '✗ Error de sync'
-           : syncStatus === 'unavailable' ? '⚠ Sync manual'
-           : '● Sistema online'}
-          </div>
-        </div>
-
-        {/* Empresa section */}
-        <div style={{ padding: '0.75rem 0.625rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="sidebar-section-label">Empresa</div>
-          <button
-            onClick={() => { setSelectedCompany(GRUPO); setActiveTab('pl'); setSidebarOpen(false); }}
-            style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              background: isGrupo ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'none',
-              border: 'none',
-              borderRadius: '0.625rem',
-              color: isGrupo ? '#fff' : '#8B97A8',
-              padding: '0.5rem 0.875rem', marginBottom: '0.2rem',
-              cursor: 'pointer', fontSize: '0.8rem', fontWeight: isGrupo ? 600 : 400,
-              boxShadow: isGrupo ? '0 0 15px rgba(79,70,229,0.3)' : 'none',
-              fontFamily: "'Inter', sans-serif",
+          <div
+            title={syncStatus === 'running' ? 'Sincronizando…' : syncStatus === 'error' ? 'Error de sync' : syncStatus === 'unavailable' ? 'Sync no disponible' : 'Sistema online'}
+            style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, transition: 'background 0.3s',
+              background: syncStatus === 'running' ? '#F59E0B' : syncStatus === 'error' ? '#EF4444' : syncStatus === 'unavailable' ? '#F59E0B' : '#10B981',
+              boxShadow: syncStatus === 'running' ? '0 0 6px #F59E0B' : syncStatus === 'error' ? '0 0 6px #EF4444' : '0 0 6px #10B981',
             }}
-          >
-            🏢 GRUPO Consolidado
-          </button>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '0.25rem 0.5rem' }} />
-          {COMPANIES.map((co) => {
-            const active = !isGrupo && selectedCompany.codEmpresa === co.codEmpresa;
-            return (
-              <button key={co.codEmpresa}
-                onClick={() => { setSelectedCompany(co); setActiveTab('pl'); setSidebarOpen(false); }}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  background: active ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'none',
-                  border: 'none',
-                  borderRadius: '0.625rem',
-                  color: active ? '#fff' : '#8B97A8',
-                  padding: '0.4rem 0.875rem', marginBottom: '0.1rem',
-                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: active ? 600 : 400,
-                  boxShadow: active ? '0 0 12px rgba(79,70,229,0.3)' : 'none',
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                {co.shortName}
-              </button>
-            );
-          })}
+          />
         </div>
 
-        {/* Año section */}
-        <div style={{ padding: '0.625rem 0.625rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="sidebar-section-label">Período</div>
-          <div style={{ display: 'flex', gap: '0.3rem' }}>
-            {availableYears.map((y) => (
-              <button key={y} onClick={() => setSelectedYear(y)}
-                style={{
-                  flex: 1,
-                  background: selectedYear === y ? 'linear-gradient(135deg, #2563EB, #4F46E5)' : 'rgba(255,255,255,0.03)',
-                  border: '1px solid ' + (selectedYear === y ? 'transparent' : 'rgba(255,255,255,0.05)'),
-                  borderRadius: '0.5rem',
-                  color: selectedYear === y ? '#fff' : '#8B97A8',
-                  padding: '0.35rem 0',
-                  cursor: 'pointer', fontSize: '0.75rem', fontWeight: selectedYear === y ? 700 : 400,
-                  boxShadow: selectedYear === y ? '0 0 10px rgba(79,70,229,0.25)' : 'none',
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Sincronizar */}
-        <div style={{ padding: '0.75rem 0.75rem 0.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {/* Sync */}
+        <div style={{ padding: '0.625rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <button
             disabled={syncStatus === 'running'}
             onClick={async () => {
@@ -624,7 +554,6 @@ export default function DashboardPage() {
               setSyncMsg('Iniciando sincronización...');
               setSyncProgress(null);
               try {
-                // Todos los años desde 2022 hasta el actual
                 const allYears = Array.from({ length: CURRENT_YEAR - 2022 + 1 }, (_, i) => 2022 + i).join(',');
                 const res = await fetch(`${API}/sync/trigger?years=${allYears}`, {
                   method: 'POST', headers: { Authorization: `Bearer ${token}` },
@@ -636,12 +565,7 @@ export default function DashboardPage() {
                   setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 10000);
                   return;
                 }
-                if (data.status === 'busy') {
-                  setSyncMsg('Sync en progreso — monitoreando...');
-                } else {
-                  setSyncMsg('Conectando a S10 vía VPN...');
-                }
-                // Poll cada 4 s para actualizar progreso
+                setSyncMsg(data.status === 'busy' ? 'Sync en progreso — monitoreando...' : 'Conectando a S10 vía VPN...');
                 const poll = setInterval(async () => {
                   try {
                     const st = await fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } });
@@ -655,7 +579,6 @@ export default function DashboardPage() {
                     }
                   } catch { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }
                 }, 4000);
-                // Safety timeout 25 min (5 años × ~5 min c/u)
                 setTimeout(() => { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 1500000);
               } catch {
                 setSyncStatus('error');
@@ -664,30 +587,17 @@ export default function DashboardPage() {
               }
             }}
             style={{
-              width: '100%', padding: '0.55rem 0.75rem', borderRadius: '0.625rem',
+              width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
               border: '1px solid rgba(32,126,131,0.25)',
-              background: syncStatus === 'running'     ? 'rgba(245,158,11,0.1)'
-                        : syncStatus === 'done'        ? 'rgba(16,185,129,0.15)'
-                        : syncStatus === 'unavailable' ? 'rgba(239,68,68,0.1)'
-                        : syncStatus === 'error'       ? 'rgba(239,68,68,0.15)'
-                        : 'rgba(32,126,131,0.1)',
-              color: syncStatus === 'done'        ? '#10B981'
-                   : syncStatus === 'error'       ? '#EF4444'
-                   : syncStatus === 'unavailable' ? '#F59E0B'
-                   : syncStatus === 'running'     ? '#F59E0B'
-                   : '#2BB4BB',
-              fontSize: '0.78rem', fontWeight: 700, cursor: syncStatus === 'running' ? 'default' : 'pointer',
-              textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'all 0.2s',
+              background: syncStatus === 'running' ? 'rgba(245,158,11,0.1)' : syncStatus === 'done' ? 'rgba(16,185,129,0.12)' : syncStatus === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(32,126,131,0.08)',
+              color: syncStatus === 'done' ? '#10B981' : syncStatus === 'error' ? '#EF4444' : syncStatus === 'running' ? '#F59E0B' : '#2BB4BB',
+              fontSize: '0.75rem', fontWeight: 600, cursor: syncStatus === 'running' ? 'default' : 'pointer',
+              letterSpacing: '0.03em', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif",
             }}
           >
-            {syncStatus === 'running'     ? '⏳ Sincronizando...'
-           : syncStatus === 'done'        ? '✓ Datos actualizados'
-           : syncStatus === 'error'       ? '✗ Error — reintentar'
-           : syncStatus === 'unavailable' ? '⚠ No disponible'
-           : '↻ Sincronizar datos'}
+            {syncStatus === 'running' ? '⏳ Sincronizando…' : syncStatus === 'done' ? '✓ Datos actualizados' : syncStatus === 'error' ? '✗ Reintentar sync' : syncStatus === 'unavailable' ? '⚠ No disponible' : '↻ Sincronizar datos'}
           </button>
 
-          {/* Panel de progreso detallado */}
           {syncStatus === 'running' && syncProgress?.running && syncProgress?.totalYears > 0 && (() => {
             const p = syncProgress;
             const done = p.completedYears?.length ?? 0;
@@ -699,68 +609,28 @@ export default function DashboardPage() {
             const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
             const estimatedTotal = done > 0 ? Math.round(elapsed / done * total) : null;
             const remaining = estimatedTotal ? Math.max(0, estimatedTotal - elapsed) : null;
-            const remainingStr = remaining !== null
-              ? (remaining > 60 ? `~${Math.ceil(remaining / 60)}m` : `~${remaining}s`)
-              : '…';
-
+            const remainingStr = remaining !== null ? (remaining > 60 ? `~${Math.ceil(remaining / 60)}m` : `~${remaining}s`) : '…';
             return (
-              <div style={{ marginTop: '0.6rem', background: 'rgba(0,0,0,0.25)', borderRadius: '0.5rem', padding: '0.65rem 0.7rem', border: '1px solid rgba(245,158,11,0.15)' }}>
-                {/* Barra de progreso años */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                  <span style={{ fontSize: '0.65rem', color: '#F59E0B', fontWeight: 700 }}>AÑO {done + 1}/{total}</span>
-                  <span style={{ fontSize: '0.6rem', color: '#8B97A8' }}>{elapsedStr} transcurrido{remaining !== null ? ` · ${remainingStr} restante` : ''}</span>
+              <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.25)', borderRadius: '0.5rem', padding: '0.5rem 0.6rem', border: '1px solid rgba(245,158,11,0.15)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                  <span style={{ fontSize: '0.62rem', color: '#F59E0B', fontWeight: 700 }}>AÑO {done + 1}/{total}</span>
+                  <span style={{ fontSize: '0.58rem', color: '#8B97A8' }}>{elapsedStr}{remaining !== null ? ` · ${remainingStr}` : ''}</span>
                 </div>
-                <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: '0.45rem' }}>
+                <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: '0.35rem' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #F59E0B, #FBBF24)', borderRadius: 4, transition: 'width 0.6s ease' }} />
                 </div>
-
-                {/* Año actual */}
-                {p.currentYear && (
-                  <div style={{ fontSize: '0.68rem', color: '#E5E7EB', fontWeight: 600, marginBottom: '0.2rem' }}>
-                    📅 {p.currentYear}
-                    {p.currentBatch && <span style={{ color: '#9CA3AF', fontWeight: 400 }}> · {p.currentBatch}</span>}
-                  </div>
-                )}
-
-                {/* Empresa actual */}
-                {p.currentCompany && (
-                  <div style={{ fontSize: '0.63rem', color: '#9CA3AF', marginBottom: '0.3rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    🏢 {p.currentCompany}
-                  </div>
-                )}
-
-                {/* Empresas completadas en el año actual */}
-                {p.companiesDone?.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.2rem', marginBottom: '0.3rem' }}>
-                    {p.companiesDone.map((c: string) => (
-                      <span key={c} style={{ fontSize: '0.55rem', background: 'rgba(16,185,129,0.15)', color: '#10B981', borderRadius: 3, padding: '1px 5px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                        ✓ {c.split(' ')[0]}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Años completados */}
-                {p.completedYears?.length > 0 && (
-                  <div style={{ fontSize: '0.6rem', color: '#6B7280', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.3rem', marginTop: '0.15rem' }}>
-                    Completados: {p.completedYears.join(', ')}
-                  </div>
-                )}
+                {p.currentYear && <div style={{ fontSize: '0.65rem', color: '#E5E7EB', fontWeight: 600 }}>📅 {p.currentYear}{p.currentBatch && <span style={{ color: '#9CA3AF', fontWeight: 400 }}> · {p.currentBatch}</span>}</div>}
+                {p.currentCompany && <div style={{ fontSize: '0.6rem', color: '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🏢 {p.currentCompany}</div>}
+                {p.completedYears?.length > 0 && <div style={{ fontSize: '0.58rem', color: '#6B7280', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.25rem', marginTop: '0.2rem' }}>✓ {p.completedYears.join(', ')}</div>}
               </div>
             );
           })()}
-
-          {/* Mensaje simple cuando no hay progreso detallado aún */}
           {syncMsg && !(syncStatus === 'running' && syncProgress?.running && syncProgress?.totalYears > 0) && (
-            <div style={{ fontSize: '0.65rem', color: syncStatus === 'unavailable' ? '#F59E0B' : '#8B97A8', marginTop: '0.4rem', lineHeight: 1.4, padding: '0 0.1rem' }}>
-              {syncMsg}
-            </div>
+            <div style={{ fontSize: '0.62rem', color: syncStatus === 'unavailable' ? '#F59E0B' : '#8B97A8', marginTop: '0.35rem', lineHeight: 1.4 }}>{syncMsg}</div>
           )}
-
-          {/* Resumen final cuando done */}
           {syncStatus === 'done' && syncProgress?.completedYears?.length > 0 && (
-            <div style={{ marginTop: '0.5rem', fontSize: '0.62rem', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderRadius: '0.4rem', padding: '0.4rem 0.5rem', border: '1px solid rgba(16,185,129,0.15)' }}>
-              ✓ {syncProgress.completedYears.length} años sincronizados: {syncProgress.completedYears.join(', ')}
+            <div style={{ marginTop: '0.4rem', fontSize: '0.6rem', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderRadius: '0.4rem', padding: '0.35rem 0.5rem', border: '1px solid rgba(16,185,129,0.15)' }}>
+              ✓ {syncProgress.completedYears.length} años: {syncProgress.completedYears.join(', ')}
             </div>
           )}
         </div>
@@ -904,6 +774,37 @@ export default function DashboardPage() {
         <div className="bg-blur-indigo" />
         <div style={{ position: 'relative', zIndex: 1 }}>
 
+        {/* ── Empresa + Año (top bar) ── */}
+        <div className="context-topbar">
+          <div className="context-topbar-companies">
+            <button
+              className={`context-pill${isGrupo ? ' active' : ''}`}
+              onClick={() => { setSelectedCompany(GRUPO); setActiveTab('inicio'); }}
+            >
+              🏢 GRUPO
+            </button>
+            {COMPANIES.map((co) => (
+              <button
+                key={co.codEmpresa}
+                className={`context-pill${!isGrupo && selectedCompany.codEmpresa === co.codEmpresa ? ' active' : ''}`}
+                onClick={() => { setSelectedCompany(co); setActiveTab('inicio'); setSidebarOpen(false); }}
+              >
+                {co.shortName}
+              </button>
+            ))}
+          </div>
+          <div className="context-topbar-years">
+            {availableYears.map((y) => (
+              <button
+                key={y}
+                className={`context-year${selectedYear === y ? ' active' : ''}`}
+                onClick={() => setSelectedYear(y)}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* ── Sync running banner ── */}
         {syncStatus === 'running' && (() => {

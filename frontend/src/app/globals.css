@@ -306,44 +306,61 @@ h1, h2, h3, h4, h5, h6 {
 .breadcrumb-sep { opacity: 0.35; font-size: 0.6rem; }
 .breadcrumb-current { color: var(--primary-light); font-weight: 600; }
 
-/* ── Company pills (desktop header strip) ── */
-.company-pills-strip {
+/* ── Context topbar (empresa + año sobre el contenido) ── */
+.context-topbar {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.75rem 0;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
   margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   overflow-x: auto;
   scrollbar-width: none;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.company-pills-strip::-webkit-scrollbar { display: none; }
-.company-pill {
+.context-topbar::-webkit-scrollbar { display: none; }
+.context-topbar-companies {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
   flex-shrink: 0;
-  padding: 0.35rem 0.875rem;
+}
+.context-topbar-years {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.context-pill {
+  padding: 0.3rem 0.75rem;
   border-radius: 2rem;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
   color: var(--text-muted);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
   font-family: var(--font-inter), sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
-.company-pill:hover {
-  background: rgba(255,255,255,0.07);
-  color: var(--text-primary);
-  border-color: rgba(255,255,255,0.15);
+.context-pill:hover { background: rgba(255,255,255,0.07); color: var(--text-primary); border-color: rgba(255,255,255,0.14); }
+.context-pill.active { background: linear-gradient(135deg, #2563EB, #4F46E5); color: #fff; border-color: transparent; box-shadow: 0 0 10px rgba(79,70,229,0.3); font-weight: 600; }
+.context-year {
+  padding: 0.28rem 0.55rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.02);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-inter), sans-serif;
 }
-.company-pill.active {
-  background: linear-gradient(135deg, #2563EB, #4F46E5);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 0 12px rgba(79,70,229,0.35);
-}
+.context-year:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.context-year.active { background: linear-gradient(135deg, #2563EB, #4F46E5); color: #fff; border-color: transparent; font-weight: 700; box-shadow: 0 0 8px rgba(79,70,229,0.25); }
 
 /* ── Tab loading bar ── */
 .tab-loading-bar {
@@ -682,7 +699,7 @@ h1, h2, h3, h4, h5, h6 {
   .bg-blur-primary, .bg-blur-indigo { display: none; }
 
   /* Hide desktop company pills on mobile (sidebar drawer handles this) */
-  .company-pills-strip { display: none; }
+  .context-topbar { display: none; }
 
   /* Touch targets: min 44×44px */
   button, [role="button"] { min-height: 44px; }

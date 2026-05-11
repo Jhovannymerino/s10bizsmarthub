@@ -50,7 +50,7 @@ const RIESGO_COLOR: Record<string, string> = {
 };
 
 function apiFetch(path: string, token: string) {
-  return fetch(`${API}/api${path}`, {
+  return fetch(`${API}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   }).then((r) => {
     if (!r.ok) throw new Error(`${r.status}`);

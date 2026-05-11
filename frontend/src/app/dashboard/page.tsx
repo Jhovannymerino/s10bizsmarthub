@@ -3858,8 +3858,19 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* No data */}
-              {!vfd && <NoDataBanner kpi="Validación Forense" />}
+              {/* No data — fetch error OR no snapshot yet */}
+              {(!vfd || (vfd?.message && !vfd?.validations)) && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280, textAlign: 'center', gap: '0.75rem' }}>
+                  <div style={{ fontSize: '2rem' }}>🔬</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#F8FAFC' }}>Sin datos de Validación Forense</div>
+                  <div style={{ fontSize: '0.82rem', color: '#8B97A8', maxWidth: 380 }}>
+                    {vfd?.message || 'Los datos forenses no están disponibles para esta empresa/año.'}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#8B97A8' }}>
+                    Usa el botón <strong style={{ color: '#207E83' }}>Sincronizar Datos</strong> del sidebar para cargar la información desde S10.
+                  </div>
+                </div>
+              )}
 
               {/* Matrix */}
               {vfd?.validations && (

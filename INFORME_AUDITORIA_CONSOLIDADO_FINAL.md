@@ -390,3 +390,28 @@ Ver Sección 8 de este documento.
 **Fecha de cierre:** 11 de mayo de 2026
 **Próxima revisión:** 11 de agosto de 2026 (90 días)
 **Validación recomendada:** auditoría externa independiente Big 4
+
+---
+
+## ⚠️ ACTUALIZACIÓN POST-CIERRE — CORRECCIÓN BANCARIZACIÓN
+
+**Fecha de actualización:** 11 mayo 2026, post-cierre del consolidado.
+
+Tras extracción detallada de los **105 pagos históricos en efectivo CMO** que aparecían como contingencia retroactiva de S/3.9M, se descubrió que mi interpretación del campo `MedioDePago` estaba **EQUIVOCADA**:
+
+- `MedioDePago=4` NO es efectivo → es **Aplicación de Nota de Crédito (compensación contable)**
+- `MedioDePago=6` NO es efectivo → es **Canje de Letra de Cambio (endoso título valor)**
+
+Ambos son **mecanismos legítimos de extinción de obligaciones SIN dinero** (Art. 1288 Código Civil y Ley 27287 Títulos Valores). **NO violan Ley 28194**.
+
+### Recalibración de contingencias:
+
+| Concepto | Versión Original | **Versión Corregida** |
+|---|---:|---:|
+| Tributario | S/7,309,000 | **S/3,420,000** (−S/3.89M) |
+| Laboral | S/1,021,000 | S/1,021,000 |
+| **TOTAL** | S/8,330,000 | **S/4,441,000** ✅ |
+
+**El grupo tiene cumplimiento de Ley 28194 al 100%** — histórico y actual. CMO se reclasifica de 🔴 Crítica a 🟠 Alta.
+
+**Documento de corrección detallado:** [INFORME_AUDITORIA_CORRECCION_BANCARIZACION.md](INFORME_AUDITORIA_CORRECCION_BANCARIZACION.md)

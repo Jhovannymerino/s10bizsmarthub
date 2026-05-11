@@ -1025,7 +1025,8 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 // FASE B — Auditoría de Bancarización (Ley 28194)
 // Pagos > S/3,500 (o US$1,000) DEBEN usar medio bancario:
 // - MedioDePago: 1=Cheque, 2=Transferencia, 3=Detracción, 5=OtroElec, 7=Voucher → BANCARIZADOS
-// - MedioDePago: 0=SinClasif, 4=Efectivo, 6=Efectivo → NO BANCARIZADOS (riesgo)
+// - MedioDePago: 4=Compensación NC, 6=Canje Letra → NO requieren bancarización (extinción de obligación sin dinero, Art. 1288 CC)
+// - MedioDePago: 0=SinClasif → riesgo (revisar caso a caso)
 // Umbrales: S/3,500 (Mon='01') o US$1,000 (Mon='02')
 const QUERY_BANCARIZACION_METRICAS = (codEmpresa, year) => `
 SELECT
@@ -1049,12 +1050,28 @@ SELECT
     THEN p.PayAmt ELSE 0 END), 2)                                       AS MontoBancarizado,
   SUM(CASE WHEN
     ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
-    AND (p.MedioDePago IN (4,6) OR p.MedioDePago IS NULL OR p.MedioDePago = 0)
+    AND (p.MedioDePago IS NULL OR p.MedioDePago = 0)
     THEN 1 ELSE 0 END)                                                  AS PagosNoBancarizados,
   ROUND(SUM(CASE WHEN
     ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
-    AND (p.MedioDePago IN (4,6) OR p.MedioDePago IS NULL OR p.MedioDePago = 0)
+    AND (p.MedioDePago IS NULL OR p.MedioDePago = 0)
     THEN p.PayAmt ELSE 0 END), 2)                                       AS MontoNoBancarizado,
+  SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND p.MedioDePago = 4
+    THEN 1 ELSE 0 END)                                                  AS PagosCompensacionNC,
+  ROUND(SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND p.MedioDePago = 4
+    THEN p.PayAmt ELSE 0 END), 2)                                       AS MontoCompensacionNC,
+  SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND p.MedioDePago = 6
+    THEN 1 ELSE 0 END)                                                  AS PagosCanjeLetra,
+  ROUND(SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND p.MedioDePago = 6
+    THEN p.PayAmt ELSE 0 END), 2)                                       AS MontoCanjeLetra,
   -- Distribución por medio
   SUM(CASE WHEN p.MedioDePago = 1 THEN 1 ELSE 0 END)                    AS MedioCheque,
   SUM(CASE WHEN p.MedioDePago = 2 THEN 1 ELSE 0 END)                    AS MedioTransferencia,
@@ -1070,7 +1087,7 @@ WHERE p.CodIdentificador = '${codEmpresa}'
   AND YEAR(p.FechaTrx) = ${year}
 `;
 
-// Detalle de pagos > S/3,500 NO bancarizados (efectivo/sin clasificar) — TOP 100
+// Detalle de pagos > S/3,500 con MedioDePago no clasificado (sospechosos) — TOP 100
 const QUERY_PAGOS_NO_BANCARIZADOS = (codEmpresa, year) => `
 SELECT TOP 100
   CONVERT(VARCHAR(10), p.FechaTrx, 103)            AS Fecha,
@@ -1081,9 +1098,9 @@ SELECT TOP 100
   ISNULL(cb.CodMoneda, '')                         AS Moneda,
   ISNULL(cb.Descripcion, '')                       AS Banco,
   CASE p.MedioDePago
-    WHEN 0 THEN 'Sin clasificar'
-    WHEN 4 THEN 'Efectivo (4)'
-    WHEN 6 THEN 'Efectivo (6)'
+    WHEN 0 THEN 'Sin clasificar (revisar)'
+    WHEN 4 THEN 'Compensación NC (OK)'
+    WHEN 6 THEN 'Canje de Letra (OK)'
     ELSE 'Otro' END                                AS MedioDescripcion,
   p.MedioDePago                                    AS MedioCodigo,
   ISNULL(p.CodIdentificadorReferencia, '')         AS Beneficiario,
@@ -1096,7 +1113,7 @@ LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
 WHERE p.CodIdentificador = '${codEmpresa}'
   AND YEAR(p.FechaTrx) = ${year}
   AND ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
-  AND (p.MedioDePago IN (4,6) OR p.MedioDePago IS NULL OR p.MedioDePago = 0)
+  AND (p.MedioDePago IS NULL OR p.MedioDePago = 0)
 ORDER BY p.PayAmt DESC
 `;
 

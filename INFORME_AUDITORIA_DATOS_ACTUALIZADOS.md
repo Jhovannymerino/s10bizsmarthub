@@ -514,3 +514,415 @@ Con los datos reales actualizados, la auditoría revela que el grupo tiene expos
 ---
 
 **Próxima validación de datos:** lunes 18 de mayo de 2026 (post primer ciclo de remediación de 7 días).
+
+---
+
+## 17. HALLAZGO H-14 — ACTIVO FIJO (REVISITADO CON DATOS REALES)
+
+### 17.1. Resumen por empresa
+
+| Empresa | # Cuentas Activo Fijo | Valor Bruto Total | **Depreciación Acumulada** | Valor Neto |
+|---|---:|---:|---:|---:|
+| INTEGRAL CONSULTORES | 4 | 198,712 | **0** ⚠️ | 198,712 |
+| MEDARQ | 3 | 48,569 | **0** ⚠️ | 48,569 |
+| AMERICANA | 3 | 28,500 | **0** ⚠️ | 28,500 |
+| **CMO GROUP** | 3 | **(162,408)** ⚠️ | **0** | (162,408) |
+
+### 17.2. Detalle por cuenta — todas las empresas
+
+#### CMO GROUP S.A. (ANÓMALO)
+
+| Cuenta | Descripción | Valor Bruto | Depreciación | Valor Neto |
+|---|---|---:|---:|---:|
+| 33211000 | **Edificios Adm — Costo de Adquisición** | **(2,407,287)** ⚠️ | 0 | (2,407,287) |
+| 33241000 | **Instalaciones — Costo de Adquisición** | **+2,407,287** ⚠️ | 0 | +2,407,287 |
+| 33691000 | Otros Equipos al Costo | (162,408) | 0 | (162,408) |
+| **TOTAL** | | **(162,408)** | 0 | **(162,408)** |
+
+> **🚨 HALLAZGO CMO-04 (NUEVO CRÍTICO):**
+> CMO GROUP tiene **cuentas de activo fijo con saldos NEGATIVOS**:
+> - Edificios Administrativos: **−S/2,407,287** (un edificio no puede tener valor bruto negativo).
+> - Instalaciones: **+S/2,407,287** — coincide EXACTAMENTE en monto con el negativo de Edificios.
+> - Otros Equipos: **−S/162,408**.
+>
+> **Interpretación contable:** Hubo una **reclasificación** desde "Edificios" (33211) hacia "Instalaciones" (33241) que se contabilizó:
+> - Como **crédito en Edificios** (resta del costo) — generando saldo negativo.
+> - Como **débito en Instalaciones** (incremento) — compensando.
+>
+> Esto es un **error técnico**: una reclasificación NO debe dejar un saldo negativo en la cuenta de origen. Debería haberse hecho:
+> 1. **Db Instalaciones 33241** vs **Cr Edificios 33211** (con su contrapartida en depreciación 39).
+> 2. O dar de baja contablemente el activo de Edificios y reconocerlo nuevo como Instalaciones.
+>
+> El saldo negativo de "Otros Equipos" (−S/162,408) probablemente refleja una **baja de activo no documentada**.
+
+#### INTEGRAL CONSULTORES S.A.C.
+
+| Cuenta | Descripción | Valor Bruto | Depreciación | Valor Neto |
+|---|---|---:|---:|---:|
+| 33511000 | Muebles al Costo | 17,505 | 0 | 17,505 |
+| 33521000 | Enseres al Costo | 42,981 | 0 | 42,981 |
+| 33611000 | Equipo Procesamiento de Información | 89,160 | 0 | 89,160 |
+| 33621000 | Equipo de Comunicación | 49,066 | 0 | 49,066 |
+| **TOTAL** | | **198,712** | 0 | 198,712 |
+
+#### MEDARQ S.A.C.
+
+| Cuenta | Descripción | Valor Bruto | Depreciación | Valor Neto |
+|---|---|---:|---:|---:|
+| 33511000 | Muebles | 2,585 | 0 | 2,585 |
+| 33611000 | Equipo Procesamiento | 36,465 | 0 | 36,465 |
+| 33621000 | Equipo de Comunicación | 9,519 | 0 | 9,519 |
+| **TOTAL** | | **48,569** | 0 | 48,569 |
+
+#### AMERICANA CONSTRUCCIÓN
+
+| Cuenta | Descripción | Valor Bruto | Depreciación | Valor Neto |
+|---|---|---:|---:|---:|
+| 33611000 | Equipo Procesamiento | 5,200 | 0 | 5,200 |
+| 33621000 | Equipo de Comunicación | 19,064 | 0 | 19,064 |
+| 33691000 | Otros Equipos | 4,236 | 0 | 4,236 |
+| **TOTAL** | | **28,500** | 0 | 28,500 |
+
+### 17.3. **HALLAZGO H-19 (NUEVO — TRANSVERSAL CRÍTICO): Depreciación = S/0 en TODAS las empresas**
+
+> **🚨 NINGUNA empresa del grupo tiene Depreciación Acumulada registrada (clase 39 = S/0 en todos los casos).**
+>
+> Esto implica:
+> - **Incumplimiento NIC 16** (Propiedad, Planta y Equipo): la depreciación es obligatoria y sistemática.
+> - **Incumplimiento Art. 22 Reglamento LIR**: las tasas de depreciación son obligatorias para la deducción tributaria.
+> - **Estados Financieros sobrevalorados**: el activo fijo se presenta a valor bruto sin reflejar el desgaste.
+>
+> **Tasas obligatorias de depreciación (Reglamento LIR Art. 22):**
+>
+> | Tipo de activo | Cuenta PCGE | Tasa anual mínima | Vida útil estimada |
+> |---|---|---:|---:|
+> | Muebles y enseres | 33511, 33521 | 10% | 10 años |
+> | Equipo de procesamiento | 33611 | **25%** | 4 años |
+> | Equipo de comunicación | 33621 | 25% | 4 años |
+> | Otros equipos | 33691 | 10% | 10 años |
+> | Edificios | 33211 | 5% | 20 años |
+>
+> **Depreciación estimada faltante (cálculo conservador, asumiendo activos > 2 años):**
+>
+> | Empresa | Estimación depreciación acumulada |
+> |---|---:|
+> | INTEGRAL | ~S/100,000 (50% de S/199K, asumiendo 2-4 años) |
+> | MEDARQ | ~S/25,000 |
+> | AMERICANA | ~S/15,000 |
+> | CMO GROUP | n/a por saldos negativos |
+>
+> **Riesgo:** En una fiscalización, SUNAT puede **rechazar la deducción de gastos de depreciación pasados** y exigir el ajuste retroactivo.
+
+### 17.4. Preguntas al equipo contable
+
+1. ¿Por qué la cuenta 39 (Depreciación Acumulada) no tiene movimientos? ¿Está usándose otra cuenta?
+2. ¿Cuándo fue la última vez que se calculó y registró la depreciación?
+3. ¿Se ha presentado el activo fijo en la DJ Anual del IR 2024 con depreciación? Si sí, ¿de dónde sale ese dato si la contabilidad muestra 0?
+4. ¿La reclasificación CMO Edificios → Instalaciones (S/2.4M) tiene acta o documento autorizante?
+5. ¿Existe un inventario físico de activos fijos? ¿Cuándo fue el último?
+
+---
+
+## 18. HALLAZGO H-15 — PATRIMONIO (REVISITADO CON DATOS REALES)
+
+### 18.1. Resumen por empresa
+
+| Empresa | Cuentas | Capital Social | Reserva Legal | Resultados Acum. | Patrimonio Total |
+|---|---:|---:|---:|---:|---:|
+| **MEDARQ** | 4 | 1,200,000 | **0** ⚠️ | (16,840) | 1,194,097 |
+| **CMO GROUP** | 3 | **0** ⚠️ | **0** ⚠️ | +2,875,935 | 2,875,935 |
+| **AMERICANA** | 2 | 1,000 ⚠️ | **0** ⚠️ | +45,572 | 46,572 |
+| **INTEGRAL** | 1 | **1,000** ⚠️ | **0** ⚠️ | 0 | 1,000 |
+
+### 18.2. Detalle por cuenta
+
+#### CMO GROUP S.A.
+
+| Cuenta | Descripción | Saldo |
+|---|---|---:|
+| 59110100 | Utilidades Acumuladas | +5,082,789 |
+| 59120100 | Ingresos de Años Anteriores | **−2,199,498** ⚠️ |
+| 59220100 | Gastos de Años Anteriores | −7,355 |
+| **TOTAL** | | +2,875,935 |
+
+> **🚨 HALLAZGO CMO-05 (NUEVO):**
+> CMO GROUP NO TIENE CUENTA 501 (Capital Social) registrada. Es legalmente imposible que una S.A. opere sin capital. Esto implica:
+> - El capital nunca se cargó al sistema (probable migración incompleta de S10).
+> - O hay un error de clasificación masivo.
+>
+> Además, "Ingresos de Años Anteriores" con saldo **−S/2,199,498** es contablemente anómalo (debería ser positivo si son ingresos).
+
+#### INTEGRAL CONSULTORES
+
+| Cuenta | Descripción | Saldo |
+|---|---|---:|
+| 50110100 | Acciones | **1,000** |
+
+> **🚨 HALLAZGO INTEGRAL-03 (NUEVO CRÍTICO):**
+> INTEGRAL tiene **CAPITAL SOCIAL DE S/1,000** (mil soles).
+>
+> Comparado con sus operaciones (ingresos YTD S/2.7M, pasivo laboral S/688K, préstamos otorgados S/19.5M), el capital de S/1,000 es **completamente insuficiente** y plantea:
+> - **Riesgo de causal de disolución** si las pérdidas reducen el patrimonio por debajo de 1/3 del capital (Art. 220 LGS) — aunque con capital tan bajo, esto sería casi imposible de superar.
+> - **Riesgo reputacional ante terceros**: bancos y proveedores pueden cuestionar la capacidad financiera.
+> - **Falta de utilidades acumuladas reflejadas**: INTEGRAL ha operado por años. ¿Dónde están las utilidades de 2024 y 2025?
+
+#### AMERICANA CONSTRUCCIÓN
+
+| Cuenta | Descripción | Saldo |
+|---|---|---:|
+| 50110100 | Acciones | 1,000 |
+| 59110100 | Utilidades Acumuladas | 45,572 |
+| **TOTAL** | | 46,572 |
+
+> **Hallazgo AMERICANA-05:** Capital social S/1,000 + Utilidades acumuladas S/45,572 = patrimonio total S/46,572. Con activos totales en bancos por S/8.5M y pasivos por préstamos S/2.4M, el ratio de apalancamiento es **abrumadoramente alto**. Si AMERICANA pierde otros S/250K en 2026 (proyección actual), el patrimonio podría volverse negativo.
+
+#### MEDARQ (LA MEJOR ESTRUCTURADA)
+
+| Cuenta | Descripción | Saldo |
+|---|---|---:|
+| 50110100 | Acciones | 1,200,000 |
+| 50120100 | Participaciones | 9,937 |
+| 50200100 | Acciones en Tesorería | 1,000 |
+| 59220100 | Gastos de Años Anteriores | (16,840) |
+| **TOTAL** | | 1,194,097 |
+
+> **Análisis MEDARQ patrimonio:** estructura más razonable. Capital S/1.2M es coherente con tamaño de operación. Pero con utilidad neta proyectada de **−S/960K anual**, el patrimonio se reduciría a ~S/234K al cierre. Riesgo Art. 220 LGS si pierde > S/400K más → patrimonio < 1/3 del capital → **causal de disolución obligatoria**.
+
+### 18.3. **HALLAZGO H-20 (NUEVO — TRANSVERSAL): Reserva Legal AUSENTE en las 4 empresas**
+
+> **Art. 229 Ley General de Sociedades (LGS):**
+> "Un mínimo del 10% de la utilidad distribuible del ejercicio, deducido el impuesto a la renta, debe destinarse a reserva legal, hasta que ella alcance un monto igual a la quinta parte del capital."
+>
+> **Ninguna de las 4 empresas tiene cuenta 5821 (Reserva Legal) con saldo.** Esto es:
+> - **Incumplimiento legal** (LGS Art. 229).
+> - Las Juntas de Accionistas deben aprobar formalmente la constitución de la reserva legal antes de distribuir dividendos.
+>
+> **Acción inmediata:** revisar las actas de Junta General de Accionistas de los últimos 3 años. Si no se aprobó la constitución de reserva legal, se debe hacer retroactivamente.
+
+---
+
+## 19. HALLAZGO H-21 (NUEVO) — FACTURAS Y HONORARIOS SIN ASIENTO CONTABLE
+
+### 19.1. Facturas emitidas: detectadas SIN asiento contable
+
+| Empresa | # Facturas emitidas | **Monto Total** | **Sin Asiento (S/)** |
+|---|---:|---:|---:|
+| **INTEGRAL** | 102 | 5,480,325 | **153,284** ⚠️ |
+| MEDARQ | 19 | 1,168,200 | 0 |
+| AMERICANA | 14 | 256,509 | 0 |
+| CMO GROUP | 1 | 95,948 | 0 |
+
+### 19.2. Facturas RECIBIDAS sin asiento (gastos no contabilizados)
+
+| Empresa | # Facturas | **Monto Total** | **Sin Asiento (S/)** |
+|---|---:|---:|---:|
+| INTEGRAL | 420 | 620,870 | **41,240** ⚠️ |
+| MEDARQ | 264 | 215,780 | 39,550 |
+| AMERICANA | 105 | 78,303 | 14,117 |
+| CMO GROUP | 68 | 138,391 | 0 |
+
+> **Impacto fiscal:** Cada sol no contabilizado como gasto pierde:
+> - **18% del IGV** como crédito fiscal (Art. 19 Ley IGV).
+> - **29.5% del IR** como deducción.
+>
+> **Costo fiscal estimado por gastos no contabilizados:**
+> - INTEGRAL: S/41,240 × (18% + 29.5%) = **S/19,589 perdidos**
+> - MEDARQ: S/39,550 × 47.5% = **S/18,786**
+> - AMERICANA: S/14,117 × 47.5% = **S/6,706**
+
+### 19.3. Honorarios profesionales sin asiento
+
+| Empresa | # Recibos | **Monto Total** | **Sin Asiento (S/)** | % sin asiento |
+|---|---:|---:|---:|---:|
+| INTEGRAL | 30 | 230,164 | 0 | 0% |
+| MEDARQ | 17 | 134,034 | 0 | 0% |
+| CMO GROUP | 22 | 187,700 | 0 | 0% |
+| **AMERICANA** | 7 | 17,444 | **17,094** | **98%** ⚠️ |
+
+> **🚨 HALLAZGO AMERICANA-06 (NUEVO):**
+> **98% de los recibos por honorarios de AMERICANA están sin asiento contable** (S/17,094 de S/17,444). Implicaciones:
+> - **Retención del 8% NO realizada** (Art. 74 LIR): potencial multa de 50% del tributo omitido = S/684.
+> - **Retención no declarada en PDT-PLAME**: multa adicional 0.6% IN.
+> - **Gasto no deducible**: pierde S/17,094 × 29.5% IR = **S/5,043** de menor deducción.
+>
+> **Acción inmediata:** verificar si las retenciones fueron pagadas a SUNAT aunque los recibos no estén contabilizados. Si no, presentar declaración rectificatoria.
+
+---
+
+## 20. HALLAZGO H-22 (NUEVO) — TRANSFERENCIAS INTER-CUENTAS (tipo 058)
+
+### 20.1. Volumen monetario real (no solo conteo)
+
+| Empresa | # Documentos | **Monto Total Movido** | Saldo Pendiente |
+|---|---:|---:|---:|
+| **CMO GROUP** | 840 | **121,750,041** | 11,387,881 |
+| **AMERICANA** | 52 | **46,499,582** | 0 |
+| INTEGRAL | 174 | 23,741,020 | 2,511,269 |
+| MEDARQ | 6 | 373,697 | 31,000 |
+
+### 20.2. Análisis crítico
+
+> **🚨 HALLAZGO AMERICANA-07 (NUEVO):**
+> **AMERICANA movió S/46.5 millones en transferencias** en 5 meses, contra ingresos por solo S/213K en el mismo período. Ratio: **218x** los ingresos.
+>
+> Esto es **anómalo**: una empresa pequeña con S/213K de ingresos no debería mover S/46.5M.
+>
+> Hipótesis:
+> 1. AMERICANA es un **vehículo de paso** del grupo (recibe pagos y los redirige).
+> 2. Hay **operaciones por cuenta de terceros** (intermediación) no reflejadas como ingreso.
+> 3. Hay **transferencias intercompany** mal clasificadas como tipo 058 (deberían ser tipo 071 préstamos).
+>
+> **Riesgo SUNAT:** los flujos masivos sin sustento de ingreso pueden generar la **presunción de ventas omitidas** (Art. 65 CT — Determinación sobre Base Presunta).
+
+> **CMO GROUP** movió **S/121.8M en transferencias** (esperable por ser tesorería del grupo). Pero ya tiene S/123M en préstamos otorgados y S/121M recibidos. **Total movido por CMO GROUP en 5 meses: ~S/245M** — esto requiere documentación robusta de cada operación.
+
+---
+
+## 21. HALLAZGO H-23 (NUEVO) — GASTOS POR NATURALEZA
+
+### 21.1. Por revisar — análisis pendiente
+
+El módulo Gastos por Naturaleza ahora funciona (después del fix del campo `GrupoCuenta`). Hay datos disponibles por empresa:
+
+| Empresa | # Grupos de cuenta |
+|---|---:|
+| INTEGRAL | 115 |
+| MEDARQ | 105 |
+| AMERICANA | 59 |
+| CMO GROUP | 47 |
+
+**Recomendación:** revisar en dashboard el top 10 de gastos por naturaleza de cada empresa. Buscar gastos atípicos (un solo gran gasto de un concepto que no se repite).
+
+---
+
+## 22. VALIDACIONES PREVIAS — DATOS CORRECTOS EN LA FUENTE
+
+Esta sección documenta las preguntas que el equipo ya planteó sobre datos que parecían incorrectos pero que la auditoría confirmó **fieles a la fuente S10**.
+
+### 22.1. MEDARQ — Bancos negativos (BBVA ME y Detracciones)
+
+| Cuenta | Saldo | Estado |
+|---|---:|---|
+| BBVA Continental ME (10410014) | −S/51,587 | ✅ **Correcto al origen** |
+| Banco Nación Detracciones (10710021) | −S/31,860 | ✅ **Correcto al origen** |
+
+**Razón:** S10 fue implementado a mediados del período y no se cargaron los asientos de apertura bancarios. Los saldos negativos NO reflejan sobregiros reales sino la **ausencia de saldo inicial**. La cuenta `SaldoInicial = 0` en el snapshot tesorería lo confirma.
+
+**Acción técnica:** cargar asiento de apertura con saldo real del estado de cuenta del banco al 01/01/2026. Ver §4.
+
+### 22.2. MEDARQ — Entrada CxC sin descripción
+
+**Pregunta original:** "hay una CxC sin descripción en MEDARQ — ¿es correcto?"
+
+**Respuesta validada:** ✅ **Correcto al origen** — Es un asiento de clase 18 (Servicios pagados por anticipado) con `CodIdentificador = NULL` en la tabla `CMO.dbo.AsientoContable`. Sin identificador del tercero, el LEFT JOIN con `CMO.dbo.Identificador` devuelve NULL → no hay descripción que mostrar.
+
+**Origen del problema:** el contador no asignó un tercero al asiento (legítimo si es una provisión genérica, no si es un servicio a una empresa específica).
+
+**Acción recomendada:** revisar el asiento y asignar `CodIdentificador` si el servicio anticipado corresponde a una empresa concreta (probable proveedor de servicios).
+
+### 22.3. MEDARQ — Rimac S.A. EPS en Otras CxC
+
+**Pregunta original:** "¿es correcto que aparezca Rimac S.A. EPS como Otras CxC?"
+
+**Respuesta validada:** ✅ **Correcto al origen** — Es un asiento de **clase 18** (Servicios pagados por anticipado). El servicio de **EPS** (Entidad Prestadora de Salud) se paga por adelantado mensualmente. Hasta que el período de cobertura no se consume, contablemente es un activo prepagado.
+
+**Asiento típico:**
+```
+Db. 1891 (EPS Prepagado) S/ x,xxx     ← reconocimiento del prepago
+   Cr. 1042 (Cta Bcs MN)     S/ x,xxx ← pago a Rimac
+```
+
+Cada mes que pasa:
+```
+Db. 6271 (Atención Médica) S/ y,yyy   ← devengo del gasto
+   Cr. 1891 (EPS Prepagado)    S/ y,yyy ← amortización
+```
+
+**Acción:** verificar que el devengo mensual se esté reconociendo. Si la cuenta 18 sigue creciendo sin amortizarse contra gasto, hay un error.
+
+### 22.4. Inventarios vacíos — Las 4 empresas
+
+**Pregunta original:** "¿por qué no hay datos de inventarios en ninguna empresa?"
+
+**Respuesta validada:** ✅ **Correcto al origen** — Las 4 empresas son de **servicios profesionales** (consultoría, holding, construcción de servicios). No manejan stock físico significativo. La clase 20-29 (Inventarios) está vacía o con saldos despreciables (< S/0.01).
+
+**Naturaleza de cada empresa:**
+- CMO GROUP: holding — no opera comercialmente.
+- INTEGRAL: consultoría profesional.
+- MEDARQ: arquitectura/proyectos.
+- AMERICANA: construcción/equipamiento por servicios (no por venta de bienes).
+
+**Caveat:** AMERICANA es la única que podría manejar inventario (si vende equipos). Verificar con el contador si todos los equipos se compran-y-entregan en proyectos específicos (gasto directo, no inventario) o si hay stock en almacén que debería contabilizarse.
+
+### 22.5. Activo Fijo idéntico 2025 vs 2026
+
+**Pregunta original:** "En activo fijo la información de 2025 y 2026 es la misma — ¿es correcto?"
+
+**Respuesta validada:** ✅ **Correcto por diseño**. El snapshot `activo_fijo` se guarda con `period='current'` (no por año) porque representa el **saldo acumulado histórico** desde la implementación. No depende del año seleccionado en el dashboard.
+
+**Implicación:** los datos NO cambian al cambiar de año en el filtro porque la BD solo guarda una versión (la última sincronizada). Si quieres ver activo fijo histórico por año, hay que reestructurar el snapshot para incluir el año.
+
+**Sin embargo, esta misma sesión reveló (ver §17) que la depreciación está en 0 — lo cual cambia el análisis: el activo fijo NO está siendo amortizado correctamente**.
+
+### 22.6. NroAsientoContable es GUID, no número correlativo
+
+**Pregunta original:** "el número de asiento muestra algo raro tipo `80BF97DB...` — ¿está mal?"
+
+**Respuesta validada:** ✅ **Correcto al origen** — S10 usa **GUIDs (UUIDs)** como identificadores internos. No existe un "número de asiento correlativo" tradicional en la base productiva. El dashboard muestra los primeros 8 caracteres del GUID (truncado) que es la mejor referencia operativa disponible.
+
+**Implicación práctica:** para localizar un asiento específico, el contador debe usar **glosa + fecha + cuenta** como referencia, no el "número de asiento".
+
+### 22.7. Asientos de Apertura como "descuadres" — Aclaración crítica
+
+**Pregunta original:** "¿es correcto que aparezcan tantos descuadres?"
+
+**Respuesta validada:** ✅ **Mayormente correcto al origen** — Los asientos de apertura en S10 se registran como **líneas individuales sin contrapartida explícita** en el mismo NroD. Por eso aparecen como "descuadres" en el módulo de auditoría, aunque NO son errores contables sino el comportamiento normal del sistema al cargar saldos iniciales.
+
+**Distribución real (ver §2 actualizado):**
+- 7,220 de los 8,424 descuadres totales (85.7%) son legítimos Asientos de Apertura
+- 1,204 (14.3%) SÍ son descuadres operativos que requieren revisión
+
+**Acción técnica:** mejorar S10 para que los asientos de apertura usen un NroD especial "OPEN-2026" o `NULL`, separándolos visualmente de errores operativos.
+
+---
+
+## 23. RESUMEN FINAL — HALLAZGOS TRANSVERSALES ADICIONALES (post §22)
+
+| # | Hallazgo | Empresa(s) | Severidad |
+|---|---|---|---|
+| **H-19** | Depreciación acumulada = S/0 en TODAS las empresas (NIC 16 + LIR Art. 22) | 4/4 | 🔴 Crítica |
+| **H-20** | Reserva Legal ausente en TODAS (LGS Art. 229) | 4/4 | 🟠 Alta |
+| **H-21** | Facturas/honorarios sin asiento (subdeclaración) | INTEGRAL, AMERICANA, MEDARQ | 🟠 Alta |
+| **H-22** | Transferencias S/46.5M con ingresos S/213K (218x) | AMERICANA | 🔴 Crítica |
+| **CMO-04** | Cuenta Edificios con saldo NEGATIVO −S/2.4M | CMO GROUP | 🟠 Alta |
+| **CMO-05** | Capital Social (501) ausente — solo S/2.9M en utilidades acum. | CMO GROUP | 🟠 Alta |
+| **INTEGRAL-03** | Capital social S/1,000 — desproporcionado vs operación | INTEGRAL | 🟡 Media |
+| **AMERICANA-05** | Patrimonio total S/46K — al borde de causal de disolución | AMERICANA | 🟠 Alta |
+| **AMERICANA-06** | 98% de honorarios sin asiento contable | AMERICANA | 🟠 Alta |
+| **AMERICANA-07** | S/46.5M transferencias inexplicables | AMERICANA | 🔴 Crítica |
+
+---
+
+## 24. ESCALAMIENTO FINAL — TOP 15 ACCIONES TRAS LA REVISIÓN INTEGRAL
+
+Considerando hallazgos previamente validados (§22) + nuevos hallazgos (§17-23):
+
+1. **AMERICANA** — Conciliar BBVA MN −S/13M + auditar S/46.5M en transferencias.
+2. **AMERICANA** — Documentar los 27 movimientos bancarios sin documento por S/35.7M.
+3. **AMERICANA** — Provisionar deterioro NIIF 9 sobre S/3M en CxC vencida.
+4. **AMERICANA** — Contabilizar los 7 honorarios profesionales pendientes (S/17K).
+5. **INTEGRAL** — Explicar S/1.83M de facturas emitidas no contabilizadas como ingreso.
+6. **INTEGRAL** — Capitalizar / formalizar el capital social S/1,000 → monto razonable.
+7. **MEDARQ** — Contabilizar los 10 asientos de ingreso (clase 70) sin factura por S/400K.
+8. **MEDARQ** — Conciliar Banco Nación Detracciones (validar contra estado de cuenta SUNAT).
+9. **MEDARQ** — Cargar asiento de apertura bancario real (BBVA ME y otros).
+10. **CMO GROUP** — Investigar cuenta Edificios con saldo NEGATIVO S/2.4M (reclasificación).
+11. **CMO GROUP** — Verificar dónde está el Capital Social (cuenta 501 vacía).
+12. **CMO GROUP** — Formalizar contratos de mutuo para 4,051 préstamos (S/123M).
+13. **TODAS** — Registrar Depreciación Acumulada conforme NIC 16 + LIR Art. 22 (5 años retroactivos si se puede).
+14. **TODAS** — Constituir Reserva Legal según Art. 229 LGS retroactivamente.
+15. **TODAS** — Conciliación bancaria mensual firmada y archivada (procedimiento formal).
+
+---
+
+**Versión 2.0 del informe** — incluye §17 a §24 con datos reales actualizados + validaciones previas que ya hicimos como contador-auditor en la conversación.

@@ -623,6 +623,25 @@ export class KpiService {
     };
   }
 
+  async getObPagos(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'ob_pagos', `${year}`);
+    if (!cached) return { rows: [], total: 0, totalMonto: 0 };
+    const rows = cached.data as any[];
+    const totalMonto = rows.reduce((s, r) => s + (parseFloat(r.Monto) || 0), 0);
+    const conCheque = rows.filter(r => r.NoCheque && r.NoCheque.trim()).length;
+    const electronicos = rows.filter(r => r.EsElectronico).length;
+    const anulados = rows.filter(r => r.Estado === 'A' || r.Estado === 'a').length;
+    return {
+      rows,
+      total: rows.length,
+      totalMonto: round(totalMonto),
+      conCheque,
+      electronicos,
+      anulados,
+      syncedAt: cached.syncedAt,
+    };
+  }
+
   async getConciliacionBancaria(companyId: string) {
     const cached = await this.getSnapshot(companyId, 'conciliacion_bancaria', 'current');
     const movsCached = await this.getSnapshot(companyId, 'movs_sin_conciliar', 'current');

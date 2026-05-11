@@ -945,6 +945,33 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
+// OB_Pago — Libro de Pagos del módulo de Tesorería de S10.
+// Esto es el módulo donde la empresa registra CADA PAGO emitido (cheque, transferencia,
+// detracción, planilla, etc.). Es paralelo a AsientoContable pero con detalle operativo
+// (NoCheque, BankAccount_ID, EstadoDoc=anulado/vigente, etc.).
+// Año en curso para no inflar el payload.
+const QUERY_OB_PAGOS = (codEmpresa, year) => `
+SELECT TOP 1000
+  CONVERT(VARCHAR(10), p.FechaTrx, 103)            AS Fecha,
+  ISNULL(p.NoDocumento, '')                        AS NoDocumento,
+  ISNULL(p.NoCheque, '')                           AS NoCheque,
+  LEFT(ISNULL(p.Descripcion, ''), 80)              AS Descripcion,
+  ROUND(ISNULL(p.PayAmt, 0), 2)                    AS Monto,
+  ISNULL(cb.Descripcion, '')                       AS Banco,
+  ISNULL(cb.NoCuenta, '')                          AS NoCuenta,
+  ISNULL(cb.CodMoneda, '')                         AS Moneda,
+  ISNULL(p.MedioDePago, '')                        AS MedioPago,
+  ISNULL(p.EstadoDoc, '')                          AS Estado,
+  ISNULL(p.PagoElectronico, 0)                     AS EsElectronico,
+  ISNULL(p.NumeroOperacion, '')                    AS NumOperacion,
+  ISNULL(p.CodIdentificadorReferencia, '')         AS Beneficiario
+FROM CMO.dbo.OB_Pago p
+LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
+WHERE p.CodIdentificador = '${codEmpresa}'
+  AND YEAR(p.FechaTrx) = ${year}
+ORDER BY p.FechaTrx DESC
+`;
+
 // Conciliación Bancaria — resumen por cuenta con último estado de cuenta cargado.
 // Captura el estado del módulo OB_EstadoBanco / OB_EstadoBancoDetalle de S10,
 // que es donde la empresa carga manualmente los estados de cuenta de cada
@@ -1182,7 +1209,7 @@ async function main() {
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
         cajaSaldosResult, cajaTxnResult,
         tesoreriaResult, obSaldosBancoResult,
-        conciliacionBancariaResult, movsSinConciliarResult,
+        conciliacionBancariaResult, movsSinConciliarResult, obPagosResult,
         gastosNatResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
@@ -1197,6 +1224,7 @@ async function main() {
         pool.request().query(QUERY_OB_SALDOS_BANCO(company.codEmpresa, year)),
         pool.request().query(QUERY_CONCILIACION_BANCARIA(company.codEmpresa)),
         pool.request().query(QUERY_MOVIMIENTOS_SIN_CONCILIAR(company.codEmpresa)),
+        pool.request().query(QUERY_OB_PAGOS(company.codEmpresa, year)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
@@ -1228,6 +1256,7 @@ async function main() {
       logRow('OB Saldos Banco', obSaldosBancoResult.recordset);
       logRow('Conciliación Bancaria', conciliacionBancariaResult.recordset);
       logRow('Movs sin Conciliar', movsSinConciliarResult.recordset);
+      logRow('OB Pagos (libro pagos)', obPagosResult.recordset);
       logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
@@ -1278,6 +1307,7 @@ async function main() {
           ob_saldos_banco: obSaldosBancoResult.recordset,
           conciliacion_bancaria: conciliacionBancariaResult.recordset,
           movs_sin_conciliar: movsSinConciliarResult.recordset,
+          ob_pagos: obPagosResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,

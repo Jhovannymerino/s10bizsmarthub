@@ -224,6 +224,16 @@ export class KpiController {
     return this.kpiService.getConciliacionBancaria(companyId);
   }
 
+  /** Libro de pagos OB_Pago — detalle de pagos del módulo de tesorería */
+  @Get(':companyId/ob-pagos')
+  getObPagos(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getObPagos(companyId, y);
+  }
+
   /** Préstamos otorgados — tipo 071 en CxC */
   @Get(':companyId/prestamos-otorgados')
   getPrestamosOtorgados(@Param('companyId') companyId: string) {

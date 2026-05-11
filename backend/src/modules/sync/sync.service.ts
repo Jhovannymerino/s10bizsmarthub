@@ -64,6 +64,7 @@ export class SyncService {
       ob_saldos_banco?: any[];
       conciliacion_bancaria?: any[];
       movs_sin_conciliar?: any[];
+      ob_pagos?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -254,6 +255,11 @@ export class SyncService {
       if (data.movs_sin_conciliar?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'movs_sin_conciliar', 'current', year, null, data.movs_sin_conciliar);
         logs.push({ kpiType: 'movs_sin_conciliar', rowsProcessed: data.movs_sin_conciliar.length, status: 'success' });
+      }
+
+      if (data.ob_pagos?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'ob_pagos', period, year, null, data.ob_pagos);
+        logs.push({ kpiType: 'ob_pagos', rowsProcessed: data.ob_pagos.length, status: 'success' });
       }
 
       if (data.audit_sin_doc?.length) {

@@ -289,14 +289,14 @@ export default function DashboardPage() {
 
   // ── Lazy load nuevos módulos ──────────────────
   useEffect(() => {
-    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','gastos_nat','caja_saldos','conciliacion','audit'];
+    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','gastos_nat','caja_saldos','conciliacion','audit','validation_forense'];
     if (!NEW_TABS.includes(activeTab) || isGrupo) return;
     const token = localStorage.getItem('token');
     if (!token) return;
     const id = selectedCompany.codEmpresa;
 
     // Year-dependent tabs: cache key includes year; static tabs: cache key is company only
-    const yearDependent = new Set(['gastos_nat','audit','tesoreria','inventarios','tributos']);
+    const yearDependent = new Set(['gastos_nat','audit','tesoreria','inventarios','tributos','validation_forense']);
     const cacheKey = yearDependent.has(activeTab) ? `${id}:${selectedYear}` : id;
     if (loadedRef.current[activeTab] === cacheKey) return;
 

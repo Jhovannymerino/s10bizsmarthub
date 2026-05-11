@@ -1534,8 +1534,9 @@ export default function DashboardPage() {
               setSyncMsg('Iniciando sincronización...');
               setSyncProgress(null);
               try {
-                // Triggear todos los años disponibles (2022 → año actual)
-                const res = await fetch(`${API}/sync/trigger`, {
+                // Todos los años desde 2022 hasta el actual
+                const allYears = Array.from({ length: CURRENT_YEAR - 2022 + 1 }, (_, i) => 2022 + i).join(',');
+                const res = await fetch(`${API}/sync/trigger?years=${allYears}`, {
                   method: 'POST', headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();
@@ -1597,7 +1598,7 @@ export default function DashboardPage() {
           </button>
 
           {/* Panel de progreso detallado */}
-          {syncStatus === 'running' && syncProgress?.totalYears > 0 && (() => {
+          {syncStatus === 'running' && syncProgress?.running && syncProgress?.totalYears > 0 && (() => {
             const p = syncProgress;
             const done = p.completedYears?.length ?? 0;
             const total = p.totalYears ?? 1;
@@ -1660,7 +1661,7 @@ export default function DashboardPage() {
           })()}
 
           {/* Mensaje simple cuando no hay progreso detallado aún */}
-          {syncMsg && !(syncStatus === 'running' && syncProgress?.totalYears > 0) && (
+          {syncMsg && !(syncStatus === 'running' && syncProgress?.running && syncProgress?.totalYears > 0) && (
             <div style={{ fontSize: '0.65rem', color: syncStatus === 'unavailable' ? '#F59E0B' : '#8B97A8', marginTop: '0.4rem', lineHeight: 1.4, padding: '0 0.1rem' }}>
               {syncMsg}
             </div>

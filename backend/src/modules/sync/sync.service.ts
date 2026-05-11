@@ -62,6 +62,8 @@ export class SyncService {
       inventarios?: any[];
       tesoreria?: any[];
       ob_saldos_banco?: any[];
+      conciliacion_bancaria?: any[];
+      movs_sin_conciliar?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -240,6 +242,18 @@ export class SyncService {
       if (data.ob_saldos_banco?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'ob_saldos_banco', 'current', year, null, data.ob_saldos_banco);
         logs.push({ kpiType: 'ob_saldos_banco', rowsProcessed: data.ob_saldos_banco.length, status: 'success' });
+      }
+
+      // Conciliación bancaria — siempre guardar (incluso si vacío) para detectar
+      // empresas que NO usan el módulo (riesgo de control interno).
+      if (data.conciliacion_bancaria !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'conciliacion_bancaria', 'current', year, null, data.conciliacion_bancaria);
+        logs.push({ kpiType: 'conciliacion_bancaria', rowsProcessed: data.conciliacion_bancaria.length, status: 'success' });
+      }
+
+      if (data.movs_sin_conciliar?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'movs_sin_conciliar', 'current', year, null, data.movs_sin_conciliar);
+        logs.push({ kpiType: 'movs_sin_conciliar', rowsProcessed: data.movs_sin_conciliar.length, status: 'success' });
       }
 
       if (data.audit_sin_doc?.length) {

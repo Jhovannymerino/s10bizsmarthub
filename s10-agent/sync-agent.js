@@ -945,6 +945,74 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
+// Conciliación Bancaria — resumen por cuenta con último estado de cuenta cargado.
+// Captura el estado del módulo OB_EstadoBanco / OB_EstadoBancoDetalle de S10,
+// que es donde la empresa carga manualmente los estados de cuenta de cada
+// banco para conciliar contra la contabilidad. Si una cuenta NO tiene estados
+// de cuenta cargados, es señal de FALTA TOTAL DE CONCILIACIÓN BANCARIA.
+const QUERY_CONCILIACION_BANCARIA = (codEmpresa) => `
+WITH UltimoEstado AS (
+  SELECT BankAccount_ID, MAX(Al) AS UltimoAl
+  FROM CMO.dbo.OB_EstadoBanco
+  GROUP BY BankAccount_ID
+)
+SELECT
+  cb.BankAccount_ID                                AS BankAccountId,
+  cb.NoCuenta                                      AS NoCuenta,
+  LEFT(cb.Descripcion, 60)                         AS DesCuenta,
+  cb.CodMoneda                                     AS Moneda,
+  cb.CodIdentificador                              AS CodEmpresa,
+  ROUND(ISNULL(cb.BalanceActual, 0), 2)            AS BalanceContable,
+  ROUND(ISNULL(cb.BalanceReal, 0), 2)              AS BalanceReal,
+  CONVERT(VARCHAR(10), eb.Del, 103)                AS UltimoEstadoDel,
+  CONVERT(VARCHAR(10), eb.Al, 103)                 AS UltimoEstadoAl,
+  ROUND(ISNULL(eb.SaldoContableInicial, 0), 2)     AS UltimoSaldoInicialBanco,
+  ROUND(ISNULL(eb.SaldoContableFinal, 0), 2)       AS UltimoSaldoFinalBanco,
+  ROUND(ISNULL(eb.DepositoEfectivo, 0)
+        + ISNULL(eb.OtrosAbono, 0)
+        + ISNULL(eb.InteresesAcreedores, 0), 2)    AS TotalAbonosBanco,
+  ROUND(ISNULL(eb.ChequesPagados, 0)
+        + ISNULL(eb.OtrosCargos, 0)
+        + ISNULL(eb.InteresesDeudores, 0), 2)      AS TotalCargosBanco,
+  (SELECT COUNT(*) FROM CMO.dbo.OB_EstadoBancoDetalle d
+   WHERE d.NroEstadoBanco = eb.NroEstadoBanco)     AS NumMovimientos,
+  (SELECT COUNT(*) FROM CMO.dbo.OB_EstadoBancoDetalle d
+   WHERE d.NroEstadoBanco = eb.NroEstadoBanco AND d.ConciliarEstado = 1) AS NumConciliados,
+  (SELECT COUNT(*) FROM CMO.dbo.OB_EstadoBancoDetalle d
+   WHERE d.NroEstadoBanco = eb.NroEstadoBanco AND (d.ConciliarEstado IS NULL OR d.ConciliarEstado = 0)) AS NumSinConciliar,
+  (SELECT COUNT(DISTINCT NroEstadoBanco) FROM CMO.dbo.OB_EstadoBanco eb2 WHERE eb2.BankAccount_ID = cb.BankAccount_ID) AS TotalEstadosHistoricos,
+  DATEDIFF(DAY, eb.Al, GETDATE())                  AS DiasDesdeUltimoEstado
+FROM CMO.dbo.OB_CuentaBanco cb
+LEFT JOIN UltimoEstado ue ON cb.BankAccount_ID = ue.BankAccount_ID
+LEFT JOIN CMO.dbo.OB_EstadoBanco eb ON cb.BankAccount_ID = eb.BankAccount_ID AND eb.Al = ue.UltimoAl
+WHERE cb.CodIdentificador = '${codEmpresa}'
+  AND cb.Activo = 1
+ORDER BY ABS(ISNULL(cb.BalanceActual, 0)) DESC
+`;
+
+// Movimientos bancarios SIN CONCILIAR — top 100 más recientes por empresa
+// Estos son movimientos del extracto del banco que NO se han cuadrado contra
+// la contabilidad. Cada uno representa un riesgo de conciliación pendiente.
+const QUERY_MOVIMIENTOS_SIN_CONCILIAR = (codEmpresa) => `
+SELECT TOP 100
+  CONVERT(VARCHAR(10), d.FechaTransaccion, 103)    AS Fecha,
+  LEFT(cb.Descripcion, 50)                         AS DesCuenta,
+  cb.CodMoneda                                     AS Moneda,
+  LEFT(ISNULL(d.Descripcion, ''), 80)              AS DescMovimiento,
+  ISNULL(d.NumeroOperacion, '')                    AS NumOperacion,
+  ISNULL(d.NumeroCheque, '')                       AS NumCheque,
+  ROUND(ISNULL(d.Cargo, 0), 2)                     AS Cargo,
+  ROUND(ISNULL(d.Abono, 0), 2)                     AS Abono,
+  CONVERT(VARCHAR(10), eb.Del, 103)                AS EstadoDel,
+  CONVERT(VARCHAR(10), eb.Al, 103)                 AS EstadoAl
+FROM CMO.dbo.OB_EstadoBancoDetalle d
+JOIN CMO.dbo.OB_EstadoBanco eb ON d.NroEstadoBanco = eb.NroEstadoBanco
+JOIN CMO.dbo.OB_CuentaBanco cb ON eb.BankAccount_ID = cb.BankAccount_ID
+WHERE cb.CodIdentificador = '${codEmpresa}'
+  AND (d.ConciliarEstado IS NULL OR d.ConciliarEstado = 0)
+ORDER BY d.FechaTransaccion DESC
+`;
+
 // OB_CuentaBancoPeriodo: saldos iniciales bancarios reales según el módulo
 // de conciliación bancaria de S10 (paralelo a AsientoContable).
 // Permite distinguir saldo contable (caja_saldos) vs saldo bancario real (BalanceReal)
@@ -1114,6 +1182,7 @@ async function main() {
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
         cajaSaldosResult, cajaTxnResult,
         tesoreriaResult, obSaldosBancoResult,
+        conciliacionBancariaResult, movsSinConciliarResult,
         gastosNatResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
@@ -1126,6 +1195,8 @@ async function main() {
         pool.request().query(QUERY_CAJA_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_TESORERIA(company.codEmpresa, year)),
         pool.request().query(QUERY_OB_SALDOS_BANCO(company.codEmpresa, year)),
+        pool.request().query(QUERY_CONCILIACION_BANCARIA(company.codEmpresa)),
+        pool.request().query(QUERY_MOVIMIENTOS_SIN_CONCILIAR(company.codEmpresa)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
@@ -1155,6 +1226,8 @@ async function main() {
       logRow('Laboral TXN', laboralTxnResult.recordset);
       logRow('Tesorería', tesoreriaResult.recordset);
       logRow('OB Saldos Banco', obSaldosBancoResult.recordset);
+      logRow('Conciliación Bancaria', conciliacionBancariaResult.recordset);
+      logRow('Movs sin Conciliar', movsSinConciliarResult.recordset);
       logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
@@ -1203,6 +1276,8 @@ async function main() {
           caja_txn: cajaTxnResult.recordset,
           tesoreria: tesoreriaResult.recordset,
           ob_saldos_banco: obSaldosBancoResult.recordset,
+          conciliacion_bancaria: conciliacionBancariaResult.recordset,
+          movs_sin_conciliar: movsSinConciliarResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,

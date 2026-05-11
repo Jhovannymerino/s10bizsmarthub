@@ -623,6 +623,40 @@ export class KpiService {
     };
   }
 
+  async getConciliacionBancaria(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'conciliacion_bancaria', 'current');
+    const movsCached = await this.getSnapshot(companyId, 'movs_sin_conciliar', 'current');
+    const rows = (cached?.data as any[]) ?? [];
+    const movsSinConciliar = (movsCached?.data as any[]) ?? [];
+
+    // Métricas agregadas
+    const cuentasConEstados = rows.filter(r => r.TotalEstadosHistoricos > 0).length;
+    const cuentasSinEstados = rows.filter(r => !r.TotalEstadosHistoricos || r.TotalEstadosHistoricos === 0).length;
+    const cuentasConcAlDia = rows.filter(r => r.DiasDesdeUltimoEstado != null && r.DiasDesdeUltimoEstado <= 60).length;
+    const cuentasConcAtrasada = rows.filter(r => r.DiasDesdeUltimoEstado != null && r.DiasDesdeUltimoEstado > 60).length;
+    const diasAtraso = rows
+      .map(r => r.DiasDesdeUltimoEstado)
+      .filter(d => d != null);
+    const maxDiasAtraso = diasAtraso.length ? Math.max(...diasAtraso) : null;
+    const minDiasAtraso = diasAtraso.length ? Math.min(...diasAtraso) : null;
+    const totalMovsSinConc = rows.reduce((s, r) => s + (parseInt(r.NumSinConciliar) || 0), 0);
+
+    return {
+      rows,
+      movsSinConciliar,
+      cuentasConEstados,
+      cuentasSinEstados,
+      cuentasConcAlDia,
+      cuentasConcAtrasada,
+      maxDiasAtraso,
+      minDiasAtraso,
+      totalMovsSinConc,
+      totalCuentas: rows.length,
+      usaModulo: cuentasConEstados > 0,
+      syncedAt: cached?.syncedAt,
+    };
+  }
+
   async getObSaldosBanco(companyId: string) {
     const cached = await this.getSnapshot(companyId, 'ob_saldos_banco', 'current');
     if (!cached) return { rows: [], message: 'No data. Run sync first.' };

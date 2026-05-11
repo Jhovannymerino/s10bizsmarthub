@@ -1058,7 +1058,7 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'audit'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit'>('pl');
   const [userRole, setUserRole] = useState<string>('viewer');
   const [userEmail, setUserEmail] = useState<string>('');
   // ── Admin: gestión de usuarios ──
@@ -1101,6 +1101,7 @@ export default function DashboardPage() {
   const [tesoreriaData, setTesoreriaData] = useState<any>(null);
   const [patrimonioData, setPatrimonioData] = useState<any>(null);
   const [inventariosData, setInventariosData] = useState<any>(null);
+  const [conciliacionData, setConciliacionData] = useState<any>(null);
   const [newTabLoading, setNewTabLoading] = useState(false);
   // Cache key: tabName → `${companyId}:${year}` (year-dependent) or `${companyId}` (static)
   const loadedRef = useRef<Record<string, string>>({});
@@ -1150,7 +1151,7 @@ export default function DashboardPage() {
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
-    setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null);
+    setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null); setConciliacionData(null);
 
     if (isGrupo) {
       Promise.all([
@@ -1222,7 +1223,7 @@ export default function DashboardPage() {
 
   // ── Lazy load nuevos módulos ──────────────────
   useEffect(() => {
-    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','gastos_nat','caja_saldos','audit'];
+    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','gastos_nat','caja_saldos','conciliacion','audit'];
     if (!NEW_TABS.includes(activeTab) || isGrupo) return;
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -1286,6 +1287,10 @@ export default function DashboardPage() {
       fetchApi(`/kpi/${id}/caja-saldos`, token)
         .then(d => done(() => setCajaSaldosData(d)))
         .catch(() => done(() => setCajaSaldosData({ rows: [] })));
+    } else if (activeTab === 'conciliacion') {
+      fetchApi(`/kpi/${id}/conciliacion-bancaria`, token)
+        .then(d => done(() => setConciliacionData(d)))
+        .catch(() => done(() => setConciliacionData({ rows: [], movsSinConciliar: [] })));
     } else if (activeTab === 'audit') {
       Promise.all([
         fetchApi(`/kpi/${id}/audit/sin-doc?year=${selectedYear}`, token),
@@ -1626,6 +1631,11 @@ export default function DashboardPage() {
                 </button>
               ))}
               <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Auditoría</div>
+              <button onClick={() => setActiveTab('conciliacion')}
+                className={`sidebar-link ${activeTab === 'conciliacion' ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                🏦  Conciliación Bancaria
+              </button>
               <button onClick={() => setActiveTab('audit')}
                 className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -1713,6 +1723,7 @@ export default function DashboardPage() {
               {activeTab === 'inventarios' && 'Inventarios'}
               {activeTab === 'gastos_nat' && 'Contabilidad'}
               {activeTab === 'caja_saldos' && 'Saldos Bancarios'}
+              {activeTab === 'conciliacion' && 'Control Interno'}
               {activeTab === 'audit'      && 'Control Interno'}
             </div>
             <h1 className="page-title">
@@ -1735,6 +1746,7 @@ export default function DashboardPage() {
               {activeTab === 'inventarios' && `Inventarios y Existencias (Clases 20–29) · ${selectedYear}`}
               {activeTab === 'gastos_nat' && 'Gastos por Naturaleza (Clases 60–68)'}
               {activeTab === 'caja_saldos' && 'Saldos Bancarios Acumulados'}
+              {activeTab === 'conciliacion' && 'Conciliación Bancaria — Estado del Módulo S10'}
               {activeTab === 'audit'      && 'Módulo de Auditoría'}
             </h1>
             <div style={{ color: '#8B97A8', fontSize: '0.8rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -3413,6 +3425,119 @@ export default function DashboardPage() {
               </>
             )}
           </div>
+        )}
+
+        {/* ═══ Conciliación Bancaria ═══ */}
+        {activeTab === 'conciliacion' && !newTabLoading && (
+          <>
+            {/* Resumen ejecutivo */}
+            <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                Estado del módulo OB_EstadoBanco — Conciliación Bancaria
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                Cuántas cuentas bancarias tienen estados de cuenta cargados al sistema vs cuántas no.
+                Si una cuenta NO tiene estados cargados, NO se está conciliando contablemente con el banco real.
+              </div>
+              {!conciliacionData ? <div style={{ color: '#8B97A8' }}>Sin datos disponibles.</div> : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                    <KpiCard label="Cuentas Bancarias" value={String(conciliacionData.totalCuentas || 0)} signal="neutral" />
+                    <KpiCard label="Con Estados Cargados" value={String(conciliacionData.cuentasConEstados || 0)} signal={conciliacionData.cuentasConEstados > 0 ? 'green' : 'red'} />
+                    <KpiCard label="Sin Conciliación" value={String(conciliacionData.cuentasSinEstados || 0)} signal={conciliacionData.cuentasSinEstados > 0 ? 'red' : 'green'} />
+                    <KpiCard label="Movs Sin Conciliar" value={String(conciliacionData.totalMovsSinConc || 0)} signal={conciliacionData.totalMovsSinConc > 0 ? 'yellow' : 'green'} />
+                  </div>
+                  {!conciliacionData.usaModulo && (
+                    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', padding: '0.75rem', borderRadius: '0.5rem', color: '#EF4444', fontSize: '0.85rem' }}>
+                      🚨 <strong>ALERTA:</strong> Esta empresa NO usa el módulo de conciliación bancaria.
+                      NINGUNA cuenta tiene estados de cuenta cargados al sistema. Riesgo de control interno crítico.
+                    </div>
+                  )}
+                  {conciliacionData.maxDiasAtraso > 90 && (
+                    <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', padding: '0.75rem', borderRadius: '0.5rem', color: '#F59E0B', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                      ⚠️ La conciliación más reciente tiene {conciliacionData.maxDiasAtraso} días de atraso. Política: conciliación mensual obligatoria.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Detalle por cuenta */}
+            <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                Detalle por cuenta bancaria
+              </div>
+              {!conciliacionData?.rows?.length ? <div style={{ color: '#8B97A8' }}>Sin cuentas bancarias en OB_CuentaBanco. La empresa NO usa el módulo de tesorería de S10.</div> : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ minWidth: 200 }}>Cuenta</th>
+                        <th>Mon</th>
+                        <th>Saldo Contable</th>
+                        <th>Saldo Banco</th>
+                        <th>Último Estado</th>
+                        <th>Días Atraso</th>
+                        <th>SF Banco</th>
+                        <th>Estados Hist.</th>
+                        <th>Movs Últ.</th>
+                        <th>Sin Conc.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {conciliacionData.rows.map((r: any, i: number) => {
+                        const dias = r.DiasDesdeUltimoEstado;
+                        const sinEstado = !r.TotalEstadosHistoricos;
+                        return (
+                          <tr key={i}>
+                            <td title={r.NoCuenta}>{r.DesCuenta || '—'}</td>
+                            <td style={{ color: '#8B97A8' }}>{r.Moneda}</td>
+                            <td style={{ fontWeight: 600, color: (r.BalanceContable || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.BalanceContable)}</td>
+                            <td style={{ color: '#8B97A8' }}>{fmt(r.BalanceReal)}</td>
+                            <td style={{ color: sinEstado ? '#EF4444' : '#8B97A8' }}>{r.UltimoEstadoAl || '🚨 NUNCA'}</td>
+                            <td style={{ fontWeight: 600, color: sinEstado ? '#EF4444' : dias > 365 ? '#EF4444' : dias > 90 ? '#F59E0B' : '#10B981' }}>
+                              {sinEstado ? '∞' : `${dias}d`}
+                            </td>
+                            <td>{fmt(r.UltimoSaldoFinalBanco)}</td>
+                            <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.TotalEstadosHistoricos || 0}</td>
+                            <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.NumMovimientos || 0}</td>
+                            <td style={{ color: (r.NumSinConciliar || 0) > 0 ? '#F59E0B' : '#10B981', textAlign: 'center' }}>{r.NumSinConciliar || 0}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Movimientos sin conciliar */}
+            {conciliacionData?.movsSinConciliar?.length > 0 && (
+              <div className="kpi-card">
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                  ⚠️ Movimientos bancarios SIN CONCILIAR (top 100 más recientes)
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10" style={{ fontSize: '0.75rem' }}>
+                    <thead><tr><th>Fecha</th><th>Cuenta</th><th>Mon</th><th style={{ minWidth: 250 }}>Descripción</th><th>Operación</th><th>Cargo</th><th>Abono</th></tr></thead>
+                    <tbody>
+                      {conciliacionData.movsSinConciliar.map((m: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ whiteSpace: 'nowrap' }}>{m.Fecha}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={m.DesCuenta}>{m.DesCuenta}</td>
+                          <td style={{ color: '#8B97A8' }}>{m.Moneda}</td>
+                          <td style={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={m.DescMovimiento}>{m.DescMovimiento || '—'}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#8B97A8' }}>{m.NumOperacion}</td>
+                          <td style={{ color: (m.Cargo || 0) > 0 ? '#EF4444' : '#8B97A8' }}>{m.Cargo > 0 ? fmt(m.Cargo) : '—'}</td>
+                          <td style={{ color: (m.Abono || 0) > 0 ? '#10B981' : '#8B97A8' }}>{m.Abono > 0 ? fmt(m.Abono) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ═══ Módulo Auditoría ═══ */}

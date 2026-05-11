@@ -218,6 +218,12 @@ export class KpiController {
     return this.kpiService.getObSaldosBanco(companyId);
   }
 
+  /** Conciliación bancaria — estado del módulo OB_EstadoBanco/Detalle */
+  @Get(':companyId/conciliacion-bancaria')
+  getConciliacionBancaria(@Param('companyId') companyId: string) {
+    return this.kpiService.getConciliacionBancaria(companyId);
+  }
+
   /** Préstamos otorgados — tipo 071 en CxC */
   @Get(':companyId/prestamos-otorgados')
   getPrestamosOtorgados(@Param('companyId') companyId: string) {

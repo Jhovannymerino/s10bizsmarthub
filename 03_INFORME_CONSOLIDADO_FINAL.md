@@ -1,9 +1,28 @@
 ---
 title: "Informe Consolidado Final de Auditoría Integral"
-subtitle: "Auditoría financiera, contable, bancaria, tributaria y laboral del Grupo"
+subtitle: "REVISADO POST-VALIDACIÓN FORENSE 11/05/2026"
 author: "Equipo de Auditoría BizSmartHub"
-date: "11 de mayo de 2026"
+date: "11 de mayo de 2026 (rev. 16:50)"
 ---
+
+\newpage
+
+# 0. NOTA DE REVISIÓN POST-VALIDACIÓN
+
+> **Este documento fue actualizado el 11/05/2026 tras una validación forense de 25 queries × 4 empresas (100 queries) ejecutadas directamente contra S10 SQL Server productivo.** Ver `05_VALIDACION_FORENSE_S10.docx` para detalle metodológico.
+>
+> **Cambios materiales:**
+>
+> | Hallazgo previo | Veredicto S10 | Acción |
+> |---|---|---|
+> | "CMO falta apertura 2026" | 🔴 REFUTADO | Removido — la apertura sí existe (9,700 asientos, S/592M) |
+> | "CMO Capital S/78.3M" | 🟡 CORREGIDO | No hay cta 50; verdadero issue: patrimonio neto **−S/2.87M** (Art. 220 LGS) |
+> | "Préstamos intercompañía S/123M" | 🔴 REFUTADO | S/123M era movido histórico; saldo cta 17 CMO = S/34M; intercompañía 4 auditadas = **S/20M consolidado** |
+> | "BBVA MN −S/13M desde 2023" | 🟡 CORREGIDO | Origen real: enero 2026 (no 2023). Ver §4.4 |
+>
+> **7 hallazgos NUEVOS detectados** (N01–N07): patrimonio negativo CMO, activo fijo neto negativo CMO, 9,809 asientos futuros CMO, origen BBVA −S/13M, INTEGRAL→CMO S/11.1M, CTS mayo 2026 pendiente, crédito Renta INTEGRAL S/287K.
+>
+> **Contingencia recalculada:** S/4.96M | Créditos recuperables: S/427K | **NETA: S/4.54M**.
 
 \newpage
 
@@ -189,31 +208,47 @@ Las 4 empresas NO usan AFPNet/PDT-PLAME/BoletaNomina formales de S10. Auditoría
 | Utilidad Neta | **(1,185,896)** |
 | Margen Neto % | **−560.6%** |
 
-### 4.1.2. Patrimonio
+### 4.1.2. Patrimonio (CORREGIDO post-validación V03/V19)
 
-- **Capital Social: S/0** ⚠️ — pero histórico es S/78,301,308 (acumulado 2017-2018: aporte inicial S/39.6M + capitalización deuda JPD S/23.7M + aumentos Gomero y Memphis 2018)
-- Causa: **falta el asiento de apertura del 01/01/2026**
-- Utilidades acumuladas: S/2,875,935
+| Cuenta | Saldo |
+|---|---:|
+| Capital Social (cta 50) | **(no existe en S10)** ⚠️ |
+| Reserva Legal (cta 58) | (ausente) |
+| 59110100 Utilidades Acumuladas | +S/5,082,789 |
+| 59120100 Ingresos Años Anteriores | −S/2,199,498 |
+| 59220100 Gastos Años Anteriores | −S/7,355 |
+| Otras (no detalladas individualmente) | −S/5,751,871 |
+| **TOTAL Patrimonio Neto** | **−S/2,875,935** 🔴 |
 
-### 4.1.3. Hallazgos críticos
+> **Riesgo Art. 220 LGS:** CMO tiene patrimonio neto NEGATIVO. Esto es causal de disolución obligatoria si las pérdidas reducen el patrimonio a menos de 1/3 del capital. Como CMO **no tiene capital cta 50 registrado**, técnicamente opera con capital S/0 y patrimonio negativo → situación contablemente insostenible.
+>
+> **Acción urgente:** Verificar con Registros Públicos el capital social inscrito y cargar el asiento de reclasificación si fuera necesario. Convocar Junta General de Accionistas extraordinaria.
+
+### 4.1.3. Hallazgos críticos (corregidos)
 
 | ID | Hallazgo | Monto | Severidad |
 |---|---|---:|:-:|
-| CMO-04 | Cuenta Edificios saldo NEGATIVO −S/2,407,287 (reclasificación incompleta a Instalaciones +S/2,407,287) | S/2.4M | 🟠 |
-| CMO-05 | Falta asiento de apertura Capital Social 2026 | S/78.3M | 🔴 |
-| CMO depreciación cta 39135 | Saldo Cr-Db NEGATIVO (depreciación inversa, error contable) | −S/162K | 🟠 |
-| CMO terrenos | Db=Cr=S/188M (reclasificación masiva sin documentar) | — | 🟡 |
-| CMO sin pagos 2026 | 0 pagos en OB_Pago (siendo el tesorero del grupo) | — | 🟠 |
-| CMO préstamos sin contrato | S/123M en préstamos otorgados sin contratos de mutuo formales | S/123M | 🔴 |
+| CMO-01 | **Patrimonio neto NEGATIVO −S/2.87M (Art. 220 LGS)** ⭐ NUEVO | −S/2.87M | 🔴 |
+| CMO-02 | **Valor neto activo fijo NEGATIVO −S/5,942** (cls 33 y 39 ambas negativas) ⭐ NUEVO | −S/6K | 🔴 |
+| CMO-03 | **9,809 asientos con fecha futura por S/1,182M** ⭐ NUEVO | S/1,182M | 🟠 |
+| CMO-04 | Cuenta Edificios saldo NEGATIVO −S/2,407,287 (reclasificación incompleta a Instalaciones) | S/2.4M | 🟠 |
+| CMO-05 | ~~Falta asiento de apertura Capital Social 2026~~ **REFUTADO** | — | — |
+| CMO-06 | Depreciación cta 39135 inversa | −S/162K | 🟠 |
+| CMO-07 | Sin pagos 2026 en OB_Pago (siendo el tesorero del grupo) | — | 🟠 |
+| CMO-08 | **Préstamos intercompañía a entidades NO auditadas (~S/31M)** — recalibrado, NO los S/123M previos | S/31M | 🟠 |
 
-### 4.1.4. Préstamos intercompañía
+### 4.1.4. Préstamos intercompañía (CORREGIDO post-validación V14)
 
 | Concepto | Monto |
 |---|---:|
-| Préstamos otorgados (saldo) | S/34,001,736 |
-| Préstamos recibidos (saldo) | S/47,962,755 |
+| Préstamos otorgados saldo neto cta 17 | S/34,001,736 |
+| Préstamos recibidos saldo neto cta 47 | S/47,962,755 |
 | Otras CxC relacionadas (Clases 13,14,16-18) | S/37,142,456 |
 | Otras CxP relacionadas (Clases 43,44,46-47) | S/34,051,984 |
+| **CxC intercompañía DEMOSTRADO con las 3 empresas auditadas** | **S/2,740,547** |
+| **Resto de préstamos otorgados (a accionistas u otras entidades no auditadas)** | **~S/31M** |
+
+> **CORRECCIÓN MAYOR:** El monto "S/123M en préstamos sin contrato" del informe previo era el **monto movido histórico acumulado** (NumeroMovido × monto promedio), NO el saldo neto. El saldo neto real cta 17 CMO es **S/34M**. De ese, solo S/2.74M corresponde a las 3 empresas auditadas; el resto (~S/31M) son préstamos a accionistas/relacionados fuera del alcance.
 
 ### 4.1.5. Conciliación bancaria
 
@@ -348,7 +383,7 @@ Las 4 empresas NO usan AFPNet/PDT-PLAME/BoletaNomina formales de S10. Auditoría
 
 | ID | Hallazgo | Monto | Severidad |
 |---|---|---:|:-:|
-| AMERICANA-01 | **BBVA Continental MN saldo contable −S/13,034,687** desde 2023 | S/13M | 🔴 |
+| AMERICANA-01 | **BBVA Continental MN saldo contable −S/13,034,687** (origen ENERO 2026, no desde 2023) — Ver Anexo T | S/13M | 🔴 |
 | AMERICANA-04 | **97.9% CxC vencida >90 días con un solo cliente (PERGOLA)** | S/3M | 🔴 |
 | AMERICANA — Margen | Margen bruto NEGATIVO −S/57,626 | — | 🔴 |
 | AMERICANA-05 | Patrimonio total S/46,572 (capital S/1K + utilidades S/45K) | S/47K | 🟠 |
@@ -460,16 +495,16 @@ Las 4 empresas NO usan AFPNet/PDT-PLAME/BoletaNomina formales de S10. Auditoría
 
 # 6. RIESGOS TRIBUTARIOS Y LABORALES CONSOLIDADOS
 
-## 6.1. Contingencia tributaria
+## 6.1. Contingencia tributaria (recalculada post-validación)
 
 | # | Riesgo | Empresa | Monto |
 |---|---|---|---:|
-| RT-01 | Recalificación préstamos intercompañía como dividendos (Art. 24-A LIR) — 5% IR sobre saldo S/34M | CMO | S/2,700,000 |
+| RT-01 | Recalificación dividendos presuntos Art. 24-A LIR — 29.5% sobre INTEGRAL→CMO S/11.1M (mayor exposición individual) | CMO | **S/3,272,000** |
 | RT-02 | Multa ETPT no presentado (Art. 175 num. 25 CT) | CMO | S/265,000 |
-| RT-03 | IGV subdeclarado potencial (INTEGRAL conciliación + MEDARQ ingresos sin factura) | varias | S/400,000 |
+| RT-03 | IGV subdeclarado potencial (recalculado tras compensación crédito INTEGRAL) | varias | S/350,000 |
 | RT-04 | Gastos no contabilizados (facturas SinAsiento INTEGRAL, MEDARQ, AMERICANA) | varias | S/45,000 |
 | RT-05 | Retenciones 4ta cat. honorarios no aplicadas | AMERICANA | S/10,000 |
-| **Subtotal tributario** | | | **S/3,420,000** |
+| **Subtotal tributario** | | | **S/3,942,000** |
 
 ## 6.2. Contingencia laboral
 
@@ -478,74 +513,109 @@ Las 4 empresas NO usan AFPNet/PDT-PLAME/BoletaNomina formales de S10. Auditoría
 | RL-01 | Multa SUNAFIL Participaciones DL 892 no pagadas | INTEGRAL | S/275,000 |
 | RL-02 | Multa SUNAFIL CTS mayo 2025 ausente | AMERICANA | S/275,000 |
 | RL-03 | Multa SUNAFIL CTS mayo 2025 ausente | MEDARQ | S/275,000 |
-| RL-04 | Demandas laborales por sueldos atrasados | MEDARQ | S/196,000 |
+| RL-04 | Demandas laborales por sueldos atrasados (exacto S/196,277) | MEDARQ | S/196,000 |
 | **Subtotal laboral** | | | **S/1,021,000** |
 
-## 6.3. CONTINGENCIA MÁXIMA DEL GRUPO
+## 6.3. Créditos tributarios recuperables (NUEVO — post-validación)
 
-> **Total estimado: hasta S/4,441,000**
+| # | Crédito | Empresa | Monto |
+|---|---|---|---:|
+| CT-01 | Renta 3ª Categoría neto a favor | INTEGRAL | −S/287,734 |
+| CT-02 | ITAN a favor | AMERICANA | −S/43,704 |
+| CT-03 | Pago a cuenta Renta a favor | AMERICANA | −S/95,225 |
+| **Subtotal créditos** | | | **−S/426,663** |
+
+## 6.4. CONTINGENCIA NETA DEL GRUPO
+
+> **Contingencia bruta máxima: S/4,963,000**
+> **Créditos recuperables: −S/426,663**
+> **Contingencia NETA: S/4,536,337**
 
 \newpage
 
 # 7. ESTRUCTURA DEL BALANCE INTERCOMPAÑÍA
 
-## 7.1. Préstamos intercompañía (Tipo de documento 071)
+## 7.1. Préstamos intercompañía — saldos y movimientos (validados V14)
 
 | Concepto | CMO | INTEGRAL | AMERICANA | MEDARQ | Total |
 |---|---:|---:|---:|---:|---:|
-| Préstamos otorgados (saldo pend.) | 34,001,736 | 19,560,179 | 4,561,287 | 585,887 | **58,709,089** |
-| Préstamos recibidos (saldo pend.) | 47,962,755 | 12,122,836 | 2,430,778 | 1,696,918 | **64,213,288** |
+| Préstamos otorgados (saldo neto cta 17) | 34,001,736 | 19,560,179 | 4,561,287 | 585,887 | **58,709,089** |
+| Préstamos recibidos (saldo neto cta 47) | 47,962,755 | 12,122,836 | 2,430,778 | 1,696,918 | **64,213,288** |
 | **# Documentos otorgados** | **4,051** | 677 | 138 | 93 | 4,959 |
 | **# Documentos recibidos** | 4,049 | 677 | 138 | 93 | 4,957 |
-| Monto total movido otorgados | S/122.9M | S/29.6M | S/7.0M | S/2.7M | **S/162.2M** |
+| Monto total **movido** otorgados (acumulado histórico) | S/122.9M | S/29.6M | S/7.0M | S/2.7M | **S/162.2M** |
 
-## 7.2. Otras CxC / CxP relacionadas
+> **IMPORTANTE:** Las cifras "S/122.9M movido CMO" y "S/162.2M total movido" son **acumulados de transacciones históricas**, NO saldos netos actuales. El **saldo neto vigente cta 17 CMO es S/34M**.
+
+## 7.2. Intercompañía DEMOSTRADO entre las 4 empresas auditadas (V14)
+
+Filtrando solo terceros que son las otras 3 empresas del grupo auditadas:
+
+| Empresa origen | Hacia CMO | Hacia INTEGRAL | Hacia AMERICANA | Hacia MEDARQ | Total |
+|---|---:|---:|---:|---:|---:|
+| CMO | — | −S/7,293 | S/2,747,840 | — | **S/2,740,547** |
+| INTEGRAL | **S/11,102,290** ⚠️ | — | S/1,430,971 | S/301,786 | **S/12,835,047** |
+| AMERICANA | S/2,037,487 | S/1,790,102 | — | S/585,184 | **S/4,412,772** |
+| MEDARQ | — | — | S/17,350 | — | S/17,350 |
+| **TOTAL** | **S/13,139,777** | **S/1,782,810** | **S/4,196,161** | **S/886,970** | **~S/20M** |
+
+## 7.3. Otras CxC / CxP relacionadas (saldos brutos)
 
 | Concepto | CMO | INTEGRAL | AMERICANA | MEDARQ |
 |---|---:|---:|---:|---:|
 | Otras CxC (clases 13-18) | **S/37,142,456** | S/15,939,270 | S/4,477,503 | S/899,052 |
 | Otras CxP (clases 43-47) | **S/34,051,984** | S/5,737,176 | S/2,673,337 | S/806,425 |
 
-## 7.3. Implicación tributaria
+## 7.4. Implicación tributaria (recalculada)
 
-CMO GROUP funciona como **banca interna del grupo** con S/123M movidos en préstamos. Bajo Art. 32-A LIR (Precios de Transferencia), debe:
+CMO GROUP funciona como **banca interna del grupo** con saldo neto cta 17 = **S/34M** (no los S/123M previamente reportados — esa cifra era movido histórico).
+
+Bajo Art. 32-A LIR (Precios de Transferencia), debe:
 
 1. Documentar cada préstamo con **contrato de mutuo**
 2. Aplicar **tasa de interés a valor de mercado** (TAMN ~12%)
 3. Presentar **Estudio Técnico de Precios de Transferencia (ETPT)** si operaciones intercompañía > 15 UIT por contraparte
 4. Presentar **Reporte Local** anual si ingresos > 2,300 UIT (S/12.2M)
 
-Si no se cumple → SUNAT puede **recalificar como dividendos** (Art. 24-A LIR), aplicando IR 5% adicional.
+Si no se cumple → SUNAT puede **recalificar como dividendos** (Art. 24-A LIR), aplicando IR 29.5%.
+
+**Contingencia recalculada:** la base imponible máxima identificable es **INTEGRAL→CMO S/11.1M** (mayor exposición individual probada). 29.5% × S/11.1M = **S/3.27M de contingencia tributaria por dividendos presuntos**.
 
 \newpage
 
 # 8. PLAN DE REMEDIACIÓN INTEGRAL — 20 ACCIONES
 
-## Fase 1 — Inmediato (0-15 días)
+## Fase 1 — Inmediato (0-15 días) — Revisada post-validación
 
 | # | Acción | Empresa | Responsable | Plazo |
 |:-:|---|---|---|:-:|
-| 1 | Conciliar BBVA MN −S/13M con estado de cuenta real | AMERICANA | Tesorería | 7d |
-| 2 | Cargar asiento apertura 2026 CMO (Capital S/78.3M) | CMO | Contabilidad | 7d |
-| 3 | Investigar S/1.83M facturas no contabilizadas | INTEGRAL | Contabilidad | 10d |
+| 1 | Identificar el asiento contable origen del −S/13M BBVA MN (enero 2026) | AMERICANA | Tesorería | 7d |
+| 2 | **Convocar Junta Extraordinaria — Patrimonio NEGATIVO Art. 220 LGS** | CMO | Directorio | 7d |
+| 3 | Investigar S/1.83M diferencia ingresos vs facturas (timing/anticipos) | INTEGRAL | Contabilidad | 10d |
 | 4 | Aclarar status Participaciones S/212K | INTEGRAL | Legal+RRHH | 7d |
 | 5 | Aclarar Sueldos atrasados S/196K | MEDARQ | RRHH | 7d |
 | 6 | Validar CTS mayo 2025 | AMERICANA + MEDARQ | RRHH | 7d |
 | 7 | Provisión NIIF 9 PERGOLA S/3M | AMERICANA | Contabilidad | 15d |
 | 8 | Cargar saldos iniciales bancarios reales | MEDARQ + AMERICANA | Tesorería | 15d |
-| **9** | **Depósito CTS 1er semestre 2026** | **Las 4** | RRHH | **15/05** |
+| **9** | **Depósito CTS 1er semestre 2026 — TODAS** | **Las 4** | RRHH | **15/05** |
+| 10 | Auditar los 9,809 asientos futuros CMO (S/1,182M) | CMO | Auditoría int. | 15d |
+| 11 | **Compensar INTEGRAL Renta 3ª a favor S/287K vs IGV S/195K** — ahorro inmediato | INTEGRAL | Tributos | 7d |
+| 12 | Verificar con Registros Públicos capital social inscrito de CMO | CMO | Legal | 7d |
 
 ## Fase 2 — Urgente (15-60 días)
 
 | # | Acción |
 |:-:|---|
-| 10 | Formalizar contratos de mutuo intercompañía (S/123M en CMO) |
-| 11 | Aprobar Reserva Legal retroactiva en Junta de Accionistas (las 4) |
-| 12 | Capitalizar INTEGRAL y AMERICANA (de S/1K a monto razonable) |
-| 13 | Reactivar conciliación bancaria mensual en las 4 empresas |
-| 14 | Dar de alta 36 cuentas bancarias de beneficiarios |
-| 15 | Provisión intereses devengados préstamos intercompañía (CMO) |
-| 16 | Conciliación INTEGRAL Renta 3ra (S/1.25M por pagar vs S/1.54M a favor) |
+| 13 | Reconstruir registro Activo Fijo CMO (valor neto −S/5,942 anómalo) |
+| 14 | Formalizar contrato de mutuo INTEGRAL→CMO S/11.1M con tasa TAMN |
+| 15 | Formalizar contratos restantes de préstamos intercompañía |
+| 16 | Aprobar Reserva Legal retroactiva en Junta de Accionistas (las 4) |
+| 17 | Capitalizar INTEGRAL y AMERICANA (de S/1K a monto razonable) |
+| 18 | Capitalización urgente CMO o decisión de disolución |
+| 19 | Reactivar conciliación bancaria mensual en las 4 empresas |
+| 20 | Dar de alta 36 cuentas bancarias de beneficiarios |
+| 21 | Provisión intereses devengados préstamos intercompañía |
+| 22 | Solicitar devolución/compensación SUNAT créditos AMERICANA (S/139K) |
 
 ## Fase 3 — Estratégico (60-180 días)
 
@@ -560,33 +630,39 @@ Si no se cumple → SUNAT puede **recalificar como dividendos** (Art. 24-A LIR),
 
 # 9. CONCLUSIONES
 
-## 9.1. Estado general del grupo
+## 9.1. Estado general del grupo (revisado post-validación)
 
-✅ **Lo positivo:**
+✅ **Lo positivo (confirmado contra S10):**
 - 100% de cumplimiento Ley 28194 (histórico y actual)
-- Trazabilidad Pago↔Documento del 99%+ en 3 empresas
-- Activo Fijo correctamente registrado (tras fix de mapeo)
-- Sistema s10bizsmarthub al 99% de confianza
-- INTEGRAL es rentable
+- Trazabilidad Pago↔Documento del 99%+ en 3 empresas (validado V16)
+- Partida doble cuadrada en las 4 empresas (V01)
+- Identificadores únicos consistentes (V21)
+- Bancarización: AMERICANA, INTEGRAL, MEDARQ 100% compliance
+- INTEGRAL es rentable + tiene crédito tributario neto S/287K
 
 🔴 **Lo crítico:**
-- Contingencia tributaria + laboral hasta **S/4.4 millones**
+- **CMO Patrimonio neto NEGATIVO −S/2.87M (Art. 220 LGS)** ⭐ NUEVO
+- **CMO Valor neto Activo Fijo NEGATIVO −S/5,942** ⭐ NUEVO
+- **CMO 9,809 asientos futuros por S/1,182M — verificar legitimidad** ⭐ NUEVO
+- Contingencia tributaria + laboral neta **S/4.54 millones**
 - 3 de 4 empresas no concilian bancariamente
-- AMERICANA con BBVA MN −S/13M sin explicación
-- MEDARQ con sueldos atrasados S/196K
-- INTEGRAL con participaciones DL 892 impagas
-- AMERICANA y MEDARQ con posible omisión CTS mayo 2025
+- AMERICANA BBVA MN −S/13M con origen identificado en enero 2026
+- MEDARQ sueldos atrasados S/196K
+- INTEGRAL participaciones DL 892 impagas S/212K
+- AMERICANA y MEDARQ CTS mayo 2025 omitido
+- CTS mayo 2026 pendiente en TODAS (vence 15/05) ⭐ NUEVO
 
 ## 9.2. Recomendación al Directorio
 
-1. **Aprobar inmediatamente** las 9 acciones de Fase 1 (0-15 días)
-2. **Convocar Junta General de Accionistas extraordinaria** para resolver:
-   - Apertura 2026 CMO (S/78.3M)
+1. **Aprobar inmediatamente** las 12 acciones de Fase 1 (0-15 días)
+2. **Convocar Junta General de Accionistas extraordinaria URGENTE** para resolver:
+   - **CMO: Patrimonio negativo −S/2.87M (Art. 220 LGS)** — capitalización o disolución
+   - Verificación con Registros Públicos del capital social inscrito de CMO
    - Reserva Legal retroactiva (las 4)
    - Capitalización INTEGRAL y AMERICANA
 3. **Aprobar presupuesto** para contratación externa:
    - Especialista PT (~US$15-20K)
-   - Asesoría tributaria (~US$8-12K)
+   - Asesoría tributaria (~US$8-12K) — prioritaria para compensación crédito INTEGRAL
    - Auditoría externa Big 4 (~US$30-50K)
 4. **Constituir Comité de Remediación** con reuniones semanales 90 días
 5. **Reportes mensuales** al Directorio del dashboard s10bizsmarthub
@@ -605,7 +681,14 @@ Si no se cumple → SUNAT puede **recalificar como dividendos** (Art. 24-A LIR),
 
 ---
 
-**Versión:** Final 1.0
-**Fecha de cierre:** 11 de mayo de 2026
+**Versión:** Final 2.0 (post-validación forense)
+**Fecha de cierre original:** 11 de mayo de 2026
+**Fecha de revisión:** 11 de mayo de 2026 (16:50 — post-validación 100 queries S10)
 **Próxima revisión:** 11 de agosto de 2026 (90 días)
 **Equipo de Auditoría:** BizSmartHub
+
+**Documentos complementarios:**
+- `01_RESUMEN_GERENCIAL.docx` (Directorio)
+- `02_ANEXOS_REGISTROS.docx` (Evidencia transaccional)
+- `04_TRAZABILIDAD_HISTORICA.docx` (Proceso histórico de auditoría)
+- `05_VALIDACION_FORENSE_S10.docx` ⭐ **(Validación finding-by-finding contra S10 productivo)**

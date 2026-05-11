@@ -1,0 +1,632 @@
+
+════════════════════════════════════════════════════════════════════════════════
+V01 — PARTIDA DOBLE (Σ Db = Σ Cr)
+════════════════════════════════════════════════════════════════════════════════
+  CMO        | Asientos=629.643 | Σdb=13.228.931.356,92 | Σcr=13.228.935.232,08 | Descuadre=-3.875,16 | DocsDistintos=42.350 | SinNroD=127.364
+  AMERICANA  | Asientos=7.666 | Σdb=296.605.978,44 | Σcr=296.605.978,44 | Descuadre=0 | DocsDistintos=1.063 | SinNroD=714
+  INTEGRAL   | Asientos=49.248 | Σdb=418.579.059,8 | Σcr=418.579.059,8 | Descuadre=0 | DocsDistintos=5.609 | SinNroD=3.353
+  MEDARQ     | Asientos=13.200 | Σdb=36.584.327,83 | Σcr=36.584.327,83 | Descuadre=0 | DocsDistintos=1.623 | SinNroD=2.769
+
+════════════════════════════════════════════════════════════════════════════════
+V02 — ASIENTOS DE APERTURA por año (glosa con APERTURA/INICIO/INICIAL)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  Anio=2026 | PrimerAsiento=01/01/2026 | NumAsientos=9700 | NumClases=25 | SumDebito=592760030.5799999 | SumCredito=592760030.5799999
+  Anio=2025 | PrimerAsiento=01/01/2025 | NumAsientos=9438 | NumClases=25 | SumDebito=586149328.42 | SumCredito=586149328.42
+  Anio=2024 | PrimerAsiento=01/01/2024 | NumAsientos=9072 | NumClases=25 | SumDebito=559537831.33 | SumCredito=559537831.33
+  Anio=2023 | PrimerAsiento=01/01/2023 | NumAsientos=8757 | NumClases=25 | SumDebito=560916254.87 | SumCredito=560916254.87
+  Anio=2022 | PrimerAsiento=01/01/2022 | NumAsientos=8661 | NumClases=26 | SumDebito=561096031.87 | SumCredito=561096031.87
+  Anio=2021 | PrimerAsiento=01/01/2021 | NumAsientos=7867 | NumClases=26 | SumDebito=521778436.26 | SumCredito=521778436.26
+  ... y 3 más
+
+  AMERICANA:
+  Anio=2026 | PrimerAsiento=01/01/2026 | NumAsientos=266 | NumClases=18 | SumDebito=39481663.24 | SumCredito=39481663.24
+  Anio=2025 | PrimerAsiento=01/01/2025 | NumAsientos=23 | NumClases=10 | SumDebito=11943948.68 | SumCredito=11944147.66
+  Anio=2024 | PrimerAsiento=01/01/2024 | NumAsientos=10 | NumClases=7 | SumDebito=27378.22 | SumCredito=27378.22
+
+  INTEGRAL:
+  Anio=2026 | PrimerAsiento=01/01/2026 | NumAsientos=972 | NumClases=15 | SumDebito=29793199.86 | SumCredito=29793199.86
+  Anio=2025 | PrimerAsiento=01/01/2025 | NumAsientos=366 | NumClases=13 | SumDebito=16579832.139999999 | SumCredito=16579832.139999999
+  Anio=2024 | PrimerAsiento=17/01/2024 | NumAsientos=7 | NumClases=4 | SumDebito=2000 | SumCredito=2000
+
+  MEDARQ:
+  Anio=2026 | PrimerAsiento=01/01/2026 | NumAsientos=173 | NumClases=15 | SumDebito=2946115.4899999998 | SumCredito=2946115.4899999998
+  Anio=2025 | PrimerAsiento=01/01/2025 | NumAsientos=4 | NumClases=3 | SumDebito=16840 | SumCredito=16840
+
+════════════════════════════════════════════════════════════════════════════════
+V03 — PATRIMONIO (clases 50,51,52,57,58,59)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  CodCuenta=59110100 | DesCuenta=Utilidades Acumuladas | SaldoAcreedor=5082788.659999999
+  CodCuenta=59120100 | DesCuenta=Ingresos de Años Anteriores | SaldoAcreedor=-2199498
+  CodCuenta=59220100 | DesCuenta=Gastos de Años Anteriores | SaldoAcreedor=-7355.36
+
+  AMERICANA:
+  CodCuenta=50110100 | DesCuenta=Acciones | SaldoAcreedor=1000
+  CodCuenta=59110100 | DesCuenta=Utilidades Acumuladas | SaldoAcreedor=45572.08
+
+  INTEGRAL:
+  CodCuenta=50110100 | DesCuenta=Acciones | SaldoAcreedor=1000
+
+  MEDARQ:
+  CodCuenta=50110100 | DesCuenta=Acciones | SaldoAcreedor=1200000
+  CodCuenta=50120100 | DesCuenta=Participaciones | SaldoAcreedor=9937
+  CodCuenta=50200100 | DesCuenta=Acciones en Tesoreria | SaldoAcreedor=1000
+  CodCuenta=59220100 | DesCuenta=Gastos de Años Anteriores | SaldoAcreedor=-16840
+
+════════════════════════════════════════════════════════════════════════════════
+V04b — RESUMEN FACTURAS EMITIDAS SIN ASIENTO (por año)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  Anio=2024 | Tipo=060 | NumFacturas=6 | MontoTotal=436135.61
+  Anio=2023 | Tipo=060 | NumFacturas=2 | MontoTotal=8230
+  Anio=2022 | Tipo=060 | NumFacturas=13 | MontoTotal=7021.7
+  Anio=2022 | Tipo=125 | NumFacturas=1 | MontoTotal=590
+  Anio=2022 | Tipo=128 | NumFacturas=8 | MontoTotal=4498274.96
+  Anio=2022 | Tipo=131 | NumFacturas=4 | MontoTotal=4623500
+  Anio=2022 | Tipo=134 | NumFacturas=3 | MontoTotal=3698800
+  Anio=2021 | Tipo=060 | NumFacturas=19 | MontoTotal=1472958.5
+  Anio=2021 | Tipo=125 | NumFacturas=80 | MontoTotal=6402126.85
+  Anio=2021 | Tipo=128 | NumFacturas=2 | MontoTotal=312736.88
+  ... y 18 más
+    TOTAL: 1229 facturas | 322.001.752,29 S/
+
+  AMERICANA:
+  Anio=2025 | Tipo=060 | NumFacturas=2 | MontoTotal=0.68
+  Anio=2024 | Tipo=131 | NumFacturas=2 | MontoTotal=11911339.57
+    TOTAL: 4 facturas | 11.911.340,25 S/
+
+  INTEGRAL:
+  Anio=2026 | Tipo=060 | NumFacturas=6 | MontoTotal=129684.14
+  Anio=2026 | Tipo=131 | NumFacturas=1 | MontoTotal=23600
+  Anio=2026 | Tipo=134 | NumFacturas=1 | MontoTotal=0
+  Anio=2025 | Tipo=060 | NumFacturas=20 | MontoTotal=3277817.54
+  Anio=2025 | Tipo=131 | NumFacturas=4 | MontoTotal=359600
+  Anio=2025 | Tipo=134 | NumFacturas=1 | MontoTotal=236000
+  Anio=2024 | Tipo=060 | NumFacturas=5 | MontoTotal=1498600.97
+    TOTAL: 38 facturas | 5.525.302,65 S/
+
+  MEDARQ:
+  Anio=2025 | Tipo=060 | NumFacturas=1 | MontoTotal=55102.73
+    TOTAL: 1 facturas | 55.102,73 S/
+
+════════════════════════════════════════════════════════════════════════════════
+V05 — INGRESOS CLASE 70/75 SIN NroD (año actual)
+════════════════════════════════════════════════════════════════════════════════
+  CMO: (ninguno)
+  AMERICANA: (ninguno)
+  INTEGRAL: (ninguno)
+
+  MEDARQ: 10 asientos | 400.000 S/
+  Fecha=28/02/2026 | CodCuenta=70410111 | Credito=100000 | Glosa=SERVICIO DE BACK OFFICE FEB 26
+  Fecha=02/03/2026 | CodCuenta=70410111 | Credito=0 | Glosa=EXTORNO SERVICIO DE BACK OFFICE FEB 26
+  Fecha=31/01/2026 | CodCuenta=70410111 | Credito=25000 | Glosa=SERVICIO DE BACK OFFICE ENE 26
+  Fecha=31/01/2026 | CodCuenta=70410111 | Credito=0 | Glosa=SERVICIO DE BACK OFFICE DIC 25
+  Fecha=03/02/2026 | CodCuenta=70410111 | Credito=0 | Glosa=EXTORNO DE PROVISION POR SERVICIO BACK OFFICE ENE 26
+  Fecha=31/03/2026 | CodCuenta=70410108 | Credito=25000 | Glosa=INGRESOS POR SERVICIOS PRESTADOS MAR 26 (FT E001-24-ADELANTO)
+  Fecha=27/02/2026 | CodCuenta=70410108 | Credito=0 | Glosa=EXTORNO DE PROVISON DE INGRESOS DIC-ENE GESTION ACTIVA
+  Fecha=30/04/2026 | CodCuenta=70410108 | Credito=25000 | Glosa=INGRESOS POR SERVICIOS PRESTADOS ABR 26 (FT E001-24-ADELANTO)
+  Fecha=31/01/2026 | CodCuenta=70410108 | Credito=25000 | Glosa=SERVICIO DE GESTION ACTIVA ENE 26
+  Fecha=27/02/2026 | CodCuenta=70410108 | Credito=0 | Glosa=EXTORNO DE PROVISON DE INGRESOS DIC-ENE GESTION ACTIVA
+
+════════════════════════════════════════════════════════════════════════════════
+V06 — SUELDOS POR PAGAR cta 4111 (provisión vs pago por mes)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO — últimos 8 meses:
+  Anio=2026 | Mes=12 | Provisionado=400863.26 | Pagado=6234.95 | SaldoMes=394628.31
+  Anio=2026 | Mes=4 | Provisionado=0 | Pagado=48612.23 | SaldoMes=-48612.23
+  Anio=2026 | Mes=3 | Provisionado=0 | Pagado=48622.93 | SaldoMes=-48622.93
+  Anio=2026 | Mes=2 | Provisionado=0 | Pagado=48741.87 | SaldoMes=-48741.87
+  Anio=2026 | Mes=1 | Provisionado=54857.88 | Pagado=380621.39 | SaldoMes=-325763.51
+  Anio=2025 | Mes=12 | Provisionado=492376.31 | Pagado=294728.81 | SaldoMes=197647.5
+  Anio=2025 | Mes=11 | Provisionado=47581.98 | Pagado=218968.09 | SaldoMes=-171386.11
+  Anio=2025 | Mes=10 | Provisionado=113654.14 | Pagado=70190.16 | SaldoMes=43463.98
+    Saldo acumulado pendiente: -83347.18 S/
+
+  AMERICANA — últimos 8 meses:
+  Anio=2026 | Mes=4 | Provisionado=0 | Pagado=45737.46 | SaldoMes=-45737.46
+  Anio=2026 | Mes=3 | Provisionado=45670.32 | Pagado=45670.32 | SaldoMes=0
+  Anio=2026 | Mes=2 | Provisionado=45670.32 | Pagado=91340.64 | SaldoMes=-45670.32
+  Anio=2026 | Mes=1 | Provisionado=59773.62 | Pagado=0 | SaldoMes=59773.62
+  Anio=2025 | Mes=12 | Provisionado=47513.95 | Pagado=84564.72 | SaldoMes=-37050.77
+  Anio=2025 | Mes=11 | Provisionado=47513.91 | Pagado=10463.1 | SaldoMes=37050.81
+  Anio=2025 | Mes=10 | Provisionado=47513.91 | Pagado=56647.15 | SaldoMes=-9133.24
+  Anio=2025 | Mes=9 | Provisionado=47808.68 | Pagado=38675.44 | SaldoMes=9133.24
+    Saldo acumulado pendiente: -31634.16 S/
+
+  INTEGRAL — últimos 8 meses:
+  Anio=2026 | Mes=4 | Provisionado=191951.49 | Pagado=197241.26 | SaldoMes=-5289.77
+  Anio=2026 | Mes=3 | Provisionado=228400.89 | Pagado=217039.04 | SaldoMes=11361.85
+  Anio=2026 | Mes=2 | Provisionado=197039.42 | Pagado=202965.27 | SaldoMes=-5925.85
+  Anio=2026 | Mes=1 | Provisionado=196985.37 | Pagado=202421.39 | SaldoMes=-5436.02
+  Anio=2025 | Mes=12 | Provisionado=177378.03 | Pagado=334627 | SaldoMes=-157248.97
+  Anio=2025 | Mes=11 | Provisionado=165208.1 | Pagado=37095.87 | SaldoMes=128112.23
+  Anio=2025 | Mes=10 | Provisionado=160167.52 | Pagado=129905.73 | SaldoMes=30261.79
+  Anio=2025 | Mes=9 | Provisionado=133763.77 | Pagado=148305.84 | SaldoMes=-14542.07
+    Saldo acumulado pendiente: -5289.79 S/
+
+  MEDARQ — últimos 8 meses:
+  Anio=2026 | Mes=4 | Provisionado=0 | Pagado=139242.65 | SaldoMes=-139242.65
+  Anio=2026 | Mes=3 | Provisionado=136997.61 | Pagado=65.25 | SaldoMes=136932.36
+  Anio=2026 | Mes=2 | Provisionado=135675.14 | Pagado=135319.92 | SaldoMes=355.22
+  Anio=2026 | Mes=1 | Provisionado=198232.11 | Pagado=0 | SaldoMes=198232.11
+  Anio=2025 | Mes=12 | Provisionado=104909.64 | Pagado=232422.5 | SaldoMes=-127512.86
+  Anio=2025 | Mes=11 | Provisionado=104909.64 | Pagado=41153.21 | SaldoMes=63756.43
+  Anio=2025 | Mes=10 | Provisionado=104909.64 | Pagado=41153.21 | SaldoMes=63756.43
+  Anio=2025 | Mes=9 | Provisionado=104909.32 | Pagado=168665.61 | SaldoMes=-63756.29
+    Saldo acumulado pendiente: 196277.04 S/
+
+════════════════════════════════════════════════════════════════════════════════
+V07 — CTS cta 4151 (debe haber Mayo y Noviembre cada año)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+    2023: M12(prov=30308 pag=1811278), M11(prov=69974 pag=59978), M10(prov=9996 pag=37000), M8(prov=0 pag=20203), M7(prov=10156 pag=0), M6(prov=9916 pag=2000), M5(prov=69201 pag=64285), M4(prov=9916 pag=0), M3(prov=9916 pag=56071), M2(prov=9916 pag=0), M1(prov=1821512 pag=0)
+    2024: M12(prov=9798 pag=1875392), M11(prov=9787 pag=12000), M10(prov=9787 pag=0), M9(prov=9787 pag=0), M8(prov=9887 pag=0), M7(prov=9753 pag=0), M6(prov=9753 pag=0), M5(prov=68273 pag=58520), M4(prov=9875 pag=1337), M3(prov=9996 pag=0), M2(prov=9996 pag=0), M1(prov=1821274 pag=40717)
+    2025: M12(prov=7856 pag=1096355), M11(prov=27917 pag=55309), M10(prov=7491 pag=13265), M9(prov=7491 pag=0), M8(prov=5910 pag=18164), M7(prov=8709 pag=0), M6(prov=6496 pag=18820), M5(prov=9605 pag=26466), M4(prov=11465 pag=0), M3(prov=11465 pag=0), M2(prov=9798 pag=0), M1(prov=1114175 pag=0)
+    2026: M12(prov=0 pag=1103439), M1(prov=1103439 pag=0)
+
+  AMERICANA:
+    2025: M12(prov=6730 pag=12145), M11(prov=35299 pag=59674), M10(prov=5462 pag=0), M9(prov=5615 pag=0), M8(prov=5728 pag=0), M7(prov=4847 pag=0), M6(prov=4069 pag=0), M5(prov=4069 pag=0)
+    2026: M3(prov=6155 pag=0), M2(prov=6155 pag=0), M1(prov=18419 pag=0)
+
+  INTEGRAL:
+    2024: M12(prov=4563 pag=21915), M11(prov=3270 pag=333), M10(prov=3270 pag=0), M9(prov=2951 pag=0), M8(prov=2339 pag=0), M7(prov=2356 pag=0), M6(prov=2083 pag=0), M5(prov=1417 pag=0), M4(prov=649 pag=2502), M3(prov=927 pag=0), M2(prov=927 pag=0)
+    2025: M12(prov=22193 pag=46298), M11(prov=74381 pag=106069), M10(prov=14623 pag=13889), M9(prov=14447 pag=0), M8(prov=13181 pag=5853), M7(prov=10440 pag=0), M6(prov=12097 pag=0), M5(prov=38382 pag=53571), M4(prov=6760 pag=0), M3(prov=6151 pag=14472), M2(prov=3586 pag=0), M1(prov=25813 pag=1904)
+    2026: M4(prov=23939 pag=0), M3(prov=23707 pag=3630), M2(prov=23966 pag=0), M1(prov=66104 pag=0)
+
+  MEDARQ:
+    2025: M12(prov=2214 pag=3836), M11(prov=11403 pag=19374), M10(prov=1716 pag=0), M9(prov=1716 pag=0), M8(prov=1716 pag=0), M7(prov=1860 pag=0), M6(prov=1293 pag=0), M5(prov=1293 pag=0)
+    2026: M3(prov=2160 pag=0), M2(prov=1918 pag=0), M1(prov=5755 pag=0)
+
+════════════════════════════════════════════════════════════════════════════════
+V08 — PARTICIPACIONES cta 413* (DL 892)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  CodCuenta=41300000 | Anio=2026 | Provisionado=410280.94 | Pagado=410280.94 | Saldo=0
+  CodCuenta=41300000 | Anio=2025 | Provisionado=410280.94 | Pagado=410280.94 | Saldo=0
+  CodCuenta=41300000 | Anio=2024 | Provisionado=410280.94 | Pagado=410280.94 | Saldo=0
+  CodCuenta=41300000 | Anio=2023 | Provisionado=410280.94 | Pagado=410280.94 | Saldo=0
+
+  AMERICANA:
+    (no usa cuenta 413*)
+
+  INTEGRAL:
+  CodCuenta=41300000 | Anio=2026 | Provisionado=211878 | Pagado=0 | Saldo=211878
+  CodCuenta=41300000 | Anio=2025 | Provisionado=211878 | Pagado=211878 | Saldo=0
+
+  MEDARQ:
+    (no usa cuenta 413*)
+
+════════════════════════════════════════════════════════════════════════════════
+V09 — BANCOS (clase 10) — saldos al cierre de cada año
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+    10410013 BBVA CONTINENTAL MN             | 2022=      -29786 | 2023=      -29786 | 2024=      -29786 | 2025=      -29786 | hoy=      -29786
+    10300010 Transferencias Bancarias        | 2022=        2277 | 2023=        2277 | 2024=        2277 | 2025=        2277 | hoy=        2277
+
+  AMERICANA:
+    10410013 BBVA CONTINENTAL MN             | 2022=           0 | 2023=           0 | 2024=           0 | 2025=      170766 | hoy=   -13034687
+    10410016 BBVA Continental 0011-0787-010… | 2022=           0 | 2023=           0 | 2024=           0 | 2025=       21363 | hoy=        -294
+    10100021 Caja Chica MN                   | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=        1000
+    10710021 BANCO NACION - CTA DETRACCION   | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=       14538
+    10410015 BBVA Continental 0011-0787-010… | 2022=           0 | 2023=           0 | 2024=           0 | 2025=      -21363 | hoy=       85878
+    10410014 BBVA CONTINENTAL ME             | 2022=           0 | 2023=           0 | 2024=           0 | 2025=        -209 | hoy=    21471007
+
+  INTEGRAL:
+    10410013 BBVA CONTINENTAL MN             | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=      -31671
+    10811004 CTA ADMIN USD                   | 2022=           0 | 2023=           0 | 2024=         256 | 2025=         256 | hoy=        -926
+    10300011 Caja en Transito                | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=         -10
+    10300012 Efectivo en transito            | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=          -1
+    10811002 CTA ADMIN GG                    | 2022=           0 | 2023=           0 | 2024=        -256 | 2025=        -256 | hoy=         926
+    10100021 Caja Chica MN                   | 2022=           0 | 2023=           0 | 2024=        1459 | 2025=        1459 | hoy=        5840
+    10710021 BANCO NACION - CTA DETRACCION   | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=       75230
+    10410014 BBVA CONTINENTAL ME             | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=       77457
+
+  MEDARQ:
+    10410014 BBVA CONTINENTAL ME             | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=      -51587
+    10710021 BANCO NACION - CTA DETRACCION   | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=      -31860
+    10100021 Caja Chica MN                   | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=        1260
+    10300010 Transferencias Bancarias        | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=        4553
+    10410013 BBVA CONTINENTAL MN             | 2022=           0 | 2023=           0 | 2024=           0 | 2025=           0 | hoy=       40338
+
+════════════════════════════════════════════════════════════════════════════════
+V10 — OB_CuentaBanco (cuentas registradas en módulo conciliación)
+════════════════════════════════════════════════════════════════════════════════
+  CMO       : 19 cuentas activas | 4 SIN estados cargados
+  AMERICANA : 5 cuentas activas | 5 SIN estados cargados
+  INTEGRAL  : 5 cuentas activas | 4 SIN estados cargados
+  MEDARQ    : 3 cuentas activas | 3 SIN estados cargados
+
+════════════════════════════════════════════════════════════════════════════════
+V11 — BANCARIZACIÓN Ley 28194 (pagos > S/3,500 ó > US$1,000)
+════════════════════════════════════════════════════════════════════════════════
+  CMO        | TotalPagos=0 | Materiales=null | Bancarizados=null | CompensaciónNC=null | CanjeLetra=null | NoBancarizados=null | Compliance=N/A%
+  AMERICANA  | TotalPagos=91 | Materiales=32 | Bancarizados=32 | CompensaciónNC=0 | CanjeLetra=0 | NoBancarizados=0 | Compliance=100.0%
+  INTEGRAL   | TotalPagos=586 | Materiales=220 | Bancarizados=220 | CompensaciónNC=0 | CanjeLetra=0 | NoBancarizados=0 | Compliance=100.0%
+  MEDARQ     | TotalPagos=201 | Materiales=76 | Bancarizados=76 | CompensaciónNC=0 | CanjeLetra=0 | NoBancarizados=0 | Compliance=100.0%
+
+════════════════════════════════════════════════════════════════════════════════
+V12 — CLIENTE PERGOLA — documentos pendientes por empresa
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO: 6 docs | Saldo total = 485.985 S/ | Vencidos >90d=6 | >180d=6 | Max=509d
+
+  AMERICANA: 46 docs | Saldo total = 3.002.718,75 S/ | Vencidos >90d=46 | >180d=46 | Max=318d
+
+  INTEGRAL: 56 docs | Saldo total = 2.792.322 S/ | Vencidos >90d=27 | >180d=11 | Max=496d
+  MEDARQ: (sin docs PERGOLA pendientes)
+
+════════════════════════════════════════════════════════════════════════════════
+V13 — CONCENTRACIÓN CxC (top clientes por saldo)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+    (sin saldos)
+
+  AMERICANA:
+  Cliente=CONSULTORIA & CONSTRUCCION GRUPO PERGOLA S.A.C. | Saldo=3002718.75 | Vencido90Mas=3002718.75 | Vencido180Mas=3002718.75
+  Cliente=CONSORCIO ROLOPOM CORPORIS II | Saldo=65631.61 | Vencido90Mas=2686.72 | Vencido180Mas=0
+    Top 2 suman: 3.068.350,36 S/
+
+  INTEGRAL:
+  Cliente=CONSTRUCTORA & INMOBILIARIA SAGITARIO Y ASOCIADOS S.A.C. - SAGITARIO & ASOCIADOS S.A.C. | Saldo=648528 | Vencido90Mas=577728 | Vencido180Mas=203904
+  Cliente=CHINA ROAD AND BRIDGE CORPORATION SUCURSAL PERU | Saldo=559320 | Vencido90Mas=441320 | Vencido180Mas=354000
+  Cliente=CMO GROUP S.A. | Saldo=154864 | Vencido90Mas=74860 | Vencido180Mas=0
+  Cliente=CONSORCIO RIO HUATANAY | Saldo=129800 | Vencido90Mas=129800 | Vencido180Mas=23600
+  Cliente=CONSORCIO PENAL PUCALLPA | Saldo=29500 | Vencido90Mas=0 | Vencido180Mas=0
+  Cliente=INMAC PERU S.A.C. | Saldo=22039 | Vencido90Mas=22039 | Vencido180Mas=0
+  Cliente=INGENIERIAS Y OBRAS DE CONSTRUCCION RIUMAR SPA | Saldo=14000 | Vencido90Mas=-2200 | Vencido180Mas=0
+    Top 7 suman: 1.558.051 S/
+
+  MEDARQ:
+  Cliente=CONSORCIO SALUD MONTENEGRO | Saldo=418020 | Vencido90Mas=468020 | Vencido180Mas=0
+  Cliente=SUPPLIES AND INVESTMENTS PERU EMPRESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA | Saldo=311362.66 | Vencido90Mas=311362.66 | Vencido180Mas=311362.66
+  Cliente=MINERA NADIAN GOLD CORPORATION E.I.R.L. | Saldo=138795.68 | Vencido90Mas=138795.68 | Vencido180Mas=138795.68
+  Cliente=CONSORCIO PROYECTA & ASOCIADOS | Saldo=42480 | Vencido90Mas=103840 | Vencido180Mas=103840
+    Top 4 suman: 910.658,34 S/
+
+════════════════════════════════════════════════════════════════════════════════
+V14 — SALDOS INTERCOMPAÑÍA (cls 14,16,17 con tercero del grupo)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  Clase=17 | CodCuenta=17123001 | Tercero=COMPAÑÍA AMERICANA DE CONSTRUCCION Y EQUIPAMIENTO S.A.C. | RUC=20610493468          | Saldo=2743225.98
+  Clase=16 | CodCuenta=16120001 | Tercero=INTEGRAL CONSULTORES S.A.C. | RUC=20612061760          | Saldo=-7292.93
+  Clase=14 | CodCuenta=14130002 | Tercero=COMPAÑÍA AMERICANA DE CONSTRUCCION Y EQUIPAMIENTO S.A.C. | RUC=20610493468          | Saldo=4614.05
+    TOTAL intercompañía: 2.740.547,1 S/
+
+  AMERICANA:
+  Clase=17 | CodCuenta=17123001 | Tercero=CMO GROUP S.A. | RUC=20536612972          | Saldo=2037486.5
+  Clase=17 | CodCuenta=17123001 | Tercero=INTEGRAL CONSULTORES S.A.C. | RUC=20612061760          | Saldo=1790101.85
+  Clase=17 | CodCuenta=17123001 | Tercero=MEDARQ S.A.C. | RUC=20553900884          | Saldo=585183.83
+    TOTAL intercompañía: 4.412.772,18 S/
+
+  INTEGRAL:
+  Clase=16 | CodCuenta=16120001 | Tercero=CMO GROUP S.A. | RUC=20536612972          | Saldo=7292870.4
+  Clase=16 | CodCuenta=16120002 | Tercero=CMO GROUP S.A. | RUC=20536612972          | Saldo=3809419.77
+  Clase=16 | CodCuenta=16120001 | Tercero=COMPAÑÍA AMERICANA DE CONSTRUCCION Y EQUIPAMIENTO S.A.C. | RUC=20610493468          | Saldo=1430971.2
+  Clase=16 | CodCuenta=16120002 | Tercero=MEDARQ S.A.C. | RUC=20553900884          | Saldo=217466.28
+  Clase=16 | CodCuenta=16120001 | Tercero=MEDARQ S.A.C. | RUC=20553900884          | Saldo=84319.57
+    TOTAL intercompañía: 12.835.047,22 S/
+
+  MEDARQ:
+  Clase=17 | CodCuenta=17123001 | Tercero=COMPAÑÍA AMERICANA DE CONSTRUCCION Y EQUIPAMIENTO S.A.C. | RUC=20610493468          | Saldo=17349.52
+    TOTAL intercompañía: 17.349,52 S/
+
+════════════════════════════════════════════════════════════════════════════════
+V15 — ACTIVO FIJO clase 33/39/68
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+    Cls 33 (activo bruto):         -162.408,17 S/
+    Cls 39 (deprec. acum.):        -156.466,52 S/
+    Cls 68 (deprec. ejercicio):  -3.239.888,35 S/
+    VALOR NETO (33-39):              -5.941,65 S/
+
+  AMERICANA:
+    Cls 33 (activo bruto):           28.499,64 S/
+    Cls 39 (deprec. acum.):          12.200,74 S/
+    Cls 68 (deprec. ejercicio):     -12.200,74 S/
+    VALOR NETO (33-39):               16.298,9 S/
+
+  INTEGRAL:
+    Cls 33 (activo bruto):          198.712,24 S/
+    Cls 39 (deprec. acum.):          36.918,58 S/
+    Cls 68 (deprec. ejercicio):     -36.918,58 S/
+    VALOR NETO (33-39):             161.793,66 S/
+
+  MEDARQ:
+    Cls 33 (activo bruto):           48.568,79 S/
+    Cls 39 (deprec. acum.):           4.486,72 S/
+    Cls 68 (deprec. ejercicio):      -4.486,72 S/
+    VALOR NETO (33-39):              44.082,07 S/
+
+════════════════════════════════════════════════════════════════════════════════
+V16 — TRAZABILIDAD OB_Pago ↔ DetalleAsignacion
+════════════════════════════════════════════════════════════════════════════════
+  CMO        | Total=0 | ConAsign=0 | SinAsign=0 | Trazabilidad=0% | Facturas=0 | Compensaciones=0
+  AMERICANA  | Total=91 | ConAsign=90 | SinAsign=1 | Trazabilidad=98.90% | Facturas=0 | Compensaciones=0
+  INTEGRAL   | Total=586 | ConAsign=583 | SinAsign=3 | Trazabilidad=99.49% | Facturas=0 | Compensaciones=0
+  MEDARQ     | Total=201 | ConAsign=201 | SinAsign=0 | Trazabilidad=100.00% | Facturas=0 | Compensaciones=0
+
+════════════════════════════════════════════════════════════════════════════════
+V17 — RECONCILIACIÓN INGRESOS CONTABLES vs FACTURAS por mes (año 2026)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  Mes=1 | IngresosContables=0 | MontoFacturado=0 | Diferencia=0
+  Mes=2 | IngresosContables=0 | MontoFacturado=0 | Diferencia=0
+  Mes=3 | IngresosContables=211553.78 | MontoFacturado=95948 | Diferencia=115605.78
+  Mes=4 | IngresosContables=0 | MontoFacturado=0 | Diferencia=0
+  Mes=5 | IngresosContables=0 | MontoFacturado=0 | Diferencia=0
+    Total: Contables=211.553,78 | Facturado=95.948 | Δ=115.605,78
+
+  AMERICANA:
+  Mes=1 | IngresosContables=53343.13 | MontoFacturado=62944.89 | Diferencia=-9601.76
+  Mes=2 | IngresosContables=53343.13 | MontoFacturado=62944.89 | Diferencia=-9601.76
+  Mes=3 | IngresosContables=53343.13 | MontoFacturado=62944.89 | Diferencia=-9601.76
+  Mes=4 | IngresosContables=53343.13 | MontoFacturado=62944.89 | Diferencia=-9601.76
+  Mes=5 | IngresosContables=0 | MontoFacturado=0 | Diferencia=0
+    Total: Contables=213.372,52 | Facturado=251.779,56 | Δ=-38.407,04
+
+  INTEGRAL:
+  Mes=1 | IngresosContables=751975.44 | MontoFacturado=1099313.54 | Diferencia=-347338.1
+  Mes=2 | IngresosContables=861975.44 | MontoFacturado=1231049.68 | Diferencia=-369074.24
+  Mes=3 | IngresosContables=1066975.44 | MontoFacturado=2146961.54 | Diferencia=-1079986.1
+  Mes=4 | IngresosContables=0 | MontoFacturado=35400 | Diferencia=-35400
+  Mes=5 | IngresosContables=0 | MontoFacturado=0 | Diferencia=0
+    Total: Contables=2.680.926,32 | Facturado=4.512.724,76 | Δ=-1.831.798,44
+
+  MEDARQ:
+  Mes=1 | IngresosContables=170000 | MontoFacturado=171100 | Diferencia=-1100
+  Mes=2 | IngresosContables=295000 | MontoFacturado=377600 | Diferencia=-82600
+  Mes=3 | IngresosContables=125000 | MontoFacturado=236000 | Diferencia=-111000
+  Mes=4 | IngresosContables=175000 | MontoFacturado=177000 | Diferencia=-2000
+  Mes=5 | IngresosContables=-25000 | MontoFacturado=-29500 | Diferencia=4500
+    Total: Contables=740.000 | Facturado=932.200 | Δ=-192.200
+
+════════════════════════════════════════════════════════════════════════════════
+V18 — TRIBUTOS POR PAGAR cta 40* (saldo > 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO (top 5 por saldo):
+    40700000 Administradoras de Fondos de Pensiones -… | Saldo=     20.268,07 S/ | Último: 31/12/2026
+    40310000 ESSALUD EMPLEADOS                        | Saldo=     13.128,59 S/ | Último: 31/12/2026
+    40173000 Renta de Quinta Categoría                | Saldo=     13.005,45 S/ | Último: 31/12/2026
+    40111000 IGV Cuenta Propia                        | Saldo=     10.088,62 S/ | Último: 31/12/2026
+    40114000 IGV Régimen de Retenciones               | Saldo=     -9.083,52 S/ | Último: 31/12/2026
+
+  AMERICANA (top 5 por saldo):
+    40111000 IGV Cuenta Propia                        | Saldo=    149.297,35 S/ | Último: 07/05/2026
+    40171001 Pago a cuenta Renta de Tercera Categoria | Saldo=       -95.225 S/ | Último: 24/04/2026
+    40186000 Impuesto Temporal a los Activos Netos    | Saldo=       -43.704 S/ | Último: 01/01/2026
+    40700000 Administradoras de Fondos de Pensiones -… | Saldo=      7.079,96 S/ | Último: 08/04/2026
+    40174000 Renta de No Domiciliados                 | Saldo=        -2.100 S/ | Último: 24/04/2026
+
+  INTEGRAL (top 5 por saldo):
+    40171001 Pago a cuenta Renta de Tercera Categoria | Saldo=    -1.537.815 S/ | Último: 24/04/2026
+    40171000 Impuesto de Regularización Anual         | Saldo=     1.250.081 S/ | Último: 01/01/2026
+    40111000 IGV Cuenta Propia                        | Saldo=    195.183,06 S/ | Último: 07/05/2026
+    40173000 Renta de Quinta Categoría                | Saldo=     65.672,99 S/ | Último: 30/04/2026
+    40310000 ESSALUD EMPLEADOS                        | Saldo=     40.068,74 S/ | Último: 30/04/2026
+
+  MEDARQ (top 5 por saldo):
+    40173000 Renta de Quinta Categoría                | Saldo=     26.083,08 S/ | Último: 31/03/2026
+    40171001 Pago a cuenta Renta de Tercera Categoria | Saldo=       -20.502 S/ | Último: 22/04/2026
+    40700000 Administradoras de Fondos de Pensiones -… | Saldo=    -16.203,22 S/ | Último: 07/05/2026
+    40171000 Impuesto de Regularización Anual         | Saldo=        14.602 S/ | Último: 01/01/2026
+    40111000 IGV Cuenta Propia                        | Saldo=     14.208,19 S/ | Último: 08/05/2026
+
+════════════════════════════════════════════════════════════════════════════════
+V19 — BALANCE por clase (saldo histórico vs movimiento 2026)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO — saldos por clase histórica:
+    Grupo 1 (Activo):  Σdb=5.253.032.862,09 | Σcr=5.218.117.413,08 | Saldo=  34.915.449,01
+    Grupo 2 (Inventarios):  Σdb=   8.803.376,49 | Σcr=   8.803.376,49 | Saldo=              0
+    Grupo 3 (A.Fijo):  Σdb=1.331.086.783,82 | Σcr=1.331.127.138,31 | Saldo=     -40.354,49
+    Grupo 4 (Pasivo):  Σdb=4.869.742.292,38 | Σcr=4.902.472.136,08 | Saldo=  -32.729.843,7
+    Grupo 5 (Patrim):  Σdb= 957.341.838,42 | Σcr= 960.217.773,72 | Saldo=   -2.875.935,3
+    Grupo 6 (Gastos):  Σdb= 317.210.452,23 | Σcr=  73.607.373,37 | Saldo= 243.603.078,86
+    Grupo 7 (Ingresos):  Σdb= 170.989.361,02 | Σcr= 660.615.907,46 | Saldo=-489.626.546,44
+    Grupo 8 (Imp.Renta):  Σdb=   4.428.769,81 | Σcr=   1.281.571,72 | Saldo=   3.147.198,09
+    Grupo 9 (C.Operativo):  Σdb= 316.295.620,68 | Σcr=  72.692.541,87 | Saldo= 243.603.078,81
+
+  AMERICANA — saldos por clase histórica:
+    Grupo 1 (Activo):  Σdb= 250.236.374,59 | Σcr= 234.153.079,57 | Saldo=  16.083.295,02
+    Grupo 3 (A.Fijo):  Σdb=     125.812,53 | Σcr=     109.513,63 | Saldo=       16.298,9
+    Grupo 4 (Pasivo):  Σdb=   20.158.634,4 | Σcr=  22.952.797,99 | Saldo=  -2.794.163,59
+    Grupo 5 (Patrim):  Σdb=  12.688.599,73 | Σcr=  12.735.171,81 | Saldo=     -46.572,08
+    Grupo 6 (Gastos):  Σdb=   5.633.003,69 | Σcr=       9.901,75 | Saldo=   5.623.101,94
+    Grupo 7 (Ingresos):  Σdb=   2.130.549,81 | Σcr=  26.635.611,94 | Saldo= -24.505.062,13
+    Grupo 9 (C.Operativo):  Σdb=   5.633.003,69 | Σcr=       9.901,75 | Saldo=   5.623.101,94
+
+  INTEGRAL — saldos por clase histórica:
+    Grupo 1 (Activo):  Σdb= 298.366.029,77 | Σcr= 282.486.251,27 | Saldo=   15.879.778,5
+    Grupo 3 (A.Fijo):  Σdb=     768.528,73 | Σcr=     496.352,07 | Saldo=     272.176,66
+    Grupo 4 (Pasivo):  Σdb=  59.309.797,29 | Σcr=   66.321.191,1 | Saldo=  -7.011.393,81
+    Grupo 5 (Patrim):  Σdb=  10.650.450,02 | Σcr=  10.651.450,02 | Saldo=         -1.000
+    Grupo 6 (Gastos):  Σdb=  18.223.600,14 | Σcr=   2.204.812,71 | Saldo=  16.018.787,43
+    Grupo 7 (Ingresos):  Σdb=  10.913.857,71 | Σcr=  54.151.685,92 | Saldo= -43.237.828,21
+    Grupo 8 (Imp.Renta):  Σdb=      2.123.196 | Σcr=         62.504 | Saldo=      2.060.692
+    Grupo 9 (C.Operativo):  Σdb=  18.223.600,14 | Σcr=   2.204.812,71 | Saldo=  16.018.787,43
+
+  MEDARQ — saldos por clase histórica:
+    Grupo 1 (Activo):  Σdb=  16.676.641,78 | Σcr=  14.904.227,36 | Saldo=   1.772.414,42
+    Grupo 3 (A.Fijo):  Σdb=      83.143,61 | Σcr=      39.061,54 | Saldo=      44.082,07
+    Grupo 4 (Pasivo):  Σdb=   9.355.941,38 | Σcr=  10.370.914,87 | Saldo=  -1.014.973,49
+    Grupo 5 (Patrim):  Σdb=   2.448.248,51 | Σcr=   3.642.345,51 | Saldo=     -1.194.097
+    Grupo 6 (Gastos):  Σdb=    3.459.268,3 | Σcr=     687.213,95 | Saldo=   2.772.054,35
+    Grupo 7 (Ingresos):  Σdb=   1.087.213,95 | Σcr=   6.253.350,65 | Saldo=   -5.166.136,7
+    Grupo 8 (Imp.Renta):  Σdb=         14.602 | Σcr=              0 | Saldo=         14.602
+    Grupo 9 (C.Operativo):  Σdb=    3.459.268,3 | Σcr=     687.213,95 | Saldo=   2.772.054,35
+
+════════════════════════════════════════════════════════════════════════════════
+V20 — ASIENTOS EN FECHAS ANÓMALAS
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  Categoria=Domingo | NumAsientos=5637 | DocsDistintos=635 | Monto=18809644.34
+  Categoria=Futura | NumAsientos=9809 | DocsDistintos=6835 | Monto=1182577243.64
+  Categoria=Normal | NumAsientos=87171 | DocsDistintos=8254 | Monto=6265822570.76
+  Categoria=Sábado | NumAsientos=7524 | DocsDistintos=565 | Monto=10001045.04
+
+  AMERICANA:
+  Categoria=Domingo | NumAsientos=363 | DocsDistintos=81 | Monto=2465467.56
+  Categoria=Normal | NumAsientos=6467 | DocsDistintos=946 | Monto=588830252.82
+  Categoria=Sábado | NumAsientos=623 | DocsDistintos=141 | Monto=1760811.58
+
+  INTEGRAL:
+  Categoria=Domingo | NumAsientos=2005 | DocsDistintos=437 | Monto=10851381.159999998
+  Categoria=Normal | NumAsientos=44964 | DocsDistintos=5410 | Monto=805973102.46
+  Categoria=Sábado | NumAsientos=2279 | DocsDistintos=448 | Monto=20333635.98
+
+  MEDARQ:
+  Categoria=Domingo | NumAsientos=684 | DocsDistintos=126 | Monto=1903453.16
+  Categoria=Normal | NumAsientos=11445 | DocsDistintos=1531 | Monto=65552957.779999994
+  Categoria=Sábado | NumAsientos=1071 | DocsDistintos=210 | Monto=5712244.72
+
+════════════════════════════════════════════════════════════════════════════════
+V21 — IDENTIFICADORES con MÚLTIPLES NOMBRES (top 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+    (todos consistentes)
+
+  AMERICANA:
+    (todos consistentes)
+
+  INTEGRAL:
+    (todos consistentes)
+
+  MEDARQ:
+    (todos consistentes)
+
+════════════════════════════════════════════════════════════════════════════════
+V22 — ESTADO CONCILIACIÓN BANCARIA por cuenta
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+    0413078140292 CERTIFICADO BANCARIO M.N               | BalContable=        148393 | NumEstados= 32 | ÚltimoAl=30/06/2022 | DíasSinConc=1411
+    001109100100161939 ADMINISTRACION DE FONDOS          | BalContable=        134798 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    00046045386 BANCO DE LA NACION DETRACCIONES          | BalContable=       -110964 | NumEstados= 42 | ÚltimoAl=30/06/2022 | DíasSinConc=1411
+    1263000970092 IBK MN CTA CTE                         | BalContable=          2600 | NumEstados= 65 | ÚltimoAl=31/05/2022 | DíasSinConc=1441
+    1234567                                              | BalContable=          -258 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    000866668594 CUENTA CORRIENTE GARANTIA SOLES         | BalContable=            24 | NumEstados=  6 | ÚltimoAl=31/12/2019 | DíasSinConc=2323
+    000685840255 FINANCIERO CTA RECOLECTORA              | BalContable=             0 | NumEstados= 26 | ÚltimoAl=31/12/2019 | DíasSinConc=2323
+    000685840476 FINANCIERO CTA RESERVA                  | BalContable=             0 | NumEstados= 26 | ÚltimoAl=31/12/2019 | DíasSinConc=2323
+
+  AMERICANA:
+    00003356841 BANCO DE LA NACION - DETRACCIONES        | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    001103600100073224 BBVA SOLES                        | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    001103600100073240 BBVA DOLARES                      | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    001107870100044366 BBVA SOLES CTA 2                  | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    001107870100044374 BBVA DOLARES CTA 2                | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+
+  INTEGRAL:
+    0011-0486-0100203867 BBVA SOLES                      | BalContable=             0 | NumEstados=  2 | ÚltimoAl=31/03/2024 | DíasSinConc=771
+    0011-0486-0100203875 BBVA DOLARES                    | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    00008149380 BANCO DE LA NACION - DETRACCIONES        | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    0011378010005164471 BBVA MN - ADMINISTRACION DE FO…  | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    00110378010005229278 BBVA ME - ADMINISTRACION DE F…  | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+
+  MEDARQ:
+    00046109716 BANCO DE LA NACION - DETRACCIONES        | BalContable=        -31860 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    001107870100040468 BBVA DOLARES                      | BalContable=        -14987 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+    001107870100040441 BBVA SOLES                        | BalContable=             0 | NumEstados=  0 | ÚltimoAl=N/A | DíasSinConc=N/A
+
+════════════════════════════════════════════════════════════════════════════════
+V23 — P&L ANUAL 2026 (datos directos S10)
+════════════════════════════════════════════════════════════════════════════════
+  Empresa      |     Ingresos |    GastosNat |          GAV |    CostoVtas |     GtsFin
+  CMO          |   211.553,78 | 1.397.449,92 | 1.356.507,68 |    31.822,17 |   9.120,07
+  AMERICANA    |   213.372,52 |    437.093,8 |    98.034,68 |   270.998,25 |  68.060,87
+  INTEGRAL     | 2.680.926,32 | 2.607.703,74 |  1.153.851,4 | 1.326.261,27 | 127.591,07
+  MEDARQ       |      740.000 |  1.139.828,4 | 1.131.251,12 |      6.204,1 |   2.373,18
+
+════════════════════════════════════════════════════════════════════════════════
+V24 — COHERENCIA OB_Pago vs AsientoContable clase 10 por mes (2026)
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+  Mes=1 | NumPagos=0 | MontoOBPago=0 | MontoContable=16136.09 | Diferencia=-16136.09
+  Mes=2 | NumPagos=0 | MontoOBPago=0 | MontoContable=0 | Diferencia=0
+  Mes=3 | NumPagos=0 | MontoOBPago=0 | MontoContable=0 | Diferencia=0
+  Mes=4 | NumPagos=0 | MontoOBPago=0 | MontoContable=0 | Diferencia=0
+  Mes=5 | NumPagos=0 | MontoOBPago=0 | MontoContable=0 | Diferencia=0
+
+  AMERICANA:
+  Mes=1 | NumPagos=12 | MontoOBPago=165585.77 | MontoContable=13782204.96 | Diferencia=-13616619.19
+  Mes=2 | NumPagos=31 | MontoOBPago=314958.43 | MontoContable=574514.72 | Diferencia=-259556.29
+  Mes=3 | NumPagos=28 | MontoOBPago=225300.77 | MontoContable=509753.1 | Diferencia=-284452.33
+  Mes=4 | NumPagos=19 | MontoOBPago=86403.25 | MontoContable=337441.16 | Diferencia=-251037.91
+  Mes=5 | NumPagos=1 | MontoOBPago=473 | MontoContable=473 | Diferencia=0
+
+  INTEGRAL:
+  Mes=1 | NumPagos=165 | MontoOBPago=2012832.51 | MontoContable=7014311.63 | Diferencia=-5001479.12
+  Mes=2 | NumPagos=122 | MontoOBPago=1021043.29 | MontoContable=4955778.220000001 | Diferencia=-3934734.93
+  Mes=3 | NumPagos=227 | MontoOBPago=2203004.87 | MontoContable=8008979.06 | Diferencia=-5805974.19
+  Mes=4 | NumPagos=71 | MontoOBPago=1033878.5 | MontoContable=1263885.06 | Diferencia=-230006.56
+  Mes=5 | NumPagos=1 | MontoOBPago=1081.29 | MontoContable=1081.29 | Diferencia=0
+
+  MEDARQ:
+  Mes=1 | NumPagos=51 | MontoOBPago=525746.82 | MontoContable=1093328.37 | Diferencia=-567581.55
+  Mes=2 | NumPagos=51 | MontoOBPago=317217.18 | MontoContable=965247.1 | Diferencia=-648029.92
+  Mes=3 | NumPagos=51 | MontoOBPago=489951.7 | MontoContable=1655012.92 | Diferencia=-1165061.22
+  Mes=4 | NumPagos=41 | MontoOBPago=272669.14 | MontoContable=756129.41 | Diferencia=-483460.27
+  Mes=5 | NumPagos=7 | MontoOBPago=18121.22 | MontoContable=18121.22 | Diferencia=0
+
+════════════════════════════════════════════════════════════════════════════════
+V25 — EXISTENCIA EN PLAN CONTABLE de cuentas críticas
+════════════════════════════════════════════════════════════════════════════════
+
+  CMO:
+    Cuentas en catálogo: 44 | Con asientos: 0 | Sin uso por esta empresa: 44
+    501 Capital social                           | NumAsientos=0
+    581 Reservas Reinversión                     | NumAsientos=0
+    591 Utilidades No Distribuidas               | NumAsientos=0
+    4111 Sueldos y salarios por pagar             | NumAsientos=0
+    4151 Compensación por Tiempo de Servicios por… | NumAsientos=0
+    4130 Participaciones de los Trabajadores por … | NumAsientos=0
+    1041 Cuentas Corrientes Operativas            | NumAsientos=0
+
+  AMERICANA:
+    Cuentas en catálogo: 44 | Con asientos: 0 | Sin uso por esta empresa: 44
+    501 Capital social                           | NumAsientos=0
+    581 Reservas Reinversión                     | NumAsientos=0
+    591 Utilidades no distribuidas               | NumAsientos=0
+    4111 Sueldos y Salarios por Pagar             | NumAsientos=0
+    4151 Compensación por Tiempo de Servicios por… | NumAsientos=0
+    4130 Participaciones de los Trabajadores por … | NumAsientos=0
+    1041 Cuentas corrientes operativas            | NumAsientos=0
+
+  INTEGRAL:
+    Cuentas en catálogo: 44 | Con asientos: 0 | Sin uso por esta empresa: 44
+    501 Capital Social                           | NumAsientos=0
+    581 Reservas Reinversión                     | NumAsientos=0
+    591 Utilidades No Distribuidas               | NumAsientos=0
+    4111 Sueldos y Salarios por Pagar             | NumAsientos=0
+    4151 Compensación por Tiempo de Servicios por… | NumAsientos=0
+    4130 Participaciones de los Trabajadores por … | NumAsientos=0
+    1041 Cuentas Corrientes Operativas            | NumAsientos=0
+
+  MEDARQ:
+    Cuentas en catálogo: 44 | Con asientos: 0 | Sin uso por esta empresa: 44
+    501 Capital Social                           | NumAsientos=0
+    581 Reservas Reinversión                     | NumAsientos=0
+    591 Utilidades No Distribuidas               | NumAsientos=0
+    4111 Sueldos y salarios por pagar             | NumAsientos=0
+    4151 Compensación por Tiempo de Servicios por… | NumAsientos=0
+    4130 Participaciones de los Trabajadores por … | NumAsientos=0
+    1041 Cuentas Corrientes Operativas            | NumAsientos=0
+
+════════════════════════════════════════════════════════════════════════════════
+Análisis completo.
+════════════════════════════════════════════════════════════════════════════════

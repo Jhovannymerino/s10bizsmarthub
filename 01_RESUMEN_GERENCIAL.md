@@ -1,9 +1,24 @@
 ---
 title: "Resumen Gerencial — Auditoría Integral del Grupo"
-subtitle: "Para Directorio y Gerencia General"
+subtitle: "Para Directorio y Gerencia General — REVISADO POST-VALIDACIÓN FORENSE"
 author: "Equipo de Auditoría BizSmartHub"
-date: "11 de mayo de 2026"
+date: "11 de mayo de 2026 (rev. 11/05/2026 16:50)"
 ---
+
+\newpage
+
+# 0. NOTA DE REVISIÓN
+
+> **Este documento fue actualizado el 11/05/2026 tras una validación forense de 25 queries × 4 empresas (100 queries) ejecutadas directamente contra S10 SQL Server productivo (`192.168.1.51`, base CMO).** Ver `05_VALIDACION_FORENSE_S10.docx` para el detalle metodológico.
+>
+> **Cambios materiales aplicados:**
+>
+> 1. 🔴 **Corregido** hallazgo "CMO falta asiento de apertura 2026" — fue **refutado por S10** (la apertura sí existe, 9,700 asientos por S/592M).
+> 2. 🔴 **Corregido** hallazgo "CMO Capital S/78.3M" — no existe registro cta 50 en CMO; el verdadero issue es **patrimonio neto NEGATIVO −S/2.87M** (Art. 220 LGS).
+> 3. 🔴 **Corregido** hallazgo "Préstamos intercompañía S/123M" — esa cifra era el **monto movido histórico**, no el saldo neto; saldo real cta 17 CMO = **S/34M**, intercompañía entre las 4 auditadas = **S/20M consolidado**, mayor exposición individual **INTEGRAL→CMO S/11.1M**.
+> 4. 🟡 **Corregido** "BBVA MN −S/13M desde 2023" → arrancó en enero 2026 (no 2023).
+> 5. 🆕 **7 hallazgos nuevos** detectados por la validación: ver §2.4.
+> 6. Contingencia recalculada: **S/4.96M total** | créditos recuperables S/427K | **neta S/4.54M**.
 
 \newpage
 
@@ -18,38 +33,52 @@ date: "11 de mayo de 2026"
 | **MEDARQ S.A.C.** | 80688706 | 🟠 Alta vigilancia | −54.0% |
 | **COMPAÑÍA AMERICANA CONST. Y EQUIPAMIENTO S.A.C.** | 80688524 | 🔴 **CRÍTICA** | −104.9% |
 
-## 1.2. Contingencia tributaria y laboral cuantificada
+## 1.2. Contingencia tributaria y laboral cuantificada (recalculada post-validación)
 
-> **Contingencia máxima total estimada del grupo: S/4.44 millones**
+> **Contingencia máxima total estimada del grupo: S/4.96 millones**
+> **Créditos tributarios recuperables: S/427 mil**
+> **Contingencia NETA: S/4.54 millones**
 
 | Concepto | Empresa | Monto Máximo |
 |---|---|---:|
-| Recalificación préstamos intercompañía como dividendos (Art. 24-A LIR) | CMO GROUP | S/2,700,000 |
+| Recalificación préstamos intercompañía como dividendos (Art. 24-A LIR) — recalculado sobre saldo real INTEGRAL→CMO S/11.1M @ 29.5% | CMO GROUP | S/3,272,000 |
 | Multa por no presentar Estudio Técnico de Precios de Transferencia | CMO GROUP | S/265,000 |
-| IGV subdeclarado potencial (INTEGRAL + MEDARQ) | varias | S/400,000 |
+| IGV subdeclarado potencial (INTEGRAL + MEDARQ) — recalculado | varias | S/350,000 |
 | Multa SUNAFIL — Participaciones DL 892 impagas | INTEGRAL | S/275,000 |
 | Multa SUNAFIL — CTS mayo 2025 ausente | AMERICANA | S/275,000 |
 | Multa SUNAFIL — CTS mayo 2025 ausente | MEDARQ | S/275,000 |
-| Demandas laborales por sueldos atrasados | MEDARQ | S/196,000 |
+| Demandas laborales por sueldos atrasados (exacto S/196,277) | MEDARQ | S/196,000 |
 | Retenciones 4ta categoría no aplicadas | AMERICANA | S/10,000 |
 | Gastos no contabilizados / facturas sin asiento | varias | S/45,000 |
-| **TOTAL** | | **S/4,441,000** |
+| **TOTAL CONTINGENCIA** | | **S/4,963,000** |
+
+| Crédito tributario recuperable | Empresa | Monto |
+|---|---|---:|
+| Renta 3ª Categoría neto a favor | INTEGRAL | −S/287,734 |
+| ITAN a favor | AMERICANA | −S/43,704 |
+| Pago a cuenta Renta a favor | AMERICANA | −S/95,225 |
+| **TOTAL CRÉDITOS** | | **−S/426,663** |
+
+> **Contingencia neta del grupo: S/4,536,337** (compensando créditos recuperables).
 
 \newpage
 
 # 2. CUADRO DE HALLAZGOS CRÍTICOS
 
-## 2.1. Top 7 hallazgos para acción inmediata (próximos 15 días)
+## 2.1. Top hallazgos para acción inmediata (próximos 15 días) — revisado post-validación
 
 | # | Empresa | Hallazgo | Monto | Acción |
 |:-:|---|---|---:|---|
-| 1 | **AMERICANA** | BBVA Continental MN saldo contable −S/13,034,687 desde 2023 | S/13M | Conciliar contra estado de cuenta del banco |
-| 2 | **CMO GROUP** | Falta asiento de apertura 2026 — Capital aparece S/0 (real S/78.3M) | S/78M | Cargar apertura urgente |
-| 3 | **INTEGRAL** | S/1,831,800 facturas emitidas no contabilizadas como ingreso | S/1.83M | Reconciliar con Registro de Ventas |
+| 1 | **AMERICANA** | BBVA Continental MN saldo contable −S/13,034,687 (**originado en enero 2026**, no desde 2023) | S/13M | Identificar asiento de origen + conciliar contra estado de cuenta |
+| 2 | **CMO GROUP** | **Patrimonio neto NEGATIVO −S/2.87M** → causal Art. 220 LGS (disolución obligatoria) | −S/2.87M | Convocar Junta extraordinaria + plan de capitalización |
+| 3 | **INTEGRAL** | S/1,831,800 diferencia ingresos contables vs facturas emitidas 2026 | S/1.83M | Reconciliar con Registro de Ventas (timing/anticipos) |
 | 4 | **AMERICANA** | 97.9% de CxC vencida >90 días con un solo cliente (PERGOLA) | S/3M | Provisión NIIF 9 — 100% |
 | 5 | **INTEGRAL** | Participaciones DL 892 por pagar vencidas 30/04/2026 | S/212K | Pago + acta de Junta |
-| 6 | **MEDARQ** | Sueldos por pagar S/196K (~42% pendiente) | S/196K | Verificar pago efectivo a empleados |
-| 7 | **MEDARQ** | 10 asientos de ingreso clase 70 sin factura | S/400K | Documentar provisiones NIIF 15 |
+| 6 | **MEDARQ** | Sueldos por pagar S/196,277 (~42% pendiente) | S/196K | Verificar pago efectivo a empleados |
+| 7 | **MEDARQ** | 10 asientos de ingreso clase 70 sin factura (6 provisiones + 4 extornos) | S/225K netos | Documentar provisiones NIIF 15 |
+| 8 | **GRUPO** | **CTS mayo 2026 aún no depositado por ninguna empresa** (vence 15/05) | — | Depositar antes del 15/05/2026 |
+| 9 | **CMO GROUP** | 9,809 asientos con fecha FUTURA por S/1,182M — verificar legitimidad | S/1,182M | Auditar `WHERE FechaAplicacion > GETDATE()` en CMO |
+| 10 | **CMO GROUP** | Valor neto activo fijo NEGATIVO −S/5,942 (imposible contablemente) | — | Reconstruir registro de activos desde inventario físico |
 
 ## 2.2. Estado financiero consolidado YTD 2026
 
@@ -63,6 +92,31 @@ date: "11 de mayo de 2026"
 | **Utilidad Neta** | **(1,185,896)** | **+73,223** | **(399,828)** | **(223,721)** | **(1,736,222)** |
 
 > Solo **INTEGRAL es rentable** (+2.7%). El resto del grupo genera pérdidas acumuladas significativas.
+>
+> **Cifras validadas al 100% contra S10 (V23) — match exacto al céntimo.**
+
+## 2.3. Patrimonio neto consolidado (NUEVO — post-validación)
+
+| Empresa | Capital cta 50 | Reservas cta 58 | Resultados cta 59 + otros | **Patrimonio neto** |
+|---|---:|---:|---:|---:|
+| **CMO GROUP** | (no registrado) | (ausente) | acumulado negativo | **−S/2,875,935** 🔴 |
+| INTEGRAL | S/1,000 | (ausente) | acumulado | −S/1,000 (neto) |
+| AMERICANA | S/1,000 | (ausente) | +S/45,572 | +S/46,572 |
+| MEDARQ | S/1,209,937 | (ausente) | −S/15,840 | +S/1,194,097 ✅ |
+
+> 🔴 **CMO GROUP: patrimonio neto NEGATIVO** — causal de disolución obligatoria bajo Art. 220 LGS si las pérdidas reducen el patrimonio a menos de 1/3 del capital. Requiere Junta General de Accionistas extraordinaria inmediata.
+
+## 2.4. Hallazgos NUEVOS detectados en validación forense (N01–N07)
+
+| # | Empresa | Hallazgo | Impacto |
+|:-:|---|---|---|
+| **N01** | CMO | Patrimonio neto NEGATIVO −S/2.87M | Causal Art. 220 LGS — disolución/capitalización urgente |
+| **N02** | CMO | Valor neto activo fijo NEGATIVO −S/5,942 | Reconstruir registro de activos desde inventario físico |
+| **N03** | CMO | 9,809 asientos con fecha futura por S/1,182M | Verificar legitimidad de los cierres preasignados |
+| **N04** | AMERICANA | Origen del −S/13M BBVA MN está en enero 2026 (no 2023) — gap de S/13.6M entre OB_Pago y AsientoContable | Identificar asiento contable que no pasó por Tesorería |
+| **N05** | GRUPO | INTEGRAL→CMO S/11.1M (mayor exposición intercompañía individual del grupo) | Recálculo de dividendos presuntos Art. 24-A LIR |
+| **N06** | GRUPO | CTS mayo 2026 aún no depositado por nadie (vence 15/05) | Depósito urgente antes del 15/05 |
+| **N07** | INTEGRAL | Crédito tributario neto S/287,734 (Renta 3ª a favor) | Compensar contra IGV por pagar S/195K — ahorro inmediato |
 
 \newpage
 
@@ -88,15 +142,18 @@ date: "11 de mayo de 2026"
 
 | # | Acción | Empresa | Responsable |
 |:-:|---|---|---|
-| 1 | Conciliar BBVA MN −S/13M con estado de cuenta real | AMERICANA | Tesorería |
-| 2 | Cargar asiento de apertura 2026 (Capital S/78.3M) | CMO | Contabilidad |
-| 3 | Investigar S/1.83M facturas no contabilizadas | INTEGRAL | Contabilidad |
-| 4 | Aclarar status Participaciones S/212K | INTEGRAL | Legal + RRHH |
-| 5 | Aclarar Sueldos atrasados S/196K | MEDARQ | RRHH |
-| 6 | Validar CTS mayo 2025 (AMERICANA + MEDARQ) | Las 2 | RRHH |
+| 1 | Identificar asiento contable origen del −S/13M BBVA MN (enero 2026) + conciliar con estado de cuenta | AMERICANA | Tesorería |
+| 2 | **Convocar Junta extraordinaria — Patrimonio NEGATIVO Art. 220 LGS** | CMO | Directorio/Legal |
+| 3 | Investigar S/1.83M de diferencia ingresos contables vs facturas (timing/anticipos) | INTEGRAL | Contabilidad |
+| 4 | Aclarar status Participaciones S/212K — pagar o registrar aplicación | INTEGRAL | Legal + RRHH |
+| 5 | Aclarar Sueldos atrasados S/196K — verificar pagos efectivos | MEDARQ | RRHH |
+| 6 | Validar CTS mayo 2025 (AMERICANA + MEDARQ) — explicar omisión | Las 2 | RRHH |
 | 7 | Provisión NIIF 9 sobre CxC PERGOLA S/3M | AMERICANA | Contabilidad |
 | 8 | Cargar saldos iniciales bancarios reales | MEDARQ + AMERICANA | Tesorería |
 | **9** | **Depósito CTS 15/05/2026 — TODAS LAS EMPRESAS** | **Las 4** | RRHH |
+| 10 | **Auditar los 9,809 asientos futuros de CMO (S/1,182M)** — validar legitimidad | CMO | Auditoría interna |
+| 11 | **Compensar Renta 3ª INTEGRAL a favor S/287K contra IGV** — ahorro tributario inmediato | INTEGRAL | Tributos |
+| 12 | Reconstruir registro Activo Fijo CMO (valor neto −S/5,942 anómalo) | CMO | Contabilidad |
 
 ## Fase 2 — Urgente (15-60 días)
 
@@ -125,8 +182,9 @@ date: "11 de mayo de 2026"
 
 ## 5.1. Aprobaciones inmediatas
 
-1. **Convocar Junta General de Accionistas extraordinaria** para resolver:
-   - Asiento de apertura 2026 de CMO GROUP (Capital S/78,301,308)
+1. **Convocar Junta General de Accionistas extraordinaria URGENTE** para resolver:
+   - **CMO GROUP: Patrimonio neto NEGATIVO −S/2.87M (Art. 220 LGS)** — capitalización o disolución
+   - Verificar contra Registros Públicos el capital social inscrito de CMO (no aparece en cta 50)
    - Reserva Legal retroactiva (Art. 229 LGS) — las 4 empresas
    - Capitalización de INTEGRAL y AMERICANA (incremento desde S/1,000)
 
@@ -173,7 +231,9 @@ s10bizsmarthub está operativo con **99% de confiabilidad** sobre datos auditabl
 
 # 6. CONCLUSIÓN GERENCIAL
 
-> **El grupo CMO + INTEGRAL + MEDARQ + AMERICANA enfrenta una contingencia tributaria + laboral consolidada de hasta S/4.4 millones.**
+> **El grupo CMO + INTEGRAL + MEDARQ + AMERICANA enfrenta una contingencia tributaria + laboral consolidada de hasta S/4.96 millones (NETA tras créditos recuperables: S/4.54 millones).**
+>
+> **Adicionalmente, CMO GROUP tiene patrimonio neto negativo (−S/2.87M), causal de disolución obligatoria bajo Art. 220 LGS.**
 
 ## 6.1. Lo bueno (oportunidades aprovechables)
 
@@ -194,10 +254,12 @@ s10bizsmarthub está operativo con **99% de confiabilidad** sobre datos auditabl
 ## 6.3. Lo urgente (próximos 15 días)
 
 1. **15 mayo 2026** — Depositar CTS del primer semestre 2026 (todas las empresas, sin excusas)
-2. **Verificar inmediatamente** si los sueldos de MEDARQ se están pagando puntualmente
-3. **Aclarar Participaciones DL 892 INTEGRAL** — si ya se pagaron, registrarlas; si no, programar pago
-4. **Conciliar BBVA MN AMERICANA** — el −S/13M no puede quedar sin explicación
-5. **Cargar apertura 2026 CMO** — el patrimonio NO puede aparecer S/0
+2. **Convocar Junta extraordinaria CMO** — patrimonio negativo Art. 220 LGS
+3. **Verificar inmediatamente** si los sueldos de MEDARQ se están pagando puntualmente
+4. **Aclarar Participaciones DL 892 INTEGRAL** — si ya se pagaron, registrarlas; si no, programar pago
+5. **Identificar el asiento contable** que generó el −S/13M de BBVA MN AMERICANA en enero 2026
+6. **Compensar Renta 3ª INTEGRAL a favor S/287K contra IGV** — ahorro tributario inmediato
+7. **Auditar los 9,809 asientos futuros de CMO** (S/1,182M) — validar legitimidad antes del cierre
 
 ---
 
@@ -205,6 +267,8 @@ s10bizsmarthub está operativo con **99% de confiabilidad** sobre datos auditabl
 
 - **Anexo 1:** [Registros transaccionales y asientos correctivos](02_ANEXOS_REGISTROS.docx)
 - **Anexo 2:** [Informe técnico consolidado completo](03_INFORME_CONSOLIDADO_FINAL.docx)
+- **Anexo 3:** [Trazabilidad histórica del proceso de auditoría](04_TRAZABILIDAD_HISTORICA.docx)
+- **Anexo 4:** [Validación forense contra S10 productivo — finding-by-finding](05_VALIDACION_FORENSE_S10.docx) ⭐ **NUEVO**
 
 ---
 

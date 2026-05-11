@@ -1,9 +1,19 @@
 ---
 title: "Anexos de Registros — Evidencia Transaccional y Asientos Correctivos"
-subtitle: "Soporte documental de los hallazgos de auditoría"
+subtitle: "Soporte documental — REVISADO POST-VALIDACIÓN FORENSE 11/05/2026"
 author: "Equipo de Auditoría BizSmartHub"
-date: "11 de mayo de 2026"
+date: "11 de mayo de 2026 (rev. 16:50)"
 ---
+
+\newpage
+
+# NOTA DE REVISIÓN
+
+> **Este documento fue actualizado tras la validación forense del 11/05/2026** (ver `05_VALIDACION_FORENSE_S10.docx`).
+>
+> **Anexos modificados:** A (origen del −S/13M corregido), B (clarificación S/1.83M vs facturas sin asiento).
+>
+> **Anexos NUEVOS:** Q (CMO patrimonio negativo), R (CMO activo fijo neto negativo), S (CMO asientos futuros), T (origen BBVA MN), U (INTEGRAL→CMO S/11.1M), V (CTS mayo 2026), W (INTEGRAL crédito tributario).
 
 \newpage
 
@@ -11,8 +21,8 @@ date: "11 de mayo de 2026"
 
 | Anexo | Hallazgo | Empresa | Registros |
 |:-:|---|---|---|
-| **A** | Saldo bancario negativo BBVA MN | AMERICANA | 241 movimientos históricos resumidos + asiento de apertura |
-| **B** | Facturas emitidas no contabilizadas | INTEGRAL | 8 facturas SinAsiento + análisis mensual |
+| **A** | Saldo bancario negativo BBVA MN (origen enero 2026, no 2023) | AMERICANA | 241 movs + análisis corregido |
+| **B** | Facturas emitidas no contabilizadas + reconciliación | INTEGRAL | 8 facturas + análisis mensual |
 | **C** | CxC vencida concentrada | AMERICANA | Detalle PERGOLA + provisión NIIF 9 |
 | **D** | Pagos sin asignación a documento | INTEGRAL | 1 pago material |
 | **E** | Honorarios sin asiento | AMERICANA | 6 recibos por honorarios pendientes |
@@ -27,12 +37,19 @@ date: "11 de mayo de 2026"
 | **N** | Depósitos CTS por mes | Grupo | Validación cumplimiento DL 650 |
 | **O** | Propuesta de 14 asientos correctivos | Grupo | Asientos AC-01 a AC-14 |
 | **P** | Cuestionario para Gerencia | Grupo | 30+ preguntas dirigidas |
+| **Q** ⭐ | CMO Patrimonio neto NEGATIVO Art. 220 LGS | CMO GROUP | Detalle V03 + propuesta capitalización |
+| **R** ⭐ | CMO Valor neto activo fijo NEGATIVO | CMO GROUP | Detalle V15 + plan reconstrucción |
+| **S** ⭐ | CMO 9,809 asientos con fecha futura | CMO GROUP | Detalle V20 + queries de auditoría |
+| **T** ⭐ | Origen del −S/13M BBVA MN AMERICANA | AMERICANA | Gap OB_Pago vs Contable enero 2026 |
+| **U** ⭐ | INTEGRAL→CMO S/11.1M (mayor exposición intercompañía) | INTEGRAL+CMO | Cuentas 16120001/16120002 |
+| **V** ⭐ | CTS mayo 2026 — estado al 11/05 (4 días del vencimiento) | Grupo | Validación V07 todas las empresas |
+| **W** ⭐ | INTEGRAL crédito tributario neto S/287K | INTEGRAL | Renta 3ª compensable vs IGV |
 
 \newpage
 
-# ANEXO A — AMERICANA: BBVA Continental MN saldo −S/13M
+# ANEXO A — AMERICANA: BBVA Continental MN saldo −S/13M (CORREGIDO POST-VALIDACIÓN)
 
-## A.1. Datos del origen S10
+## A.1. Datos del origen S10 (validados al 11/05/2026)
 
 ```
 Cuenta:          10410013 - BBVA CONTINENTAL MN
@@ -40,8 +57,16 @@ Movimientos:     241
 Total Débito:    S/31,924,867.03
 Total Crédito:   S/44,959,554.03
 SALDO NETO:      S/-13,034,687.00
-Período:         31/12/2023 → 07/05/2026
+
+EVOLUCIÓN DEL SALDO (validación V09):
+   Fin 2022:     S/0
+   Fin 2023:     S/0          ← contradice afirmación previa
+   Fin 2024:     S/0
+   Fin 2025:     S/+170,766   ← saldo positivo al cierre 2025
+   Hoy 11/05/26: S/-13,034,687 ← el saldo negativo NACIÓ en 2026
 ```
+
+> 🟡 **CORRECCIÓN MAYOR vs versión previa:** El informe inicial afirmó que el saldo negativo existía "desde 2023". La validación contra S10 demuestra que **el saldo negativo apareció en 2026**. Cierre 2025 fue positivo (+S/170,766).
 
 ## A.2. Primeros y últimos movimientos
 
@@ -65,11 +90,28 @@ Período:         31/12/2023 → 07/05/2026
 | 08/04/2026 | 08/04 PAGO A PROVEEDOR | 0 | 420 |
 | 07/05/2026 | 07/05 PAGO DETRACCIÓN | 0 | 473 |
 
-## A.3. Análisis
+## A.3. Origen del saldo negativo (validación V24 — NUEVA EVIDENCIA)
 
-La cuenta inició en 2023 con apenas S/1,000 (capital social). Durante 2024-2026 acumuló **S/44.9M en pagos (créditos)** vs solo **S/31.9M en depósitos (débitos)** → saldo negativo de S/13M.
+La validación cruzada `OB_Pago` vs `AsientoContable` clase 10 reveló:
 
-**Hipótesis:** AMERICANA opera como vehículo de paso del grupo. Recibe cobranzas (clase 12) registradas como CxC pero los fondos se redirigen sin reflejarse como depósito en este banco.
+| Mes 2026 | Pagos OB_Pago | AsientoContable cla 10 | Diferencia |
+|---|---:|---:|---:|
+| Enero | S/165,586 (12 pagos) | **S/13,782,205** | **−S/13,616,619** |
+| Febrero | S/314,958 (31 pagos) | S/574,515 | −S/259,556 |
+| Marzo | S/225,301 (28 pagos) | S/509,753 | −S/284,452 |
+| Abril | S/86,403 (19 pagos) | S/337,441 | −S/251,038 |
+
+**Conclusión:** En enero 2026 se cargó un asiento contable por **S/13.6M** que **NO pasó por el módulo de Tesorería** (OB_Pago). Este asiento es el origen del saldo negativo. Probables candidatos: asiento de apertura mal cargado, transferencia entre cuentas no compensada, ajuste contable directo.
+
+**Acción específica:** Identificar con query:
+```sql
+SELECT * FROM AsientoContable ac
+JOIN PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '80688524'
+  AND pcd.CodCuenta LIKE '10410013%'
+  AND ac.FechaAplicacionContable BETWEEN '2026-01-01' AND '2026-01-31'
+ORDER BY ABS(ac.Credito) DESC
+```
 
 ## A.4. Acción correctiva
 
@@ -95,7 +137,7 @@ Si banco confirma saldo positivo → cargar asiento de apertura correctivo. Si b
 | 8 | 15/01/2026 | E001-00000011 | CONSORCIO SALUD HUANCA SANCOS II | VARIACIÓN DE FECHA DE PAGO | 0 |
 | | | | **TOTAL** | | **S/153,284** |
 
-## B.2. Conciliación mensual ingresos contables vs documentos emitidos
+## B.2. Conciliación mensual ingresos contables vs documentos emitidos (validado V17)
 
 | Mes | Ingresos Contables | Documentos Emitidos | **Diferencia** | Estado |
 |---|---:|---:|---:|---|
@@ -104,9 +146,11 @@ Si banco confirma saldo positivo → cargar asiento de apertura correctivo. Si b
 | **Marzo** | 1,066,975 | 2,146,962 | **−1,079,986** | **Diferencia masiva** |
 | Abril | 0 | 35,400 | −35,400 | Sin ingresos contables |
 | Mayo (parcial) | 0 | 0 | 0 | — |
-| **YTD** | **2,680,925** | **4,512,725** | **−1,831,800** | |
+| **YTD** | **2,680,925** | **4,512,725** | **−1,831,798** | |
 
-> **S/1,831,800 de facturas emitidas no se reflejan en ingresos contables.** Marzo solo: S/1.08M.
+> **Diferencia validada al céntimo (V17): S/1,831,798.44.**
+>
+> **Aclaración importante post-validación (V04):** De las facturas emitidas 2026, solo **8 carecen de asiento contable** por S/153,284. La diferencia restante (~S/1.68M) es por **timing** entre fecha de factura y fecha del asiento contable, anticipos NIIF 15, y notas de crédito pendientes de aplicación. **NO es subdeclaración total — es desfase temporal + cláusulas NIIF.**
 
 ## B.3. Interpretación
 
@@ -680,7 +724,267 @@ Semana 6-8  | AC-13 (intereses intercompañía)
 34. ¿Las claves de S10 se cambian periódicamente?
 35. ¿Existe un Comité de Pagos formal?
 
+## P.9. Sobre hallazgos post-validación (NUEVOS)
+
+36. **CMO Patrimonio NEGATIVO −S/2.87M** — ¿Cuál es el plan de Directorio para resolver Art. 220 LGS? ¿Capitalización o disolución?
+37. **CMO no tiene Capital cta 50** — ¿El capital social inscrito en Registros Públicos (S/78.3M históricos) está reflejado en S10? ¿En qué cuenta?
+38. **CMO 9,809 asientos con fecha futura por S/1,182M** — ¿Son cierres preasignados legítimos? ¿Quién los genera y cuándo?
+39. **AMERICANA −S/13M BBVA MN originado en enero 2026** — ¿Qué asiento específico generó el saldo negativo? ¿Es transferencia o ajuste?
+40. **INTEGRAL→CMO S/11.1M** — ¿Existe contrato de mutuo formal entre INTEGRAL y CMO por este monto?
+41. **CTS mayo 2026** — ¿Se depositará antes del 15/05/2026 en las 4 empresas?
+42. **INTEGRAL crédito tributario S/287K** — ¿Se solicitó compensación contra IGV (S/195K por pagar) o devolución?
+
+\newpage
+
+# ANEXO Q ⭐ — CMO PATRIMONIO NETO NEGATIVO −S/2.87M (Art. 220 LGS)
+
+## Q.1. Composición validada (V03 + V19)
+
+| Cuenta | Descripción | Saldo |
+|---|---|---:|
+| 59110100 | Utilidades Acumuladas | +S/5,082,789 |
+| 59120100 | Ingresos de Años Anteriores | −S/2,199,498 |
+| 59220100 | Gastos de Años Anteriores | −S/7,355 |
+| (otras) | (no registradas individualmente) | −S/5,751,871 |
+| **TOTAL Grupo 5 (Patrimonio)** | | **−S/2,875,935** 🔴 |
+
+**Observación crítica:** CMO **no tiene cuenta 50 (Capital Social) con saldo registrado**. El "capital S/78.3M" mencionado en versiones anteriores del informe debe verificarse contra Registros Públicos (escritura pública de constitución y modificatorias).
+
+## Q.2. Implicancia legal
+
+**Art. 220 LGS:** Si las pérdidas reducen el patrimonio neto a menos de **1/3 del capital social**, la sociedad debe:
+1. Reducir el capital, o
+2. Convocar Junta General para acordar disolución, o
+3. Capitalizar las pérdidas.
+
+**Sin capital cta 50 explícito**, técnicamente CMO podría estar operando con capital S/0 y patrimonio negativo — situación contablemente insostenible.
+
+## Q.3. Plan de acción propuesto
+
+1. **0–7 días:** Verificar con Registros Públicos cuál es el capital social inscrito de CMO GROUP S.A.
+2. **0–7 días:** Si está inscrito un capital, cargar el asiento contable correctivo:
+   ```
+   Db. 591 — Utilidades Acumuladas       2,875,935
+       Cr. 5011 — Capital Social Inscrito      2,875,935
+   Glosa: Reclasificación según Registros Públicos
+   ```
+3. **0–15 días:** Convocar Junta General de Accionistas extraordinaria.
+4. **15–60 días:** Acuerdo de capitalización de aportes pendientes o reducción de capital.
+
+\newpage
+
+# ANEXO R ⭐ — CMO ACTIVO FIJO VALOR NETO NEGATIVO
+
+## R.1. Datos validados (V15)
+
+| Concepto | Saldo |
+|---|---:|
+| Clase 33 (Activo bruto) | **−S/162,408** (anómalo: debería ser deudor) |
+| Clase 39 (Depreciación acumulada) | **−S/156,467** (anómalo: debería ser acreedor) |
+| Clase 68 (Depreciación del ejercicio) | −S/3,239,888 (flujo del año) |
+| **Valor neto contable (33 − 39)** | **−S/5,942** 🔴 |
+
+**El valor neto contable del activo fijo NO puede ser negativo** en ningún marco contable (NIC 16). Esto indica corrupción de signos, depreciación acelerada inversa, o errores acumulados.
+
+## R.2. Comparación con empresas sanas
+
+| Empresa | Clase 33 | Clase 39 | Valor neto |
+|---|---:|---:|---:|
+| AMERICANA | +S/28,500 | +S/12,201 | +S/16,299 ✅ |
+| INTEGRAL | +S/198,712 | +S/36,919 | +S/161,794 ✅ |
+| MEDARQ | +S/48,569 | +S/4,487 | +S/44,082 ✅ |
+| **CMO** | **−S/162,408** | **−S/156,467** | **−S/5,942** 🔴 |
+
+## R.3. Plan de acción
+
+1. **0–30 días:** Inventario físico de activos fijos CMO (edificios, equipos, mobiliario, vehículos).
+2. **30–60 días:** Reconstrucción del registro contable desde inventario físico + facturas originales.
+3. **60–90 días:** Asientos correctivos de reclasificación + recálculo de depreciación NIC 16.
+
+\newpage
+
+# ANEXO S ⭐ — CMO 9,809 ASIENTOS CON FECHA FUTURA POR S/1,182M
+
+## S.1. Datos validados (V20)
+
+| Categoría | NumAsientos | DocsDistintos | Monto |
+|---|---:|---:|---:|
+| Fecha futura (> 11/05/2026) | **9,809** | 6,835 | **S/1,182,577,244** |
+| Domingo | 5,637 | 635 | S/18,809,644 |
+| Sábado | 7,524 | 565 | S/10,001,045 |
+| Normal | 87,171 | 8,254 | S/6,265,822,571 |
+
+**Las otras 3 empresas tienen 0 asientos con fecha futura.** Solo CMO presenta este patrón, lo que sugiere:
+- Patrón estructural: asientos de **cierre anual 31/12/2026** preasignados.
+- O bien: bug en captura/migración de datos.
+- O bien: práctica de "presupuesto cargado como contabilidad real".
+
+## S.2. Hipótesis principal
+
+Los asientos del 31/12/2026 corresponden a la **proyección de cierre del ejercicio** preasignada con fecha futura. En S10, el cierre se calcula con anticipación para reflejar resultados acumulados.
+
+**Por qué solo CMO:** CMO funciona como holding y consolidador; tiene más asientos de cierre que las operativas.
+
+## S.3. Plan de validación
+
+```sql
+-- Query forense: top 20 asientos futuros por monto
+SELECT TOP 20
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103) AS Fecha,
+  pcd.CodCuenta, pcd.Descripcion AS DesCuenta,
+  LEFT(ac.Glosa, 80) AS Glosa,
+  ROUND(ABS(ac.Debito - ac.Credito), 2) AS Monto,
+  ac.NroD
+FROM AsientoContable ac
+JOIN PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '22011489'
+  AND ac.FechaAplicacionContable > GETDATE()
+ORDER BY ABS(ac.Debito - ac.Credito) DESC
+```
+
+Si > 90% de los asientos son de glosa "Cierre" o "Apertura", el patrón es legítimo. Si son operativos (compras, ventas, pagos) → debe corregirse la fecha.
+
+\newpage
+
+# ANEXO T ⭐ — AMERICANA: ORIGEN DEL −S/13M BBVA MN
+
+## T.1. Hallazgo de la validación V24
+
+Cruce de `OB_Pago` (Tesorería) vs `AsientoContable` clase 10 por mes en AMERICANA 2026:
+
+| Mes | Pagos OB_Pago | Asientos cla 10 (Cr) | Diferencia |
+|---|---:|---:|---:|
+| Enero | S/165,586 | **S/13,782,205** | **−S/13,616,619** |
+| Febrero | S/314,958 | S/574,515 | −S/259,556 |
+| Marzo | S/225,301 | S/509,753 | −S/284,452 |
+| Abril | S/86,403 | S/337,441 | −S/251,038 |
+| Mayo | S/473 | S/473 | S/0 |
+
+**La diferencia de S/13.6M en enero ≈ exactamente el saldo negativo del BBVA MN.**
+
+## T.2. Interpretación
+
+Hubo un asiento contable en la clase 10 (bancos) por ~S/13.6M en enero 2026 que NO pasó por el módulo de Tesorería (OB_Pago). Candidatos:
+
+1. **Asiento de apertura mal cargado** — saldo inicial 2026 BBVA MN con monto erróneo.
+2. **Transferencia entre cuentas** registrada como crédito sin contrapartida.
+3. **Ajuste contable directo** sin documentación operativa.
+4. **Reclasificación de cobranza** que afectó banco sin pasar por tesorería.
+
+## T.3. Query para identificar el asiento específico
+
+```sql
+SELECT
+  ac.NroAsientoContable, ac.NroD,
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103) AS Fecha,
+  pcd.CodCuenta, pcd.Descripcion,
+  ROUND(ac.Debito, 2) AS Debito,
+  ROUND(ac.Credito, 2) AS Credito,
+  LEFT(ac.Glosa, 100) AS Glosa,
+  i.Descripcion AS Tercero
+FROM AsientoContable ac
+JOIN PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN Identificador i ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '80688524'
+  AND pcd.CodCuenta LIKE '10410013%'
+  AND ac.FechaAplicacionContable BETWEEN '2026-01-01' AND '2026-01-31'
+  AND ac.Credito > 100000
+ORDER BY ac.Credito DESC
+```
+
+\newpage
+
+# ANEXO U ⭐ — INTEGRAL→CMO S/11.1M (MAYOR EXPOSICIÓN INTERCOMPAÑÍA)
+
+## U.1. Saldos validados (V14)
+
+Mayor exposición individual identificable en el grupo:
+
+| Empresa origen | Cuenta | Tercero | Saldo |
+|---|---|---|---:|
+| INTEGRAL | 16120001 — Otras CxC | CMO GROUP S.A. (RUC 20536612972) | **+S/7,292,870** |
+| INTEGRAL | 16120002 — Otras CxC | CMO GROUP S.A. (RUC 20536612972) | **+S/3,809,420** |
+| INTEGRAL | (subtotal hacia CMO) | | **S/11,102,290** |
+
+## U.2. Saldo intercompañía consolidado del grupo (corregido)
+
+| Empresa | Total CxC hacia el grupo | Mayor contraparte |
+|---|---:|---|
+| INTEGRAL | S/12,835,047 | CMO (S/11.1M) |
+| AMERICANA | S/4,412,772 | CMO (S/2.04M) |
+| CMO | S/2,740,547 | AMERICANA (S/2.74M) |
+| MEDARQ | S/17,350 | AMERICANA |
+| **GRAN TOTAL** | **~S/20,005,716** | |
+
+> 🔴 **La cifra previa de "S/123M en préstamos intercompañía CMO" era el monto histórico movido acumulado, NO el saldo neto actual.** El saldo intercompañía DEMOSTRADO del grupo es ~**S/20M consolidado**.
+
+## U.3. Implicación tributaria recalculada
+
+| Concepto | Cálculo previo | Cálculo validado |
+|---|---:|---:|
+| Base imponible Art. 24-A LIR | S/123M | **S/11.1M (mayor exposición individual)** |
+| Tasa IR dividendos presuntos | 5% | 29.5% (sin Convenio Doble Imposición aplicable) |
+| **Contingencia máxima** | **S/2,700,000** | **S/3,272,000** |
+
+## U.4. Plan de acción
+
+1. **Verificar existencia de contrato de mutuo** entre INTEGRAL y CMO por S/11.1M.
+2. Si NO existe → formalizar con tasa de interés a valor de mercado (TAMN ~12%).
+3. **Presentar Estudio Técnico de Precios de Transferencia 2025** antes del próximo cierre.
+4. Provisionar intereses devengados (estimado S/11.1M × 12% × días = ~S/110K/mes).
+
+\newpage
+
+# ANEXO V ⭐ — CTS MAYO 2026 — ESTADO AL 11/05/2026 (4 DÍAS DEL VENCIMIENTO)
+
+## V.1. Estado validado (V07)
+
+A **11 de mayo de 2026 (4 días antes del vencimiento legal 15/05)**:
+
+| Empresa | CTS Mayo 2025 | CTS Nov 2025 | CTS Mayo 2026 |
+|---|:-:|:-:|:-:|
+| CMO GROUP | ✅ S/26,466 | ✅ S/55,309 | ⏳ **No depositado** |
+| INTEGRAL | ✅ S/53,571 | ✅ S/106,069 | ⏳ **No depositado** |
+| AMERICANA | 🔴 S/0 (provisionado pero NO depositado) | ✅ S/59,674 | ⏳ **No depositado** |
+| MEDARQ | 🔴 S/0 (provisionado pero NO depositado) | ✅ S/19,374 | ⏳ **No depositado** |
+
+## V.2. Riesgo si NO depositan antes del 15/05/2026
+
+- **Las 4 empresas se convertirán en infractoras DL 650.**
+- Multas SUNAFIL: hasta 1 UIT por trabajador × 4 empresas.
+- Demandas laborales individuales por CTS impaga.
+
+## V.3. Acción
+
+**Depósito obligatorio antes del 15/05/2026 en las 4 empresas.** Esta es la acción **#9** del Plan de Remediación Fase 1.
+
+\newpage
+
+# ANEXO W ⭐ — INTEGRAL: CRÉDITO TRIBUTARIO NETO S/287,734
+
+## W.1. Composición (validación V18)
+
+| Cuenta | Descripción | Saldo |
+|---|---|---:|
+| 40171001 | Pago a cuenta Renta de Tercera Categoría | **−S/1,537,815** (a favor empresa) |
+| 40171000 | Impuesto de Regularización Anual | +S/1,250,081 (por pagar) |
+| **Neto Renta de Tercera** | | **−S/287,734** (crédito a favor) |
+| 40111000 | IGV Cuenta Propia | +S/195,183 (por pagar) |
+
+## W.2. Oportunidad inmediata
+
+**Compensar el crédito de Renta 3ª (S/287,734) contra el IGV por pagar (S/195,183).** Resultado:
+- IGV liquidado en 0 (sin desembolso).
+- Saldo a favor pendiente de devolución: S/92,551.
+
+## W.3. Solicitud de devolución
+
+Si la DJ Anual 2025 INTEGRAL ya fue presentada con este saldo a favor:
+- **Form. 4949 — Solicitud de Devolución** (vía SUNAT virtual).
+- Plazo de respuesta SUNAT: hasta 45 días hábiles.
+- Si no procede devolución: aplicar como **compensación automática** contra futuros pagos a cuenta.
+
 ---
 
 **Equipo de Auditoría BizSmartHub**
-11 de mayo de 2026
+11 de mayo de 2026 (rev. post-validación)

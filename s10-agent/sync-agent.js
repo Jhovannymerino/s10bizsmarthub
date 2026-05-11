@@ -949,7 +949,13 @@ ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 // de conciliación bancaria de S10 (paralelo a AsientoContable).
 // Permite distinguir saldo contable (caja_saldos) vs saldo bancario real (BalanceReal)
 // y detectar inconsistencias entre el libro y el extracto bancario.
+// Solo último período por cuenta para evitar duplicación.
 const QUERY_OB_SALDOS_BANCO = (codEmpresa, year) => `
+WITH UltimoPeriodo AS (
+  SELECT cbp.BankAccount_ID, cbp.SaldoInicial, cbp.SaldoAnterior, cbp.Saldo, cbp.NroPeriodoContable,
+         ROW_NUMBER() OVER (PARTITION BY cbp.BankAccount_ID ORDER BY cbp.NroPeriodoContable DESC) AS rn
+  FROM CMO.dbo.OB_CuentaBancoPeriodo cbp
+)
 SELECT
   cb.BankAccount_ID                                        AS BankAccountId,
   cb.NoCuenta                                              AS NoCuenta,
@@ -960,14 +966,14 @@ SELECT
   ROUND(ISNULL(cb.BalanceReal, 0), 2)                      AS BalanceReal,
   ROUND(ISNULL(cb.BalanceBanco, 0), 2)                     AS BalanceBanco,
   ROUND(ISNULL(cb.LimiteCredito, 0), 2)                    AS LimiteCredito,
-  ROUND(ISNULL(cbp.SaldoInicial, 0), 2)                    AS SaldoInicialPeriodo,
-  ROUND(ISNULL(cbp.SaldoAnterior, 0), 2)                   AS SaldoAnterior,
-  ROUND(ISNULL(cbp.Saldo, 0), 2)                           AS SaldoPeriodo,
-  cbp.NroPeriodoContable                                   AS NroPeriodoContable,
+  ROUND(ISNULL(up.SaldoInicial, 0), 2)                     AS SaldoInicialPeriodo,
+  ROUND(ISNULL(up.SaldoAnterior, 0), 2)                    AS SaldoAnterior,
+  ROUND(ISNULL(up.Saldo, 0), 2)                            AS SaldoPeriodo,
+  up.NroPeriodoContable                                    AS NroPeriodoContable,
   cb.Activo                                                AS Activo
 FROM CMO.dbo.OB_CuentaBanco cb
-LEFT JOIN CMO.dbo.OB_CuentaBancoPeriodo cbp
-  ON cb.BankAccount_ID = cbp.BankAccount_ID
+LEFT JOIN UltimoPeriodo up
+  ON cb.BankAccount_ID = up.BankAccount_ID AND up.rn = 1
 WHERE cb.CodIdentificador = '${codEmpresa}'
   AND cb.Activo = 1
 ORDER BY ABS(ISNULL(cb.BalanceActual, 0)) DESC

@@ -1100,9 +1100,9 @@ export default function DashboardPage() {
                       sub={pct(ytd.ebitdaPct)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.ebitdaPct)}` : undefined} />
                     <KpiCard label="Utilidad Neta" value={fmt(ytd.utilidadNeta)} signal={semaforo('margenNetoPct', ytd.margenNetoPct ?? 0)}
                       sub={pct(ytd.margenNetoPct ?? 0)} />
-                    {cxc && <KpiCard label="CxC Total" value={fmt(cxc.totalSaldo)} signal={dso && dso > 60 ? 'danger' : dso && dso > 45 ? 'warning' : 'ok'}
+                    {cxc && <KpiCard label="CxC Total" value={fmt(cxc.totalSaldo)} signal={dso && dso > 60 ? 'red' : dso && dso > 45 ? 'yellow' : 'green'}
                       sub={dso ? `DSO ${dso}d` : 'sin DSO'} />}
-                    {saldoCaja != null && <KpiCard label="Saldo Caja" value={fmt(saldoCaja)} signal={saldoCaja > 0 ? 'ok' : 'danger'}
+                    {saldoCaja != null && <KpiCard label="Saldo Caja" value={fmt(saldoCaja)} signal={saldoCaja > 0 ? 'green' : 'red'}
                       sub={runway ? `Runway ${runway}m` : 'sin runway'} />}
                   </div>
                 ) : (

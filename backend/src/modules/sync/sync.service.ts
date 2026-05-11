@@ -70,6 +70,9 @@ export class SyncService {
       ob_asignaciones_metricas?: any[];
       pagos_sin_asignacion?: any[];
       compensaciones?: any[];
+      bancarizacion_metricas?: any[];
+      pagos_no_bancarizados?: any[];
+      beneficiarios_sin_cuenta?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -287,6 +290,20 @@ export class SyncService {
       if (data.compensaciones?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'compensaciones', 'current', year, null, data.compensaciones);
         logs.push({ kpiType: 'compensaciones', rowsProcessed: data.compensaciones.length, status: 'success' });
+      }
+
+      // Fase B: Bancarización Ley 28194
+      if (data.bancarizacion_metricas !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'bancarizacion_metricas', period, year, null, data.bancarizacion_metricas);
+        logs.push({ kpiType: 'bancarizacion_metricas', rowsProcessed: data.bancarizacion_metricas.length, status: 'success' });
+      }
+      if (data.pagos_no_bancarizados !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'pagos_no_bancarizados', period, year, null, data.pagos_no_bancarizados);
+        logs.push({ kpiType: 'pagos_no_bancarizados', rowsProcessed: data.pagos_no_bancarizados.length, status: 'success' });
+      }
+      if (data.beneficiarios_sin_cuenta !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'beneficiarios_sin_cuenta', period, year, null, data.beneficiarios_sin_cuenta);
+        logs.push({ kpiType: 'beneficiarios_sin_cuenta', rowsProcessed: data.beneficiarios_sin_cuenta.length, status: 'success' });
       }
 
       if (data.audit_sin_doc?.length) {

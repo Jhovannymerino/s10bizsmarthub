@@ -623,6 +623,42 @@ export class KpiService {
     };
   }
 
+  async getBancarizacion(companyId: string, year: number) {
+    // Fase B: auditoría de Bancarización Ley 28194
+    const [metricasSnap, pagosNoBancSnap, benefSinCtaSnap] = await Promise.all([
+      this.getSnapshot(companyId, 'bancarizacion_metricas', `${year}`),
+      this.getSnapshot(companyId, 'pagos_no_bancarizados', `${year}`),
+      this.getSnapshot(companyId, 'beneficiarios_sin_cuenta', `${year}`),
+    ]);
+
+    const metricasArr = (metricasSnap?.data as any[]) ?? [];
+    const m = metricasArr[0] ?? {};
+    const pagosNoBancarizados = (pagosNoBancSnap?.data as any[]) ?? [];
+    const beneficiariosSinCuenta = (benefSinCtaSnap?.data as any[]) ?? [];
+
+    const montoNoBancarizado = parseFloat(m.MontoNoBancarizado) || 0;
+    // Pérdida fiscal estimada: 18% IGV + 29.5% IR = 47.5% del monto no bancarizado
+    const perdidaIGV = round(montoNoBancarizado * 0.18);
+    const perdidaIR = round(montoNoBancarizado * 0.295);
+    const perdidaTotal = round(perdidaIGV + perdidaIR);
+
+    const pctBancarizado = m.PagosMateriales > 0
+      ? round(((parseInt(m.PagosBancarizados) || 0) / parseInt(m.PagosMateriales)) * 100)
+      : 100;
+
+    return {
+      metricas: m,
+      pagosNoBancarizados,
+      beneficiariosSinCuenta,
+      pctBancarizado,
+      perdidaIGV,
+      perdidaIR,
+      perdidaTotal,
+      contingenciaTributaria: perdidaTotal,
+      syncedAt: metricasSnap?.syncedAt,
+    };
+  }
+
   async getCajaBancoCompleto(companyId: string, year: number) {
     // Fase A.5: visión 360° del módulo caja-banco completo
     const [

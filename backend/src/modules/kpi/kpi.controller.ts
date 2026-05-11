@@ -244,6 +244,16 @@ export class KpiController {
     return this.kpiService.getCajaBancoCompleto(companyId, y);
   }
 
+  /** Bancarización Ley 28194 — Fase B: detección de pagos > S/3,500 sin medio bancario */
+  @Get(':companyId/bancarizacion')
+  getBancarizacion(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getBancarizacion(companyId, y);
+  }
+
   /** Préstamos otorgados — tipo 071 en CxC */
   @Get(':companyId/prestamos-otorgados')
   getPrestamosOtorgados(@Param('companyId') companyId: string) {

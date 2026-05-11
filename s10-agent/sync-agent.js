@@ -945,6 +945,109 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
+// FASE B — Auditoría de Bancarización (Ley 28194)
+// Pagos > S/3,500 (o US$1,000) DEBEN usar medio bancario:
+// - MedioDePago: 1=Cheque, 2=Transferencia, 3=Detracción, 5=OtroElec, 7=Voucher → BANCARIZADOS
+// - MedioDePago: 0=SinClasif, 4=Efectivo, 6=Efectivo → NO BANCARIZADOS (riesgo)
+// Umbrales: S/3,500 (Mon='01') o US$1,000 (Mon='02')
+const QUERY_BANCARIZACION_METRICAS = (codEmpresa, year) => `
+SELECT
+  COUNT(*)                                                              AS PagosTotalesAnio,
+  ROUND(SUM(p.PayAmt), 2)                                               AS MontoTotalAnio,
+  SUM(CASE WHEN
+    (cb.CodMoneda = '01' AND p.PayAmt > 3500) OR
+    (cb.CodMoneda = '02' AND p.PayAmt > 1000)
+    THEN 1 ELSE 0 END)                                                  AS PagosMateriales,
+  ROUND(SUM(CASE WHEN
+    (cb.CodMoneda = '01' AND p.PayAmt > 3500) OR
+    (cb.CodMoneda = '02' AND p.PayAmt > 1000)
+    THEN p.PayAmt ELSE 0 END), 2)                                       AS MontoMaterial,
+  SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND p.MedioDePago IN (1,2,3,5,7)
+    THEN 1 ELSE 0 END)                                                  AS PagosBancarizados,
+  ROUND(SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND p.MedioDePago IN (1,2,3,5,7)
+    THEN p.PayAmt ELSE 0 END), 2)                                       AS MontoBancarizado,
+  SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND (p.MedioDePago IN (4,6) OR p.MedioDePago IS NULL OR p.MedioDePago = 0)
+    THEN 1 ELSE 0 END)                                                  AS PagosNoBancarizados,
+  ROUND(SUM(CASE WHEN
+    ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+    AND (p.MedioDePago IN (4,6) OR p.MedioDePago IS NULL OR p.MedioDePago = 0)
+    THEN p.PayAmt ELSE 0 END), 2)                                       AS MontoNoBancarizado,
+  -- Distribución por medio
+  SUM(CASE WHEN p.MedioDePago = 1 THEN 1 ELSE 0 END)                    AS MedioCheque,
+  SUM(CASE WHEN p.MedioDePago = 2 THEN 1 ELSE 0 END)                    AS MedioTransferencia,
+  SUM(CASE WHEN p.MedioDePago = 3 THEN 1 ELSE 0 END)                    AS MedioDetraccion,
+  SUM(CASE WHEN p.MedioDePago = 4 THEN 1 ELSE 0 END)                    AS MedioEfectivo4,
+  SUM(CASE WHEN p.MedioDePago = 5 THEN 1 ELSE 0 END)                    AS MedioOtroElec,
+  SUM(CASE WHEN p.MedioDePago = 6 THEN 1 ELSE 0 END)                    AS MedioEfectivo6,
+  SUM(CASE WHEN p.MedioDePago = 7 THEN 1 ELSE 0 END)                    AS MedioVoucher,
+  SUM(CASE WHEN p.MedioDePago = 0 OR p.MedioDePago IS NULL THEN 1 ELSE 0 END) AS MedioSinClasificar
+FROM CMO.dbo.OB_Pago p
+LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
+WHERE p.CodIdentificador = '${codEmpresa}'
+  AND YEAR(p.FechaTrx) = ${year}
+`;
+
+// Detalle de pagos > S/3,500 NO bancarizados (efectivo/sin clasificar) — TOP 100
+const QUERY_PAGOS_NO_BANCARIZADOS = (codEmpresa, year) => `
+SELECT TOP 100
+  CONVERT(VARCHAR(10), p.FechaTrx, 103)            AS Fecha,
+  ISNULL(p.NoDocumento, '')                        AS NoDocumento,
+  ISNULL(p.NoCheque, '')                           AS NoCheque,
+  LEFT(ISNULL(p.Descripcion, ''), 80)              AS Descripcion,
+  ROUND(ISNULL(p.PayAmt, 0), 2)                    AS Monto,
+  ISNULL(cb.CodMoneda, '')                         AS Moneda,
+  ISNULL(cb.Descripcion, '')                       AS Banco,
+  CASE p.MedioDePago
+    WHEN 0 THEN 'Sin clasificar'
+    WHEN 4 THEN 'Efectivo (4)'
+    WHEN 6 THEN 'Efectivo (6)'
+    ELSE 'Otro' END                                AS MedioDescripcion,
+  p.MedioDePago                                    AS MedioCodigo,
+  ISNULL(p.CodIdentificadorReferencia, '')         AS Beneficiario,
+  ISNULL(p.NumeroOperacion, '')                    AS NumOperacion,
+  ISNULL(p.EstadoDoc, '')                          AS Estado,
+  ROUND(ISNULL(p.PayAmt, 0) * 0.295, 2)            AS RiesgoFiscalIR,
+  ROUND(ISNULL(p.PayAmt, 0) * 0.18, 2)             AS RiesgoFiscalIGV
+FROM CMO.dbo.OB_Pago p
+LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
+WHERE p.CodIdentificador = '${codEmpresa}'
+  AND YEAR(p.FechaTrx) = ${year}
+  AND ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+  AND (p.MedioDePago IN (4,6) OR p.MedioDePago IS NULL OR p.MedioDePago = 0)
+ORDER BY p.PayAmt DESC
+`;
+
+// Pagos a beneficiarios SIN cuenta bancaria registrada — riesgo operativo
+const QUERY_BENEFICIARIOS_SIN_CUENTA = (codEmpresa, year) => `
+SELECT TOP 50
+  p.CodIdentificadorReferencia                     AS Beneficiario,
+  COUNT(*)                                          AS NumPagos,
+  ROUND(SUM(p.PayAmt), 2)                          AS MontoTotal,
+  ROUND(MAX(p.PayAmt), 2)                          AS MontoMaximo,
+  CONVERT(VARCHAR(10), MAX(p.FechaTrx), 103)       AS UltimoPago,
+  ISNULL(i.Descripcion, '(sin tercero)')           AS NombreBeneficiario
+FROM CMO.dbo.OB_Pago p
+LEFT JOIN CMO.dbo.Identificador i ON p.CodIdentificadorReferencia = i.CodIdentificador
+LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
+WHERE p.CodIdentificador = '${codEmpresa}'
+  AND YEAR(p.FechaTrx) = ${year}
+  AND ((cb.CodMoneda = '01' AND p.PayAmt > 3500) OR (cb.CodMoneda = '02' AND p.PayAmt > 1000))
+  AND NOT EXISTS (
+    SELECT 1 FROM CMO.dbo.IdentificadorCuentaBanco icb
+    WHERE icb.CodIdentificador = p.CodIdentificadorReferencia
+  )
+  AND p.CodIdentificadorReferencia IS NOT NULL
+  AND p.CodIdentificadorReferencia <> ''
+GROUP BY p.CodIdentificadorReferencia, i.Descripcion
+ORDER BY SUM(p.PayAmt) DESC
+`;
+
 // FASE A.5 — Módulo de Caja-Banco completo
 
 // QUERY_OB_LIBROS_CAJA: catálogo de libros de caja por empresa
@@ -1318,6 +1421,7 @@ async function main() {
         conciliacionBancariaResult, movsSinConciliarResult, obPagosResult,
         obLibrosCajaResult, obCajaResult, obAsignMetricasResult,
         pagosSinAsignacionResult, compensacionesResult,
+        bancarizacionMetricasResult, pagosNoBancarizadosResult, beneficiariosSinCuentaResult,
         gastosNatResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
@@ -1338,6 +1442,9 @@ async function main() {
         pool.request().query(QUERY_OB_ASIGNACIONES_METRICAS(company.codEmpresa, year)),
         pool.request().query(QUERY_PAGOS_SIN_ASIGNACION(company.codEmpresa, year)),
         pool.request().query(QUERY_COMPENSACIONES(company.codEmpresa)),
+        pool.request().query(QUERY_BANCARIZACION_METRICAS(company.codEmpresa, year)),
+        pool.request().query(QUERY_PAGOS_NO_BANCARIZADOS(company.codEmpresa, year)),
+        pool.request().query(QUERY_BENEFICIARIOS_SIN_CUENTA(company.codEmpresa, year)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
@@ -1375,6 +1482,9 @@ async function main() {
       logRow('OB Asignaciones métricas', obAsignMetricasResult.recordset);
       logRow('Pagos sin asignación', pagosSinAsignacionResult.recordset);
       logRow('Compensaciones', compensacionesResult.recordset);
+      logRow('Bancarización métricas', bancarizacionMetricasResult.recordset);
+      logRow('Pagos NO Bancarizados', pagosNoBancarizadosResult.recordset);
+      logRow('Beneficiarios sin Cuenta', beneficiariosSinCuentaResult.recordset);
       logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
@@ -1431,6 +1541,9 @@ async function main() {
           ob_asignaciones_metricas: obAsignMetricasResult.recordset,
           pagos_sin_asignacion: pagosSinAsignacionResult.recordset,
           compensaciones: compensacionesResult.recordset,
+          bancarizacion_metricas: bancarizacionMetricasResult.recordset,
+          pagos_no_bancarizados: pagosNoBancarizadosResult.recordset,
+          beneficiarios_sin_cuenta: beneficiariosSinCuentaResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,

@@ -2072,7 +2072,12 @@ async function main() {
   console.log('✓ Connected to S10 SQL Server');
 
   const fechaInicio = `${year}-01-01`;
-  const fechaFin = new Date().toISOString().slice(0, 10);
+  const currentYear = new Date().getFullYear();
+  // Para años históricos usar dic-31 como corte; para el año en curso usar hoy.
+  // Evita que las queries agrupadas por mes mezclen datos de años distintos.
+  const fechaFin = year < currentYear
+    ? `${year}-12-31`
+    : new Date().toISOString().slice(0, 10);
 
   for (const company of companies) {
     console.log(`\nProcessing: ${company.name} (${company.codEmpresa})`);

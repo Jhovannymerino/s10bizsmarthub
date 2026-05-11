@@ -7,7 +7,7 @@ const PORT = 3299;
 const API_KEY = '1fe0bf01e872d7f586e4828abcdc1ba0a5283f5625570128';
 const SCRIPT = '/opt/apps/s10bizsmarthub/sync-vpn.sh';
 const LOG = '/var/log/s10-sync.log';
-const MIN_YEAR = 2025;
+const MIN_YEAR = 2022;
 
 function defaultYears() {
   const current = new Date().getFullYear();

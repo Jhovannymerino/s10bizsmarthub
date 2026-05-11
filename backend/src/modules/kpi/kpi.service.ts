@@ -623,6 +623,44 @@ export class KpiService {
     };
   }
 
+  async getAuditoriaLaboral(companyId: string, year: number) {
+    // Fase C: auditoría laboral integral
+    const [metricasSnap, trabajadoresSnap, ctsSnap] = await Promise.all([
+      this.getSnapshot(companyId, 'laboral_metricas', `${year}`),
+      this.getSnapshot(companyId, 'pagos_trabajadores', `${year}`),
+      this.getSnapshot(companyId, 'cts_depositos', 'current'),
+    ]);
+
+    const metricasArr = (metricasSnap?.data as any[]) ?? [];
+    const m = metricasArr[0] ?? {};
+    const trabajadores = (trabajadoresSnap?.data as any[]) ?? [];
+    const ctsDepositos = (ctsSnap?.data as any[]) ?? [];
+
+    // Validación CTS: depósitos deben ser en mayo y noviembre (DL 650)
+    const ctsConViolacion = ctsDepositos.filter((c: any) =>
+      parseFloat(c.MontoDepositado) > 100 && c.ClasificacionLegal === 'Fuera de plazo'
+    );
+    const ctsEnPlazo = ctsDepositos.filter((c: any) =>
+      parseFloat(c.MontoDepositado) > 100 && c.ClasificacionLegal === 'En plazo (DL 650)'
+    );
+
+    return {
+      metricas: m,
+      trabajadores,
+      ctsDepositos,
+      numTrabajadoresRecurrentes: trabajadores.filter((t: any) => t.PatronPago === 'Recurrente').length,
+      totalPagadoTrabajadores: round(trabajadores.reduce((s: number, t: any) => s + (parseFloat(t.MontoTotal) || 0), 0)),
+      ctsConViolacion,
+      ctsEnPlazo,
+      cumplimientoCTS: ctsConViolacion.length === 0 && ctsEnPlazo.length > 0
+        ? 'CUMPLIMIENTO'
+        : ctsConViolacion.length > 0
+          ? 'INCUMPLIMIENTO (depósitos fuera de plazo)'
+          : 'SIN DATOS',
+      syncedAt: metricasSnap?.syncedAt,
+    };
+  }
+
   async getBancarizacion(companyId: string, year: number) {
     // Fase B: auditoría de Bancarización Ley 28194
     const [metricasSnap, pagosNoBancSnap, benefSinCtaSnap] = await Promise.all([

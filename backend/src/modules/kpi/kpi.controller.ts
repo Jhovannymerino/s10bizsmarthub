@@ -254,6 +254,16 @@ export class KpiController {
     return this.kpiService.getBancarizacion(companyId, y);
   }
 
+  /** Auditoría Laboral — Fase C: planilla, CTS, trabajadores, cumplimiento DL 650 */
+  @Get(':companyId/auditoria-laboral')
+  getAuditoriaLaboral(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    const y = year ? parseInt(year, 10) : new Date().getFullYear();
+    return this.kpiService.getAuditoriaLaboral(companyId, y);
+  }
+
   /** Préstamos otorgados — tipo 071 en CxC */
   @Get(':companyId/prestamos-otorgados')
   getPrestamosOtorgados(@Param('companyId') companyId: string) {

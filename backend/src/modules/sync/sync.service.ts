@@ -73,6 +73,9 @@ export class SyncService {
       bancarizacion_metricas?: any[];
       pagos_no_bancarizados?: any[];
       beneficiarios_sin_cuenta?: any[];
+      pagos_trabajadores?: any[];
+      cts_depositos?: any[];
+      laboral_metricas?: any[];
     };
   }) {
     const { companyId, companyName, claseIngreso, year, data } = payload;
@@ -304,6 +307,20 @@ export class SyncService {
       if (data.beneficiarios_sin_cuenta !== undefined) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'beneficiarios_sin_cuenta', period, year, null, data.beneficiarios_sin_cuenta);
         logs.push({ kpiType: 'beneficiarios_sin_cuenta', rowsProcessed: data.beneficiarios_sin_cuenta.length, status: 'success' });
+      }
+
+      // Fase C: Auditoría laboral
+      if (data.pagos_trabajadores !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'pagos_trabajadores', period, year, null, data.pagos_trabajadores);
+        logs.push({ kpiType: 'pagos_trabajadores', rowsProcessed: data.pagos_trabajadores.length, status: 'success' });
+      }
+      if (data.cts_depositos !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cts_depositos', 'current', year, null, data.cts_depositos);
+        logs.push({ kpiType: 'cts_depositos', rowsProcessed: data.cts_depositos.length, status: 'success' });
+      }
+      if (data.laboral_metricas !== undefined) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'laboral_metricas', period, year, null, data.laboral_metricas);
+        logs.push({ kpiType: 'laboral_metricas', rowsProcessed: data.laboral_metricas.length, status: 'success' });
       }
 
       if (data.audit_sin_doc?.length) {

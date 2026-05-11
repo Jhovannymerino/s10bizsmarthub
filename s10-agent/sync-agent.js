@@ -945,6 +945,83 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
+// FASE C — Auditoría Laboral (las 4 empresas NO usan AFPNet/PDT-PLAME formal de S10;
+// procesan planilla externamente y registran resumen en clase 41 + pagos en OB_Pago)
+
+// Pagos a personas naturales (RUC 10*) — trabajadores y profesionales independientes
+const QUERY_PAGOS_TRABAJADORES = (codEmpresa, year) => `
+SELECT TOP 200
+  i.Descripcion                                    AS NombreTrabajador,
+  p.CodIdentificadorReferencia                     AS RUC,
+  COUNT(*)                                          AS NumPagos,
+  ROUND(SUM(p.PayAmt), 2)                          AS MontoTotal,
+  ROUND(AVG(p.PayAmt), 2)                          AS MontoPromedio,
+  ROUND(MAX(p.PayAmt), 2)                          AS MontoMaximo,
+  CONVERT(VARCHAR(10), MAX(p.FechaTrx), 103)       AS UltimoPago,
+  CONVERT(VARCHAR(10), MIN(p.FechaTrx), 103)       AS PrimerPago,
+  CASE WHEN COUNT(*) >= 10 THEN 'Recurrente'
+       WHEN COUNT(*) >= 3 THEN 'Frecuente'
+       ELSE 'Ocasional' END                        AS PatronPago
+FROM CMO.dbo.OB_Pago p
+JOIN CMO.dbo.Identificador i ON p.CodIdentificadorReferencia = i.CodIdentificador
+WHERE p.CodIdentificador = '${codEmpresa}'
+  AND YEAR(p.FechaTrx) = ${year}
+  AND p.PayAmt > 500
+  AND LEFT(i.RUC, 2) = '10'
+GROUP BY i.Descripcion, p.CodIdentificadorReferencia
+ORDER BY SUM(p.PayAmt) DESC
+`;
+
+// Métricas laborales (clase 41) — depósitos CTS por mes (debería ser may/nov)
+const QUERY_CTS_DEPOSITOS = (codEmpresa) => `
+SELECT
+  YEAR(ac.FechaAplicacionContable)                 AS Anio,
+  MONTH(ac.FechaAplicacionContable)                AS Mes,
+  ROUND(SUM(ISNULL(ac.Debito, 0)), 2)              AS MontoDepositado,
+  ROUND(SUM(ISNULL(ac.Credito, 0)), 2)             AS MontoProvisionado,
+  CASE
+    WHEN MONTH(ac.FechaAplicacionContable) IN (5, 11) THEN 'En plazo (DL 650)'
+    WHEN MONTH(ac.FechaAplicacionContable) IN (4, 10) THEN 'Anticipado'
+    WHEN MONTH(ac.FechaAplicacionContable) IN (6, 12) THEN 'Fuera de plazo'
+    ELSE 'No es mes CTS'
+  END                                              AS ClasificacionLegal
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND pcd.CodCuenta LIKE '4151%'
+  AND YEAR(ac.FechaAplicacionContable) IN (${new Date().getFullYear() - 1}, ${new Date().getFullYear()})
+GROUP BY YEAR(ac.FechaAplicacionContable), MONTH(ac.FechaAplicacionContable)
+HAVING SUM(ISNULL(ac.Debito, 0)) + SUM(ISNULL(ac.Credito, 0)) > 0
+ORDER BY YEAR(ac.FechaAplicacionContable), MONTH(ac.FechaAplicacionContable)
+`;
+
+// Métricas laborales agregadas
+const QUERY_LABORAL_METRICAS = (codEmpresa, year) => `
+SELECT
+  -- Conteo asientos clase 41 por concepto
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4111%' THEN ISNULL(ac.Credito, 0) ELSE 0 END) AS SueldosProvisionado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4111%' THEN ISNULL(ac.Debito, 0) ELSE 0 END)  AS SueldosPagado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4114%' THEN ISNULL(ac.Credito, 0) ELSE 0 END) AS GratifProvisionado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4114%' THEN ISNULL(ac.Debito, 0) ELSE 0 END)  AS GratifPagado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4115%' THEN ISNULL(ac.Credito, 0) ELSE 0 END) AS VacacionesProvisionado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4115%' THEN ISNULL(ac.Debito, 0) ELSE 0 END)  AS VacacionesPagado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4151%' THEN ISNULL(ac.Credito, 0) ELSE 0 END) AS CTSProvisionado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4151%' THEN ISNULL(ac.Debito, 0) ELSE 0 END)  AS CTSPagado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4130%' THEN ISNULL(ac.Credito, 0) ELSE 0 END) AS ParticipacionesProvisionado,
+  SUM(CASE WHEN pcd.CodCuenta LIKE '4130%' THEN ISNULL(ac.Debito, 0) ELSE 0 END)  AS ParticipacionesPagado,
+  -- Saldos pendientes
+  ROUND(SUM(CASE WHEN pcd.CodCuenta LIKE '4111%' THEN ISNULL(ac.Credito, 0) - ISNULL(ac.Debito, 0) ELSE 0 END), 2) AS SaldoSueldos,
+  ROUND(SUM(CASE WHEN pcd.CodCuenta LIKE '4114%' THEN ISNULL(ac.Credito, 0) - ISNULL(ac.Debito, 0) ELSE 0 END), 2) AS SaldoGratif,
+  ROUND(SUM(CASE WHEN pcd.CodCuenta LIKE '4115%' THEN ISNULL(ac.Credito, 0) - ISNULL(ac.Debito, 0) ELSE 0 END), 2) AS SaldoVacaciones,
+  ROUND(SUM(CASE WHEN pcd.CodCuenta LIKE '4151%' THEN ISNULL(ac.Credito, 0) - ISNULL(ac.Debito, 0) ELSE 0 END), 2) AS SaldoCTS,
+  ROUND(SUM(CASE WHEN pcd.CodCuenta LIKE '4130%' THEN ISNULL(ac.Credito, 0) - ISNULL(ac.Debito, 0) ELSE 0 END), 2) AS SaldoParticipaciones
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) = '41'
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
+`;
+
 // FASE B — Auditoría de Bancarización (Ley 28194)
 // Pagos > S/3,500 (o US$1,000) DEBEN usar medio bancario:
 // - MedioDePago: 1=Cheque, 2=Transferencia, 3=Detracción, 5=OtroElec, 7=Voucher → BANCARIZADOS
@@ -1422,6 +1499,7 @@ async function main() {
         obLibrosCajaResult, obCajaResult, obAsignMetricasResult,
         pagosSinAsignacionResult, compensacionesResult,
         bancarizacionMetricasResult, pagosNoBancarizadosResult, beneficiariosSinCuentaResult,
+        pagosTrabajadoresResult, ctsDepositosResult, laboralMetricasResult,
         gastosNatResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
@@ -1445,6 +1523,9 @@ async function main() {
         pool.request().query(QUERY_BANCARIZACION_METRICAS(company.codEmpresa, year)),
         pool.request().query(QUERY_PAGOS_NO_BANCARIZADOS(company.codEmpresa, year)),
         pool.request().query(QUERY_BENEFICIARIOS_SIN_CUENTA(company.codEmpresa, year)),
+        pool.request().query(QUERY_PAGOS_TRABAJADORES(company.codEmpresa, year)),
+        pool.request().query(QUERY_CTS_DEPOSITOS(company.codEmpresa)),
+        pool.request().query(QUERY_LABORAL_METRICAS(company.codEmpresa, year)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
@@ -1485,6 +1566,9 @@ async function main() {
       logRow('Bancarización métricas', bancarizacionMetricasResult.recordset);
       logRow('Pagos NO Bancarizados', pagosNoBancarizadosResult.recordset);
       logRow('Beneficiarios sin Cuenta', beneficiariosSinCuentaResult.recordset);
+      logRow('Pagos Trabajadores', pagosTrabajadoresResult.recordset);
+      logRow('CTS Depósitos', ctsDepositosResult.recordset);
+      logRow('Laboral Métricas', laboralMetricasResult.recordset);
       logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
@@ -1544,6 +1628,9 @@ async function main() {
           bancarizacion_metricas: bancarizacionMetricasResult.recordset,
           pagos_no_bancarizados: pagosNoBancarizadosResult.recordset,
           beneficiarios_sin_cuenta: beneficiariosSinCuentaResult.recordset,
+          pagos_trabajadores: pagosTrabajadoresResult.recordset,
+          cts_depositos: ctsDepositosResult.recordset,
+          laboral_metricas: laboralMetricasResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,

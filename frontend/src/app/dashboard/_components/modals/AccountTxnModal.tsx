@@ -58,7 +58,14 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
             <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
             <button onClick={() => setRetryCount(c => c + 1)} style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>↻ Reintentar</button>
           </div>
-        ) : filtered.length === 0 ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>Sin asientos para esta cuenta en {year}.</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
+            {endpoint === 'activo-fijo-transactions'
+              ? <>Sin movimientos en {year}.<br /><span style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '0.5rem', display: 'block' }}>El activo fue registrado en un período anterior. Cambia el año en el dashboard para ver los asientos históricos.</span></>
+              : `Sin asientos para esta cuenta en ${year}.`
+            }
+          </div>
+        )
         : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>

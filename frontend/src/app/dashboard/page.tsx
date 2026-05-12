@@ -2517,10 +2517,10 @@ export default function DashboardPage() {
                         Valor Bruto del Activo Fijo (clase 33)
                       </div>
                       <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                        <thead><tr><th>Cuenta</th><th>Descripción</th><th># Asientos</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Bruto</th></tr></thead>
+                        <thead><tr><th>Cuenta</th><th>Descripción</th><th title="Total histórico acumulado — no filtrado por año"># Asientos (hist.)</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Bruto</th></tr></thead>
                         <tbody>
                           {activoFijoData.activos.map((r: any, i: number) => (
-                            <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesActivo, endpoint: 'activo-fijo-transactions' })} title="Ver asientos">
+                            <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesActivo, endpoint: 'activo-fijo-transactions' })} title="Ver asientos del año seleccionado">
                               <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                               <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
                               <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.NumAsientos}</td>
@@ -2539,7 +2539,7 @@ export default function DashboardPage() {
                           Depreciación Acumulada (clase 39)
                         </div>
                         <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                          <thead><tr><th>Cuenta</th><th>Descripción</th><th># Asientos</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Depreciación</th></tr></thead>
+                          <thead><tr><th>Cuenta</th><th>Descripción</th><th title="Total histórico acumulado — no filtrado por año"># Asientos (hist.)</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Depreciación</th></tr></thead>
                           <tbody>
                             {activoFijoData.depreciaciones.map((r: any, i: number) => (
                               <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesActivo, endpoint: 'activo-fijo-transactions' })} title="Ver asientos">

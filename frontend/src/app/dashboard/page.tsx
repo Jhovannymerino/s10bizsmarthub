@@ -146,6 +146,7 @@ export default function DashboardPage() {
   const [otrasCxCData, setOtrasCxCData] = useState<any>(null);
   const [otrasCxPData, setOtrasCxPData] = useState<any>(null);
   const [prestamosData, setPrestamosData] = useState<{ otorgados: any; recibidos: any } | null>(null);
+  const [prestamosDocPreview, setPrestamosDocPreview] = useState<string | null>(null);
   const [tributosData, setTributosData] = useState<any>(null);
   const [laboralData, setLaboralData] = useState<any>(null);
   const [activoFijoData, setActivoFijoData] = useState<any>(null);
@@ -2298,10 +2299,18 @@ export default function DashboardPage() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>N°</th><th style={{ minWidth: 200 }}>Deudor</th><th style={{ minWidth: 200 }}>Observación</th><th>Fecha</th><th>Vcto</th><th>Días Vcdo</th><th>Monto</th><th>Saldo Pendiente</th></tr></thead>
+                    <thead><tr><th style={{ width: 32 }}></th><th>N°</th><th style={{ minWidth: 200 }}>Deudor</th><th style={{ minWidth: 200 }}>Observación</th><th>Fecha</th><th>Vcto</th><th>Días Vcdo</th><th>Monto</th><th>Saldo Pendiente</th></tr></thead>
                     <tbody>
                       {prestamosData.otorgados.rows.map((r: any, i: number) => (
                         <tr key={i}>
+                          <td style={{ textAlign: 'center', padding: '0 0.25rem' }}>
+                            {r.NroD
+                              ? <button onClick={e => { e.stopPropagation(); setPrestamosDocPreview(String(r.NroD)); }}
+                                  title="Ver documento origen"
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>🔗</button>
+                              : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
+                            }
+                          </td>
                           <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#8B97A8' }}>{r.Numero}</td>
                           <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Beneficiario}>{r.Beneficiario || '—'}</td>
                           <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8', fontSize: '0.75rem' }} title={r.Observacion}>{r.Observacion || '—'}</td>
@@ -2313,7 +2322,7 @@ export default function DashboardPage() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot><tr className="total-row"><td colSpan={7}>TOTAL PENDIENTE</td>
+                    <tfoot><tr className="total-row"><td colSpan={8}>TOTAL PENDIENTE</td>
                       <td>{fmt(prestamosData.otorgados.total)}</td>
                     </tr></tfoot>
                   </table>
@@ -2327,10 +2336,18 @@ export default function DashboardPage() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>N°</th><th style={{ minWidth: 200 }}>Prestamista</th><th style={{ minWidth: 200 }}>Observación</th><th>Fecha</th><th>Vcto</th><th>Monto</th><th>Saldo Pendiente</th></tr></thead>
+                    <thead><tr><th style={{ width: 32 }}></th><th>N°</th><th style={{ minWidth: 200 }}>Prestamista</th><th style={{ minWidth: 200 }}>Observación</th><th>Fecha</th><th>Vcto</th><th>Monto</th><th>Saldo Pendiente</th></tr></thead>
                     <tbody>
                       {prestamosData.recibidos.rows.map((r: any, i: number) => (
                         <tr key={i}>
+                          <td style={{ textAlign: 'center', padding: '0 0.25rem' }}>
+                            {r.NroD
+                              ? <button onClick={e => { e.stopPropagation(); setPrestamosDocPreview(String(r.NroD)); }}
+                                  title="Ver documento origen"
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>🔗</button>
+                              : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
+                            }
+                          </td>
                           <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#8B97A8' }}>{r.Numero}</td>
                           <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Prestamista}>{r.Prestamista || '—'}</td>
                           <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8', fontSize: '0.75rem' }} title={r.Observacion}>{r.Observacion || '—'}</td>
@@ -2341,13 +2358,14 @@ export default function DashboardPage() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot><tr className="total-row"><td colSpan={6}>TOTAL PENDIENTE</td>
+                    <tfoot><tr className="total-row"><td colSpan={7}>TOTAL PENDIENTE</td>
                       <td>{fmt(prestamosData.recibidos.total)}</td>
                     </tr></tfoot>
                   </table>
                 </div>
               )}
             </div>
+            {prestamosDocPreview && <DocPreview companyId={selectedCompany.codEmpresa} nroD={prestamosDocPreview} onClose={() => setPrestamosDocPreview(null)} />}
           </>
         )}
 
@@ -2451,8 +2469,8 @@ export default function DashboardPage() {
                         <thead><tr><th>Cuenta</th><th>Descripción</th><th># Asientos</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Bruto</th></tr></thead>
                         <tbody>
                           {activoFijoData.activos.map((r: any, i: number) => (
-                            <tr key={i}>
-                              <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
+                            <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesActivo, endpoint: 'activo-fijo-transactions' })} title="Ver asientos">
+                              <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                               <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
                               <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.NumAsientos}</td>
                               <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
@@ -2473,8 +2491,8 @@ export default function DashboardPage() {
                           <thead><tr><th>Cuenta</th><th>Descripción</th><th># Asientos</th><th>Db Acum</th><th>Cr Acum</th><th>Saldo Depreciación</th></tr></thead>
                           <tbody>
                             {activoFijoData.depreciaciones.map((r: any, i: number) => (
-                              <tr key={i}>
-                                <td style={{ fontFamily: 'monospace', color: '#F59E0B' }}>{r.CodCuenta}</td>
+                              <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: r.CodCuenta, descripcion: r.DesActivo, endpoint: 'activo-fijo-transactions' })} title="Ver asientos">
+                                <td style={{ fontFamily: 'monospace', color: '#F59E0B' }}>{r.CodCuenta} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                                 <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.DesActivo}</td>
                                 <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.NumAsientos}</td>
                                 <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
@@ -2669,8 +2687,8 @@ export default function DashboardPage() {
                           byGrupo[k].ytd += r.Monto || 0;
                         }
                         return Object.values(byGrupo).sort((a, b) => b.ytd - a.ytd).map((g, i) => (
-                          <tr key={i}>
-                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{g.grupo}</td>
+                          <tr key={i} style={{ cursor: 'pointer' }} onClick={() => setAccountTxDrill({ codCuenta: g.grupo, descripcion: g.desc, endpoint: 'gastos-nat-transactions' })} title="Ver asientos">
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{g.grupo} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.desc}</td>
                             {Array.from({ length: 12 }, (_, m) => (
                               <td key={m + 1} style={{ color: '#8B97A8' }}>{g.meses[m + 1] ? fmt(g.meses[m + 1]) : '—'}</td>
@@ -3123,6 +3141,7 @@ export default function DashboardPage() {
                                 const colKeys = Object.keys(rawRows[0]);
                                 const isMoney = (k: string) => /monto|importe|total|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap/i.test(k);
                                 const isCount = (k: string) => /^(n|cant|count|num|nro_asientos?|qty)/i.test(k);
+                                const isV17 = v.id === 'V17_reconciliacion_ingr';
                                 return (
                                 <tr>
                                   <td colSpan={7} style={{ padding: 0 }}>
@@ -3133,6 +3152,7 @@ export default function DashboardPage() {
                                             {colKeys.map((k) => (
                                               <th key={k} style={{ textAlign: isMoney(k) ? 'right' : 'left' }}>{k}</th>
                                             ))}
+                                            {isV17 && <th style={{ textAlign: 'center' }}>Tipo</th>}
                                           </tr>
                                         </thead>
                                         <tbody>
@@ -3151,10 +3171,23 @@ export default function DashboardPage() {
                                                   </td>
                                                 );
                                               })}
+                                              {isV17 && (() => {
+                                                const diff = row.Diferencia ?? 0;
+                                                return (
+                                                  <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                                    {diff > 0
+                                                      ? <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.68rem' }}>Tipo B</span>
+                                                      : diff < 0
+                                                        ? <span style={{ color: '#EF4444', fontWeight: 700, fontSize: '0.68rem' }}>Tipo A</span>
+                                                        : <span style={{ color: '#10B981', fontSize: '0.68rem' }}>OK</span>
+                                                    }
+                                                  </td>
+                                                );
+                                              })()}
                                             </tr>
                                           ))}
                                           {rawRows.length > 50 && (
-                                            <tr><td colSpan={colKeys.length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
+                                            <tr><td colSpan={isV17 ? colKeys.length + 1 : colKeys.length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
                                           )}
                                         </tbody>
                                       </table>

@@ -663,6 +663,22 @@ export class KpiService {
     };
   }
 
+  async getActivoFijoTxn(companyId: string, year: number, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'activo_fijo_txn', `${year}`);
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    return { transactions: txns, total: txns.length };
+  }
+
+  async getGastosNatTxn(companyId: string, year: number, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'gastos_nat_txn', `${year}`);
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    return { transactions: txns, total: txns.length };
+  }
+
   async getAuditoriaLaboral(companyId: string, year: number) {
     // Fase C: auditoría laboral integral
     const [metricasSnap, trabajadoresSnap, ctsSnap] = await Promise.all([
@@ -900,6 +916,13 @@ export class KpiService {
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodBanco ?? t.CodCuenta).startsWith(codCuenta));
     return { transactions: txns, total: txns.length };
+  }
+
+  async getCajaAsientoLineas(companyId: string, year: number, nroAsiento: string) {
+    const cached = await this.getSnapshot(companyId, 'caja_asiento_full', `${year}`);
+    if (!cached) return { lineas: [] };
+    const lineas = (cached.data as any[]).filter((t: any) => String(t.NroAsiento) === nroAsiento);
+    return { lineas };
   }
 
   // ─────────────────────────────────────────────

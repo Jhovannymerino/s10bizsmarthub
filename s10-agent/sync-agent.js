@@ -583,6 +583,32 @@ HAVING ABS(SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))) > 0.5
 ORDER BY pcd.CodCuenta
 `;
 
+// Detalle transacciones activo fijo (clases 33/39) para drilldown
+const QUERY_ACTIVO_FIJO_TXN = (codEmpresa, year) => `
+SELECT
+  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.NroD                                                  AS NroD,
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
+  YEAR(ac.FechaAplicacionContable)                         AS Anio,
+  MONTH(ac.FechaAplicacionContable)                        AS Mes,
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  pcd.CodCuenta                                            AS CodCuenta,
+  pcd.Descripcion                                          AS DesCuenta,
+  ISNULL(ac.Glosa, '')                                     AS Glosa,
+  ISNULL(ac.Debito, 0)                                     AS Debito,
+  ISNULL(ac.Credito, 0)                                    AS Credito,
+  ISNULL(i.Descripcion, '')                                AS Tercero
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) IN ('33', '39')
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
+ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+`;
+
 // Préstamos otorgados (docs tipo 071 emitidos) — todos los años, con estado de pago
 const QUERY_PRESTAMOS_OTORGADOS = (codEmpresa) => `
 SELECT
@@ -681,6 +707,33 @@ HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
 ORDER BY Clase, GrupoCuenta, pcd.CodCuenta, Mes
 `;
 
+// Detalle transacciones gastos naturaleza (clases 60-68) para drilldown
+const QUERY_GASTOS_NAT_TXN = (codEmpresa, fechaInicio, fechaFin) => `
+SELECT
+  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.NroD                                                  AS NroD,
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
+  YEAR(ac.FechaAplicacionContable)                         AS Anio,
+  MONTH(ac.FechaAplicacionContable)                        AS Mes,
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  LEFT(pcd.CodCuenta, 4)                                   AS GrupoCuenta,
+  pcd.CodCuenta                                            AS CodCuenta,
+  pcd.Descripcion                                          AS DesCuenta,
+  ISNULL(ac.Glosa, '')                                     AS Glosa,
+  ISNULL(ac.Debito, 0)                                     AS Debito,
+  ISNULL(ac.Credito, 0)                                    AS Credito,
+  ISNULL(i.Descripcion, '')                                AS Tercero
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
+  AND LEFT(pcd.CodCuenta, 2) IN ('60','61','62','63','64','65','66','67','68')
+ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+`;
+
 // Saldos bancarios acumulados (clase 10) — histórico por subcuenta
 const QUERY_CAJA_SALDOS = (codEmpresa) => `
 SELECT
@@ -725,6 +778,38 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '10'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+`;
+
+// Asientos bancarios completos: todas las líneas de cada asiento que toca clase 10
+// Permite ver el asiento doble completo (banco + contrapartida) en el modal de Tesorería
+const QUERY_CAJA_ASIENTO_FULL = (codEmpresa, year) => `
+SELECT
+  ac2.NroAsientoContable                                   AS NroAsiento,
+  CONVERT(VARCHAR(10), ac2.FechaAplicacionContable, 103)   AS Fecha,
+  ac2.NroD                                                 AS NroD,
+  LEFT(pcd2.CodCuenta, 2)                                  AS Clase,
+  pcd2.CodCuenta                                           AS CodCuenta,
+  pcd2.Descripcion                                         AS DesCuenta,
+  ISNULL(ac2.Glosa, '')                                    AS Glosa,
+  ISNULL(ac2.Debito, 0)                                    AS Debito,
+  ISNULL(ac2.Credito, 0)                                   AS Credito,
+  ISNULL(i2.Descripcion, '')                               AS Tercero
+FROM CMO.dbo.AsientoContable ac2
+JOIN CMO.dbo.PlanContableDetalle pcd2
+  ON ac2.NroPlanContableDetalle = pcd2.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i2
+  ON ac2.CodIdentificador = i2.CodIdentificador
+WHERE ac2.CodEmpresa = '${codEmpresa}'
+  AND ac2.NroAsientoContable IN (
+    SELECT DISTINCT ac1.NroAsientoContable
+    FROM CMO.dbo.AsientoContable ac1
+    JOIN CMO.dbo.PlanContableDetalle pcd1
+      ON ac1.NroPlanContableDetalle = pcd1.NroPlanContableDetalle
+    WHERE ac1.CodEmpresa = '${codEmpresa}'
+      AND LEFT(pcd1.CodCuenta, 2) = '10'
+      AND YEAR(ac1.FechaAplicacionContable) = ${year}
+  )
+ORDER BY ac2.NroAsientoContable, pcd2.CodCuenta
 `;
 
 // Auditoría: asientos sin NroD por clase (año en curso)
@@ -2135,7 +2220,7 @@ async function main() {
         otrasCxpResult, otrasCxpTxnResult,
         tributosResult, tributosTxnResult,
         laboralResult, laboralTxnResult,
-        activoFijoResult,
+        activoFijoResult, activoFijoTxnResult,
         patrimonioResult, inventariosResult,
       ] = await Promise.all([
         pool.request().query(QUERY_BALANCE(company.codEmpresa)),
@@ -2148,6 +2233,7 @@ async function main() {
         pool.request().query(QUERY_LABORAL(company.codEmpresa)),
         pool.request().query(QUERY_LABORAL_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_ACTIVO_FIJO(company.codEmpresa)),
+        pool.request().query(QUERY_ACTIVO_FIJO_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_PATRIMONIO(company.codEmpresa)),
         pool.request().query(QUERY_INVENTARIOS(company.codEmpresa, year)),
       ]);
@@ -2157,14 +2243,14 @@ async function main() {
       console.log('  → Batch 3: Préstamos, Transferencias, Caja, Tesorería, Gastos, Auditoría...');
       const [
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
-        cajaSaldosResult, cajaTxnResult,
+        cajaSaldosResult, cajaTxnResult, cajaAsientoFullResult,
         tesoreriaResult, obSaldosBancoResult,
         conciliacionBancariaResult, movsSinConciliarResult, obPagosResult,
         obLibrosCajaResult, obCajaResult, obAsignMetricasResult,
         pagosSinAsignacionResult, compensacionesResult,
         bancarizacionMetricasResult, pagosNoBancarizadosResult, beneficiariosSinCuentaResult,
         pagosTrabajadoresResult, ctsDepositosResult, laboralMetricasResult,
-        gastosNatResult,
+        gastosNatResult, gastosNatTxnResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
         auditConciliacionResult,
@@ -2174,6 +2260,7 @@ async function main() {
         pool.request().query(QUERY_TRANSFERENCIAS(company.codEmpresa)),
         pool.request().query(QUERY_CAJA_SALDOS(company.codEmpresa)),
         pool.request().query(QUERY_CAJA_TXN(company.codEmpresa, year)),
+        pool.request().query(QUERY_CAJA_ASIENTO_FULL(company.codEmpresa, year)),
         pool.request().query(QUERY_TESORERIA(company.codEmpresa, year)),
         pool.request().query(QUERY_OB_SALDOS_BANCO(company.codEmpresa, year)),
         pool.request().query(QUERY_CONCILIACION_BANCARIA(company.codEmpresa)),
@@ -2191,6 +2278,7 @@ async function main() {
         pool.request().query(QUERY_CTS_DEPOSITOS(company.codEmpresa)),
         pool.request().query(QUERY_LABORAL_METRICAS(company.codEmpresa, year)),
         pool.request().query(QUERY_GASTOS_NATURALEZA(company.codEmpresa, fechaInicio, fechaFin)),
+        pool.request().query(QUERY_GASTOS_NAT_TXN(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_SIN_DOC_TXN(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_DESCUADRES(company.codEmpresa, fechaInicio, fechaFin)),
@@ -2222,6 +2310,7 @@ async function main() {
       logRow('Otras CxP', otrasCxpResult.recordset);
       logRow('Tributos', tributosResult.recordset);
       logRow('Activo Fijo', activoFijoResult.recordset);
+      logRow('Activo Fijo TXN', activoFijoTxnResult.recordset);
       logRow('Patrimonio', patrimonioResult.recordset);
       logRow('Inventarios', inventariosResult.recordset);
       logRow('Laboral TXN', laboralTxnResult.recordset);
@@ -2245,7 +2334,9 @@ async function main() {
       logRow('Préstamos recibidos', prestamosReciResult.recordset);
       logRow('Transferencias', transferenciasResult.recordset);
       logRow('Caja saldos', cajaSaldosResult.recordset);
+      logRow('Caja asiento full', cajaAsientoFullResult.recordset);
       logRow('Gastos naturaleza', gastosNatResult.recordset);
+      logRow('Gastos Nat TXN', gastosNatTxnResult.recordset);
       logRow('Audit sin doc (clases)', auditSinDocResult.recordset);
       logRow('Audit descuadres', auditDescuadresResult.recordset);
       logRow('Audit atípicos', auditAtipicosResult.recordset);
@@ -2280,6 +2371,7 @@ async function main() {
           laboral: laboralResult.recordset,
           laboral_txn: laboralTxnResult.recordset,
           activo_fijo: activoFijoResult.recordset,
+          activo_fijo_txn: activoFijoTxnResult.recordset,
           patrimonio: patrimonioResult.recordset,
           inventarios: inventariosResult.recordset,
           prestamos_otorgados: prestamosOtorgResult.recordset,
@@ -2287,6 +2379,7 @@ async function main() {
           transferencias: transferenciasResult.recordset,
           caja_saldos: cajaSaldosResult.recordset,
           caja_txn: cajaTxnResult.recordset,
+          caja_asiento_full: cajaAsientoFullResult.recordset,
           tesoreria: tesoreriaResult.recordset,
           ob_saldos_banco: obSaldosBancoResult.recordset,
           conciliacion_bancaria: conciliacionBancariaResult.recordset,
@@ -2304,6 +2397,7 @@ async function main() {
           cts_depositos: ctsDepositosResult.recordset,
           laboral_metricas: laboralMetricasResult.recordset,
           gastos_naturaleza: gastosNatResult.recordset,
+          gastos_nat_txn: gastosNatTxnResult.recordset,
           audit_sin_doc: auditSinDocResult.recordset,
           audit_sin_doc_txn: auditSinDocTxnResult.recordset,
           audit_descuadres: auditDescuadresResult.recordset,

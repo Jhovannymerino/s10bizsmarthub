@@ -216,6 +216,28 @@ export class KpiController {
     return this.kpiService.getActivoFijo(companyId);
   }
 
+  /** Activo Fijo — detalle de asientos (clases 33/39) para drilldown */
+  @Get(':companyId/activo-fijo-transactions')
+  getActivoFijoTxn(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('codCuenta') codCuenta?: string,
+  ) {
+    const y = parseYear(year);
+    return this.kpiService.getActivoFijoTxn(companyId, y, codCuenta);
+  }
+
+  /** Gastos Naturaleza — detalle de asientos (clases 60-68) para drilldown */
+  @Get(':companyId/gastos-nat-transactions')
+  getGastosNatTxn(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('codCuenta') codCuenta?: string,
+  ) {
+    const y = parseYear(year);
+    return this.kpiService.getGastosNatTxn(companyId, y, codCuenta);
+  }
+
   /** Saldos bancarios desde módulo OB_CuentaBanco — saldo contable vs banco real */
   @Get(':companyId/ob-saldos-banco')
   getObSaldosBanco(@Param('companyId') companyId: string) {
@@ -301,6 +323,17 @@ export class KpiController {
   ) {
     const y = parseYear(year);
     return this.kpiService.getCajaTxn(companyId, y, codCuenta);
+  }
+
+  /** Caja — todas las líneas de un asiento (para ver la partida doble completa) */
+  @Get(':companyId/caja-asiento-lineas')
+  getCajaAsientoLineas(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('nroAsiento') nroAsiento?: string,
+  ) {
+    const y = parseYear(year);
+    return this.kpiService.getCajaAsientoLineas(companyId, y, nroAsiento ?? '');
   }
 
   /** Tesorería — posición bancaria con saldo inicial, entradas/salidas y saldo final */

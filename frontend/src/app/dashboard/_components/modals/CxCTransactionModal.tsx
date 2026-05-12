@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { DocPreview } from './DocPreview';
 
 export function CxCTransactionModal({ companyId, year, cliente, codCliente, onClose }: {
   companyId: string; year: number; cliente: string; codCliente: string; onClose: () => void;
@@ -9,6 +10,7 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [anioFilter, setAnioFilter] = useState<number | null>(null);
+  const [docPreview, setDocPreview] = useState<string | null>(null);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -27,14 +29,15 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
   const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
 
   return (
+    <>
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1020, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cliente}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Movimientos clase 12 (CxC) · {filtered.length} asientos</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Movimientos clase 12 (CxC) · {filtered.length} asientos · 🔗 = documento origen</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
@@ -55,10 +58,11 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
               <thead>
                 <tr>
+                  <th style={{ width: 32 }}></th>
                   <th>Fecha</th>
                   <th>Nro. Asiento</th>
                   <th>Cuenta</th>
-                  <th style={{ minWidth: 260 }}>Glosa</th>
+                  <th style={{ minWidth: 240 }}>Glosa</th>
                   <th>Débito</th>
                   <th>Crédito</th>
                   <th>Neto</th>
@@ -69,10 +73,18 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
                   const neto = (t.Debito || 0) - (t.Credito || 0);
                   return (
                     <tr key={i}>
+                      <td style={{ textAlign: 'center', padding: '0 0.25rem' }}>
+                        {t.NroD
+                          ? <button onClick={e => { e.stopPropagation(); setDocPreview(String(t.NroD)); }}
+                              title="Ver documento origen"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>🔗</button>
+                          : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
+                        }
+                      </td>
                       <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2BB4BB' }}>{t.CodCuenta}</td>
-                      <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
+                      <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
                       <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
                       <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
                       <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
@@ -82,7 +94,7 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
               </tbody>
               <tfoot>
                 <tr className="total-row">
-                  <td colSpan={4}>TOTAL</td>
+                  <td colSpan={5}>TOTAL</td>
                   <td>{fmt(totalDeb)}</td>
                   <td>{fmt(totalCred)}</td>
                   <td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td>
@@ -93,5 +105,7 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
         )}
       </div>
     </div>
+    {docPreview && <DocPreview companyId={companyId} nroD={docPreview} onClose={() => setDocPreview(null)} />}
+    </>
   );
 }

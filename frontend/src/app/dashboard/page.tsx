@@ -3103,46 +3103,66 @@ export default function DashboardPage() {
                                   </span>
                                 </td>
                                 <td style={{ textAlign: 'left', color: '#8B97A8', fontSize: '0.72rem', fontStyle: 'italic' }}>{info.norma}</td>
-                                <td style={{ fontFamily: 'monospace' }}>{v.rowCount.toLocaleString()}</td>
+                                <td style={{ fontFamily: 'monospace', textAlign: 'center' }}>
+                                  {v.rowCount > 0
+                                    ? <span style={{ color: '#F59E0B', fontWeight: 700 }}>{v.rowCount.toLocaleString()} {isExpanded ? '▲' : '▼'}</span>
+                                    : <span style={{ color: '#10B981' }}>0</span>
+                                  }
+                                </td>
                                 <td style={{ textAlign: 'center' }}>
                                   {v.error
                                     ? <span style={{ color: '#EF4444', fontWeight: 700, fontSize: '0.7rem' }}>ERROR</span>
-                                    : <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span>
+                                    : v.rowCount > 0
+                                      ? <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.72rem' }}>HALLAZGO</span>
+                                      : <span style={{ color: '#10B981', fontWeight: 700 }}>OK</span>
                                   }
                                 </td>
                               </tr>
 
-                              {isExpanded && rawRows.length > 0 && (
+                              {isExpanded && rawRows.length > 0 && (() => {
+                                const colKeys = Object.keys(rawRows[0]);
+                                const isMoney = (k: string) => /monto|importe|total|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap/i.test(k);
+                                const isCount = (k: string) => /^(n|cant|count|num|nro_asientos?|qty)/i.test(k);
+                                return (
                                 <tr>
                                   <td colSpan={7} style={{ padding: 0 }}>
-                                    <div style={{ background: 'rgba(32,126,131,0.06)', borderLeft: '3px solid #207E83', overflowX: 'auto', maxHeight: 280 }}>
+                                    <div style={{ background: 'rgba(32,126,131,0.06)', borderLeft: '3px solid #207E83', overflowX: 'auto', maxHeight: 320 }}>
                                       <table className="table-s10" style={{ fontSize: '0.72rem' }}>
                                         <thead>
                                           <tr>
-                                            {Object.keys(rawRows[0]).map((k) => (
-                                              <th key={k} style={{ textAlign: 'left' }}>{k}</th>
+                                            {colKeys.map((k) => (
+                                              <th key={k} style={{ textAlign: isMoney(k) ? 'right' : 'left' }}>{k}</th>
                                             ))}
                                           </tr>
                                         </thead>
                                         <tbody>
                                           {rawRows.slice(0, 50).map((row: any, ri: number) => (
                                             <tr key={ri}>
-                                              {Object.values(row).map((val: any, vi: number) => (
-                                                <td key={vi} style={{ textAlign: 'left', whiteSpace: 'nowrap', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                  {val === null || val === undefined ? '—' : String(val)}
-                                                </td>
-                                              ))}
+                                              {colKeys.map((k, vi) => {
+                                                const val = row[k];
+                                                const money = isMoney(k) && typeof val === 'number';
+                                                const cnt   = isCount(k) && typeof val === 'number';
+                                                return (
+                                                  <td key={vi} style={{ textAlign: money ? 'right' : 'left', whiteSpace: 'nowrap', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis',
+                                                    color: money && val < 0 ? '#F87171' : money && val > 0 ? '#F8FAFC' : undefined,
+                                                    fontFamily: (money || cnt) ? 'monospace' : undefined,
+                                                  }}>
+                                                    {val === null || val === undefined ? '—' : money ? fmt(val) : String(val)}
+                                                  </td>
+                                                );
+                                              })}
                                             </tr>
                                           ))}
                                           {rawRows.length > 50 && (
-                                            <tr><td colSpan={Object.keys(rawRows[0]).length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
+                                            <tr><td colSpan={colKeys.length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
                                           )}
                                         </tbody>
                                       </table>
                                     </div>
                                   </td>
                                 </tr>
-                              )}
+                                );
+                              })()}
                               {isExpanded && v.error && (
                                 <tr>
                                   <td colSpan={7} style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', borderLeft: '3px solid #EF4444', color: '#F87171', fontSize: '0.78rem', textAlign: 'left' }}>

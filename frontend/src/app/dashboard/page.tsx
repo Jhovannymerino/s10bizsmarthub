@@ -106,6 +106,7 @@ export default function DashboardPage() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'unavailable' | 'error'>('idle');
   const [syncMsg, setSyncMsg] = useState('');
   const [syncProgress, setSyncProgress] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [pl, setPL] = useState<any>(null);
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
@@ -263,7 +264,7 @@ export default function DashboardPage() {
     }
 
     return () => ctrl.abort();
-  }, [router, selectedCompany, selectedYear]);
+  }, [router, selectedCompany, selectedYear, refreshKey]);
 
   useEffect(() => {
     if (activeTab !== 'docs' || isGrupo) return;
@@ -576,6 +577,7 @@ export default function DashboardPage() {
                       clearInterval(poll);
                       setSyncStatus('done');
                       setSyncMsg('');
+                      setRefreshKey(k => k + 1);
                       setTimeout(() => { setSyncStatus('idle'); setSyncProgress(null); }, 12000);
                     }
                   } catch { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }

@@ -3142,6 +3142,16 @@ export default function DashboardPage() {
                                 const isMoney = (k: string) => /monto|importe|total|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap/i.test(k);
                                 const isCount = (k: string) => /^(n|cant|count|num|nro_asientos?|qty)/i.test(k);
                                 const isV17 = v.id === 'V17_reconciliacion_ingr';
+                                const endpointForClase = (clase: string): string | null => {
+                                  if (['33','39','68'].includes(clase)) return 'activo-fijo-transactions';
+                                  if (clase === '40') return 'tributos-transactions';
+                                  if (clase === '41') return 'laboral-transactions';
+                                  if (clase === '10') return 'caja-transactions';
+                                  if (['60','61','62','63','64','65','66','67'].includes(clase)) return 'gastos-nat-transactions';
+                                  if (['12','13','14','16','17','18'].includes(clase)) return 'otras-cxc-transactions';
+                                  if (['42','43','44','45','46','47'].includes(clase)) return 'otras-cxp-transactions';
+                                  return null;
+                                };
                                 return (
                                 <tr>
                                   <td colSpan={7} style={{ padding: 0 }}>
@@ -3156,18 +3166,30 @@ export default function DashboardPage() {
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {rawRows.slice(0, 50).map((row: any, ri: number) => (
+                                          {rawRows.slice(0, 50).map((row: any, ri: number) => {
+                                            const rowClase = String(row.Clase ?? row.CodCuenta ?? '').slice(0, 2);
+                                            const rowEndpoint = row.CodCuenta ? endpointForClase(rowClase) : null;
+                                            return (
                                             <tr key={ri}>
                                               {colKeys.map((k, vi) => {
                                                 const val = row[k];
                                                 const money = isMoney(k) && typeof val === 'number';
                                                 const cnt   = isCount(k) && typeof val === 'number';
+                                                const isNumAsientosCell = k === 'NumAsientos' && typeof val === 'number' && rowEndpoint;
                                                 return (
                                                   <td key={vi} style={{ textAlign: money ? 'right' : 'left', whiteSpace: 'nowrap', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis',
                                                     color: money && val < 0 ? '#F87171' : money && val > 0 ? '#F8FAFC' : undefined,
                                                     fontFamily: (money || cnt) ? 'monospace' : undefined,
                                                   }}>
-                                                    {val === null || val === undefined ? '—' : money ? fmt(val) : String(val)}
+                                                    {val === null || val === undefined ? '—'
+                                                      : isNumAsientosCell
+                                                        ? <button onClick={() => setAccountTxDrill({ codCuenta: String(row.CodCuenta), descripcion: String(row.DesCuenta ?? row.CodCuenta), endpoint: rowEndpoint! })}
+                                                            title="Ver asientos individuales"
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                                                            {val} ▶
+                                                          </button>
+                                                        : money ? fmt(val) : String(val)
+                                                    }
                                                   </td>
                                                 );
                                               })}
@@ -3185,7 +3207,7 @@ export default function DashboardPage() {
                                                 );
                                               })()}
                                             </tr>
-                                          ))}
+                                          ); })}
                                           {rawRows.length > 50 && (
                                             <tr><td colSpan={isV17 ? colKeys.length + 1 : colKeys.length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
                                           )}

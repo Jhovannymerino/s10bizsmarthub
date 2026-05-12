@@ -1,5 +1,6 @@
 #!/bin/bash
 # Conecta VPN FortiGate → corre sync → desconecta (solo si no había VPN previa)
+# FIX: restaura ruta default eth0 después de conectar VPN para evitar bloquear SSH
 set -e
 
 YEAR=${1:-$(date +%Y)}
@@ -24,6 +25,11 @@ else
     sleep 3
   fi
 
+  # Guardar ruta default actual (eth0) ANTES de conectar VPN
+  ETH_GW=$(ip route show default | awk '/default via/ {print $3; exit}')
+  ETH_DEV=$(ip route show default | awk '/default via/ {print $5; exit}')
+  log "Ruta default previa: via ${ETH_GW:-?} dev ${ETH_DEV:-?}"
+
   # Conectar VPN
   openfortivpn -c /etc/openfortivpn/s10.conf 2>>"$LOG" &
   VPN_PID=$!
@@ -33,7 +39,18 @@ else
   for i in $(seq 1 60); do
     sleep 1
     if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
-      log "ppp0 levantado tras ${i}s - esperando rutas/tunnel"
+      log "ppp0 levantado tras ${i}s"
+
+      # Restaurar ruta default eth0 — el VPN no debe secuestrar el gateway
+      if [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
+        ip route replace default via "$ETH_GW" dev "$ETH_DEV" 2>/dev/null || true
+        log "Ruta default restaurada → $ETH_DEV (via $ETH_GW) — SSH sigue accesible"
+      fi
+
+      # Agregar ruta específica para la red S10 a través del túnel VPN
+      ip route add 192.168.1.0/24 dev ppp0 2>/dev/null || true
+      log "Ruta VPN específica: 192.168.1.0/24 → ppp0"
+
       # Espera adicional hasta que el SQL Server responda (max 30s)
       for j in $(seq 1 30); do
         if timeout 2 bash -c '</dev/tcp/192.168.1.51/1433' 2>/dev/null; then
@@ -59,6 +76,8 @@ STATUS=${PIPESTATUS[0]}
 
 # Solo desconectar si nosotros conectamos
 if [ "$VPN_PREEXISTENTE" = "false" ] && [ -f "$PIDFILE" ]; then
+  # Limpiar ruta VPN específica antes de desconectar
+  ip route del 192.168.1.0/24 dev ppp0 2>/dev/null || true
   kill $(cat "$PIDFILE") 2>/dev/null || true
   rm -f "$PIDFILE"
 fi

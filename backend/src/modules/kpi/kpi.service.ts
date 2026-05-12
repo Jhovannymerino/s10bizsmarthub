@@ -664,7 +664,8 @@ export class KpiService {
   }
 
   async getActivoFijoTxn(companyId: string, year: number, codCuenta?: string) {
-    const cached = await this.getSnapshot(companyId, 'activo_fijo_txn', `${year}`);
+    // Activo fijo es histórico acumulado — guardado sin filtro de año en período 'all'
+    const cached = await this.getSnapshot(companyId, 'activo_fijo_txn', 'all');
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));

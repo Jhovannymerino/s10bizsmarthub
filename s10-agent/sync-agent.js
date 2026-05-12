@@ -583,8 +583,9 @@ HAVING ABS(SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))) > 0.5
 ORDER BY pcd.CodCuenta
 `;
 
-// Detalle transacciones activo fijo (clases 33/39) para drilldown
-const QUERY_ACTIVO_FIJO_TXN = (codEmpresa, year) => `
+// Detalle transacciones activo fijo (clases 33/39) para drilldown — SIN filtro de año
+// Los activos son históricos acumulados; el filtro de año se aplica en la UI.
+const QUERY_ACTIVO_FIJO_TXN = (codEmpresa) => `
 SELECT
   ac.NroAsientoContable                                    AS NroAsiento,
   ac.NroD                                                  AS NroD,
@@ -605,7 +606,6 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('33', '39')
-  AND YEAR(ac.FechaAplicacionContable) = ${year}
 ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
 `;
 
@@ -2233,7 +2233,7 @@ async function main() {
         pool.request().query(QUERY_LABORAL(company.codEmpresa)),
         pool.request().query(QUERY_LABORAL_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_ACTIVO_FIJO(company.codEmpresa)),
-        pool.request().query(QUERY_ACTIVO_FIJO_TXN(company.codEmpresa, year)),
+        pool.request().query(QUERY_ACTIVO_FIJO_TXN(company.codEmpresa)),
         pool.request().query(QUERY_PATRIMONIO(company.codEmpresa)),
         pool.request().query(QUERY_INVENTARIOS(company.codEmpresa, year)),
       ]);

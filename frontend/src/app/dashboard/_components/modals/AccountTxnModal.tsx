@@ -12,6 +12,7 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [mesFilter, setMesFilter] = useState<number | null>(null);
+  const [anioFilter, setAnioFilter] = useState<number | null>(null);
   const [docPreview, setDocPreview] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,8 +31,12 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
       .finally(() => clearTimeout(timer));
   }, [companyId, year, codCuenta, codTercero, endpoint, retryCount]);
 
+  const isActivoFijo = endpoint === 'activo-fijo-transactions';
+  const aniosPresentes = isActivoFijo ? Array.from(new Set(txns.map((t: any) => t.Anio as number))).sort((a, b) => b - a) : [];
   const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
-  const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
+  const filtered = txns
+    .filter((t: any) => !anioFilter || t.Anio === anioFilter)
+    .filter((t: any) => !mesFilter || t.Mes === mesFilter);
   const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
   const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
 
@@ -46,6 +51,15 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
+        {isActivoFijo && aniosPresentes.length > 0 && (
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', color: '#6B7280', marginRight: '0.25rem' }}>Año:</span>
+            <button onClick={() => setAnioFilter(null)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === null ? '1px solid rgba(226,92,26,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === null ? 'rgba(226,92,26,0.15)' : 'rgba(255,255,255,0.04)', color: anioFilter === null ? '#E25C1A' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>Todos</button>
+            {aniosPresentes.map(a => (
+              <button key={a} onClick={() => setAnioFilter(a)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === a ? '1px solid rgba(226,92,26,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === a ? 'rgba(226,92,26,0.15)' : 'rgba(255,255,255,0.04)', color: anioFilter === a ? '#E25C1A' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>{a}</button>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <button onClick={() => setMesFilter(null)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>Todos</button>
           {mesesPresentes.map(m => (
@@ -60,8 +74,8 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
-            {endpoint === 'activo-fijo-transactions'
-              ? <>Sin movimientos en {year}.<br /><span style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '0.5rem', display: 'block' }}>El activo fue registrado en un período anterior. Cambia el año en el dashboard para ver los asientos históricos.</span></>
+            {isActivoFijo
+              ? (anioFilter || mesFilter ? 'Sin movimientos con los filtros seleccionados.' : 'Sin movimientos históricos para esta cuenta.')
               : `Sin asientos para esta cuenta en ${year}.`
             }
           </div>

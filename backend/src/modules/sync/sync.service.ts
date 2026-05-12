@@ -45,6 +45,8 @@ export class SyncService {
       tributos_txn?: any[];
       laboral?: any[];
       activo_fijo?: any[];
+      activo_fijo_txn?: any[];
+      gastos_nat_txn?: any[];
       prestamos_otorgados?: any[];
       prestamos_recibidos?: any[];
       transferencias?: any[];
@@ -223,6 +225,11 @@ export class SyncService {
         logs.push({ kpiType: 'activo_fijo', rowsProcessed: data.activo_fijo.length, status: 'success' });
       }
 
+      if (data.activo_fijo_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'activo_fijo_txn', 'all', year, null, data.activo_fijo_txn);
+        logs.push({ kpiType: 'activo_fijo_txn', rowsProcessed: data.activo_fijo_txn.length, status: 'success' });
+      }
+
       if (data.prestamos_otorgados?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'prestamos_otorgados', 'current', year, null, data.prestamos_otorgados);
         logs.push({ kpiType: 'prestamos_otorgados', rowsProcessed: data.prestamos_otorgados.length, status: 'success' });
@@ -251,6 +258,11 @@ export class SyncService {
       if (data.gastos_naturaleza?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'gastos_naturaleza', period, year, null, data.gastos_naturaleza);
         logs.push({ kpiType: 'gastos_naturaleza', rowsProcessed: data.gastos_naturaleza.length, status: 'success' });
+      }
+
+      if (data.gastos_nat_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'gastos_nat_txn', period, year, null, data.gastos_nat_txn);
+        logs.push({ kpiType: 'gastos_nat_txn', rowsProcessed: data.gastos_nat_txn.length, status: 'success' });
       }
 
       if (data.ob_saldos_banco?.length) {

@@ -106,6 +106,7 @@ export default function DashboardPage() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'unavailable' | 'error'>('idle');
   const [syncMsg, setSyncMsg] = useState('');
   const [syncProgress, setSyncProgress] = useState<any>(null);
+  const syncPollRef = useRef<NodeJS.Timeout | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [pl, setPL] = useState<any>(null);
   const [cxc, setCxC] = useState<any>(null);
@@ -202,6 +203,44 @@ export default function DashboardPage() {
       });
   }, [selectedCompany]);
 
+  // Al montar: detecta si hay un sync corriendo y retoma el polling automáticamente
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(s => {
+        if (!s.running || syncPollRef.current) return;
+        setSyncStatus('running');
+        setSyncMsg('');
+        setSyncProgress(s);
+        const poll = setInterval(async () => {
+          try {
+            const st = await fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } });
+            const ps = await st.json();
+            setSyncProgress(ps);
+            if (!ps.running) {
+              clearInterval(poll);
+              syncPollRef.current = null;
+              setSyncStatus('done');
+              setSyncMsg('');
+              setRefreshKey(k => k + 1);
+              setTimeout(() => { setSyncStatus('idle'); setSyncProgress(null); }, 12000);
+            }
+          } catch {
+            clearInterval(poll);
+            syncPollRef.current = null;
+            setSyncStatus('idle');
+            setSyncMsg('');
+            setSyncProgress(null);
+          }
+        }, 4000);
+        syncPollRef.current = poll;
+        setTimeout(() => { clearInterval(poll); syncPollRef.current = null; setSyncStatus(prev => prev === 'running' ? 'idle' : prev); setSyncProgress(null); }, 1500000);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
@@ -218,6 +257,7 @@ export default function DashboardPage() {
     const { signal } = ctrl;
 
     if (isGrupo) {
+      setLastSync(null);
       Promise.all([
         fetchApi(`/kpi/consolidado?year=${selectedYear}`, token, signal),
         fetchApi(`/kpi/scorecard?year=${selectedYear}`, token, signal),
@@ -568,21 +608,25 @@ export default function DashboardPage() {
                   return;
                 }
                 setSyncMsg(data.status === 'busy' ? 'Sync en progreso — monitoreando...' : 'Conectando a S10 vía VPN...');
-                const poll = setInterval(async () => {
-                  try {
-                    const st = await fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } });
-                    const s = await st.json();
-                    setSyncProgress(s);
-                    if (!s.running) {
-                      clearInterval(poll);
-                      setSyncStatus('done');
-                      setSyncMsg('');
-                      setRefreshKey(k => k + 1);
-                      setTimeout(() => { setSyncStatus('idle'); setSyncProgress(null); }, 12000);
-                    }
-                  } catch { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }
-                }, 4000);
-                setTimeout(() => { clearInterval(poll); setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 1500000);
+                if (!syncPollRef.current) {
+                  const poll = setInterval(async () => {
+                    try {
+                      const st = await fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } });
+                      const s = await st.json();
+                      setSyncProgress(s);
+                      if (!s.running) {
+                        clearInterval(poll);
+                        syncPollRef.current = null;
+                        setSyncStatus('done');
+                        setSyncMsg('');
+                        setRefreshKey(k => k + 1);
+                        setTimeout(() => { setSyncStatus('idle'); setSyncProgress(null); }, 12000);
+                      }
+                    } catch { clearInterval(poll); syncPollRef.current = null; setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }
+                  }, 4000);
+                  syncPollRef.current = poll;
+                  setTimeout(() => { clearInterval(poll); syncPollRef.current = null; setSyncStatus(prev => prev === 'running' ? 'idle' : prev); setSyncProgress(null); }, 1500000);
+                }
               } catch {
                 setSyncStatus('error');
                 setSyncMsg('No se pudo conectar al servidor.');
@@ -634,6 +678,11 @@ export default function DashboardPage() {
           {syncStatus === 'done' && syncProgress?.completedYears?.length > 0 && (
             <div style={{ marginTop: '0.4rem', fontSize: '0.6rem', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderRadius: '0.4rem', padding: '0.35rem 0.5rem', border: '1px solid rgba(16,185,129,0.15)' }}>
               ✓ {syncProgress.completedYears.length} años: {syncProgress.completedYears.join(', ')}
+            </div>
+          )}
+          {lastSync && syncStatus !== 'running' && (
+            <div style={{ marginTop: '0.4rem', fontSize: '0.6rem', color: '#4B5563', textAlign: 'center', letterSpacing: '0.02em' }}>
+              Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
             </div>
           )}
         </div>

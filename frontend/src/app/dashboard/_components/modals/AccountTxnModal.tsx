@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { API, MESES } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { DocPreview } from './DocPreview';
 
 export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, codTercero, onClose }: {
   companyId: string; year: number; codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; onClose: () => void;
@@ -11,6 +12,7 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [mesFilter, setMesFilter] = useState<number | null>(null);
+  const [docPreview, setDocPreview] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true); setFetchError(false);
@@ -34,12 +36,13 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
   const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
 
   return (
+  <>
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
       <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {year} · {filtered.length} movimientos</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {year} · {filtered.length} movimientos · 🔗 = documento origen</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
@@ -59,12 +62,20 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
         : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
-              <thead><tr><th>Fecha</th><th>Nro. Asiento</th><th style={{ minWidth: 240 }}>Glosa</th><th style={{ minWidth: 140 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th></tr></thead>
+              <thead><tr><th style={{ width: 32 }}></th><th>Fecha</th><th>Nro. Asiento</th><th style={{ minWidth: 240 }}>Glosa</th><th style={{ minWidth: 140 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th></tr></thead>
               <tbody>
                 {filtered.map((t: any, i: number) => {
                   const neto = (t.Debito || 0) - (t.Credito || 0);
                   return (
                     <tr key={i}>
+                      <td style={{ textAlign: 'center', padding: '0 0.25rem' }}>
+                        {t.NroD
+                          ? <button onClick={e => { e.stopPropagation(); setDocPreview(String(t.NroD)); }}
+                              title="Ver documento origen"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>🔗</button>
+                          : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
+                        }
+                      </td>
                       <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{t.NroAsiento}</td>
                       <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
@@ -76,11 +87,13 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
                   );
                 })}
               </tbody>
-              <tfoot><tr className="total-row"><td colSpan={4}>TOTAL</td><td>{fmt(totalDeb)}</td><td>{fmt(totalCred)}</td><td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td></tr></tfoot>
+              <tfoot><tr className="total-row"><td colSpan={5}>TOTAL</td><td>{fmt(totalDeb)}</td><td>{fmt(totalCred)}</td><td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td></tr></tfoot>
             </table>
           </div>
         )}
       </div>
     </div>
+    {docPreview && <DocPreview companyId={companyId} nroD={docPreview} onClose={() => setDocPreview(null)} />}
+  </>
   );
 }

@@ -3591,7 +3591,19 @@ export default function DashboardPage() {
                   ))}
                   <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', margin: '0 0.4rem' }} />
                   {!directorioEditing ? (
-                    <button onClick={() => setDirectorioEditing(true)}
+                    <button onClick={() => {
+                      // Inicializar draft si está vacío (primera vez en este Q/año/empresa)
+                      if (!directorioDraft) {
+                        setDirectorioDraft({
+                          presupuesto: { q: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 }, ytd: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 } },
+                          productividad: { hhDisponibles: 0, hhFacturadas: 0, hhDisponiblesPpto: 0, nPersonas: 0 },
+                          ventasFuente: { referidos: 0, licitacionesPublicas: 0, licitacionesPrivadas: 0, iniciativaDirecta: 0 },
+                          backlog: [], pipeline: [], greenFlags: [], redFlags: [], mustWin: [], acuerdos: [],
+                          comentarios: { resumenEjecutivo: '', ebitda: '' },
+                        });
+                      }
+                      setDirectorioEditing(true);
+                    }}
                       style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: '1px solid rgba(43,180,187,0.3)', background: 'rgba(43,180,187,0.1)', color: '#2BB4BB', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
                       ✎ Editar
                     </button>
@@ -3981,8 +3993,15 @@ export default function DashboardPage() {
                       SECCIONES MANUALES (Fase 2)
                       ═══════════════════════════════════ */}
                   {(() => {
-                    if (!directorioDraft) return null;
-                    const d = directorioDraft;
+                    // Default vacío si el fetch aún no completó o no hay datos guardados
+                    const EMPTY_DIRECTORIO = {
+                      presupuesto: { q: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 }, ytd: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 } },
+                      productividad: { hhDisponibles: 0, hhFacturadas: 0, hhDisponiblesPpto: 0, nPersonas: 0 },
+                      ventasFuente: { referidos: 0, licitacionesPublicas: 0, licitacionesPrivadas: 0, iniciativaDirecta: 0 },
+                      backlog: [], pipeline: [], greenFlags: [], redFlags: [], mustWin: [], acuerdos: [],
+                      comentarios: { resumenEjecutivo: '', ebitda: '' },
+                    };
+                    const d = directorioDraft || EMPTY_DIRECTORIO;
                     const editing = directorioEditing;
 
                     // Helper para actualizar campos del draft (soporta paths tipo "presupuesto.q.ingresos")

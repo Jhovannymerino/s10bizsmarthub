@@ -173,6 +173,7 @@ export default function DashboardPage() {
   const [validacionForenseData, setValidacionForenseData] = useState<any>(null);
   const [validacionForenseExpanded, setValidacionForenseExpanded] = useState<string | null>(null);
   const [forenseFacturasDrillKey, setForenseFacturasDrillKey] = useState<string | null>(null);
+  const [balanceViewMode, setBalanceViewMode] = useState<'saldos' | 'sumas'>('saldos');
   const [tesoreriaData, setTesoreriaData] = useState<any>(null);
   const [patrimonioData, setPatrimonioData] = useState<any>(null);
   const [inventariosData, setInventariosData] = useState<any>(null);
@@ -2253,13 +2254,34 @@ export default function DashboardPage() {
         {/* ═══ Balance General ═══ */}
         {activeTab === 'balance' && !newTabLoading && (
           <div className="kpi-card">
-            {!balanceData?.rows?.length ? <NoDataBanner kpi="Balance General" /> : (
+            {!balanceData?.rows?.length ? <NoDataBanner kpi="Balance General" /> : (() => {
+              const balanceRows = balanceViewMode === 'saldos'
+                ? balanceData.rows.filter((r: any) => Math.abs((r.TotalDebe||0) - (r.TotalHaber||0)) > 0.01)
+                : balanceData.rows;
+              return (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>{balanceData.rows.length} cuentas · Balance de 8 columnas · {selectedYear}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>{balanceRows.length} cuentas · {selectedYear}</div>
+                    <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      {(['saldos', 'sumas'] as const).map(mode => (
+                        <button key={mode} onClick={() => setBalanceViewMode(mode)} style={{
+                          padding: '3px 12px', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', border: 'none',
+                          background: balanceViewMode === mode ? '#207E83' : 'rgba(255,255,255,0.04)',
+                          color: balanceViewMode === mode ? '#fff' : '#8B97A8',
+                          transition: 'all 0.15s',
+                        }}>
+                          {mode === 'saldos' ? 'Saldos' : 'Sumas'}
+                        </button>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: '#4B5563' }}>
+                      {balanceViewMode === 'saldos' ? 'Solo cuentas con saldo pendiente' : 'Todas las cuentas con movimiento en el año'}
+                    </span>
+                  </div>
                   <ExportBtn onClick={() => exportCSV('balance.csv',
                     ['Cuenta','Descripcion','Clase','SaldoIniDebe','SaldoIniHaber','MovDebe','MovHaber','SaldoFinalDebe','SaldoFinalHaber'],
-                    balanceData.rows.map((r: any) => {
+                    balanceRows.map((r: any) => {
                       const finDebe = Math.max(0, (r.TotalDebe||0) - (r.TotalHaber||0));
                       const finHaber = Math.max(0, (r.TotalHaber||0) - (r.TotalDebe||0));
                       return [r.CodCuenta, r.DesCuenta, r.Clase, r.SaldoIniDebe, r.SaldoIniHaber, r.MovDebe, r.MovHaber, finDebe, finHaber];
@@ -2285,11 +2307,12 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {balanceData.rows.map((r: any, i: number) => {
+                      {balanceRows.map((r: any, i: number) => {
                         const finDebe  = Math.max(0, (r.TotalDebe||0) - (r.TotalHaber||0));
                         const finHaber = Math.max(0, (r.TotalHaber||0) - (r.TotalDebe||0));
+                        const isSaldado = finDebe < 0.01 && finHaber < 0.01;
                         return (
-                          <tr key={i}>
+                          <tr key={i} style={isSaldado ? { opacity: 0.55 } : undefined}>
                             <td style={{ fontFamily: 'monospace', color: '#2BB4BB', whiteSpace: 'nowrap' }}>{r.CodCuenta}</td>
                             <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta}</td>
                             <td style={{ background: 'rgba(32,126,131,0.04)', color: (r.SaldoIniDebe||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.SaldoIniDebe||0) > 0 ? fmt(r.SaldoIniDebe) : '—'}</td>
@@ -2305,18 +2328,19 @@ export default function DashboardPage() {
                     <tfoot>
                       <tr className="total-row">
                         <td colSpan={2}>TOTAL</td>
-                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.SaldoIniDebe||0), 0))}</td>
-                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.SaldoIniHaber||0), 0))}</td>
-                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.MovDebe||0), 0))}</td>
-                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.MovHaber||0), 0))}</td>
-                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalDebe||0)-(r.TotalHaber||0)), 0))}</td>
-                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalHaber||0)-(r.TotalDebe||0)), 0))}</td>
+                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.SaldoIniDebe||0), 0))}</td>
+                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.SaldoIniHaber||0), 0))}</td>
+                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.MovDebe||0), 0))}</td>
+                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.MovHaber||0), 0))}</td>
+                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalDebe||0)-(r.TotalHaber||0)), 0))}</td>
+                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalHaber||0)-(r.TotalDebe||0)), 0))}</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
               </>
-            )}
+              );
+            })()}
           </div>
         )}
 

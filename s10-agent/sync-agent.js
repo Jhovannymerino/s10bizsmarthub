@@ -381,7 +381,11 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
     '50','51','52','53','54','55','56','57','58','59'
   )
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
+HAVING (
+  ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
+  OR SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+             THEN ISNULL(ac.Debito,0) + ISNULL(ac.Credito,0) ELSE 0 END) > 0.01
+)
 ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
 `;
 

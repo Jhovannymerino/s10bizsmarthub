@@ -3663,7 +3663,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* 05 · GAV detallado */}
-                  {gav?.categorias && (
+                  {gav?.categorias && (gav.categorias as any[]).length > 0 && (
                     <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
                       <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
                         05 · GAV POR CATEGORÍA — YTD {selectedYear}
@@ -3672,71 +3672,75 @@ export default function DashboardPage() {
                         <table className="table-s10" style={{ width: '100%' }}>
                           <thead>
                             <tr>
-                              <th style={{ textAlign: 'left' }}>Categoría</th>
+                              <th style={{ textAlign: 'left' }}>Cuenta</th>
+                              <th style={{ textAlign: 'left' }}>Descripción</th>
                               <th style={{ textAlign: 'right' }}>YTD (S/)</th>
                               <th style={{ textAlign: 'right' }}>% del total</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {(() => {
-                              const total = (gav.categorias as any[]).reduce((s: number, c: any) => s + Math.abs(c.total || 0), 0);
-                              return (gav.categorias as any[])
-                                .slice()
-                                .sort((a: any, b: any) => Math.abs(b.total || 0) - Math.abs(a.total || 0))
-                                .map((c: any, i: number) => {
-                                  const v = Math.abs(c.total || 0);
-                                  const p = total > 0 ? (v / total) * 100 : 0;
-                                  return (
-                                    <tr key={i}>
-                                      <td>{c.categoria}</td>
-                                      <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(v)}</td>
-                                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#8B97A8' }}>{p.toFixed(1)}%</td>
-                                    </tr>
-                                  );
-                                });
-                            })()}
+                            {(gav.categorias as any[]).slice(0, 20).map((c: any, i: number) => (
+                              <tr key={i}>
+                                <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#8B97A8' }}>{c.cod}</td>
+                                <td>{c.descripcion}</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.ytd || 0)}</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#8B97A8' }}>{(c.pct || 0).toFixed(1)}%</td>
+                              </tr>
+                            ))}
                             <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
-                              <td>TOTAL GAV</td>
-                              <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
-                                {fmt((gav.categorias as any[]).reduce((s: number, c: any) => s + Math.abs(c.total || 0), 0))}
-                              </td>
+                              <td colSpan={2}>TOTAL GAV</td>
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(gav.total || 0)}</td>
                               <td style={{ textAlign: 'right' }}>100%</td>
                             </tr>
                           </tbody>
                         </table>
+                        {(gav.categorias as any[]).length > 20 && (
+                          <div style={{ fontSize: '0.7rem', color: '#8B97A8', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                            Top 20 de {(gav.categorias as any[]).length} cuentas — ver pestaña GAV Detalle para listado completo
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
                   {/* 07 · CxC Aging */}
-                  {cxc && (
-                    <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-                      <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
-                        07 · CUENTAS POR COBRAR — Aging al cierre
-                      </h2>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-                        {[
-                          { label: 'Total CxC',    val: cxc.totalSaldo,    color: '#F8FAFC' },
-                          { label: 'Vigente',      val: cxc.totalVigente,  color: '#10B981' },
-                          { label: '1-30 días',    val: cxc.total_1_30,    color: '#F8FAFC' },
-                          { label: '31-60 días',   val: cxc.total_31_60,   color: '#F59E0B' },
-                          { label: '61-90 días',   val: cxc.total_61_90,   color: '#F59E0B' },
-                          { label: '+90 días',     val: cxc.total_mas90,   color: '#EF4444' },
-                        ].filter(b => b.val !== undefined).map((b, i) => (
-                          <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
-                            <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>{b.label}</div>
-                            <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'monospace', color: b.color }}>{fmt(b.val || 0)}</div>
-                          </div>
-                        ))}
-                      </div>
-                      {Array.isArray(cxc.clientes) && cxc.clientes.length > 0 && (
+                  {cxc?.clientes && (cxc.clientes as any[]).length > 0 && (() => {
+                    const clientes = cxc.clientes as any[];
+                    const sum = (k: string) => clientes.reduce((s, c) => s + Number(c[k] || 0), 0);
+                    const t0_30 = sum('dias0_30');
+                    const t31_60 = sum('dias31_60');
+                    const t61_90 = sum('dias61_90');
+                    const t90mas = sum('dias90mas');
+                    const totalCxC = cxc.totalSaldo || (t0_30 + t31_60 + t61_90 + t90mas);
+                    const sortedClientes = [...clientes].sort((a, b) => (b.saldoTotal || 0) - (a.saldoTotal || 0));
+                    return (
+                      <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
+                          07 · CUENTAS POR COBRAR — Aging al cierre
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                          {[
+                            { label: 'Total CxC',    val: totalCxC,  color: '#F8FAFC' },
+                            { label: '0-30 días',    val: t0_30,     color: '#10B981' },
+                            { label: '31-60 días',   val: t31_60,    color: '#F59E0B' },
+                            { label: '61-90 días',   val: t61_90,    color: '#F59E0B' },
+                            { label: '+90 días',     val: t90mas,    color: '#EF4444' },
+                            { label: 'Concentr. Top 3', val: cxc.concentracionTop3, color: '#5B86E5', isPct: true },
+                          ].map((b: any, i) => (
+                            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                              <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>{b.label}</div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'monospace', color: b.color }}>
+                                {b.isPct ? `${(b.val || 0).toFixed(1)}%` : fmt(b.val || 0)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                         <div style={{ overflowX: 'auto' }}>
                           <table className="table-s10" style={{ width: '100%', fontSize: '0.75rem' }}>
                             <thead>
                               <tr>
                                 <th style={{ textAlign: 'left' }}>Cliente</th>
-                                <th style={{ textAlign: 'right' }}>Vigente</th>
-                                <th style={{ textAlign: 'right' }}>1-30</th>
+                                <th style={{ textAlign: 'right' }}>0-30</th>
                                 <th style={{ textAlign: 'right' }}>31-60</th>
                                 <th style={{ textAlign: 'right' }}>61-90</th>
                                 <th style={{ textAlign: 'right' }}>+90</th>
@@ -3744,28 +3748,35 @@ export default function DashboardPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {(cxc.clientes as any[]).slice(0, 10).map((c: any, i: number) => (
+                              {sortedClientes.slice(0, 10).map((c: any, i: number) => (
                                 <tr key={i}>
-                                  <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.cliente || c.descripcion}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.vigente || 0)}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.dias_1_30 || c['1-30'] || 0)}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias_31_60 || c['31-60'] || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias_31_60 || c['31-60'] || 0)}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias_61_90 || c['61-90'] || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias_61_90 || c['61-90'] || 0)}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.mas_90 || c['+90'] || 0) > 0 ? '#EF4444' : undefined }}>{fmt(c.mas_90 || c['+90'] || 0)}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.total || c.saldo || 0)}</td>
+                                  <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.cliente}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.dias0_30 || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias31_60 || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias31_60 || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias61_90 || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias61_90 || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias90mas || 0) > 0 ? '#EF4444' : undefined }}>{fmt(c.dias90mas || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.saldoTotal || 0)}</td>
                                 </tr>
                               ))}
+                              <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
+                                <td>TOTAL ({clientes.length} clientes)</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t0_30)}</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t31_60)}</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t61_90)}</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t90mas)}</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(totalCxC)}</td>
+                              </tr>
                             </tbody>
                           </table>
-                          {(cxc.clientes as any[]).length > 10 && (
+                          {clientes.length > 10 && (
                             <div style={{ fontSize: '0.7rem', color: '#8B97A8', fontStyle: 'italic', padding: '0.5rem 0' }}>
-                              Top 10 de {(cxc.clientes as any[]).length} clientes
+                              Top 10 de {clientes.length} clientes por saldo
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
 
                   {/* 08 · Posición de Caja */}
                   {caja && (

@@ -3389,7 +3389,7 @@ export default function DashboardPage() {
                                             {v04bIsOpen && (() => {
                                               const detailRows = isV28
                                                 ? (vfd.raw?.V28b_nc_detalle?.rows ?? []).filter((r: any) => r.Anio === row.Anio)
-                                                : (vfd.raw?.V04_facturas_sin_asiento_top?.rows ?? []).filter((r: any) => r.Anio === row.Anio && r.Tipo === row.Tipo);
+                                                : (vfd.raw?.V04b_facturas_sin_asiento_detalle?.rows ?? vfd.raw?.V04_facturas_sin_asiento_top?.rows ?? []).filter((r: any) => r.Anio === row.Anio && r.Tipo === row.Tipo);
                                               const detailKeys = detailRows.length > 0 ? Object.keys(detailRows[0]) : [];
                                               const totalCount = isV28 ? row.NumNC : row.NumFacturas;
                                               const titulo = isV28

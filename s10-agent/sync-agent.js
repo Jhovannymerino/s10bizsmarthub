@@ -1623,6 +1623,31 @@ WHERE doc.CodEmpresa = '${cod}'
 ORDER BY doc.Total DESC
 `;
 
+const VQ_FACTURAS_SIN_ASIENTO_HISTORICO = (cod, claseIngreso) => `
+SELECT TOP 200
+  YEAR(doc.FechaDocumento) AS Anio,
+  doc.CodTipoDocumento AS Tipo,
+  doc.SerieDocumento AS Serie,
+  doc.NumeroDocumento AS Numero,
+  CONVERT(VARCHAR(10), doc.FechaDocumento, 103) AS Fecha,
+  doc.DescripcionTipoDocumento AS DesTipo,
+  doc.DescripcionIdentificador AS Cliente,
+  doc.RUC,
+  ROUND(ISNULL(doc.Total, 0), 2) AS Total,
+  ISNULL(doc.DescripcionEstado, '') AS Estado
+FROM CMO.dbo.vw_12DocumentosPorCobrar doc
+WHERE doc.CodEmpresa = '${cod}'
+  AND doc.CodTipoDocumento IN ('060','125','128','131','134')
+  AND NOT EXISTS (
+    SELECT 1 FROM CMO.dbo.AsientoContable ac
+    JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+    WHERE ac.CodEmpresa = doc.CodEmpresa
+      AND ac.NroD = doc.NroD
+      AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
+  )
+ORDER BY YEAR(doc.FechaDocumento) DESC, doc.Total DESC
+`;
+
 const VQ_FACTURAS_SIN_ASIENTO_RESUMEN = (cod, claseIngreso) => `
 SELECT
   YEAR(doc.FechaDocumento) AS Anio,
@@ -2265,7 +2290,7 @@ async function runBatch4Validation(pool, company, year) {
   }
 
   const [
-    v01, v02, v03, v04, v04b, v05, v06, v07, v08, v09, v10,
+    v01, v02, v03, v04, v04b, v04bdet, v05, v06, v07, v08, v09, v10,
     v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21,
     v22, v23, v24, v25, v26, v27, v28, v28b, v29, v30,
   ] = await Promise.all([
@@ -2274,6 +2299,7 @@ async function runBatch4Validation(pool, company, year) {
     runQ(VQ_PATRIMONIO_DETALLE(cod)),
     runQ(VQ_FACTURAS_SIN_ASIENTO(cod, year, ci)),
     runQ(VQ_FACTURAS_SIN_ASIENTO_RESUMEN(cod, ci)),
+    runQ(VQ_FACTURAS_SIN_ASIENTO_HISTORICO(cod, ci)),
     runQ(VQ_INGRESOS_SIN_DOC(cod, year, ci)),
     runQ(VQ_SUELDOS_AGING(cod, year)),
     runQ(VQ_CTS_DEPOSITOS_HISTORICO(cod, year)),
@@ -2311,6 +2337,7 @@ async function runBatch4Validation(pool, company, year) {
     V03_patrimonio:                  v03,
     V04_facturas_sin_asiento_top:    v04,
     V04b_facturas_sin_asiento_resumen: v04b,
+    V04b_facturas_sin_asiento_detalle: v04bdet,
     V05_ingresos_sin_doc:            v05,
     V06_sueldos_aging:               v06,
     V07_cts_depositos:               v07,

@@ -3269,7 +3269,7 @@ export default function DashboardPage() {
                                 <td style={{ textAlign: 'center' }}>
                                   {v.rowCount > 0 && !v.error
                                     ? <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, ...RIESGO_STYLE[info.riesgo] }}>{info.riesgo}</span>
-                                    : <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 600, background: 'rgba(255,255,255,0.04)', color: '#4B5563', border: '1px solid rgba(255,255,255,0.07)' }}>—</span>
+                                    : <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 500, background: 'transparent', color: '#4B5563', border: '1px solid transparent' }}>{info.riesgo}</span>
                                   }
                                 </td>
                                 <td style={{ textAlign: 'left', color: '#8B97A8', fontSize: '0.72rem', fontStyle: 'italic' }}>{info.norma}</td>

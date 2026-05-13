@@ -705,7 +705,7 @@ export default function DashboardPage() {
         {/* Última sincronización — visible para todos los usuarios */}
         {lastSync && (
           <div style={{ padding: '0.4rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.6rem', color: '#4B5563', textAlign: 'center', letterSpacing: '0.02em' }}>
-            Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+            Datos al {new Date(lastSync).toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
           </div>
         )}
 
@@ -952,7 +952,7 @@ export default function DashboardPage() {
               <>
                 <span className="breadcrumb-sep" style={{ marginLeft: 'auto' }} />
                 <span style={{ color: '#10B981', fontSize: '0.65rem', fontWeight: 600, marginLeft: 'auto' }}>
-                  ● {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  ● {new Date(lastSync).toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </>
             )}
@@ -2216,7 +2216,7 @@ export default function DashboardPage() {
                                 : 'Todas'}
                             </td>
                             <td style={{ fontSize: '0.78rem', color: '#8B97A8', whiteSpace: 'nowrap' }}>
-                              {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'}
+                              {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('es-PE', { timeZone: 'America/Lima', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'}
                             </td>
                             <td>
                               <span style={{ padding: '0.15rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 700,
@@ -3156,7 +3156,7 @@ export default function DashboardPage() {
                     </div>
                     {vfd.syncedAt && (
                       <span style={{ fontSize: '0.7rem', color: '#8B97A8' }}>
-                        Sync: {new Date(vfd.syncedAt).toLocaleString('es-PE')}
+                        Sync: {new Date(vfd.syncedAt).toLocaleString('es-PE', { timeZone: 'America/Lima' })}
                       </span>
                     )}
                   </div>

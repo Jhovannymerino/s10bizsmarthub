@@ -3591,22 +3591,50 @@ export default function DashboardPage() {
                   ))}
                   <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', margin: '0 0.4rem' }} />
                   {!directorioEditing ? (
-                    <button onClick={() => {
-                      // Inicializar draft si está vacío (primera vez en este Q/año/empresa)
-                      if (!directorioDraft) {
-                        setDirectorioDraft({
-                          presupuesto: { q: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 }, ytd: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 } },
-                          productividad: { hhDisponibles: 0, hhFacturadas: 0, hhDisponiblesPpto: 0, nPersonas: 0 },
-                          ventasFuente: { referidos: 0, licitacionesPublicas: 0, licitacionesPrivadas: 0, iniciativaDirecta: 0 },
-                          backlog: [], pipeline: [], greenFlags: [], redFlags: [], mustWin: [], acuerdos: [],
-                          comentarios: { resumenEjecutivo: '', ebitda: '' },
-                        });
-                      }
-                      setDirectorioEditing(true);
-                    }}
-                      style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: '1px solid rgba(43,180,187,0.3)', background: 'rgba(43,180,187,0.1)', color: '#2BB4BB', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
-                      ✎ Editar
-                    </button>
+                    <>
+                      <button onClick={async () => {
+                        const token = localStorage.getItem('token');
+                        try {
+                          const res = await fetch(`${API}/kpi/${selectedCompany.codEmpresa}/directorio/export?year=${selectedYear}&quarter=${selectedQuarter}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          if (!res.ok) { alert(`Error al exportar: ${res.status}`); return; }
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          const cd = res.headers.get('content-disposition') || '';
+                          const m = cd.match(/filename="([^"]+)"/);
+                          a.download = m ? m[1] : `Directorio_${selectedCompany.codEmpresa}_${selectedQuarter}_${selectedYear}.pptx`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        } catch (e: any) {
+                          alert(`Error: ${e.message}`);
+                        }
+                      }}
+                        style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: '1px solid rgba(226,92,26,0.4)', background: 'rgba(226,92,26,0.1)', color: '#FF8B4D', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+                        title="Descargar reporte como archivo PowerPoint">
+                        📥 Exportar PPTX
+                      </button>
+                      <button onClick={() => {
+                        // Inicializar draft si está vacío (primera vez en este Q/año/empresa)
+                        if (!directorioDraft) {
+                          setDirectorioDraft({
+                            presupuesto: { q: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 }, ytd: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 } },
+                            productividad: { hhDisponibles: 0, hhFacturadas: 0, hhDisponiblesPpto: 0, nPersonas: 0 },
+                            ventasFuente: { referidos: 0, licitacionesPublicas: 0, licitacionesPrivadas: 0, iniciativaDirecta: 0 },
+                            backlog: [], pipeline: [], greenFlags: [], redFlags: [], mustWin: [], acuerdos: [],
+                            comentarios: { resumenEjecutivo: '', ebitda: '' },
+                          });
+                        }
+                        setDirectorioEditing(true);
+                      }}
+                        style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: '1px solid rgba(43,180,187,0.3)', background: 'rgba(43,180,187,0.1)', color: '#2BB4BB', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        ✎ Editar
+                      </button>
+                    </>
                   ) : (
                     <>
                       <button onClick={() => { setDirectorioDraft(JSON.parse(JSON.stringify(directorioData?.data || {}))); setDirectorioEditing(false); }}

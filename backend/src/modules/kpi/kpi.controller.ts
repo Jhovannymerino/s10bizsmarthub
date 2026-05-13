@@ -1,5 +1,8 @@
-import { Body, Controller, Get, Param, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { KpiService } from './kpi.service';
+import { DirectorioPptxService } from './directorio-pptx.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyAccessGuard } from '../auth/company-access.guard';
 
@@ -10,7 +13,11 @@ function parseYear(year?: string): number {
 @Controller('kpi')
 @UseGuards(JwtAuthGuard, CompanyAccessGuard)
 export class KpiController {
-  constructor(private readonly kpiService: KpiService) {}
+  constructor(
+    private readonly kpiService: KpiService,
+    private readonly pptxService: DirectorioPptxService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /** Consolidado de todas las empresas del grupo */
   @Get('consolidado')
@@ -503,5 +510,63 @@ export class KpiController {
     const q = (quarter || 'Q1').toUpperCase();
     const updatedBy = req.user?.email || null;
     return this.kpiService.saveDirectorio(companyId, y, q, body, updatedBy);
+  }
+
+  /** Exporta el Reporte Directorio como archivo .pptx */
+  @Get(':companyId/directorio/export')
+  async exportDirectorio(
+    @Param('companyId') companyId: string,
+    @Query('year') year: string,
+    @Query('quarter') quarter: string,
+    @Res() res: Response,
+  ) {
+    const y = parseYear(year);
+    const q = (quarter || 'Q1').toUpperCase();
+    const qMonths: Record<string, number[]> = { Q1: [1,2,3], Q2: [4,5,6], Q3: [7,8,9], Q4: [10,11,12] };
+    const qMeses = qMonths[q] || [1,2,3];
+
+    // Cargar todo en paralelo
+    const company = await this.prisma.company.findUnique({ where: { codEmpresa: companyId } });
+    const [pl, gav, cxc, caja, directorio] = await Promise.all([
+      this.kpiService.getDashboard(companyId, y),
+      this.kpiService.getGAV(companyId, y),
+      this.kpiService.getCxC(companyId),
+      this.kpiService.getCaja(companyId, y),
+      this.kpiService.getDirectorio(companyId, y, q),
+    ]);
+
+    // Calcular qData y ytdData del P&L mensual
+    const plMonthly = (pl as any)?.plMonthly || [];
+    const sumF = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0);
+    const qRows = plMonthly.filter((m: any) => qMeses.includes(m.mes));
+    const qData = {
+      ingresos: sumF(qRows, 'ingresos'),
+      costoDirecto: sumF(qRows, 'costoDirecto'),
+      margenBruto: sumF(qRows, 'margenBruto'),
+      gav: sumF(qRows, 'gav'),
+      ebitda: sumF(qRows, 'ebitda'),
+      gastosFinancieros: sumF(qRows, 'gastosFinancieros'),
+      utilidadNeta: sumF(qRows, 'utilidadNeta'),
+    };
+    const ytdData = (pl as any)?.ytd || qData;
+
+    const buf = await this.pptxService.generate({
+      empresa: company?.name || companyId,
+      quarter: q,
+      year: y,
+      qData,
+      ytdData,
+      pptoQ: (directorio as any)?.data?.presupuesto?.q || {},
+      pptoYTD: (directorio as any)?.data?.presupuesto?.ytd || {},
+      gav,
+      cxc,
+      caja,
+      directorio: (directorio as any)?.data || {},
+    });
+
+    const fileName = `Directorio_${(company?.name || companyId).replace(/[^\w]/g, '_')}_${q}_${y}.pptx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(buf);
   }
 }

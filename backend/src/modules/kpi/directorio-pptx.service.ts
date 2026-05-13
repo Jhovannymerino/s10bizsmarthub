@@ -1,0 +1,574 @@
+import { Injectable, Logger } from '@nestjs/common';
+import PptxGenJS from 'pptxgenjs';
+
+// Brand colors S10
+const NAVY = '0D3B5E';
+const ORANGE = 'E25C1A';
+const TEAL = '2BB4BB';
+const RED = 'EF4444';
+const GREEN = '10B981';
+const YELLOW = 'F59E0B';
+const BLUE = '5B86E5';
+const TEXT = '0E1A2E';
+const SUBTLE = '8B97A8';
+const BG_DARK = '0F1C2E';
+
+type Severity = 'CRÍTICO' | 'CRITICO' | 'ALTO' | 'MEDIO';
+const sevColor = (s: string) => (s === 'CRÍTICO' || s === 'CRITICO') ? RED : s === 'ALTO' ? ORANGE : YELLOW;
+
+const Q_LABELS: Record<string, string> = {
+  Q1: 'Ene – Mar', Q2: 'Abr – Jun', Q3: 'Jul – Sep', Q4: 'Oct – Dic',
+};
+const Q_MONTHS: Record<string, number[]> = {
+  Q1: [1, 2, 3], Q2: [4, 5, 6], Q3: [7, 8, 9], Q4: [10, 11, 12],
+};
+const MES_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
+
+function fmt(n: number): string {
+  if (n == null || isNaN(n)) return '—';
+  return new Intl.NumberFormat('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(n));
+}
+function fmtPct(n: number, decimals = 1): string {
+  if (n == null || isNaN(n)) return '—';
+  return `${n.toFixed(decimals)}%`;
+}
+function safePct(num: number, den: number): number {
+  return den && Math.abs(den) > 0.01 ? (num / den) * 100 : 0;
+}
+
+@Injectable()
+export class DirectorioPptxService {
+  private readonly logger = new Logger(DirectorioPptxService.name);
+
+  /**
+   * Genera el PPTX del Reporte Directorio.
+   * @param ctx Datos del trimestre: empresa, P&L del Q, YTD, GAV, CxC, Caja, y el draft manual
+   */
+  async generate(ctx: {
+    empresa: string;
+    quarter: string;
+    year: number;
+    qData: any;        // P&L trimestral
+    ytdData: any;      // P&L YTD
+    pptoQ: any;        // Presupuesto Q
+    pptoYTD: any;      // Presupuesto YTD
+    gav: any;          // { categorias: [], total }
+    cxc: any;          // { clientes: [], totalSaldo, concentracionTop3 }
+    caja: any;         // { totalPorMes }
+    directorio: any;   // draft manual
+  }): Promise<Buffer> {
+    const { empresa, quarter, year, qData, ytdData, pptoQ, pptoYTD, gav, cxc, caja, directorio } = ctx;
+    const d = directorio || {};
+    const qLabel = Q_LABELS[quarter] || quarter;
+
+    const pres: any = new PptxGenJS();
+    pres.author = 'S10 BizSmartHub';
+    pres.title = `${empresa} · Directorio ${quarter} ${year}`;
+    pres.layout = 'LAYOUT_WIDE'; // 13.33 × 7.5 inches
+
+    // Helper: footer común a slides de contenido
+    const addFooter = (slide: any, sectionNumber: string | null = null) => {
+      slide.addText(
+        [
+          { text: 'Sesión Confidencial de Directorio · ', options: { color: SUBTLE, fontSize: 8 } },
+          { text: empresa, options: { color: SUBTLE, fontSize: 8, bold: true } },
+          { text: ` · ${quarter} ${year}`, options: { color: SUBTLE, fontSize: 8 } },
+        ],
+        { x: 0.4, y: 7.1, w: 12.5, h: 0.3, align: 'left' }
+      );
+      if (sectionNumber) {
+        slide.addText(sectionNumber, { x: 12, y: 7.1, w: 0.9, h: 0.3, align: 'right', color: TEAL, fontSize: 9, bold: true });
+      }
+    };
+
+    const addTitle = (slide: any, sectionNum: string, title: string) => {
+      slide.background = { color: 'F8FAFC' };
+      slide.addShape('rect', { x: 0, y: 0, w: 13.33, h: 0.6, fill: { color: NAVY } });
+      slide.addText(`${sectionNum} · ${title}`, { x: 0.4, y: 0.1, w: 12.5, h: 0.4, color: 'FFFFFF', fontSize: 14, bold: true });
+      slide.addText(`${empresa} · Directorio ${quarter} ${year}`, { x: 0.4, y: 0.7, w: 12.5, h: 0.3, color: SUBTLE, fontSize: 9 });
+    };
+
+    // ═══════════════════════════════════════
+    // SLIDE 1 — Portada
+    // ═══════════════════════════════════════
+    {
+      const s = pres.addSlide();
+      s.background = { color: NAVY };
+      s.addText(empresa, { x: 0.5, y: 2.2, w: 12.3, h: 0.9, color: 'FFFFFF', fontSize: 36, bold: true, align: 'left' });
+      s.addText('DIRECTORIO', { x: 0.5, y: 3.2, w: 12.3, h: 0.6, color: ORANGE, fontSize: 28, bold: true });
+      s.addText(`${quarter} ${year}`, { x: 0.5, y: 3.85, w: 12.3, h: 0.5, color: 'FFFFFF', fontSize: 22 });
+      s.addText(`Business Review · ${qLabel} ${year}`, { x: 0.5, y: 4.4, w: 12.3, h: 0.4, color: TEAL, fontSize: 13 });
+      s.addText('CMO Group · Infraestructura hospitalaria · Excelencia operativa', { x: 0.5, y: 6.3, w: 12.3, h: 0.3, color: SUBTLE, fontSize: 11 });
+      s.addText('Sesión Confidencial de Directorio', { x: 0.5, y: 6.7, w: 12.3, h: 0.3, color: SUBTLE, fontSize: 9, italic: true });
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 2 — Agenda
+    // ═══════════════════════════════════════
+    {
+      const s = pres.addSlide();
+      addTitle(s, '', 'AGENDA');
+      const agendaItems = [
+        ['01', 'Resumen Ejecutivo', 'P&L: Ingreso, Margen, GAV, EBITDA — Q y YTD'],
+        ['02', 'Indicadores Clave', 'KPIs con umbrales del Directorio (semáforo)'],
+        ['03', 'Análisis de GAV', 'Gastos administrativos por categoría'],
+        ['04', 'Productividad (Horas Hombre)', 'HH disponibles, facturadas y utilización %'],
+        ['05', 'Cuentas por Cobrar', 'Aging y concentración de cartera'],
+        ['06', 'Posición de Caja', 'Flujo neto del trimestre y YTD'],
+        ['07', 'Backlog', 'Cartera de proyectos en ejecución'],
+        ['08', 'Pipeline & VxF', 'Oportunidades del próximo trimestre'],
+        ['09', 'Green Flags', 'Logros y avances del trimestre'],
+        ['10', 'Red Flags', 'Riesgos, alertas y plan de mitigación'],
+        ['11', 'Must Win Battles', 'Hitos críticos del próximo trimestre'],
+        ['12', 'Acuerdos del Directorio', 'Compromisos y próximos pasos'],
+      ];
+      const rows = agendaItems.map(([n, t, sub]) => [
+        { text: n, options: { color: ORANGE, fontSize: 13, bold: true, align: 'center' as const } },
+        { text: t, options: { color: TEXT, fontSize: 12, bold: true } },
+        { text: sub, options: { color: SUBTLE, fontSize: 10 } },
+      ]);
+      s.addTable(rows, { x: 0.4, y: 1.2, w: 12.5, colW: [0.7, 4.5, 7.3], fontFace: 'Inter', rowH: 0.42, border: { type: 'solid', pt: 0.5, color: 'E5E7EB' } });
+      addFooter(s);
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 3 — Resumen Ejecutivo P&L
+    // ═══════════════════════════════════════
+    {
+      const s = pres.addSlide();
+      addTitle(s, '01', `RESUMEN EJECUTIVO ${quarter} ${year}`);
+      const rows = [
+        ['ingresos', 'Ingresos'],
+        ['costoDirecto', '(−) Costo Directo (COGS)'],
+        ['margenBruto', 'Margen Bruto'],
+        ['gav', '(−) GAV'],
+        ['ebitda', 'EBITDA'],
+        ['gastosFinancieros', '(−) Gastos Financieros'],
+        ['utilidadNeta', 'Utilidad Neta'],
+      ];
+      const buildPpto = (raw: any) => ({
+        ingresos: raw?.ingresos || 0,
+        costoDirecto: raw?.costoDirecto || 0,
+        margenBruto: (raw?.ingresos || 0) - Math.abs(raw?.costoDirecto || 0),
+        gav: raw?.gav || 0,
+        ebitda: (raw?.ingresos || 0) - Math.abs(raw?.costoDirecto || 0) - Math.abs(raw?.gav || 0),
+        gastosFinancieros: raw?.gastosFinancieros || 0,
+        utilidadNeta: (raw?.ingresos || 0) - Math.abs(raw?.costoDirecto || 0) - Math.abs(raw?.gav || 0) - Math.abs(raw?.da || 0),
+      });
+      const pq = buildPpto(pptoQ);
+      const py = buildPpto(pptoYTD);
+      const hasPptoQ = Math.abs(pq.ingresos) + Math.abs(pq.gav) > 1;
+      const hasPptoYTD = Math.abs(py.ingresos) + Math.abs(py.gav) > 1;
+
+      const renderTable = (title: string, real: any, ppto: any, showPpto: boolean, x: number) => {
+        s.addText(title, { x, y: 1.15, w: 6.1, h: 0.3, color: TEXT, fontSize: 11, bold: true });
+        const header = showPpto
+          ? [{ text: 'Concepto' }, { text: 'Real (S/)', options: { align: 'right' as const } }, { text: 'Ppto (S/)', options: { align: 'right' as const } }, { text: '% Cumpl.', options: { align: 'right' as const } }]
+          : [{ text: 'Concepto' }, { text: 'Real (S/)', options: { align: 'right' as const } }];
+        const dataRows = rows.map(([k, label]) => {
+          const vReal = real?.[k] || 0;
+          const vPpto = ppto?.[k] || 0;
+          const isTotal = ['margenBruto', 'ebitda', 'utilidadNeta'].includes(k as string);
+          const cumpl = Math.abs(vPpto) > 0.01 ? `${((vReal / vPpto) * 100).toFixed(0)}%` : '—';
+          const baseStyle = { bold: isTotal, fill: isTotal ? { color: 'FFF7ED' } : undefined };
+          if (showPpto) {
+            return [
+              { text: label as string, options: { ...baseStyle, fontSize: 10 } },
+              { text: fmt(vReal), options: { ...baseStyle, fontSize: 10, align: 'right' as const, color: vReal < 0 ? RED : TEXT, fontFace: 'Consolas' } },
+              { text: Math.abs(vPpto) > 0.01 ? fmt(vPpto) : '—', options: { ...baseStyle, fontSize: 10, align: 'right' as const, color: SUBTLE, fontFace: 'Consolas' } },
+              { text: cumpl, options: { ...baseStyle, fontSize: 10, align: 'right' as const, fontFace: 'Consolas' } },
+            ];
+          }
+          return [
+            { text: label as string, options: { ...baseStyle, fontSize: 10 } },
+            { text: fmt(vReal), options: { ...baseStyle, fontSize: 10, align: 'right' as const, color: vReal < 0 ? RED : TEXT, fontFace: 'Consolas' } },
+          ];
+        });
+        const headerRow = header.map(h => ({ text: h.text as string, options: { ...(h.options || {}), bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } }));
+        s.addTable([headerRow, ...dataRows], {
+          x, y: 1.5, w: 6.1,
+          colW: showPpto ? [2.3, 1.3, 1.3, 1.2] : [3.7, 2.4],
+          rowH: 0.32,
+          fontFace: 'Inter',
+          border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
+        });
+      };
+      renderTable(`${quarter} ${year} (${qLabel})`, qData, pq, hasPptoQ, 0.4);
+      renderTable(`YTD ${year}`, ytdData, py, hasPptoYTD, 6.85);
+      addFooter(s);
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 4 — KPIs con semáforo
+    // ═══════════════════════════════════════
+    {
+      const s = pres.addSlide();
+      addTitle(s, '02', 'INDICADORES CLAVE — Umbrales del Directorio');
+      const qGMpct = safePct(qData?.margenBruto || 0, qData?.ingresos || 0);
+      const qCOGSpct = safePct(Math.abs(qData?.costoDirecto || 0), qData?.ingresos || 0);
+      const qGAVpct = safePct(Math.abs(qData?.gav || 0), qData?.ingresos || 0);
+      const qEBITDApct = safePct(qData?.ebitda || 0, qData?.ingresos || 0);
+      const qDSO = cxc?.totalSaldo && (qData?.ingresos || 0) > 0
+        ? Math.round((cxc.totalSaldo / qData.ingresos) * 90) : null;
+
+      const semaforo = (value: number, target: number, alert: number, betterHigher: boolean) => {
+        const ok = betterHigher ? value >= target : value <= target;
+        const warn = betterHigher ? value >= alert : value <= alert;
+        if (ok) return { color: GREEN, label: 'OK' };
+        if (warn) return { color: YELLOW, label: 'Atención' };
+        return { color: RED, label: 'Alerta' };
+      };
+
+      const kpis: any[] = [
+        { code: 'F-03', label: 'Margen Bruto %', val: qGMpct, fmt: 'pct', target: 40, alert: 30, higher: true, hint: 'Target >40% · Alerta <30%' },
+        { code: 'F-02', label: 'COGS %',         val: qCOGSpct, fmt: 'pct', target: 60, alert: 65, higher: false, hint: 'Target <60% · Alerta >65%' },
+        { code: 'F-04', label: 'GAV %',          val: qGAVpct,  fmt: 'pct', target: 25, alert: 30, higher: false, hint: 'Target <25% · Alerta >30%' },
+        { code: 'F-05', label: 'EBITDA %',       val: qEBITDApct, fmt: 'pct', target: 15, alert: 8, higher: true,  hint: 'Target >15% · Alerta <8%' },
+      ];
+      if (qDSO !== null) kpis.push({ code: 'O-02', label: 'DSO (días)', val: qDSO, fmt: 'days', target: 60, alert: 90, higher: false, hint: 'Target <60d · Alerta >90d' });
+
+      const cols = Math.min(kpis.length, 5);
+      const cardW = (12.5 - 0.2 * (cols - 1)) / cols;
+      kpis.forEach((k, i) => {
+        const sem = semaforo(k.val, k.target, k.alert, k.higher);
+        const x = 0.4 + i * (cardW + 0.2);
+        const y = 1.5;
+        s.addShape('rect', { x, y, w: cardW, h: 2.2, fill: { color: 'FFFFFF' }, line: { color: sem.color, width: 1.5 } });
+        s.addText(k.code, { x: x + 0.1, y: y + 0.1, w: cardW - 0.2, h: 0.25, color: SUBTLE, fontSize: 9 });
+        s.addShape('rect', { x: x + cardW - 1.05, y: y + 0.1, w: 0.95, h: 0.25, fill: { color: sem.color } });
+        s.addText(sem.label, { x: x + cardW - 1.05, y: y + 0.1, w: 0.95, h: 0.25, color: 'FFFFFF', fontSize: 9, bold: true, align: 'center' });
+        s.addText(k.label, { x: x + 0.1, y: y + 0.45, w: cardW - 0.2, h: 0.3, color: TEXT, fontSize: 11, bold: true });
+        const valueText = k.fmt === 'pct' ? `${k.val.toFixed(1)}%` : `${Math.round(k.val)}d`;
+        s.addText(valueText, { x: x + 0.1, y: y + 0.85, w: cardW - 0.2, h: 0.7, color: sem.color, fontSize: 28, bold: true, align: 'center', fontFace: 'Consolas' });
+        s.addText(k.hint, { x: x + 0.1, y: y + 1.7, w: cardW - 0.2, h: 0.35, color: SUBTLE, fontSize: 8, align: 'center' });
+      });
+      addFooter(s, '02');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 5 — GAV detallado
+    // ═══════════════════════════════════════
+    if (gav?.categorias && gav.categorias.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '03', `ANÁLISIS DE GAV — YTD ${year}`);
+      const top = gav.categorias.slice(0, 15);
+      const header = [
+        { text: 'Cuenta', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
+        { text: 'Descripción', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
+        { text: 'YTD (S/)', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'right' as const } },
+        { text: '% Total', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'right' as const } },
+      ];
+      const dataRows = top.map((c: any) => [
+        { text: c.cod || '', options: { fontSize: 10, fontFace: 'Consolas', color: SUBTLE } },
+        { text: c.descripcion || '', options: { fontSize: 10 } },
+        { text: fmt(c.ytd || 0), options: { fontSize: 10, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmtPct(c.pct || 0), options: { fontSize: 10, align: 'right' as const, fontFace: 'Consolas', color: SUBTLE } },
+      ]);
+      const totalRow = [
+        { text: '', options: { fontSize: 10 } },
+        { text: 'TOTAL GAV', options: { bold: true, fill: { color: 'FFF7ED' }, fontSize: 10 } },
+        { text: fmt(gav.total || 0), options: { bold: true, fill: { color: 'FFF7ED' }, fontSize: 10, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: '100.0%', options: { bold: true, fill: { color: 'FFF7ED' }, fontSize: 10, align: 'right' as const, fontFace: 'Consolas' } },
+      ];
+      s.addTable([header, ...dataRows, totalRow], {
+        x: 0.4, y: 1.2, w: 12.5,
+        colW: [1.5, 7.0, 2.0, 2.0],
+        rowH: 0.32,
+        fontFace: 'Inter',
+        border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
+      });
+      if (gav.categorias.length > 15) {
+        s.addText(`Top 15 de ${gav.categorias.length} cuentas`, { x: 0.4, y: 6.7, w: 12.5, h: 0.3, color: SUBTLE, fontSize: 9, italic: true });
+      }
+      addFooter(s, '03');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 6 — Productividad HH
+    // ═══════════════════════════════════════
+    const hh = d.productividad || {};
+    if ((hh.hhDisponibles || 0) > 0 || (hh.hhFacturadas || 0) > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '04', 'ANÁLISIS DE PRODUCTIVIDAD (Horas Hombre)');
+      const tasaUt = hh.hhDisponibles > 0 ? (hh.hhFacturadas / hh.hhDisponibles) * 100 : 0;
+      const utColor = tasaUt >= 70 && tasaUt <= 85 ? GREEN : tasaUt < 60 || tasaUt > 90 ? RED : YELLOW;
+
+      const cards = [
+        { label: 'HH Disponibles', val: hh.hhDisponibles || 0, color: TEXT },
+        { label: 'HH Facturadas', val: hh.hhFacturadas || 0, color: TEAL },
+        { label: 'HH Ppto', val: hh.hhDisponiblesPpto || 0, color: SUBTLE },
+        { label: 'N° Personas', val: hh.nPersonas || 0, color: TEXT },
+      ];
+      const cardW = (12.5 - 0.6) / 4;
+      cards.forEach((c, i) => {
+        const x = 0.4 + i * (cardW + 0.2);
+        s.addShape('rect', { x, y: 1.4, w: cardW, h: 1.6, fill: { color: 'FFFFFF' }, line: { color: 'E5E7EB', width: 1 } });
+        s.addText(c.label, { x: x + 0.1, y: 1.5, w: cardW - 0.2, h: 0.3, color: SUBTLE, fontSize: 10 });
+        s.addText(c.val.toLocaleString('es-PE'), { x: x + 0.1, y: 1.9, w: cardW - 0.2, h: 0.8, color: c.color, fontSize: 26, bold: true, align: 'center', fontFace: 'Consolas' });
+      });
+
+      // Big card: Utilización %
+      s.addShape('rect', { x: 0.4, y: 3.3, w: 12.5, h: 2.5, fill: { color: BG_DARK } });
+      s.addText('TASA DE UTILIZACIÓN', { x: 0.4, y: 3.5, w: 12.5, h: 0.3, color: TEAL, fontSize: 11, bold: true, align: 'center' });
+      s.addText(`${tasaUt.toFixed(1)}%`, { x: 0.4, y: 3.85, w: 12.5, h: 1.5, color: utColor, fontSize: 80, bold: true, align: 'center', fontFace: 'Consolas' });
+      s.addText('Rango saludable: 70-85% · Bajo: equipo subutilizado · Alto: riesgo de burnout', { x: 0.4, y: 5.4, w: 12.5, h: 0.3, color: SUBTLE, fontSize: 10, align: 'center' });
+      addFooter(s, '04');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 7 — CxC Aging
+    // ═══════════════════════════════════════
+    if (cxc?.clientes && cxc.clientes.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '05', 'CUENTAS POR COBRAR — Aging al cierre');
+      const sumF = (k: string) => (cxc.clientes as any[]).reduce((sum, c) => sum + Number(c[k] || 0), 0);
+      const tots = { t030: sumF('dias0_30'), t3160: sumF('dias31_60'), t6190: sumF('dias61_90'), t90: sumF('dias90mas') };
+      const totalCxC = cxc.totalSaldo || tots.t030 + tots.t3160 + tots.t6190 + tots.t90;
+
+      // KPI strip
+      const kpisCxC = [
+        { label: 'Total CxC', val: totalCxC, color: TEXT },
+        { label: '0-30 días', val: tots.t030, color: GREEN },
+        { label: '31-60 días', val: tots.t3160, color: YELLOW },
+        { label: '61-90 días', val: tots.t6190, color: YELLOW },
+        { label: '+90 días', val: tots.t90, color: RED },
+        { label: 'Conc. Top 3', val: cxc.concentracionTop3 || 0, color: BLUE, isPct: true },
+      ];
+      const cardW = (12.5 - 1.0) / 6;
+      kpisCxC.forEach((k, i) => {
+        const x = 0.4 + i * (cardW + 0.2);
+        s.addShape('rect', { x, y: 1.2, w: cardW, h: 1.0, fill: { color: 'FFFFFF' }, line: { color: 'E5E7EB', width: 1 } });
+        s.addText(k.label, { x: x + 0.05, y: 1.25, w: cardW - 0.1, h: 0.25, color: SUBTLE, fontSize: 9, align: 'center' });
+        const text = k.isPct ? `${k.val.toFixed(1)}%` : fmt(k.val);
+        s.addText(text, { x: x + 0.05, y: 1.55, w: cardW - 0.1, h: 0.55, color: k.color, fontSize: 16, bold: true, align: 'center', fontFace: 'Consolas' });
+      });
+
+      // Top 8 clientes
+      const sortedCli = [...cxc.clientes].sort((a, b) => (b.saldoTotal || 0) - (a.saldoTotal || 0)).slice(0, 8);
+      const header = [
+        { text: 'Cliente', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9 } },
+        { text: '0-30', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+        { text: '31-60', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+        { text: '61-90', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+        { text: '+90', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+        { text: 'Total', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+      ];
+      const rows = sortedCli.map((c: any) => [
+        { text: (c.cliente || '').substring(0, 50), options: { fontSize: 9 } },
+        { text: fmt(c.dias0_30 || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(c.dias31_60 || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias31_60 || 0) > 0 ? YELLOW : TEXT } },
+        { text: fmt(c.dias61_90 || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias61_90 || 0) > 0 ? YELLOW : TEXT } },
+        { text: fmt(c.dias90mas || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias90mas || 0) > 0 ? RED : TEXT } },
+        { text: fmt(c.saldoTotal || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', bold: true } },
+      ]);
+      s.addTable([header, ...rows], {
+        x: 0.4, y: 2.4, w: 12.5,
+        colW: [5.5, 1.4, 1.4, 1.4, 1.4, 1.4],
+        rowH: 0.28,
+        fontFace: 'Inter',
+        border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
+      });
+      addFooter(s, '05');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 8 — Posición de Caja
+    // ═══════════════════════════════════════
+    if (caja?.totalPorMes) {
+      const s = pres.addSlide();
+      addTitle(s, '06', 'POSICIÓN DE CAJA');
+      const totalPorMes = caja.totalPorMes || {};
+      const qMeses = Q_MONTHS[quarter] || [];
+      const qFlujo = qMeses.map(m => Number(totalPorMes[m] || 0));
+      const qNeto = qFlujo.reduce((sum, v) => sum + v, 0);
+      const ytdNeto = Object.values(totalPorMes as Record<string, number>).reduce((sum: number, v: any) => sum + (Number(v) || 0), 0);
+
+      const cards = [
+        { label: `Flujo Neto ${quarter}`, val: qNeto, color: qNeto < 0 ? RED : GREEN },
+        { label: 'Flujo Neto YTD', val: ytdNeto, color: ytdNeto < 0 ? RED : GREEN },
+      ];
+      cards.forEach((c, i) => {
+        const x = 0.4 + i * 6.3;
+        s.addShape('rect', { x, y: 1.3, w: 6.1, h: 1.2, fill: { color: 'FFFFFF' }, line: { color: c.color, width: 1.5 } });
+        s.addText(c.label, { x: x + 0.2, y: 1.4, w: 5.7, h: 0.3, color: SUBTLE, fontSize: 11 });
+        s.addText(`S/ ${fmt(c.val)}`, { x: x + 0.2, y: 1.75, w: 5.7, h: 0.7, color: c.color, fontSize: 28, bold: true, fontFace: 'Consolas' });
+      });
+
+      // Tabla flujo mensual del Q
+      const header = [
+        { text: 'Mes', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
+        { text: `Flujo Neto (S/)`, options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'right' as const } },
+      ];
+      const rows = qMeses.map(m => {
+        const v = Number(totalPorMes[m] || 0);
+        return [
+          { text: `${MES_NAMES[m-1]} ${year}`, options: { fontSize: 10 } },
+          { text: fmt(v), options: { fontSize: 10, align: 'right' as const, fontFace: 'Consolas', color: v < 0 ? RED : v > 0 ? GREEN : SUBTLE } },
+        ];
+      });
+      rows.push([
+        { text: `TOTAL ${quarter}`, options: { fontSize: 10, bold: true, fill: { color: 'FFF7ED' } } as any },
+        { text: fmt(qNeto), options: { fontSize: 10, align: 'right' as const, bold: true, fill: { color: 'FFF7ED' }, fontFace: 'Consolas', color: qNeto < 0 ? RED : GREEN } as any },
+      ]);
+      s.addTable([header, ...rows], {
+        x: 0.4, y: 2.8, w: 6.1,
+        colW: [3, 3.1],
+        rowH: 0.34,
+        fontFace: 'Inter',
+        border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
+      });
+      addFooter(s, '06');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 9 — Backlog
+    // ═══════════════════════════════════════
+    if (d.backlog && d.backlog.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '07', 'BACKLOG — Cartera de proyectos en ejecución');
+      const totalContrato = d.backlog.reduce((sum: number, r: any) => sum + (Number(r.contrato) || 0), 0);
+      const totalIngresoQ = d.backlog.reduce((sum: number, r: any) => sum + (Number(r.ingresoQ) || 0), 0);
+      s.addText(`Cartera total: S/ ${fmt(totalContrato)} · ${d.backlog.length} proyectos · Proyección ingreso ${quarter}: S/ ${fmt(totalIngresoQ)}`,
+        { x: 0.4, y: 1.15, w: 12.5, h: 0.3, color: ORANGE, fontSize: 11, bold: true });
+
+      const header = [
+        { text: 'Cliente / Proyecto', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9 } },
+        { text: 'Contrato (S/)', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+        { text: 'Inicio', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'center' as const } },
+        { text: 'Término', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'center' as const } },
+        { text: '% Avance', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+        { text: `Ing. ${quarter} (S/)`, options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+        { text: 'Estado', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'center' as const } },
+      ];
+      const rows = d.backlog.slice(0, 12).map((r: any) => [
+        { text: `${r.cliente || ''}\n${r.proyecto || ''}`, options: { fontSize: 9 } },
+        { text: fmt(Number(r.contrato) || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: r.inicio || '—', options: { fontSize: 9, align: 'center' as const } },
+        { text: r.termino || '—', options: { fontSize: 9, align: 'center' as const } },
+        { text: `${Number(r.avance) || 0}%`, options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(Number(r.ingresoQ) || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: r.estado || '—', options: { fontSize: 9, align: 'center' as const } },
+      ]);
+      s.addTable([header, ...rows], {
+        x: 0.4, y: 1.5, w: 12.5,
+        colW: [4.5, 1.6, 1.2, 1.2, 1.1, 1.5, 1.4],
+        rowH: 0.32,
+        fontFace: 'Inter',
+        border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
+      });
+      addFooter(s, '07');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 10 — Pipeline
+    // ═══════════════════════════════════════
+    if (d.pipeline && d.pipeline.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '08', `PIPELINE & VxF — Oportunidades del próximo trimestre`);
+      const totalPipe = d.pipeline.reduce((sum: number, r: any) => sum + (Number(r.monto) || 0), 0);
+      s.addText(`Total pipeline: S/ ${fmt(totalPipe)} · ${d.pipeline.length} oportunidades`,
+        { x: 0.4, y: 1.15, w: 12.5, h: 0.3, color: ORANGE, fontSize: 11, bold: true });
+
+      const header = [
+        { text: 'Cliente', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
+        { text: 'Proyecto / Servicio', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
+        { text: 'Monto (S/)', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'right' as const } },
+        { text: 'Q Cierre', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'center' as const } },
+        { text: 'Prob.', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'center' as const } },
+      ];
+      const rows = d.pipeline.slice(0, 12).map((r: any) => {
+        const probColor = r.prob === 'A' ? GREEN : r.prob === 'B' ? YELLOW : SUBTLE;
+        return [
+          { text: r.cliente || '', options: { fontSize: 10 } },
+          { text: r.proyecto || '', options: { fontSize: 10 } },
+          { text: fmt(Number(r.monto) || 0), options: { fontSize: 10, align: 'right' as const, fontFace: 'Consolas' } },
+          { text: r.qCierre || '—', options: { fontSize: 10, align: 'center' as const } },
+          { text: r.prob || '—', options: { fontSize: 10, align: 'center' as const, bold: true, color: probColor } },
+        ];
+      });
+      s.addTable([header, ...rows], {
+        x: 0.4, y: 1.55, w: 12.5,
+        colW: [3.5, 5.0, 2.0, 1.2, 0.8],
+        rowH: 0.32,
+        fontFace: 'Inter',
+        border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
+      });
+      s.addText('Probabilidad: A Alta (>75%) · B Media (40-75%) · C Baja (<40%)',
+        { x: 0.4, y: 6.7, w: 12.5, h: 0.3, color: SUBTLE, fontSize: 9, italic: true });
+      addFooter(s, '08');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 11 — Green Flags
+    // ═══════════════════════════════════════
+    if (d.greenFlags && d.greenFlags.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '09', 'GREEN FLAGS — Logros y avances del trimestre');
+      d.greenFlags.slice(0, 6).forEach((g: any, i: number) => {
+        const row = i;
+        const y = 1.3 + row * 0.85;
+        s.addShape('rect', { x: 0.4, y, w: 12.5, h: 0.75, fill: { color: 'F0FDF4' }, line: { color: GREEN, width: 2 } });
+        s.addText(g.titulo || `Logro ${i+1}`, { x: 0.6, y: y + 0.05, w: 12.1, h: 0.3, color: GREEN, fontSize: 12, bold: true });
+        s.addText(g.descripcion || '', { x: 0.6, y: y + 0.38, w: 12.1, h: 0.35, color: TEXT, fontSize: 10 });
+      });
+      addFooter(s, '09');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 12 — Red Flags
+    // ═══════════════════════════════════════
+    if (d.redFlags && d.redFlags.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '10', 'RED FLAGS — Riesgos y alertas');
+      d.redFlags.slice(0, 5).forEach((r: any, i: number) => {
+        const col = sevColor(r.criticidad);
+        const y = 1.3 + i * 1.05;
+        s.addShape('rect', { x: 0.4, y, w: 12.5, h: 0.95, fill: { color: 'FFFBFB' }, line: { color: col, width: 2 } });
+        s.addShape('rect', { x: 0.4, y, w: 1.2, h: 0.3, fill: { color: col } });
+        s.addText(r.criticidad || 'MEDIO', { x: 0.4, y, w: 1.2, h: 0.3, color: 'FFFFFF', fontSize: 9, bold: true, align: 'center' });
+        s.addText(r.titulo || `Riesgo ${i+1}`, { x: 1.7, y: y + 0.05, w: 11.0, h: 0.3, color: TEXT, fontSize: 12, bold: true });
+        s.addText(r.descripcion || '', { x: 0.6, y: y + 0.35, w: 12.1, h: 0.3, color: TEXT, fontSize: 10 });
+        s.addText(`→ Acción: ${r.accion || ''}`, { x: 0.6, y: y + 0.65, w: 12.1, h: 0.3, color: BLUE, fontSize: 10, italic: true });
+      });
+      addFooter(s, '10');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 13 — Must Win Battles
+    // ═══════════════════════════════════════
+    if (d.mustWin && d.mustWin.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '11', `MUST WIN BATTLES — Hitos críticos próximo trimestre`);
+      d.mustWin.slice(0, 5).forEach((m: any, i: number) => {
+        const col = sevColor(m.criticidad);
+        const y = 1.3 + i * 1.05;
+        s.addShape('rect', { x: 0.4, y, w: 12.5, h: 0.95, fill: { color: 'FFFFFF' }, line: { color: col, width: 2 } });
+        s.addShape('rect', { x: 0.4, y, w: 1.2, h: 0.95, fill: { color: BG_DARK } });
+        s.addText(m.codigo || `MW-${String(i+1).padStart(2, '0')}`, { x: 0.4, y: y + 0.15, w: 1.2, h: 0.3, color: 'FFFFFF', fontSize: 12, bold: true, align: 'center', fontFace: 'Consolas' });
+        s.addText(m.criticidad || 'MEDIO', { x: 0.4, y: y + 0.55, w: 1.2, h: 0.3, color: col, fontSize: 9, bold: true, align: 'center' });
+        s.addText(m.titulo || `Hito ${i+1}`, { x: 1.7, y: y + 0.05, w: 11.0, h: 0.3, color: TEXT, fontSize: 12, bold: true });
+        s.addText(m.descripcion || '', { x: 1.7, y: y + 0.35, w: 11.0, h: 0.3, color: TEXT, fontSize: 10 });
+        s.addText(`Responsable: ${m.responsable || '—'} · Plazo: ${m.plazo || '—'}`, { x: 1.7, y: y + 0.65, w: 11.0, h: 0.3, color: SUBTLE, fontSize: 10, italic: true });
+      });
+      addFooter(s, '11');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 14 — Acuerdos del Directorio
+    // ═══════════════════════════════════════
+    if (d.acuerdos && d.acuerdos.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '12', `ACUERDOS DEL DIRECTORIO ${quarter} ${year}`);
+      d.acuerdos.slice(0, 8).forEach((a: string, i: number) => {
+        const y = 1.3 + i * 0.6;
+        s.addText(`${i + 1}.`, { x: 0.4, y, w: 0.5, h: 0.5, color: TEAL, fontSize: 16, bold: true });
+        s.addText(a, { x: 1.0, y: y + 0.05, w: 11.8, h: 0.5, color: TEXT, fontSize: 11 });
+      });
+      addFooter(s, '12');
+    }
+
+    // Generar el buffer
+    const buf = await pres.write({ outputType: 'nodebuffer' });
+    return buf as Buffer;
+  }
+}

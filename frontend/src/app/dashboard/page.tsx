@@ -3144,10 +3144,10 @@ export default function DashboardPage() {
             V19_balance_resumen:              { categoria: 'Balance General',     riesgo: 'MEDIO',   norma: 'NIC 1',                      descripcion: 'Resumen de saldos del balance por clase contable. Identifica clases con saldos en el lado incorrecto (activos con saldo acreedor, pasivos con saldo deudor) que pueden indicar errores de clasificación o de registro.' },
             V20_fechas_anomalas:              { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'Control Interno',            descripcion: 'Asientos con fechas fuera del rango esperado: domingos, feriados nacionales, madrugadas (entre 0-5am) o fechas retroactivas superiores a 90 días. Puede indicar ajustes no autorizados o manipulación del libro.' },
             V21_identificadores_dup:          { categoria: 'Calidad de Datos',    riesgo: 'BAJO',    norma: 'Control Interno',            descripcion: 'Documentos con el mismo número de identificador (NroD) registrados múltiples veces en distintos asientos. Riesgo de duplicación de gastos, ingresos o provisiones que distorsionan el resultado del período.' },
-            V22_conciliacion_estado:          { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'Control Interno' },
-            V23_pl_anual:                     { categoria: 'P&L',                 riesgo: 'MEDIO',   norma: 'NIIF 15 / NIC 1' },
-            V24_ob_vs_contable:               { categoria: 'Coherencia Modular',  riesgo: 'ALTO',    norma: 'Control Interno' },
-            V25_pcd_criticas:                 { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'PCGR Perú' },
+            V22_conciliacion_estado:          { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'Control Interno',            descripcion: 'Verifica el estado de conciliación bancaria: movimientos contables sin extracto bancario correspondiente, o extractos bancarios sin asiento contable. Diferencias no conciliadas pueden indicar omisiones, errores o fraude.' },
+            V23_pl_anual:                     { categoria: 'P&L',                 riesgo: 'MEDIO',   norma: 'NIIF 15 / NIC 1',           descripcion: 'Resumen anual del Estado de Resultados: ingresos, costos, GAV, EBITDA y utilidad neta. Identifica si el resultado del período es coherente con la actividad operativa declarada.' },
+            V24_ob_vs_contable:               { categoria: 'Coherencia Modular',  riesgo: 'ALTO',    norma: 'Control Interno',            descripcion: 'Compara los saldos registrados en módulos auxiliares (cuentas por cobrar, por pagar, bancos) contra el mayor contable. Diferencias indican que los módulos no están sincronizados con la contabilidad.' },
+            V25_pcd_criticas:                 { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'PCGR Perú',                  descripcion: 'Detecta cuentas contables críticas (del Plan de Cuentas) que deberían tener movimiento en el período pero aparecen sin registros. Puede indicar omisión de provisiones obligatorias o falta de cierre contable.' },
           };
           const RIESGO_STYLE: Record<string, React.CSSProperties> = {
             CRÍTICO: { background: 'rgba(239,68,68,0.15)',   color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' },
@@ -3222,7 +3222,7 @@ export default function DashboardPage() {
                       </thead>
                       <tbody>
                         {vfd.validations.map((v: any, idx: number) => {
-                          const info = VALIDATION_INFO[v.id] ?? { categoria: '—', riesgo: 'MEDIO', norma: '—' };
+                          const info = VALIDATION_INFO[v.id] ?? { categoria: '—', riesgo: 'MEDIO', norma: '—', descripcion: '' };
                           const isExpanded = validacionForenseExpanded === v.id;
                           const rawRows = vfd.raw?.[v.id]?.rows ?? [];
                           return (

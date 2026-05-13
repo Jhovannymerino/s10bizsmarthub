@@ -2709,7 +2709,7 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Clase</th><th>Cuenta</th><th style={{ minWidth: 260 }}>Descripción</th><th>Total Débito</th><th>Total Crédito</th><th>Saldo Neto</th></tr></thead>
+                    <thead><tr><th>Clase</th><th>Cuenta</th><th style={{ minWidth: 260 }}>Descripción</th><th>Total Débito</th><th>Total Crédito</th><th>Saldo Neto</th><th style={{ textAlign: 'center' }}>Asientos</th></tr></thead>
                     <tbody>
                       {patrimonioData.rows.map((r: any, i: number) => (
                         <tr key={i}>
@@ -2719,11 +2719,18 @@ export default function DashboardPage() {
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
                           <td style={{ color: '#8B97A8' }}>{fmt(r.TotalCredito)}</td>
                           <td style={{ fontWeight: 600, color: (r.SaldoNeto || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.SaldoNeto)}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <button onClick={() => setAccountTxDrill({ codCuenta: String(r.CodCuenta), descripcion: r.DesCuenta || r.CodCuenta, endpoint: 'patrimonio-transactions' })}
+                              title="Ver asientos individuales"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.78rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                              ▶
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot><tr className="total-row">
-                      <td colSpan={5}>PATRIMONIO NETO TOTAL</td>
+                      <td colSpan={6}>PATRIMONIO NETO TOTAL</td>
                       <td>{fmt(patrimonioData.totalPatrimonio)}</td>
                     </tr></tfoot>
                   </table>
@@ -3114,29 +3121,29 @@ export default function DashboardPage() {
 
         {/* ═══ Validación Forense S10 ═══ */}
         {activeTab === 'validation_forense' && !newTabLoading && (() => {
-          const VALIDATION_INFO: Record<string, { categoria: string; riesgo: string; norma: string }> = {
-            V01_partida_doble:                { categoria: 'Integridad Contable', riesgo: 'CRÍTICO', norma: 'NIIF / Partida Doble' },
-            V02_apertura:                     { categoria: 'Integridad Contable', riesgo: 'ALTO',    norma: 'NIC 1' },
-            V03_patrimonio:                   { categoria: 'Patrimonio',          riesgo: 'CRÍTICO', norma: 'Art. 220 LGS / NIC 1' },
-            V04_facturas_sin_asiento_top:     { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / Bancarización' },
-            V04b_facturas_sin_asiento_resumen:{ categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15' },
-            V05_ingresos_sin_doc:             { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / Art. 24-A LIR' },
-            V06_sueldos_aging:                { categoria: 'Laboral',             riesgo: 'ALTO',    norma: 'DL 728' },
-            V07_cts_depositos:                { categoria: 'Laboral',             riesgo: 'ALTO',    norma: 'DL 650' },
-            V08_participaciones:              { categoria: 'Laboral',             riesgo: 'MEDIO',   norma: 'DL 892' },
-            V09_bancos_detalle:               { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'NIIF 7' },
-            V10_ob_cuentas_banco:             { categoria: 'Caja y Bancos',       riesgo: 'MEDIO',   norma: 'Control Interno' },
-            V11_bancarizacion:                { categoria: 'Cumplimiento',        riesgo: 'ALTO',    norma: 'Ley 28194' },
-            V12_pergola_aging:                { categoria: 'Cuentas por Cobrar',  riesgo: 'ALTO',    norma: 'NIIF 9' },
-            V13_cxc_concentracion:            { categoria: 'Cuentas por Cobrar',  riesgo: 'MEDIO',   norma: 'NIIF 9' },
-            V14_intercompany:                 { categoria: 'Intercompañía',       riesgo: 'CRÍTICO', norma: 'Art. 32-A LIR / NIC 24' },
-            V15_activo_fijo:                  { categoria: 'Activo Fijo',         riesgo: 'MEDIO',   norma: 'NIC 16' },
-            V16_trazabilidad_pago:            { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'Control Interno' },
-            V17_reconciliacion_ingr:          { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / NIIF 9' },
-            V18_tributos:                     { categoria: 'Tributario',          riesgo: 'ALTO',    norma: 'Código Tributario' },
-            V19_balance_resumen:              { categoria: 'Balance General',     riesgo: 'MEDIO',   norma: 'NIC 1' },
-            V20_fechas_anomalas:              { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'Control Interno' },
-            V21_identificadores_dup:          { categoria: 'Calidad de Datos',    riesgo: 'BAJO',    norma: 'Control Interno' },
+          const VALIDATION_INFO: Record<string, { categoria: string; riesgo: string; norma: string; descripcion: string }> = {
+            V01_partida_doble:                { categoria: 'Integridad Contable', riesgo: 'CRÍTICO', norma: 'NIIF / Partida Doble',       descripcion: 'Verifica que cada asiento contable cuadre (Debe = Haber). Asientos descuadrados indican errores de registro, corrupción de datos o manipulación deliberada del libro contable.' },
+            V02_apertura:                     { categoria: 'Integridad Contable', riesgo: 'ALTO',    norma: 'NIC 1',                      descripcion: 'Detecta asientos registrados con fecha anterior al 01/01 del ejercicio seleccionado. Esto puede distorsionar el saldo de apertura y los resultados del período.' },
+            V03_patrimonio:                   { categoria: 'Patrimonio',          riesgo: 'CRÍTICO', norma: 'Art. 220 LGS / NIC 1',       descripcion: 'Identifica cuentas de patrimonio (clases 50–59) con saldo deudor. Un patrimonio negativo sugiere pérdidas acumuladas, reducción de capital no contabilizada, o errores graves de clasificación contable.' },
+            V04_facturas_sin_asiento_top:     { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / Bancarización',    descripcion: 'Facturas de venta emitidas en el sistema que no tienen asiento contable asociado en el período. Implica ingresos no reconocidos, posible evasión tributaria o desconexión entre el área comercial y contabilidad.' },
+            V04b_facturas_sin_asiento_resumen:{ categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15',                    descripcion: 'Resumen agrupado por cliente de facturas emitidas sin asiento contable. Permite identificar patrones: si el problema es sistemático con ciertos clientes o períodos.' },
+            V05_ingresos_sin_doc:             { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / Art. 24-A LIR',    descripcion: 'Asientos de ingresos (clases 70/75) sin documento de respaldo identificable (campo NroD vacío). Riesgo de ingresos ficticios, anticipos no documentados o asientos manuales sin sustento.' },
+            V06_sueldos_aging:                { categoria: 'Laboral',             riesgo: 'ALTO',    norma: 'DL 728',                     descripcion: 'Remuneraciones y sueldos pendientes de pago con más de 30 días de antigüedad. El incumplimiento de pago oportuno genera contingencias laborales, intereses y posibles demandas.' },
+            V07_cts_depositos:                { categoria: 'Laboral',             riesgo: 'ALTO',    norma: 'DL 650',                     descripcion: 'Detecta provisiones de CTS (cuenta 41) sin depósito efectivo correspondiente en las fechas legales (mayo y noviembre). Incumplimiento del DL 650 genera multas e intereses.' },
+            V08_participaciones:              { categoria: 'Laboral',             riesgo: 'MEDIO',   norma: 'DL 892',                     descripcion: 'Provisiones de participaciones de trabajadores (cuenta 41) sin distribución o pago efectivo. El incumplimiento del DL 892 genera contingencias tributarias y laborales frente a SUNAT y SUNAFIL.' },
+            V09_bancos_detalle:               { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'NIIF 7',                     descripcion: 'Cuentas bancarias (clase 10) con saldo pero sin movimiento en el período, o con múltiples registros no conciliados. Riesgo de cuentas no declaradas, fondos parqueados o errores de conciliación.' },
+            V10_ob_cuentas_banco:             { categoria: 'Caja y Bancos',       riesgo: 'MEDIO',   norma: 'Control Interno',            descripcion: 'Identifica cuentas bancarias con registros en la contabilidad pero sin actividad verificable en el período. Puede indicar cuentas obsoletas no dadas de baja o fondos no declarados.' },
+            V11_bancarizacion:                { categoria: 'Cumplimiento',        riesgo: 'ALTO',    norma: 'Ley 28194',                  descripcion: 'Detecta pagos superiores a S/ 3,500 (o $ 1,000) realizados sin usar medios de pago bancarizados (efectivo directo). La Ley 28194 obliga al uso de medios formales; el incumplimiento hace perder el derecho al crédito fiscal.' },
+            V12_pergola_aging:                { categoria: 'Cuentas por Cobrar',  riesgo: 'ALTO',    norma: 'NIIF 9',                     descripcion: 'Cuentas por cobrar con antigüedad mayor a 180 días sin movimiento de cobro registrado. Bajo NIIF 9, estas cuentas deben evaluarse para deterioro y posiblemente castigarse. Riesgo de sobrevaluación del activo.' },
+            V13_cxc_concentracion:            { categoria: 'Cuentas por Cobrar',  riesgo: 'MEDIO',   norma: 'NIIF 9',                     descripcion: 'Un cliente representa más del 30% de la cartera total de cuentas por cobrar. Alta concentración de riesgo crediticio. Si ese cliente no paga, el impacto en el flujo de caja es significativo.' },
+            V14_intercompany:                 { categoria: 'Intercompañía',       riesgo: 'CRÍTICO', norma: 'Art. 32-A LIR / NIC 24',     descripcion: 'Operaciones entre empresas vinculadas del grupo sin respaldo de precios de transferencia o sin documentación de valor de mercado. Riesgo de fiscalización por SUNAT y ajustes tributarios significativos.' },
+            V15_activo_fijo:                  { categoria: 'Activo Fijo',         riesgo: 'MEDIO',   norma: 'NIC 16',                     descripcion: 'Activos fijos (clases 33/39) sin depreciación registrada en el período seleccionado, o con vida útil agotada manteniendo saldo en libros. Riesgo de sobrevaluación del activo y error en el resultado del período.' },
+            V16_trazabilidad_pago:            { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'Control Interno',            descripcion: 'Salidas de caja/banco (débitos en clase 10 o pagos en clase 42) sin trazabilidad hacia el documento de origen (NroD vacío). Riesgo de pagos no autorizados, malversación o evasión.' },
+            V17_reconciliacion_ingr:          { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / NIIF 9',           descripcion: 'Conciliación entre ingresos contabilizados (clase 70) y facturas emitidas en el sistema. Tipo A: factura emitida sin asiento (ingreso no reconocido). Tipo B: asiento sin factura (ingreso sin documento de venta).' },
+            V18_tributos:                     { categoria: 'Tributario',          riesgo: 'ALTO',    norma: 'Código Tributario',          descripcion: 'Tributos por pagar (clase 40) con saldo acreedor de períodos anteriores sin declaración, fraccionamiento o pago. La deuda tributaria genera intereses moratorios y puede derivar en procedimiento coactivo de SUNAT.' },
+            V19_balance_resumen:              { categoria: 'Balance General',     riesgo: 'MEDIO',   norma: 'NIC 1',                      descripcion: 'Resumen de saldos del balance por clase contable. Identifica clases con saldos en el lado incorrecto (activos con saldo acreedor, pasivos con saldo deudor) que pueden indicar errores de clasificación o de registro.' },
+            V20_fechas_anomalas:              { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'Control Interno',            descripcion: 'Asientos con fechas fuera del rango esperado: domingos, feriados nacionales, madrugadas (entre 0-5am) o fechas retroactivas superiores a 90 días. Puede indicar ajustes no autorizados o manipulación del libro.' },
+            V21_identificadores_dup:          { categoria: 'Calidad de Datos',    riesgo: 'BAJO',    norma: 'Control Interno',            descripcion: 'Documentos con el mismo número de identificador (NroD) registrados múltiples veces en distintos asientos. Riesgo de duplicación de gastos, ingresos o provisiones que distorsionan el resultado del período.' },
             V22_conciliacion_estado:          { categoria: 'Caja y Bancos',       riesgo: 'ALTO',    norma: 'Control Interno' },
             V23_pl_anual:                     { categoria: 'P&L',                 riesgo: 'MEDIO',   norma: 'NIIF 15 / NIC 1' },
             V24_ob_vs_contable:               { categoria: 'Coherencia Modular',  riesgo: 'ALTO',    norma: 'Control Interno' },
@@ -3251,6 +3258,13 @@ export default function DashboardPage() {
                                 </td>
                               </tr>
 
+                              {isExpanded && info.descripcion && (
+                                <tr>
+                                  <td colSpan={7} style={{ padding: '0.6rem 1rem', background: 'rgba(32,126,131,0.08)', borderLeft: '3px solid #2BB4BB', color: '#CBD5E1', fontSize: '0.78rem', lineHeight: 1.5, textAlign: 'left' }}>
+                                    <span style={{ fontWeight: 600, color: '#2BB4BB', marginRight: '0.4rem' }}>¿Qué detecta?</span>{info.descripcion}
+                                  </td>
+                                </tr>
+                              )}
                               {isExpanded && rawRows.length > 0 && (() => {
                                 const colKeys = Object.keys(rawRows[0]);
                                 const isMoney = (k: string) => /monto|importe|total|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap/i.test(k);
@@ -3264,6 +3278,7 @@ export default function DashboardPage() {
                                   if (['60','61','62','63','64','65','66','67'].includes(clase)) return 'gastos-nat-transactions';
                                   if (['12','13','14','16','17','18'].includes(clase)) return 'otras-cxc-transactions';
                                   if (['42','43','44','45','46','47'].includes(clase)) return 'otras-cxp-transactions';
+                                  if (['50','51','52','53','54','55','56','57','58','59'].includes(clase)) return 'patrimonio-transactions';
                                   return null;
                                 };
                                 return (

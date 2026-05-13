@@ -355,6 +355,16 @@ export class KpiController {
     return this.kpiService.getPatrimonio(companyId);
   }
 
+  /** Patrimonio — asientos individuales para drill-down (clases 50-59) */
+  @Get(':companyId/patrimonio-transactions')
+  getPatrimonioTransactions(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('codCuenta') codCuenta?: string,
+  ) {
+    return this.kpiService.getPatrimonioTransactions(companyId, Number(year) || new Date().getFullYear(), codCuenta);
+  }
+
   /** Inventarios — clases 20-29 con saldo histórico y movimiento del año */
   @Get(':companyId/inventarios')
   getInventarios(

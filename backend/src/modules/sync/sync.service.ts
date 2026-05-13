@@ -61,6 +61,7 @@ export class SyncService {
       // Nuevos módulos
       laboral_txn?: any[];
       patrimonio?: any[];
+      patrimonio_txn?: any[];
       inventarios?: any[];
       tesoreria?: any[];
       ob_saldos_banco?: any[];
@@ -208,6 +209,10 @@ export class SyncService {
       if (data.patrimonio?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'patrimonio', 'current', year, null, data.patrimonio);
         logs.push({ kpiType: 'patrimonio', rowsProcessed: data.patrimonio.length, status: 'success' });
+      }
+      if (data.patrimonio_txn?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'patrimonio_txn', period, year, null, data.patrimonio_txn);
+        logs.push({ kpiType: 'patrimonio_txn', rowsProcessed: data.patrimonio_txn.length, status: 'success' });
       }
 
       if (data.inventarios?.length) {

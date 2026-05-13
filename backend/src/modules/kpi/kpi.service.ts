@@ -961,6 +961,14 @@ export class KpiService {
     return { rows, totalPatrimonio: round(totalPatrimonio), syncedAt: cached.syncedAt };
   }
 
+  async getPatrimonioTransactions(companyId: string, year: number, codCuenta?: string) {
+    const cached = await this.getSnapshot(companyId, 'patrimonio_txn', `${year}`);
+    if (!cached) return { transactions: [], total: 0 };
+    let txns = cached.data as any[];
+    if (codCuenta) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(codCuenta));
+    return { transactions: txns, total: txns.length };
+  }
+
   // ─────────────────────────────────────────────
   // Inventarios — clases 20-29 con saldo histórico y movimiento del año
   // ─────────────────────────────────────────────

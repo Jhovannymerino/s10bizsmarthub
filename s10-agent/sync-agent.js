@@ -994,6 +994,33 @@ HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
 ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
 `;
 
+// Patrimonio (clases 50-59): asientos individuales del año para drill-down
+const QUERY_PATRIMONIO_TXN = (codEmpresa, year) => `
+SELECT
+  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.NroD                                                  AS NroD,
+  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
+  YEAR(ac.FechaAplicacionContable)                         AS Anio,
+  MONTH(ac.FechaAplicacionContable)                        AS Mes,
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  pcd.CodCuenta                                            AS CodCuenta,
+  pcd.Descripcion                                          AS DesCuenta,
+  ISNULL(ac.Glosa, '')                                     AS Glosa,
+  ISNULL(ac.Debito, 0)                                     AS Debito,
+  ISNULL(ac.Credito, 0)                                    AS Credito,
+  ISNULL(i.Descripcion, '')                                AS Tercero,
+  ISNULL(CAST(ac.CodIdentificador AS VARCHAR(20)), '')     AS CodTercero
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND LEFT(pcd.CodCuenta, 2) IN ('50','51','52','53','54','55','56','57','58','59')
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
+ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+`;
+
 // Inventarios y existencias: clases 20-29 con saldo histórico y movimiento del año
 const QUERY_INVENTARIOS = (codEmpresa, year) => `
 SELECT
@@ -2235,7 +2262,7 @@ async function main() {
         tributosResult, tributosTxnResult,
         laboralResult, laboralTxnResult,
         activoFijoResult, activoFijoTxnResult,
-        patrimonioResult, inventariosResult,
+        patrimonioResult, patrimonioTxnResult, inventariosResult,
       ] = await Promise.all([
         pool.request().query(QUERY_BALANCE(company.codEmpresa, year)),
         pool.request().query(QUERY_OTRAS_CXC(company.codEmpresa)),
@@ -2249,6 +2276,7 @@ async function main() {
         pool.request().query(QUERY_ACTIVO_FIJO(company.codEmpresa)),
         pool.request().query(QUERY_ACTIVO_FIJO_TXN(company.codEmpresa)),
         pool.request().query(QUERY_PATRIMONIO(company.codEmpresa)),
+        pool.request().query(QUERY_PATRIMONIO_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_INVENTARIOS(company.codEmpresa, year)),
       ]);
 
@@ -2387,6 +2415,7 @@ async function main() {
           activo_fijo: activoFijoResult.recordset,
           activo_fijo_txn: activoFijoTxnResult.recordset,
           patrimonio: patrimonioResult.recordset,
+          patrimonio_txn: patrimonioTxnResult.recordset,
           inventarios: inventariosResult.recordset,
           prestamos_otorgados: prestamosOtorgResult.recordset,
           prestamos_recibidos: prestamosReciResult.recordset,

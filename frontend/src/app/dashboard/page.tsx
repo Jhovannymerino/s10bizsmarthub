@@ -172,6 +172,10 @@ export default function DashboardPage() {
   const [cajaSaldosData, setCajaSaldosData] = useState<any>(null);
   const [auditData, setAuditData] = useState<any>(null);
   const [validacionForenseData, setValidacionForenseData] = useState<any>(null);
+  const [directorioData, setDirectorioData] = useState<any>(null);
+  const [directorioEditing, setDirectorioEditing] = useState<boolean>(false);
+  const [directorioSaving, setDirectorioSaving] = useState<boolean>(false);
+  const [directorioDraft, setDirectorioDraft] = useState<any>(null);
   const [validacionForenseExpanded, setValidacionForenseExpanded] = useState<string | null>(null);
   const [forenseFacturasDrillKey, setForenseFacturasDrillKey] = useState<string | null>(null);
   const [balanceViewMode, setBalanceViewMode] = useState<'saldos' | 'sumas'>('saldos');
@@ -436,6 +440,19 @@ export default function DashboardPage() {
         .catch(() => done(() => setValidacionForenseData(null)));
     }
   }, [activeTab, selectedCompany, selectedYear, isGrupo]);
+
+  // Directorio: depende de empresa + año + trimestre (independiente del resto)
+  useEffect(() => {
+    if (activeTab !== 'directorio' || isGrupo) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    setDirectorioEditing(false);
+    setDirectorioData(null);
+    fetchApi(`/kpi/${id}/directorio?year=${selectedYear}&quarter=${selectedQuarter}`, token)
+      .then(d => { setDirectorioData(d); setDirectorioDraft(JSON.parse(JSON.stringify(d?.data || {}))); })
+      .catch(() => { setDirectorioData(null); setDirectorioDraft(null); });
+  }, [activeTab, selectedCompany, selectedYear, selectedQuarter, isGrupo]);
 
   if (error) return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -3550,7 +3567,7 @@ export default function DashboardPage() {
 
           return (
             <>
-              {/* Selector de Trimestre */}
+              {/* Selector de Trimestre + Botones Editar/Guardar */}
               <div className="kpi-card" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>TRIMESTRE</div>
@@ -3558,19 +3575,58 @@ export default function DashboardPage() {
                     {selectedQuarter} {selectedYear} <span style={{ color: '#8B97A8', fontWeight: 400, fontSize: '0.85rem' }}>· {Q_LABELS[selectedQuarter]}</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                   {(['Q1','Q2','Q3','Q4'] as const).map(q => (
-                    <button key={q} onClick={() => setSelectedQuarter(q)}
+                    <button key={q} onClick={() => setSelectedQuarter(q)} disabled={directorioEditing}
                       style={{
                         padding: '0.45rem 1rem', borderRadius: '0.5rem',
                         border: `1px solid ${selectedQuarter === q ? '#E25C1A' : 'rgba(255,255,255,0.1)'}`,
                         background: selectedQuarter === q ? 'rgba(226,92,26,0.15)' : 'transparent',
                         color: selectedQuarter === q ? '#FF8B4D' : '#8B97A8',
-                        fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', minWidth: 60,
+                        fontWeight: 600, fontSize: '0.8rem', cursor: directorioEditing ? 'not-allowed' : 'pointer', minWidth: 60,
+                        opacity: directorioEditing ? 0.5 : 1,
                       }}>
                       {q}
                     </button>
                   ))}
+                  <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', margin: '0 0.4rem' }} />
+                  {!directorioEditing ? (
+                    <button onClick={() => setDirectorioEditing(true)}
+                      style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: '1px solid rgba(43,180,187,0.3)', background: 'rgba(43,180,187,0.1)', color: '#2BB4BB', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
+                      ✎ Editar
+                    </button>
+                  ) : (
+                    <>
+                      <button onClick={() => { setDirectorioDraft(JSON.parse(JSON.stringify(directorioData?.data || {}))); setDirectorioEditing(false); }}
+                        disabled={directorioSaving}
+                        style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: '1px solid rgba(239,68,68,0.3)', background: 'transparent', color: '#F87171', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        Cancelar
+                      </button>
+                      <button onClick={async () => {
+                        setDirectorioSaving(true);
+                        try {
+                          const token = localStorage.getItem('token');
+                          const res = await fetch(`${API}/kpi/${selectedCompany.codEmpresa}/directorio?year=${selectedYear}&quarter=${selectedQuarter}`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify(directorioDraft),
+                          });
+                          if (res.ok) {
+                            const saved = await res.json();
+                            setDirectorioData(saved);
+                            setDirectorioEditing(false);
+                          } else {
+                            alert(`Error al guardar: ${res.status}`);
+                          }
+                        } catch (e: any) {
+                          alert(`Error: ${e.message}`);
+                        } finally { setDirectorioSaving(false); }
+                      }} disabled={directorioSaving}
+                        style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#10B981', color: '#0E1A2E', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        {directorioSaving ? '⏳ Guardando…' : '💾 Guardar'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -3581,68 +3637,93 @@ export default function DashboardPage() {
 
               {!loading && pl && (
                 <>
-                  {/* 01 · RESUMEN EJECUTIVO — P&L Q vs YTD */}
-                  <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
-                      01 · RESUMEN EJECUTIVO
-                    </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                      {/* Tabla Q */}
-                      <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-                          {selectedQuarter} {selectedYear} ({Q_LABELS[selectedQuarter]})
-                        </div>
-                        <table className="table-s10" style={{ width: '100%' }}>
-                          <thead>
-                            <tr>
-                              <th style={{ textAlign: 'left' }}>Concepto</th>
-                              <th style={{ textAlign: 'right' }}>Real (S/)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {plDirRows.map(r => {
-                              const v = (qData as any)[r.key] || 0;
-                              return (
-                                <tr key={r.key} style={r.hl ? { background: 'rgba(226,92,26,0.04)' } : {}}>
-                                  <td style={{ fontWeight: r.bold ? 700 : 400 }}>{r.label}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: r.bold ? 700 : 400, color: v < 0 ? '#F87171' : '#F8FAFC' }}>
-                                    {fmt(v)}
-                                  </td>
+                  {/* 01 · RESUMEN EJECUTIVO — P&L Q vs YTD (con Ppto si existe) */}
+                  {(() => {
+                    const pq = directorioData?.data?.presupuesto?.q || {};
+                    const py = directorioData?.data?.presupuesto?.ytd || {};
+                    const hasPptoQ = Object.values(pq).some((v: any) => Math.abs(Number(v) || 0) > 0);
+                    const hasPptoYTD = Object.values(py).some((v: any) => Math.abs(Number(v) || 0) > 0);
+                    // Derivar ppto Margen/EBITDA/Utilidad si hay ppto base
+                    const buildPpto = (raw: any) => ({
+                      ingresos: raw.ingresos || 0,
+                      costoDirecto: raw.costoDirecto || 0,
+                      margenBruto: (raw.ingresos || 0) - Math.abs(raw.costoDirecto || 0),
+                      gav: raw.gav || 0,
+                      ebitda: (raw.ingresos || 0) - Math.abs(raw.costoDirecto || 0) - Math.abs(raw.gav || 0),
+                      gastosFinancieros: raw.gastosFinancieros || 0,
+                      utilidadNeta: (raw.ingresos || 0) - Math.abs(raw.costoDirecto || 0) - Math.abs(raw.gav || 0) - Math.abs(raw.gastosFinancieros || 0) - Math.abs(raw.da || 0),
+                    });
+                    const pqDerived = buildPpto(pq);
+                    const pyDerived = buildPpto(py);
+                    const cumpl = (real: number, ppto: number) => (Math.abs(ppto) > 0.01 ? (real / ppto) * 100 : 0);
+                    const cumplColor = (real: number, ppto: number, betterHigher: boolean) => {
+                      if (Math.abs(ppto) < 0.01) return '#8B97A8';
+                      const ratio = real / ppto;
+                      if (betterHigher) return ratio >= 0.95 ? '#10B981' : ratio >= 0.85 ? '#F59E0B' : '#EF4444';
+                      return ratio <= 1.05 ? '#10B981' : ratio <= 1.15 ? '#F59E0B' : '#EF4444';
+                    };
+                    const renderRow = (real: any, ppto: any, hasPpto: boolean) => plDirRows.map(r => {
+                      const vReal = (real as any)[r.key] || 0;
+                      const vPpto = (ppto as any)[r.key] || 0;
+                      const betterHigher = !['costoDirecto','gav','gastosFinancieros'].includes(r.key);
+                      const cumplVal = cumpl(Math.abs(vReal), Math.abs(vPpto));
+                      const col = cumplColor(Math.abs(vReal), Math.abs(vPpto), betterHigher);
+                      return (
+                        <tr key={r.key} style={r.hl ? { background: 'rgba(226,92,26,0.04)' } : {}}>
+                          <td style={{ fontWeight: r.bold ? 700 : 400 }}>{r.label}</td>
+                          <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: r.bold ? 700 : 400, color: vReal < 0 ? '#F87171' : '#F8FAFC' }}>{fmt(vReal)}</td>
+                          {hasPpto && <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#8B97A8' }}>{Math.abs(vPpto) > 0.01 ? fmt(vPpto) : '—'}</td>}
+                          {hasPpto && <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600, color: col }}>{Math.abs(vPpto) > 0.01 ? `${cumplVal.toFixed(0)}%` : '—'}</td>}
+                        </tr>
+                      );
+                    });
+                    return (
+                      <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
+                          01 · RESUMEN EJECUTIVO
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                              {selectedQuarter} {selectedYear} ({Q_LABELS[selectedQuarter]})
+                            </div>
+                            <table className="table-s10" style={{ width: '100%' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ textAlign: 'left' }}>Concepto</th>
+                                  <th style={{ textAlign: 'right' }}>Real (S/)</th>
+                                  {hasPptoQ && <th style={{ textAlign: 'right' }}>Ppto (S/)</th>}
+                                  {hasPptoQ && <th style={{ textAlign: 'right' }}>% Cumpl.</th>}
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                      {/* Tabla YTD */}
-                      <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-                          YTD {selectedYear}
-                        </div>
-                        <table className="table-s10" style={{ width: '100%' }}>
-                          <thead>
-                            <tr>
-                              <th style={{ textAlign: 'left' }}>Concepto</th>
-                              <th style={{ textAlign: 'right' }}>Real (S/)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {plDirRows.map(r => {
-                              const v = (ytdData as any)[r.key] || 0;
-                              return (
-                                <tr key={r.key} style={r.hl ? { background: 'rgba(226,92,26,0.04)' } : {}}>
-                                  <td style={{ fontWeight: r.bold ? 700 : 400 }}>{r.label}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: r.bold ? 700 : 400, color: v < 0 ? '#F87171' : '#F8FAFC' }}>
-                                    {fmt(v)}
-                                  </td>
+                              </thead>
+                              <tbody>{renderRow(qData, pqDerived, hasPptoQ)}</tbody>
+                            </table>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                              YTD {selectedYear}
+                            </div>
+                            <table className="table-s10" style={{ width: '100%' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ textAlign: 'left' }}>Concepto</th>
+                                  <th style={{ textAlign: 'right' }}>Real (S/)</th>
+                                  {hasPptoYTD && <th style={{ textAlign: 'right' }}>Ppto (S/)</th>}
+                                  {hasPptoYTD && <th style={{ textAlign: 'right' }}>% Cumpl.</th>}
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                              </thead>
+                              <tbody>{renderRow(ytdData, pyDerived, hasPptoYTD)}</tbody>
+                            </table>
+                          </div>
+                        </div>
+                        {!hasPptoQ && !hasPptoYTD && (
+                          <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.8rem', background: 'rgba(91,134,229,0.06)', border: '1px solid rgba(91,134,229,0.15)', borderRadius: '0.4rem', fontSize: '0.72rem', color: '#8B97A8' }}>
+                            💡 Activa <b>✎ Editar</b> arriba para cargar el presupuesto del trimestre y ver las columnas de cumplimiento.
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* KPIs con semáforo */}
                   <div className="kpi-card kpi-card-tooltips" style={{ marginBottom: '1.5rem' }}>
@@ -3896,25 +3977,415 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Aviso de secciones pendientes para Fase 2 */}
-                  <div style={{ background: 'rgba(91,134,229,0.06)', border: '1px solid rgba(91,134,229,0.2)', borderRadius: '0.6rem', padding: '1rem 1.2rem', marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#5B86E5', marginBottom: '0.5rem' }}>
-                      Secciones pendientes — requieren captura manual
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#8B97A8', lineHeight: 1.7 }}>
-                      Las siguientes secciones del reporte requieren datos que no están en S10 y se habilitarán en próximas fases:
-                      <ul style={{ margin: '0.5rem 0 0 0.5rem', paddingLeft: '1rem' }}>
-                        <li><b style={{ color: '#F8FAFC' }}>06 · Productividad (HH)</b> — Horas disponibles, facturadas y utilización</li>
-                        <li><b style={{ color: '#F8FAFC' }}>09 · Backlog</b> — Cartera de contratos en ejecución</li>
-                        <li><b style={{ color: '#F8FAFC' }}>10 · Pipeline & VxF</b> — Oportunidades comerciales (Prob A/B/C)</li>
-                        <li><b style={{ color: '#F8FAFC' }}>11 · Proyección Q+1</b> — VxF por línea de negocio</li>
-                        <li><b style={{ color: '#F8FAFC' }}>12 · Green Flags</b> — Logros y avances del trimestre</li>
-                        <li><b style={{ color: '#F8FAFC' }}>13 · Red Flags</b> — Riesgos y alertas con plan de mitigación</li>
-                        <li><b style={{ color: '#F8FAFC' }}>14 · Must Win Battles</b> — Hitos críticos Q+1</li>
-                        <li><b style={{ color: '#F8FAFC' }}>Presupuesto trimestral</b> — Para columnas "vs Ppto" y "% Cumpl."</li>
-                      </ul>
-                    </div>
-                  </div>
+                  {/* ═══════════════════════════════════
+                      SECCIONES MANUALES (Fase 2)
+                      ═══════════════════════════════════ */}
+                  {(() => {
+                    if (!directorioDraft) return null;
+                    const d = directorioDraft;
+                    const editing = directorioEditing;
+
+                    // Helper para actualizar campos del draft (soporta paths tipo "presupuesto.q.ingresos")
+                    const set = (path: string, value: any) => {
+                      setDirectorioDraft((cur: any) => {
+                        const copy = JSON.parse(JSON.stringify(cur || {}));
+                        const parts = path.split('.');
+                        let ref: any = copy;
+                        for (let i = 0; i < parts.length - 1; i++) {
+                          if (ref[parts[i]] == null) ref[parts[i]] = isNaN(Number(parts[i + 1])) ? {} : [];
+                          ref = ref[parts[i]];
+                        }
+                        ref[parts[parts.length - 1]] = value;
+                        return copy;
+                      });
+                    };
+                    const addItem = (path: string, item: any) => {
+                      setDirectorioDraft((cur: any) => {
+                        const copy = JSON.parse(JSON.stringify(cur || {}));
+                        const parts = path.split('.');
+                        let ref: any = copy;
+                        for (let i = 0; i < parts.length; i++) {
+                          if (ref[parts[i]] == null) ref[parts[i]] = i === parts.length - 1 ? [] : {};
+                          if (i < parts.length - 1) ref = ref[parts[i]];
+                        }
+                        ref[parts[parts.length - 1]].push(item);
+                        return copy;
+                      });
+                    };
+                    const removeItem = (path: string, index: number) => {
+                      setDirectorioDraft((cur: any) => {
+                        const copy = JSON.parse(JSON.stringify(cur || {}));
+                        const parts = path.split('.');
+                        let ref: any = copy;
+                        for (let i = 0; i < parts.length; i++) ref = ref[parts[i]];
+                        ref.splice(index, 1);
+                        return copy;
+                      });
+                    };
+
+                    // Estilos compactos para inputs
+                    const inputStyle: React.CSSProperties = {
+                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(43,180,187,0.25)',
+                      borderRadius: '0.35rem', padding: '0.35rem 0.55rem', color: '#F8FAFC',
+                      fontSize: '0.75rem', fontFamily: 'monospace', width: '100%',
+                    };
+                    const inputText: React.CSSProperties = { ...inputStyle, fontFamily: 'inherit' };
+                    const labelStyle: React.CSSProperties = {
+                      fontSize: '0.65rem', color: '#8B97A8', letterSpacing: '0.03em', marginBottom: '0.25rem', display: 'block',
+                    };
+                    const sectionTitle: React.CSSProperties = {
+                      fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em',
+                    };
+
+                    const NumInput = ({ path, value }: { path: string; value: number }) => (
+                      <input type="number" step="0.01" value={value || 0} style={inputStyle}
+                        onChange={e => set(path, parseFloat(e.target.value) || 0)} />
+                    );
+                    const TextInput = ({ path, value, placeholder }: { path: string; value: string; placeholder?: string }) => (
+                      <input type="text" value={value || ''} placeholder={placeholder} style={inputText}
+                        onChange={e => set(path, e.target.value)} />
+                    );
+                    const TextArea = ({ path, value, rows = 2 }: { path: string; value: string; rows?: number }) => (
+                      <textarea value={value || ''} rows={rows} style={{ ...inputText, resize: 'vertical', minHeight: 40 }}
+                        onChange={e => set(path, e.target.value)} />
+                    );
+                    const SelectInput = ({ path, value, options }: { path: string; value: string; options: string[] }) => (
+                      <select value={value || options[0]} style={inputStyle} onChange={e => set(path, e.target.value)}>
+                        {options.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    );
+
+                    const pptoQ = d.presupuesto?.q || { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 };
+                    const pptoY = d.presupuesto?.ytd || { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 };
+                    const hasPpto = Math.abs(pptoQ.ingresos) > 0 || Math.abs(pptoQ.gav) > 0;
+
+                    return (
+                      <>
+                        {/* ── Presupuesto ── */}
+                        {(editing || hasPpto) && (
+                          <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                            <h2 style={sectionTitle}>PRESUPUESTO {selectedQuarter} {selectedYear} (S/)</h2>
+                            <div style={{ overflowX: 'auto' }}>
+                              <table className="table-s10" style={{ width: '100%' }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ textAlign: 'left' }}>Concepto</th>
+                                    <th style={{ textAlign: 'right' }}>Ppto {selectedQuarter}</th>
+                                    <th style={{ textAlign: 'right' }}>Ppto YTD</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {[['ingresos','Ingresos'],['costoDirecto','Costo Directo (COGS)'],['gav','GAV'],['da','D&A (Depreciación y Amort.)']].map(([k, label]) => (
+                                    <tr key={k}>
+                                      <td>{label}</td>
+                                      <td style={{ textAlign: 'right' }}>
+                                        {editing
+                                          ? <NumInput path={`presupuesto.q.${k}`} value={(pptoQ as any)[k]} />
+                                          : <span style={{ fontFamily: 'monospace' }}>{fmt((pptoQ as any)[k] || 0)}</span>}
+                                      </td>
+                                      <td style={{ textAlign: 'right' }}>
+                                        {editing
+                                          ? <NumInput path={`presupuesto.ytd.${k}`} value={(pptoY as any)[k]} />
+                                          : <span style={{ fontFamily: 'monospace' }}>{fmt((pptoY as any)[k] || 0)}</span>}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ── 06 Productividad HH ── */}
+                        {(editing || (d.productividad?.hhDisponibles || 0) > 0 || (d.productividad?.hhFacturadas || 0) > 0) && (
+                          <div className="kpi-card kpi-card-tooltips" style={{ marginBottom: '1.5rem' }}>
+                            <h2 style={sectionTitle}>06 · PRODUCTIVIDAD (HORAS HOMBRE)</h2>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                              {[
+                                { k: 'hhDisponibles',     label: 'HH Disponibles',         tip: 'Total de horas-hombre que el equipo puede dedicar a proyectos en el trimestre (jornada legal − vacaciones − feriados).' },
+                                { k: 'hhFacturadas',      label: 'HH Facturadas',          tip: 'Horas-hombre efectivamente facturadas a clientes en el trimestre.' },
+                                { k: 'hhDisponiblesPpto', label: 'HH Disponibles (Ppto)',  tip: 'Horas presupuestadas para el trimestre. Base para medir cumplimiento.' },
+                                { k: 'nPersonas',         label: 'N° Personas',            tip: 'Cantidad de personas del equipo facturable durante el trimestre.' },
+                              ].map(({ k, label, tip }) => (
+                                <div key={k} className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                  <div style={labelStyle}>{label}<span className="info-icon">i</span></div>
+                                  {editing
+                                    ? <NumInput path={`productividad.${k}`} value={d.productividad?.[k] || 0} />
+                                    : <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: '#F8FAFC' }}>{(d.productividad?.[k] || 0).toLocaleString('es-PE')}</div>}
+                                  <div className="info-tooltip">
+                                    <div className="info-tip-title">{label}</div>
+                                    <div>{tip}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {!editing && (d.productividad?.hhDisponibles || 0) > 0 && (
+                              <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.8rem', background: 'rgba(43,180,187,0.06)', borderRadius: '0.4rem', fontSize: '0.78rem' }}>
+                                <b style={{ color: '#2BB4BB' }}>Tasa de Utilización: </b>
+                                <span style={{ fontFamily: 'monospace', color: '#F8FAFC' }}>
+                                  {((d.productividad.hhFacturadas / d.productividad.hhDisponibles) * 100).toFixed(1)}%
+                                </span>
+                                <span style={{ color: '#8B97A8', marginLeft: '0.5rem', fontSize: '0.7rem' }}>(target 70-85%)</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── 09 Backlog ── */}
+                        {(editing || (d.backlog?.length || 0) > 0) && (
+                          <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                              <h2 style={sectionTitle}>09 · BACKLOG — Cartera de proyectos en ejecución</h2>
+                              {editing && (
+                                <button onClick={() => addItem('backlog', { cliente: '', proyecto: '', contrato: 0, inicio: '', termino: '', avance: 0, ingresoQ: 0, estado: 'En curso' })}
+                                  style={{ background: '#2BB4BB', color: '#0E1A2E', border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                                  + Agregar proyecto
+                                </button>
+                              )}
+                            </div>
+                            <div style={{ overflowX: 'auto' }}>
+                              <table className="table-s10" style={{ width: '100%', fontSize: '0.72rem' }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ textAlign: 'left' }}>Cliente</th>
+                                    <th style={{ textAlign: 'left' }}>Proyecto</th>
+                                    <th style={{ textAlign: 'right' }}>Contrato (S/)</th>
+                                    <th style={{ textAlign: 'center' }}>Inicio</th>
+                                    <th style={{ textAlign: 'center' }}>Término</th>
+                                    <th style={{ textAlign: 'right' }}>% Avance</th>
+                                    <th style={{ textAlign: 'right' }}>Ing. {selectedQuarter} (S/)</th>
+                                    <th style={{ textAlign: 'center' }}>Estado</th>
+                                    {editing && <th></th>}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(d.backlog || []).map((r: any, i: number) => (
+                                    <tr key={i}>
+                                      <td>{editing ? <TextInput path={`backlog.${i}.cliente`} value={r.cliente} /> : r.cliente}</td>
+                                      <td>{editing ? <TextInput path={`backlog.${i}.proyecto`} value={r.proyecto} /> : r.proyecto}</td>
+                                      <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`backlog.${i}.contrato`} value={r.contrato} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.contrato || 0)}</span>}</td>
+                                      <td>{editing ? <TextInput path={`backlog.${i}.inicio`} value={r.inicio} placeholder="dd/mm/aaaa" /> : r.inicio}</td>
+                                      <td>{editing ? <TextInput path={`backlog.${i}.termino`} value={r.termino} placeholder="dd/mm/aaaa" /> : r.termino}</td>
+                                      <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`backlog.${i}.avance`} value={r.avance} /> : `${(r.avance || 0).toFixed(0)}%`}</td>
+                                      <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`backlog.${i}.ingresoQ`} value={r.ingresoQ} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.ingresoQ || 0)}</span>}</td>
+                                      <td>{editing ? <SelectInput path={`backlog.${i}.estado`} value={r.estado} options={['En curso','En espera','Riesgo','Completado','Suspendido']} /> : r.estado}</td>
+                                      {editing && <td><button onClick={() => removeItem('backlog', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button></td>}
+                                    </tr>
+                                  ))}
+                                  {(d.backlog || []).length === 0 && (
+                                    <tr><td colSpan={editing ? 9 : 8} style={{ textAlign: 'center', color: '#8B97A8', fontStyle: 'italic', padding: '1rem' }}>Sin proyectos registrados. {editing && 'Usa "+ Agregar proyecto" para empezar.'}</td></tr>
+                                  )}
+                                  {(d.backlog || []).length > 0 && (
+                                    <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
+                                      <td colSpan={2}>TOTAL ({(d.backlog || []).length} proyectos)</td>
+                                      <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt((d.backlog || []).reduce((s: number, r: any) => s + (r.contrato || 0), 0))}</td>
+                                      <td colSpan={3}></td>
+                                      <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt((d.backlog || []).reduce((s: number, r: any) => s + (r.ingresoQ || 0), 0))}</td>
+                                      <td colSpan={editing ? 2 : 1}></td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ── 10 Pipeline ── */}
+                        {(editing || (d.pipeline?.length || 0) > 0) && (
+                          <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                              <h2 style={sectionTitle}>10 · PIPELINE & VxF — Oportunidades Q+1</h2>
+                              {editing && (
+                                <button onClick={() => addItem('pipeline', { cliente: '', proyecto: '', monto: 0, qCierre: '', prob: 'B' })}
+                                  style={{ background: '#2BB4BB', color: '#0E1A2E', border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                                  + Agregar oportunidad
+                                </button>
+                              )}
+                            </div>
+                            <div style={{ overflowX: 'auto' }}>
+                              <table className="table-s10" style={{ width: '100%', fontSize: '0.72rem' }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ textAlign: 'left' }}>Cliente</th>
+                                    <th style={{ textAlign: 'left' }}>Proyecto / Servicio</th>
+                                    <th style={{ textAlign: 'right' }}>Monto (S/)</th>
+                                    <th style={{ textAlign: 'center' }}>Q Cierre</th>
+                                    <th style={{ textAlign: 'center' }}>Prob.</th>
+                                    {editing && <th></th>}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(d.pipeline || []).map((r: any, i: number) => {
+                                    const probColor = r.prob === 'A' ? '#10B981' : r.prob === 'B' ? '#F59E0B' : '#8B97A8';
+                                    return (
+                                      <tr key={i}>
+                                        <td>{editing ? <TextInput path={`pipeline.${i}.cliente`} value={r.cliente} /> : r.cliente}</td>
+                                        <td>{editing ? <TextInput path={`pipeline.${i}.proyecto`} value={r.proyecto} /> : r.proyecto}</td>
+                                        <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`pipeline.${i}.monto`} value={r.monto} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.monto || 0)}</span>}</td>
+                                        <td style={{ textAlign: 'center' }}>{editing ? <TextInput path={`pipeline.${i}.qCierre`} value={r.qCierre} placeholder="Q2 2026" /> : r.qCierre}</td>
+                                        <td style={{ textAlign: 'center' }}>{editing ? <SelectInput path={`pipeline.${i}.prob`} value={r.prob} options={['A','B','C']} /> : <span style={{ fontWeight: 700, color: probColor }}>{r.prob}</span>}</td>
+                                        {editing && <td><button onClick={() => removeItem('pipeline', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button></td>}
+                                      </tr>
+                                    );
+                                  })}
+                                  {(d.pipeline || []).length === 0 && (
+                                    <tr><td colSpan={editing ? 6 : 5} style={{ textAlign: 'center', color: '#8B97A8', fontStyle: 'italic', padding: '1rem' }}>Sin oportunidades en pipeline.</td></tr>
+                                  )}
+                                  {(d.pipeline || []).length > 0 && (
+                                    <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
+                                      <td colSpan={2}>TOTAL ({(d.pipeline || []).length})</td>
+                                      <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt((d.pipeline || []).reduce((s: number, r: any) => s + (r.monto || 0), 0))}</td>
+                                      <td colSpan={editing ? 3 : 2}></td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                            {!editing && (d.pipeline || []).length > 0 && (
+                              <div style={{ marginTop: '0.5rem', fontSize: '0.68rem', color: '#8B97A8' }}>
+                                <b>Leyenda probabilidad:</b> <span style={{ color: '#10B981' }}>A</span> Alta (&gt;75%) · <span style={{ color: '#F59E0B' }}>B</span> Media (40-75%) · C Baja (&lt;40%)
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── 12 Green Flags ── */}
+                        {(editing || (d.greenFlags?.length || 0) > 0) && (
+                          <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                              <h2 style={sectionTitle}>12 · GREEN FLAGS — Logros y avances</h2>
+                              {editing && (
+                                <button onClick={() => addItem('greenFlags', { titulo: '', descripcion: '' })}
+                                  style={{ background: '#10B981', color: '#0E1A2E', border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                                  + Agregar logro
+                                </button>
+                              )}
+                            </div>
+                            {(d.greenFlags || []).map((g: any, i: number) => (
+                              <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '1fr 2fr auto' : '1fr 3fr', gap: '0.6rem', marginBottom: '0.6rem', padding: '0.6rem', background: 'rgba(16,185,129,0.05)', borderLeft: '3px solid #10B981', borderRadius: '0.3rem' }}>
+                                <div>
+                                  {editing ? <TextInput path={`greenFlags.${i}.titulo`} value={g.titulo} placeholder="Título del logro" /> : <b style={{ color: '#10B981' }}>{g.titulo}</b>}
+                                </div>
+                                <div>
+                                  {editing ? <TextArea path={`greenFlags.${i}.descripcion`} value={g.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.8rem' }}>{g.descripcion}</span>}
+                                </div>
+                                {editing && <button onClick={() => removeItem('greenFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                              </div>
+                            ))}
+                            {(d.greenFlags || []).length === 0 && !editing && (
+                              <div style={{ color: '#8B97A8', fontStyle: 'italic', fontSize: '0.78rem' }}>Sin logros registrados para este trimestre.</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── 13 Red Flags ── */}
+                        {(editing || (d.redFlags?.length || 0) > 0) && (
+                          <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                              <h2 style={sectionTitle}>13 · RED FLAGS — Riesgos y alertas</h2>
+                              {editing && (
+                                <button onClick={() => addItem('redFlags', { criticidad: 'MEDIO', titulo: '', descripcion: '', accion: '' })}
+                                  style={{ background: '#EF4444', color: '#FFF', border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                                  + Agregar riesgo
+                                </button>
+                              )}
+                            </div>
+                            {(d.redFlags || []).map((r: any, i: number) => {
+                              const critColor = r.criticidad === 'CRÍTICO' || r.criticidad === 'CRITICO' ? '#EF4444' : r.criticidad === 'ALTO' ? '#F59E0B' : '#FBBF24';
+                              return (
+                                <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '110px 1fr 1.5fr 1.5fr auto' : '110px 1fr 1.5fr 1.5fr', gap: '0.6rem', marginBottom: '0.6rem', padding: '0.6rem', background: `${critColor}11`, borderLeft: `3px solid ${critColor}`, borderRadius: '0.3rem' }}>
+                                  <div>
+                                    {editing
+                                      ? <SelectInput path={`redFlags.${i}.criticidad`} value={r.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
+                                      : <span style={{ color: critColor, fontWeight: 700, fontSize: '0.72rem' }}>{r.criticidad}</span>}
+                                  </div>
+                                  <div>{editing ? <TextInput path={`redFlags.${i}.titulo`} value={r.titulo} placeholder="Título del riesgo" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{r.titulo}</b>}</div>
+                                  <div>{editing ? <TextArea path={`redFlags.${i}.descripcion`} value={r.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{r.descripcion}</span>}</div>
+                                  <div>{editing ? <TextArea path={`redFlags.${i}.accion`} value={r.accion} /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>→ {r.accion}</span>}</div>
+                                  {editing && <button onClick={() => removeItem('redFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                                </div>
+                              );
+                            })}
+                            {(d.redFlags || []).length === 0 && !editing && (
+                              <div style={{ color: '#8B97A8', fontStyle: 'italic', fontSize: '0.78rem' }}>Sin riesgos registrados para este trimestre.</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── 14 Must Win ── */}
+                        {(editing || (d.mustWin?.length || 0) > 0) && (
+                          <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                              <h2 style={sectionTitle}>14 · MUST WIN BATTLES — Hitos críticos Q+1</h2>
+                              {editing && (
+                                <button onClick={() => {
+                                  const next = `MW-${String((d.mustWin?.length || 0) + 1).padStart(2, '0')}`;
+                                  addItem('mustWin', { codigo: next, criticidad: 'ALTO', titulo: '', descripcion: '', responsable: '', plazo: '' });
+                                }}
+                                  style={{ background: '#5B86E5', color: '#FFF', border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                                  + Agregar Must Win
+                                </button>
+                              )}
+                            </div>
+                            {(d.mustWin || []).map((m: any, i: number) => {
+                              const critColor = m.criticidad === 'CRÍTICO' || m.criticidad === 'CRITICO' ? '#EF4444' : m.criticidad === 'ALTO' ? '#F59E0B' : '#FBBF24';
+                              return (
+                                <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '80px 110px 1fr 1.5fr 1fr 0.7fr auto' : '80px 110px 1fr 1.5fr 1fr 0.7fr', gap: '0.6rem', marginBottom: '0.6rem', padding: '0.6rem', background: `${critColor}11`, borderLeft: `3px solid ${critColor}`, borderRadius: '0.3rem' }}>
+                                  <div>{editing ? <TextInput path={`mustWin.${i}.codigo`} value={m.codigo} /> : <b style={{ color: '#5B86E5', fontSize: '0.78rem' }}>{m.codigo}</b>}</div>
+                                  <div>
+                                    {editing
+                                      ? <SelectInput path={`mustWin.${i}.criticidad`} value={m.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
+                                      : <span style={{ color: critColor, fontWeight: 700, fontSize: '0.72rem' }}>{m.criticidad}</span>}
+                                  </div>
+                                  <div>{editing ? <TextInput path={`mustWin.${i}.titulo`} value={m.titulo} placeholder="Título del hito" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{m.titulo}</b>}</div>
+                                  <div>{editing ? <TextArea path={`mustWin.${i}.descripcion`} value={m.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.descripcion}</span>}</div>
+                                  <div>{editing ? <TextInput path={`mustWin.${i}.responsable`} value={m.responsable} placeholder="Responsable" /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>{m.responsable}</span>}</div>
+                                  <div>{editing ? <TextInput path={`mustWin.${i}.plazo`} value={m.plazo} placeholder="mes/año" /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.plazo}</span>}</div>
+                                  {editing && <button onClick={() => removeItem('mustWin', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                                </div>
+                              );
+                            })}
+                            {(d.mustWin || []).length === 0 && !editing && (
+                              <div style={{ color: '#8B97A8', fontStyle: 'italic', fontSize: '0.78rem' }}>Sin Must Win Battles registrados.</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Acuerdos de Directorio ── */}
+                        {(editing || (d.acuerdos?.length || 0) > 0) && (
+                          <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                              <h2 style={sectionTitle}>ACUERDOS DE DIRECTORIO {selectedQuarter} {selectedYear}</h2>
+                              {editing && (
+                                <button onClick={() => addItem('acuerdos', '')}
+                                  style={{ background: '#2BB4BB', color: '#0E1A2E', border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                                  + Agregar acuerdo
+                                </button>
+                              )}
+                            </div>
+                            {(d.acuerdos || []).map((a: string, i: number) => (
+                              <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '40px 1fr auto' : '40px 1fr', gap: '0.6rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <div style={{ color: '#2BB4BB', fontWeight: 700, fontSize: '0.85rem' }}>{i + 1}.</div>
+                                <div>{editing ? <TextArea path={`acuerdos.${i}`} value={a} /> : <span style={{ color: '#CBD5E1', fontSize: '0.82rem' }}>{a}</span>}</div>
+                                {editing && <button onClick={() => removeItem('acuerdos', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                              </div>
+                            ))}
+                            {(d.acuerdos || []).length === 0 && !editing && (
+                              <div style={{ color: '#8B97A8', fontStyle: 'italic', fontSize: '0.78rem' }}>Sin acuerdos registrados.</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Footer informativo */}
+                        {directorioData?.updatedAt && !editing && (
+                          <div style={{ fontSize: '0.68rem', color: '#8B97A8', textAlign: 'center', marginTop: '1rem' }}>
+                            Última actualización: {new Date(directorioData.updatedAt).toLocaleString('es-PE')}
+                            {directorioData.updatedBy && ` · por ${directorioData.updatedBy}`}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </>
               )}
             </>

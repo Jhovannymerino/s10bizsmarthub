@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { KpiService } from './kpi.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CompanyAccessGuard } from '../auth/company-access.guard';
@@ -477,5 +477,31 @@ export class KpiController {
   ) {
     const y = parseYear(year);
     return this.kpiService.getValidacionForense(companyId, y);
+  }
+
+  /** Reporte Directorio — datos manuales (Ppto, HH, Backlog, Pipeline, Flags, Must Win) */
+  @Get(':companyId/directorio')
+  getDirectorio(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('quarter') quarter?: string,
+  ) {
+    const y = parseYear(year);
+    const q = (quarter || 'Q1').toUpperCase();
+    return this.kpiService.getDirectorio(companyId, y, q);
+  }
+
+  @Put(':companyId/directorio')
+  saveDirectorio(
+    @Param('companyId') companyId: string,
+    @Query('year') year: string,
+    @Query('quarter') quarter: string,
+    @Body() body: any,
+    @Req() req: any,
+  ) {
+    const y = parseYear(year);
+    const q = (quarter || 'Q1').toUpperCase();
+    const updatedBy = req.user?.email || null;
+    return this.kpiService.saveDirectorio(companyId, y, q, body, updatedBy);
   }
 }

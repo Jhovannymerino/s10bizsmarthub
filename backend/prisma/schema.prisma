@@ -59,6 +59,22 @@ model SyncLog {
   @@index([companyId, createdAt])
 }
 
+// Datos manuales del Reporte Directorio (Ppto, HH, Backlog, Pipeline, Flags, Must Win)
+// Una fila por empresa × año × trimestre; payload completo en JSON para evolución flexible.
+model DirectorioData {
+  id        Int      @id @default(autoincrement())
+  companyId String
+  year      Int
+  quarter   String   // 'Q1' | 'Q2' | 'Q3' | 'Q4'
+  data      Json     // ver shape en DirectorioData.types.ts
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, year, quarter])
+  @@index([companyId, year])
+}
+
 // Usuarios del dashboard
 model User {
   id               Int       @id @default(autoincrement())

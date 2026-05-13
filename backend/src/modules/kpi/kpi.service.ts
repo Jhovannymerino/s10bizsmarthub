@@ -1284,6 +1284,65 @@ export class KpiService {
     );
     return { year, companies: results };
   }
+
+  // ─────────────────────────────────────────────
+  // Directorio — datos manuales (Ppto, HH, Backlog, Pipeline, Flags, Must Win)
+  // ─────────────────────────────────────────────
+
+  private directorioDefault() {
+    return {
+      presupuesto: {
+        q:   { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 },
+        ytd: { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 },
+      },
+      productividad: {
+        hhDisponibles: 0,
+        hhFacturadas: 0,
+        hhDisponiblesPpto: 0,
+        nPersonas: 0,
+      },
+      ventasFuente: {
+        referidos: 0,
+        licitacionesPublicas: 0,
+        licitacionesPrivadas: 0,
+        iniciativaDirecta: 0,
+      },
+      backlog: [] as any[],     // [{ cliente, proyecto, contrato, inicio, termino, avance, ingresoQ, estado }]
+      pipeline: [] as any[],    // [{ cliente, proyecto, monto, qCierre, prob }]
+      greenFlags: [] as any[],  // [{ titulo, descripcion }]
+      redFlags: [] as any[],    // [{ criticidad, titulo, descripcion, accion }]
+      mustWin: [] as any[],     // [{ codigo, criticidad, titulo, descripcion, responsable, plazo }]
+      acuerdos: [] as string[],
+      comentarios: {
+        resumenEjecutivo: '',
+        ebitda: '',
+      },
+    };
+  }
+
+  async getDirectorio(companyId: string, year: number, quarter: string) {
+    const row = await this.prisma.directorioData.findUnique({
+      where: { companyId_year_quarter: { companyId, year, quarter } },
+    });
+    if (!row) {
+      return { companyId, year, quarter, data: this.directorioDefault(), updatedAt: null, updatedBy: null };
+    }
+    return {
+      companyId: row.companyId, year: row.year, quarter: row.quarter,
+      data: { ...this.directorioDefault(), ...(row.data as object) },
+      updatedAt: row.updatedAt, updatedBy: row.updatedBy,
+    };
+  }
+
+  async saveDirectorio(companyId: string, year: number, quarter: string, data: any, updatedBy: string | null) {
+    if (!['Q1','Q2','Q3','Q4'].includes(quarter)) throw new Error('Invalid quarter');
+    const row = await this.prisma.directorioData.upsert({
+      where: { companyId_year_quarter: { companyId, year, quarter } },
+      create: { companyId, year, quarter, data, updatedBy },
+      update: { data, updatedBy },
+    });
+    return { companyId: row.companyId, year: row.year, quarter: row.quarter, data: row.data, updatedAt: row.updatedAt, updatedBy: row.updatedBy };
+  }
 }
 
 function round(n: number, decimals = 2): number {

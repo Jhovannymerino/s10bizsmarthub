@@ -122,7 +122,8 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense'>('inicio');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio'>('inicio');
+  const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
     if (typeof window === 'undefined') return 'viewer';
     try { return JSON.parse(localStorage.getItem('userInfo') || '{}').role ?? 'viewer'; } catch { return 'viewer'; }
@@ -721,6 +722,17 @@ export default function DashboardPage() {
             🏠  Inicio
           </button>
 
+          {!isGrupo && (
+            <>
+              <div className="sidebar-section-label" style={{ marginTop: '0.5rem' }}>Directorio</div>
+              <button onClick={() => handleTabChange('directorio')}
+                className={`sidebar-link ${activeTab === 'directorio' ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                🏛️  Reporte Directorio
+              </button>
+            </>
+          )}
+
           <div className="sidebar-section-label" style={{ marginTop: '0.5rem' }}>Resultados</div>
           {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).map((tab) => (
             <button key={tab}
@@ -949,6 +961,7 @@ export default function DashboardPage() {
               {activeTab === 'conciliacion' && 'Conciliación'}
               {activeTab === 'audit' && 'Auditoría'}
               {activeTab === 'validation_forense' && 'Validación Forense'}
+              {activeTab === 'directorio' && 'Reporte Directorio'}
             </span>
             {lastSync && (
               <>
@@ -987,6 +1000,7 @@ export default function DashboardPage() {
               {activeTab === 'conciliacion' && 'Control Interno'}
               {activeTab === 'audit'             && 'Control Interno'}
               {activeTab === 'validation_forense' && 'Control Interno'}
+              {activeTab === 'directorio'       && 'Reporte Directorio'}
             </div>
             <h1 className="page-title">
               {activeTab === 'inicio' && (isGrupo ? 'Dashboard Ejecutivo' : selectedCompany.shortName)}
@@ -1012,6 +1026,7 @@ export default function DashboardPage() {
               {activeTab === 'conciliacion' && 'Conciliación Bancaria — Estado del Módulo S10'}
               {activeTab === 'audit'             && 'Módulo de Auditoría'}
               {activeTab === 'validation_forense' && 'Validación Forense S10'}
+              {activeTab === 'directorio' && `Reporte Directorio · ${selectedQuarter} ${selectedYear}`}
             </h1>
             <div style={{ color: '#8B97A8', fontSize: '0.8rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span>{selectedCompany.fullName}</span>
@@ -3456,6 +3471,389 @@ export default function DashboardPage() {
                     </table>
                   </div>
                 </div>
+              )}
+            </>
+          );
+        })()}
+
+        {/* ═══════════════════════════════════════════
+            REPORTE DIRECTORIO — Plantilla v2 (Fase 1)
+            ═══════════════════════════════════════════ */}
+        {activeTab === 'directorio' && !isGrupo && (() => {
+          const Q_MONTHS: Record<'Q1'|'Q2'|'Q3'|'Q4', number[]> = {
+            Q1: [1,2,3], Q2: [4,5,6], Q3: [7,8,9], Q4: [10,11,12]
+          };
+          const Q_LABELS: Record<'Q1'|'Q2'|'Q3'|'Q4', string> = {
+            Q1: 'Ene – Mar', Q2: 'Abr – Jun', Q3: 'Jul – Sep', Q4: 'Oct – Dic'
+          };
+          const qMeses = Q_MONTHS[selectedQuarter];
+          const qRows = plMonthly.filter((m: any) => qMeses.includes(m.mes));
+          const sumField = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0);
+          const qData = {
+            ingresos: sumField(qRows, 'ingresos'),
+            costoDirecto: sumField(qRows, 'costoDirecto'),
+            margenBruto: sumField(qRows, 'margenBruto'),
+            gav: sumField(qRows, 'gav'),
+            ebitda: sumField(qRows, 'ebitda'),
+            gastosFinancieros: sumField(qRows, 'gastosFinancieros'),
+            utilidadNeta: sumField(qRows, 'utilidadNeta'),
+          };
+          const ytdData = ytd || { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 };
+          // % helpers (defensive against div-by-zero / negative ingresos)
+          const safePct = (num: number, den: number) => (den && Math.abs(den) > 0.01) ? (num / den) * 100 : 0;
+          const qGMpct = safePct(qData.margenBruto, qData.ingresos);
+          const qCOGSpct = safePct(Math.abs(qData.costoDirecto), qData.ingresos);
+          const qGAVpct = safePct(Math.abs(qData.gav), qData.ingresos);
+          const qEBITDApct = safePct(qData.ebitda, qData.ingresos);
+          // DSO calculado: usa CxC saldo × días del periodo / ingresos Q
+          const qDSO = (cxc?.totalSaldo && qData.ingresos > 0)
+            ? Math.round((cxc.totalSaldo / qData.ingresos) * 90)
+            : null;
+
+          // Semáforo: better=higher (GM, EBITDA), better=lower (COGS, GAV, DSO)
+          const sem = (value: number, target: number, alert: number, betterHigher: boolean): {color: string, bg: string, label: string} => {
+            const isGreen = betterHigher ? value >= target : value <= target;
+            const isYellow = betterHigher ? value >= alert : value <= alert;
+            if (isGreen) return { color: '#10B981', bg: 'rgba(16,185,129,0.12)', label: 'OK' };
+            if (isYellow) return { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: 'Atención' };
+            return { color: '#EF4444', bg: 'rgba(239,68,68,0.12)', label: 'Alerta' };
+          };
+
+          const kpis = [
+            { code: 'F-03', label: 'Margen Bruto %', value: qGMpct, fmt: 'pct', target: 40, alert: 30, betterHigher: true, hint: 'Target >40% · Alerta <30%' },
+            { code: 'F-02', label: 'COGS %', value: qCOGSpct, fmt: 'pct', target: 60, alert: 65, betterHigher: false, hint: 'Target <60% · Alerta >65%' },
+            { code: 'F-04', label: 'GAV %', value: qGAVpct, fmt: 'pct', target: 25, alert: 30, betterHigher: false, hint: 'Target <25% · Alerta >30%' },
+            { code: 'F-05', label: 'EBITDA %', value: qEBITDApct, fmt: 'pct', target: 15, alert: 8, betterHigher: true, hint: 'Target >15% · Alerta <8%' },
+            ...(qDSO !== null ? [{ code: 'O-02', label: 'DSO (días)', value: qDSO, fmt: 'days', target: 60, alert: 90, betterHigher: false, hint: 'Target <60d · Alerta >90d' }] : []),
+          ];
+
+          // P&L rows para tabla resumen
+          const plDirRows = [
+            { key: 'ingresos',          label: 'Ingresos',            bold: true },
+            { key: 'costoDirecto',      label: '(−) Costo Directo (COGS)' },
+            { key: 'margenBruto',       label: 'Margen Bruto',        bold: true, hl: true },
+            { key: 'gav',               label: '(−) GAV' },
+            { key: 'ebitda',            label: 'EBITDA',              bold: true, hl: true },
+            { key: 'gastosFinancieros', label: '(−) Gastos Financieros' },
+            { key: 'utilidadNeta',      label: 'Utilidad Neta',       bold: true, hl: true },
+          ];
+
+          return (
+            <>
+              {/* Selector de Trimestre */}
+              <div className="kpi-card" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>TRIMESTRE</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#F8FAFC' }}>
+                    {selectedQuarter} {selectedYear} <span style={{ color: '#8B97A8', fontWeight: 400, fontSize: '0.85rem' }}>· {Q_LABELS[selectedQuarter]}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  {(['Q1','Q2','Q3','Q4'] as const).map(q => (
+                    <button key={q} onClick={() => setSelectedQuarter(q)}
+                      style={{
+                        padding: '0.45rem 1rem', borderRadius: '0.5rem',
+                        border: `1px solid ${selectedQuarter === q ? '#E25C1A' : 'rgba(255,255,255,0.1)'}`,
+                        background: selectedQuarter === q ? 'rgba(226,92,26,0.15)' : 'transparent',
+                        color: selectedQuarter === q ? '#FF8B4D' : '#8B97A8',
+                        fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', minWidth: 60,
+                      }}>
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Loading state */}
+              {loading && <SkeletonLoader />}
+
+              {!loading && !pl && <NoDataBanner kpi="P&L" />}
+
+              {!loading && pl && (
+                <>
+                  {/* 01 · RESUMEN EJECUTIVO — P&L Q vs YTD */}
+                  <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
+                      01 · RESUMEN EJECUTIVO
+                    </h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                      {/* Tabla Q */}
+                      <div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                          {selectedQuarter} {selectedYear} ({Q_LABELS[selectedQuarter]})
+                        </div>
+                        <table className="table-s10" style={{ width: '100%' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left' }}>Concepto</th>
+                              <th style={{ textAlign: 'right' }}>Real (S/)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {plDirRows.map(r => {
+                              const v = (qData as any)[r.key] || 0;
+                              return (
+                                <tr key={r.key} style={r.hl ? { background: 'rgba(226,92,26,0.04)' } : {}}>
+                                  <td style={{ fontWeight: r.bold ? 700 : 400 }}>{r.label}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: r.bold ? 700 : 400, color: v < 0 ? '#F87171' : '#F8FAFC' }}>
+                                    {fmt(v)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Tabla YTD */}
+                      <div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                          YTD {selectedYear}
+                        </div>
+                        <table className="table-s10" style={{ width: '100%' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left' }}>Concepto</th>
+                              <th style={{ textAlign: 'right' }}>Real (S/)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {plDirRows.map(r => {
+                              const v = (ytdData as any)[r.key] || 0;
+                              return (
+                                <tr key={r.key} style={r.hl ? { background: 'rgba(226,92,26,0.04)' } : {}}>
+                                  <td style={{ fontWeight: r.bold ? 700 : 400 }}>{r.label}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: r.bold ? 700 : 400, color: v < 0 ? '#F87171' : '#F8FAFC' }}>
+                                    {fmt(v)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* KPIs con semáforo */}
+                  <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 0.5rem 0', letterSpacing: '0.05em' }}>
+                      INDICADORES CLAVE — Umbrales del Directorio
+                    </h2>
+                    <div style={{ fontSize: '0.7rem', color: '#8B97A8', marginBottom: '1rem' }}>
+                      Basado en {selectedQuarter} {selectedYear} · Marco B0 del Libro de Datos
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                      {kpis.map(k => {
+                        const s = sem(k.value, k.target, k.alert, k.betterHigher);
+                        return (
+                          <div key={k.code} style={{ background: s.bg, border: `1px solid ${s.color}33`, borderRadius: '0.6rem', padding: '0.9rem 1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
+                              <span style={{ fontSize: '0.65rem', color: '#8B97A8', letterSpacing: '0.05em' }}>{k.code}</span>
+                              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: s.color, padding: '0.1rem 0.5rem', background: `${s.color}1F`, borderRadius: '0.35rem' }}>{s.label}</span>
+                            </div>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#F8FAFC', marginBottom: '0.2rem' }}>{k.label}</div>
+                            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: s.color, fontFamily: 'monospace', marginBottom: '0.2rem' }}>
+                              {k.fmt === 'pct' ? `${k.value.toFixed(1)}%` : `${Math.round(k.value)}d`}
+                            </div>
+                            <div style={{ fontSize: '0.6rem', color: '#6B7280' }}>{k.hint}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 05 · GAV detallado */}
+                  {gav?.categorias && (
+                    <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                      <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
+                        05 · GAV POR CATEGORÍA — YTD {selectedYear}
+                      </h2>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="table-s10" style={{ width: '100%' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left' }}>Categoría</th>
+                              <th style={{ textAlign: 'right' }}>YTD (S/)</th>
+                              <th style={{ textAlign: 'right' }}>% del total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              const total = (gav.categorias as any[]).reduce((s: number, c: any) => s + Math.abs(c.total || 0), 0);
+                              return (gav.categorias as any[])
+                                .slice()
+                                .sort((a: any, b: any) => Math.abs(b.total || 0) - Math.abs(a.total || 0))
+                                .map((c: any, i: number) => {
+                                  const v = Math.abs(c.total || 0);
+                                  const p = total > 0 ? (v / total) * 100 : 0;
+                                  return (
+                                    <tr key={i}>
+                                      <td>{c.categoria}</td>
+                                      <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(v)}</td>
+                                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#8B97A8' }}>{p.toFixed(1)}%</td>
+                                    </tr>
+                                  );
+                                });
+                            })()}
+                            <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
+                              <td>TOTAL GAV</td>
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
+                                {fmt((gav.categorias as any[]).reduce((s: number, c: any) => s + Math.abs(c.total || 0), 0))}
+                              </td>
+                              <td style={{ textAlign: 'right' }}>100%</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 07 · CxC Aging */}
+                  {cxc && (
+                    <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                      <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
+                        07 · CUENTAS POR COBRAR — Aging al cierre
+                      </h2>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                        {[
+                          { label: 'Total CxC',    val: cxc.totalSaldo,    color: '#F8FAFC' },
+                          { label: 'Vigente',      val: cxc.totalVigente,  color: '#10B981' },
+                          { label: '1-30 días',    val: cxc.total_1_30,    color: '#F8FAFC' },
+                          { label: '31-60 días',   val: cxc.total_31_60,   color: '#F59E0B' },
+                          { label: '61-90 días',   val: cxc.total_61_90,   color: '#F59E0B' },
+                          { label: '+90 días',     val: cxc.total_mas90,   color: '#EF4444' },
+                        ].filter(b => b.val !== undefined).map((b, i) => (
+                          <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                            <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>{b.label}</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'monospace', color: b.color }}>{fmt(b.val || 0)}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {Array.isArray(cxc.clientes) && cxc.clientes.length > 0 && (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="table-s10" style={{ width: '100%', fontSize: '0.75rem' }}>
+                            <thead>
+                              <tr>
+                                <th style={{ textAlign: 'left' }}>Cliente</th>
+                                <th style={{ textAlign: 'right' }}>Vigente</th>
+                                <th style={{ textAlign: 'right' }}>1-30</th>
+                                <th style={{ textAlign: 'right' }}>31-60</th>
+                                <th style={{ textAlign: 'right' }}>61-90</th>
+                                <th style={{ textAlign: 'right' }}>+90</th>
+                                <th style={{ textAlign: 'right' }}>Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(cxc.clientes as any[]).slice(0, 10).map((c: any, i: number) => (
+                                <tr key={i}>
+                                  <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.cliente || c.descripcion}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.vigente || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.dias_1_30 || c['1-30'] || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias_31_60 || c['31-60'] || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias_31_60 || c['31-60'] || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias_61_90 || c['61-90'] || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias_61_90 || c['61-90'] || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.mas_90 || c['+90'] || 0) > 0 ? '#EF4444' : undefined }}>{fmt(c.mas_90 || c['+90'] || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.total || c.saldo || 0)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {(cxc.clientes as any[]).length > 10 && (
+                            <div style={{ fontSize: '0.7rem', color: '#8B97A8', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                              Top 10 de {(cxc.clientes as any[]).length} clientes
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 08 · Posición de Caja */}
+                  {caja && (
+                    <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                      <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
+                        08 · POSICIÓN DE CAJA — {selectedQuarter} {selectedYear}
+                      </h2>
+                      {(() => {
+                        const totalPorMes = caja?.totalPorMes || {};
+                        const qFlujo = qMeses.map(m => Number(totalPorMes[m] || 0));
+                        const qNeto = qFlujo.reduce((s, v) => s + v, 0);
+                        const ytdNeto = Object.values(totalPorMes as Record<string, number>).reduce((s, v) => s + (v as number), 0);
+                        const mesNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                        return (
+                          <>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Flujo Neto {selectedQuarter}</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: qNeto < 0 ? '#F87171' : '#10B981' }}>{fmt(qNeto)}</div>
+                              </div>
+                              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Flujo Neto YTD</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: ytdNeto < 0 ? '#F87171' : '#10B981' }}>{fmt(ytdNeto)}</div>
+                              </div>
+                              {saldoCaja !== null && saldoCaja !== undefined && (
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                  <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Último mes</div>
+                                  <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: (saldoCaja as number) < 0 ? '#F87171' : '#F8FAFC' }}>{fmt(saldoCaja as number)}</div>
+                                </div>
+                              )}
+                              {runway !== null && (
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                  <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Cash Runway</div>
+                                  <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: runway < 3 ? '#EF4444' : runway < 6 ? '#F59E0B' : '#10B981' }}>{runway} meses</div>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ overflowX: 'auto' }}>
+                              <table className="table-s10" style={{ width: '100%' }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ textAlign: 'left' }}>Mes</th>
+                                    <th style={{ textAlign: 'right' }}>Flujo Neto (S/)</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {qMeses.map(m => {
+                                    const v = Number(totalPorMes[m] || 0);
+                                    return (
+                                      <tr key={m}>
+                                        <td>{mesNames[m-1]} {selectedYear}</td>
+                                        <td style={{ textAlign: 'right', fontFamily: 'monospace', color: v < 0 ? '#F87171' : v > 0 ? '#10B981' : '#8B97A8' }}>{fmt(v)}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                  <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
+                                    <td>TOTAL {selectedQuarter}</td>
+                                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: qNeto < 0 ? '#F87171' : '#10B981' }}>{fmt(qNeto)}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Aviso de secciones pendientes para Fase 2 */}
+                  <div style={{ background: 'rgba(91,134,229,0.06)', border: '1px solid rgba(91,134,229,0.2)', borderRadius: '0.6rem', padding: '1rem 1.2rem', marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#5B86E5', marginBottom: '0.5rem' }}>
+                      Secciones pendientes — requieren captura manual
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#8B97A8', lineHeight: 1.7 }}>
+                      Las siguientes secciones del reporte requieren datos que no están en S10 y se habilitarán en próximas fases:
+                      <ul style={{ margin: '0.5rem 0 0 0.5rem', paddingLeft: '1rem' }}>
+                        <li><b style={{ color: '#F8FAFC' }}>06 · Productividad (HH)</b> — Horas disponibles, facturadas y utilización</li>
+                        <li><b style={{ color: '#F8FAFC' }}>09 · Backlog</b> — Cartera de contratos en ejecución</li>
+                        <li><b style={{ color: '#F8FAFC' }}>10 · Pipeline & VxF</b> — Oportunidades comerciales (Prob A/B/C)</li>
+                        <li><b style={{ color: '#F8FAFC' }}>11 · Proyección Q+1</b> — VxF por línea de negocio</li>
+                        <li><b style={{ color: '#F8FAFC' }}>12 · Green Flags</b> — Logros y avances del trimestre</li>
+                        <li><b style={{ color: '#F8FAFC' }}>13 · Red Flags</b> — Riesgos y alertas con plan de mitigación</li>
+                        <li><b style={{ color: '#F8FAFC' }}>14 · Must Win Battles</b> — Hitos críticos Q+1</li>
+                        <li><b style={{ color: '#F8FAFC' }}>Presupuesto trimestral</b> — Para columnas "vs Ppto" y "% Cumpl."</li>
+                      </ul>
+                    </div>
+                  </div>
+                </>
               )}
             </>
           );

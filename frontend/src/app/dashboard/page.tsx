@@ -100,7 +100,15 @@ export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState<typeof COMPANIES[0] | typeof GRUPO>(COMPANIES[0]);
+  const [selectedCompany, setSelectedCompany] = useState<typeof COMPANIES[0] | typeof GRUPO>(() => {
+    if (typeof window === 'undefined') return COMPANIES[0];
+    try {
+      const info = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const allowed: string[] = info.allowedCompanies ?? [];
+      if (info.role === 'admin' || allowed.length === 0) return COMPANIES[0];
+      return COMPANIES.find(c => allowed.includes(c.codEmpresa)) ?? COMPANIES[0];
+    } catch { return COMPANIES[0]; }
+  });
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'running' | 'done' | 'unavailable' | 'error'>('idle');
@@ -115,7 +123,14 @@ export default function DashboardPage() {
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense'>('inicio');
-  const [userRole, setUserRole] = useState<string>('viewer');
+  const [userRole, setUserRole] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'viewer';
+    try { return JSON.parse(localStorage.getItem('userInfo') || '{}').role ?? 'viewer'; } catch { return 'viewer'; }
+  });
+  const [userAllowedCompanies, setUserAllowedCompanies] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem('userInfo') || '{}').allowedCompanies ?? []; } catch { return []; }
+  });
   const [userEmail, setUserEmail] = useState<string>('');
   // ── Admin: gestión de usuarios ──
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
@@ -168,6 +183,9 @@ export default function DashboardPage() {
   const loadedRef = useRef<Record<string, string>>({});
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
+  const visibleCompanies = userRole === 'admin'
+    ? COMPANIES
+    : COMPANIES.filter(c => userAllowedCompanies.includes(c.codEmpresa));
 
   useEffect(() => {
     const info = localStorage.getItem('userInfo');
@@ -175,6 +193,7 @@ export default function DashboardPage() {
       try {
         const parsed = JSON.parse(info);
         setUserRole(parsed.role ?? 'viewer');
+        setUserAllowedCompanies(parsed.allowedCompanies ?? []);
         setUserEmail(parsed.email ?? '');
       } catch { /* ignore */ }
     }
@@ -203,10 +222,11 @@ export default function DashboardPage() {
       });
   }, [selectedCompany]);
 
-  // Al montar: detecta si hay un sync corriendo y retoma el polling automáticamente
+  // Al montar: detecta si hay un sync corriendo y retoma el polling automáticamente (admin only)
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
+    try { if (JSON.parse(localStorage.getItem('userInfo') || '{}').role !== 'admin') return; } catch { return; }
     fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(s => {
@@ -585,8 +605,8 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Sync */}
-        <div style={{ padding: '0.625rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        {/* Sync — solo admin */}
+        {userRole === 'admin' && <div style={{ padding: '0.625rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <button
             disabled={syncStatus === 'running'}
             onClick={async () => {
@@ -685,7 +705,7 @@ export default function DashboardPage() {
               Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Nav principal */}
         <nav style={{ flex: 1, padding: '0.5rem 0', overflow: 'auto' }}>
@@ -829,13 +849,15 @@ export default function DashboardPage() {
         {/* ── Empresa + Año (top bar) ── */}
         <div className="context-topbar">
           <div className="context-topbar-companies">
-            <button
-              className={`context-pill${isGrupo ? ' active' : ''}`}
-              onClick={() => { setSelectedCompany(GRUPO); setActiveTab('inicio'); }}
-            >
-              🏢 GRUPO
-            </button>
-            {COMPANIES.map((co) => (
+            {userRole === 'admin' && (
+              <button
+                className={`context-pill${isGrupo ? ' active' : ''}`}
+                onClick={() => { setSelectedCompany(GRUPO); setActiveTab('inicio'); }}
+              >
+                🏢 GRUPO
+              </button>
+            )}
+            {visibleCompanies.map((co) => (
               <button
                 key={co.codEmpresa}
                 className={`context-pill${!isGrupo && selectedCompany.codEmpresa === co.codEmpresa ? ' active' : ''}`}

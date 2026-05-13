@@ -700,12 +700,14 @@ export default function DashboardPage() {
               ✓ {syncProgress.completedYears.length} años: {syncProgress.completedYears.join(', ')}
             </div>
           )}
-          {lastSync && syncStatus !== 'running' && (
-            <div style={{ marginTop: '0.4rem', fontSize: '0.6rem', color: '#4B5563', textAlign: 'center', letterSpacing: '0.02em' }}>
-              Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
-            </div>
-          )}
         </div>}
+
+        {/* Última sincronización — visible para todos los usuarios */}
+        {lastSync && (
+          <div style={{ padding: '0.4rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.6rem', color: '#4B5563', textAlign: 'center', letterSpacing: '0.02em' }}>
+            Datos al {new Date(lastSync).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          </div>
+        )}
 
         {/* Nav principal */}
         <nav style={{ flex: 1, padding: '0.5rem 0', overflow: 'auto' }}>

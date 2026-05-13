@@ -1934,7 +1934,7 @@ WHERE m.Mes <= MONTH(GETDATE())
 ORDER BY m.Mes
 `;
 
-const VQ_TRIBUTOS_DETALLE = (cod) => `
+const VQ_TRIBUTOS_DETALLE = (cod, year) => `
 SELECT
   pcd.CodCuenta,
   LEFT(pcd.Descripcion, 60) AS DesCuenta,
@@ -1947,6 +1947,7 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
   AND LEFT(pcd.CodCuenta, 2) = '40'
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
 GROUP BY pcd.CodCuenta, pcd.Descripcion
 HAVING ABS(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0))) > 0.5
 ORDER BY ABS(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0))) DESC
@@ -2286,7 +2287,7 @@ async function runBatch4Validation(pool, company, year) {
     runQ(VQ_ACTIVO_FIJO_COHERENCIA(cod)),
     runQ(VQ_TRAZABILIDAD_PAGO(cod, year)),
     runQ(VQ_RECONCILIACION_INGRESOS(cod, year, ci)),
-    runQ(VQ_TRIBUTOS_DETALLE(cod)),
+    runQ(VQ_TRIBUTOS_DETALLE(cod, year)),
     runQ(VQ_BALANCE_RESUMEN(cod, year)),
     runQ(VQ_FECHAS_ANOMALAS(cod, year)),
     runQ(VQ_IDENTIFICADORES_DUPLICADOS(cod)),

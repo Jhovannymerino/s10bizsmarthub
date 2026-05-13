@@ -3298,7 +3298,7 @@ export default function DashboardPage() {
                               )}
                               {isExpanded && rawRows.length > 0 && (() => {
                                 const colKeys = Object.keys(rawRows[0]);
-                                const isMoney = (k: string) => /monto|importe|totalmonto|totalsaldo|totalimporte|totaldebe|totalhaber|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap/i.test(k);
+                                const isMoney = (k: string) => /monto|importe|totalmonto|totalsaldo|totalimporte|totaldebe|totalhaber|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap|pagado|provisionado|saldopagar|saldodepositar|saldomensual/i.test(k);
                                 const isCount = (k: string) => /^(n|cant|count|num|nro_asientos?|qty|docs)/i.test(k);
                                 const isV17 = v.id === 'V17_reconciliacion_ingr';
                                 const endpointForClase = (clase: string): string | null => {

@@ -1555,7 +1555,6 @@ FROM CMO.dbo.AsientoContable
 WHERE CodEmpresa = '${cod}'
   AND YEAR(FechaAplicacionContable) = ${year}
 HAVING ABS(SUM(ISNULL(Debito, 0)) - SUM(ISNULL(Credito, 0))) > 0.01
-    OR SUM(CASE WHEN NroD IS NULL THEN 1 ELSE 0 END) > 0
 `;
 
 const VQ_APERTURA = (cod, year) => `
@@ -1594,7 +1593,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanC
 WHERE ac.CodEmpresa = '${cod}'
   AND LEFT(pcd.CodCuenta, 2) IN ('50','51','52','57','58','59')
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.01
+HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) < -0.01
 ORDER BY Clase, pcd.CodCuenta
 `;
 
@@ -1664,7 +1663,7 @@ WHERE ac.CodEmpresa = '${cod}'
 ORDER BY ABS(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)) DESC
 `;
 
-const VQ_SUELDOS_AGING = (cod) => `
+const VQ_SUELDOS_AGING = (cod, year) => `
 SELECT
   YEAR(ac.FechaAplicacionContable)  AS Anio,
   MONTH(ac.FechaAplicacionContable) AS Mes,
@@ -1676,18 +1675,20 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
   AND pcd.CodCuenta LIKE '4111%'
-  AND YEAR(ac.FechaAplicacionContable) >= 2024
+  AND YEAR(ac.FechaAplicacionContable) >= ${year} - 2
 GROUP BY YEAR(ac.FechaAplicacionContable), MONTH(ac.FechaAplicacionContable)
+HAVING ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) > 100
 ORDER BY Anio DESC, Mes DESC
 `;
 
-const VQ_CTS_DEPOSITOS_HISTORICO = (cod) => `
+const VQ_CTS_DEPOSITOS_HISTORICO = (cod, year) => `
 SELECT
   YEAR(ac.FechaAplicacionContable)  AS Anio,
   MONTH(ac.FechaAplicacionContable) AS Mes,
   COUNT(*) AS NumAsientos,
   ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS Provisionado,
   ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS Pagado,
+  ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) AS SaldoPorDepositar,
   CASE
     WHEN MONTH(ac.FechaAplicacionContable) = 5  THEN 'CTS Primer Semestre'
     WHEN MONTH(ac.FechaAplicacionContable) = 11 THEN 'CTS Segundo Semestre'
@@ -1699,12 +1700,13 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
   AND pcd.CodCuenta LIKE '4151%'
-  AND YEAR(ac.FechaAplicacionContable) >= 2023
+  AND YEAR(ac.FechaAplicacionContable) >= ${year} - 2
 GROUP BY YEAR(ac.FechaAplicacionContable), MONTH(ac.FechaAplicacionContable)
+HAVING ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) > 100
 ORDER BY Anio DESC, Mes DESC
 `;
 
-const VQ_PARTICIPACIONES = (cod) => `
+const VQ_PARTICIPACIONES = (cod, year) => `
 SELECT
   pcd.CodCuenta,
   pcd.Descripcion AS DesCuenta,
@@ -1719,9 +1721,9 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
   AND pcd.CodCuenta LIKE '413%'
-  AND YEAR(ac.FechaAplicacionContable) >= 2023
+  AND YEAR(ac.FechaAplicacionContable) >= ${year} - 2
 GROUP BY pcd.CodCuenta, pcd.Descripcion, YEAR(ac.FechaAplicacionContable)
-HAVING SUM(ISNULL(ac.Debito,0) + ISNULL(ac.Credito,0)) > 0.5
+HAVING ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) > 100
 ORDER BY pcd.CodCuenta, Anio DESC
 `;
 
@@ -1744,7 +1746,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanC
 WHERE ac.CodEmpresa = '${cod}'
   AND LEFT(pcd.CodCuenta, 2) = '10'
 GROUP BY pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0))) > 0.5
+HAVING SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) < -0.5
 ORDER BY SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) ASC
 `;
 
@@ -1756,14 +1758,19 @@ SELECT
   cb.CodMoneda AS Moneda,
   ROUND(ISNULL(cb.BalanceActual, 0), 2) AS BalanceActual,
   ROUND(ISNULL(cb.BalanceReal, 0), 2)   AS BalanceReal,
-  ROUND(ISNULL(cb.BalanceBanco, 0), 2)  AS BalanceBanco,
-  cb.Activo,
-  (SELECT COUNT(*) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) AS NumEstadosCargados,
-  (SELECT CONVERT(VARCHAR(10), MAX(eb.Al), 103) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) AS UltimoEstadoAl
+  ROUND(ISNULL(cb.BalanceActual, 0) - ISNULL(cb.BalanceReal, 0), 2) AS Diferencia,
+  (SELECT COUNT(*) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) AS NumEstados,
+  (SELECT CONVERT(VARCHAR(10), MAX(eb.Al), 103) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) AS UltimoEstadoAl,
+  (SELECT DATEDIFF(DAY, MAX(eb.Al), GETDATE()) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) AS DiasDesdeEstado
 FROM CMO.dbo.OB_CuentaBanco cb
 WHERE cb.CodIdentificador = '${cod}'
   AND cb.Activo = 1
-ORDER BY cb.CodMoneda, ABS(ISNULL(cb.BalanceActual,0)) DESC
+  AND (
+    ABS(ISNULL(cb.BalanceActual,0) - ISNULL(cb.BalanceReal,0)) > 0.5
+    OR (SELECT COUNT(*) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) = 0
+    OR (SELECT DATEDIFF(DAY, MAX(eb.Al), GETDATE()) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) > 60
+  )
+ORDER BY ABS(ISNULL(cb.BalanceActual,0) - ISNULL(cb.BalanceReal,0)) DESC
 `;
 
 const VQ_BANCARIZACION_FORENSE = (cod, year) => `
@@ -1779,6 +1786,8 @@ FROM CMO.dbo.OB_Pago p
 LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
 WHERE p.CodIdentificador = '${cod}'
   AND YEAR(p.FechaTrx) = ${year}
+HAVING SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000))
+                    AND (p.MedioDePago IS NULL OR p.MedioDePago=0) THEN 1 ELSE 0 END) > 0
 `;
 
 const VQ_PERGOLA_AGING = (cod) => `
@@ -1871,7 +1880,9 @@ JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanC
 WHERE ac.CodEmpresa = '${cod}'
   AND LEFT(pcd.CodCuenta, 2) IN ('33', '39', '68')
 GROUP BY LEFT(pcd.CodCuenta,2), pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0))) > 0.5
+HAVING
+  (LEFT(pcd.CodCuenta,2) = '33'       AND SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) < -0.5)
+  OR (LEFT(pcd.CodCuenta,2) IN ('39','68') AND SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)) < -0.5)
 ORDER BY Clase, pcd.CodCuenta
 `;
 
@@ -1888,6 +1899,7 @@ FROM CMO.dbo.OB_Pago p
 LEFT JOIN CMO.dbo.OB_DetalleAsignacion da ON p.Pago_ID = da.Pago_ID
 WHERE p.CodIdentificador = '${cod}'
   AND YEAR(p.FechaTrx) = ${year}
+HAVING COUNT(DISTINCT CASE WHEN da.Pago_ID IS NULL THEN p.Pago_ID END) > 0
 `;
 
 const VQ_RECONCILIACION_INGRESOS = (cod, year, claseIngreso) => `
@@ -1918,6 +1930,7 @@ LEFT JOIN (
   GROUP BY MONTH(doc.FechaDocumento)
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
+  AND ABS(ISNULL(ing.MontoContable, 0) - ISNULL(fac.MontoFacturado, 0)) > 100
 ORDER BY m.Mes
 `;
 
@@ -1953,28 +1966,35 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
 GROUP BY LEFT(pcd.CodCuenta, 1), LEFT(pcd.CodCuenta, 2)
+HAVING
+  (LEFT(pcd.CodCuenta,1) IN ('1','2','3','6','9')
+    AND SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) < -1000)
+  OR (LEFT(pcd.CodCuenta,1) IN ('4','5','7')
+    AND SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) > 1000)
 ORDER BY Clase
 `;
 
-const VQ_FECHAS_ANOMALAS = (cod) => `
+const VQ_FECHAS_ANOMALAS = (cod, year) => `
 SELECT
   CASE
     WHEN ac.FechaAplicacionContable > GETDATE() THEN 'Futura'
     WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 1 THEN 'Domingo'
     WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 7 THEN 'Sábado'
-    ELSE 'Normal'
   END AS Categoria,
   COUNT(*) AS NumAsientos,
   COUNT(DISTINCT ac.NroD) AS DocsDistintos,
   ROUND(SUM(ABS(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0))), 2) AS Monto
 FROM CMO.dbo.AsientoContable ac
 WHERE ac.CodEmpresa = '${cod}'
-  AND YEAR(ac.FechaAplicacionContable) >= 2024
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
+  AND (
+    ac.FechaAplicacionContable > GETDATE()
+    OR DATEPART(WEEKDAY, ac.FechaAplicacionContable) IN (1, 7)
+  )
 GROUP BY CASE
     WHEN ac.FechaAplicacionContable > GETDATE() THEN 'Futura'
     WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 1 THEN 'Domingo'
     WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 7 THEN 'Sábado'
-    ELSE 'Normal'
   END
 ORDER BY 1
 `;
@@ -2010,7 +2030,15 @@ SELECT
 FROM CMO.dbo.OB_CuentaBanco cb
 WHERE cb.CodIdentificador = '${cod}'
   AND cb.Activo = 1
-ORDER BY ABS(ISNULL(cb.BalanceActual,0)) DESC
+  AND (
+    ABS(ISNULL(cb.BalanceActual,0) - ISNULL(cb.BalanceReal,0)) > 0.5
+    OR (SELECT DATEDIFF(DAY, MAX(eb.Al), GETDATE()) FROM CMO.dbo.OB_EstadoBanco eb WHERE eb.BankAccount_ID = cb.BankAccount_ID) > 60
+    OR (SELECT COUNT(*) FROM CMO.dbo.OB_EstadoBanco eb
+        JOIN CMO.dbo.OB_EstadoBancoDetalle d ON eb.NroEstadoBanco = d.NroEstadoBanco
+        WHERE eb.BankAccount_ID = cb.BankAccount_ID
+          AND (d.ConciliarEstado IS NULL OR d.ConciliarEstado = 0)) > 0
+  )
+ORDER BY ABS(ISNULL(cb.BalanceActual,0) - ISNULL(cb.BalanceReal,0)) DESC
 `;
 
 const VQ_PL_ANUAL = (cod, year, claseIngreso) => `
@@ -2032,6 +2060,8 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
+HAVING ROUND(SUM(CASE WHEN LEFT(pcd.CodCuenta,2) = '${claseIngreso}'
+     THEN ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0) ELSE 0 END), 2) <= 0
 `;
 
 const VQ_OB_VS_CONTABLE = (cod, year) => `
@@ -2062,6 +2092,7 @@ LEFT JOIN (
   GROUP BY MONTH(ac.FechaAplicacionContable)
 ) con ON con.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
+  AND ABS(ISNULL(ob.MontoOBPago, 0) - ISNULL(con.MontoContable, 0)) > 100
 ORDER BY m.Mes
 `;
 
@@ -2077,6 +2108,9 @@ WHERE pcd.CodCuenta IN (
   '4111','4115','4151','4130','4131',
   '1041','1042','104','105'
 )
+  AND (SELECT COUNT(*) FROM CMO.dbo.AsientoContable ac
+       WHERE ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+         AND ac.CodEmpresa = '${cod}') = 0
 ORDER BY pcd.CodCuenta
 `;
 
@@ -2094,6 +2128,9 @@ FROM CMO.dbo.AsientoContable ac
 WHERE ac.CodEmpresa = '${cod}'
   AND YEAR(ac.FechaAplicacionContable) >= 2022
 GROUP BY YEAR(ac.FechaAplicacionContable)
+HAVING ROUND(100.0 * SUM(CASE WHEN ac.Glosa IS NULL OR LTRIM(RTRIM(ac.Glosa)) = ''
+         OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D')
+         THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) > 5
 ORDER BY Anio DESC
 `;
 
@@ -2133,6 +2170,13 @@ WHERE doc.CodEmpresa = '${cod}'
   AND doc.CodTipoDocumento IN ('128', '134')
   AND YEAR(doc.FechaDocumento) >= 2022
 GROUP BY YEAR(doc.FechaDocumento)
+HAVING ROUND(100.0 * SUM(ISNULL(doc.Total, 0)) / NULLIF((
+    SELECT SUM(ISNULL(d2.Total, 0))
+    FROM CMO.dbo.vw_12DocumentosPorCobrar d2
+    WHERE d2.CodEmpresa = '${cod}'
+      AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
+      AND d2.CodTipoDocumento IN ('060','125','131')
+  ), 0), 2) > 3
 ORDER BY Anio DESC
 `;
 
@@ -2230,9 +2274,9 @@ async function runBatch4Validation(pool, company, year) {
     runQ(VQ_FACTURAS_SIN_ASIENTO(cod, year, ci)),
     runQ(VQ_FACTURAS_SIN_ASIENTO_RESUMEN(cod, ci)),
     runQ(VQ_INGRESOS_SIN_DOC(cod, year, ci)),
-    runQ(VQ_SUELDOS_AGING(cod)),
-    runQ(VQ_CTS_DEPOSITOS_HISTORICO(cod)),
-    runQ(VQ_PARTICIPACIONES(cod)),
+    runQ(VQ_SUELDOS_AGING(cod, year)),
+    runQ(VQ_CTS_DEPOSITOS_HISTORICO(cod, year)),
+    runQ(VQ_PARTICIPACIONES(cod, year)),
     runQ(VQ_BANCOS_DETALLE(cod)),
     runQ(VQ_OB_CUENTAS_BANCO(cod)),
     runQ(VQ_BANCARIZACION_FORENSE(cod, year)),
@@ -2244,7 +2288,7 @@ async function runBatch4Validation(pool, company, year) {
     runQ(VQ_RECONCILIACION_INGRESOS(cod, year, ci)),
     runQ(VQ_TRIBUTOS_DETALLE(cod)),
     runQ(VQ_BALANCE_RESUMEN(cod, year)),
-    runQ(VQ_FECHAS_ANOMALAS(cod)),
+    runQ(VQ_FECHAS_ANOMALAS(cod, year)),
     runQ(VQ_IDENTIFICADORES_DUPLICADOS(cod)),
     runQ(VQ_CONCILIACION_ESTADO(cod)),
     runQ(VQ_PL_ANUAL(cod, year, ci)),

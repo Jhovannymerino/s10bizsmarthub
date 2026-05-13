@@ -65,6 +65,88 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
 }
 
+/* Variant: allow tooltips to overflow the card */
+.kpi-card-tooltips {
+  overflow: visible;
+}
+.kpi-card-tooltips::after {
+  display: none;
+}
+
+/* ── Info Tooltip on hover ── */
+.info-pill {
+  position: relative;
+  cursor: help;
+}
+.info-pill .info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(43,180,187,0.15);
+  color: #2BB4BB;
+  font-size: 9px;
+  font-weight: 700;
+  margin-left: 0.35rem;
+  font-family: var(--font-inter), sans-serif;
+  font-style: italic;
+  border: 1px solid rgba(43,180,187,0.3);
+  vertical-align: middle;
+}
+.info-pill .info-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  max-width: 90vw;
+  padding: 0.75rem 0.9rem;
+  background: #0E1A2E;
+  border: 1px solid rgba(43,180,187,0.35);
+  border-radius: 0.55rem;
+  font-size: 0.7rem;
+  line-height: 1.55;
+  color: #CBD5E1;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 10px 28px -6px rgba(0,0,0,0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  z-index: 100;
+  white-space: normal;
+}
+.info-pill .info-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(43,180,187,0.35);
+}
+.info-pill:hover .info-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+.info-pill .info-tip-title {
+  color: #2BB4BB;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+.info-pill .info-tip-meta {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  color: #8B97A8;
+  font-size: 0.66rem;
+}
+
 .kpi-value {
   font-family: var(--font-mono), 'IBM Plex Mono', 'Courier New', monospace;
   font-size: 1.5rem;

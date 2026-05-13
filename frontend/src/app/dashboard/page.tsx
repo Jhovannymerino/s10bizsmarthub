@@ -3520,11 +3520,21 @@ export default function DashboardPage() {
           };
 
           const kpis = [
-            { code: 'F-03', label: 'Margen Bruto %', value: qGMpct, fmt: 'pct', target: 40, alert: 30, betterHigher: true, hint: 'Target >40% · Alerta <30%' },
-            { code: 'F-02', label: 'COGS %', value: qCOGSpct, fmt: 'pct', target: 60, alert: 65, betterHigher: false, hint: 'Target <60% · Alerta >65%' },
-            { code: 'F-04', label: 'GAV %', value: qGAVpct, fmt: 'pct', target: 25, alert: 30, betterHigher: false, hint: 'Target <25% · Alerta >30%' },
-            { code: 'F-05', label: 'EBITDA %', value: qEBITDApct, fmt: 'pct', target: 15, alert: 8, betterHigher: true, hint: 'Target >15% · Alerta <8%' },
-            ...(qDSO !== null ? [{ code: 'O-02', label: 'DSO (días)', value: qDSO, fmt: 'days', target: 60, alert: 90, betterHigher: false, hint: 'Target <60d · Alerta >90d' }] : []),
+            { code: 'F-03', label: 'Margen Bruto %', value: qGMpct, fmt: 'pct', target: 40, alert: 30, betterHigher: true, hint: 'Target >40% · Alerta <30%',
+              tipTitle: 'Margen Bruto %',
+              tip: 'Diferencia entre ingresos y costos directos, expresada como porcentaje. Mide cuánto queda después de cubrir el costo de producción del servicio. Es el motor de rentabilidad: de aquí salen los recursos para pagar la estructura fija (GAV), inversión y utilidad.' },
+            { code: 'F-02', label: 'COGS %', value: qCOGSpct, fmt: 'pct', target: 60, alert: 65, betterHigher: false, hint: 'Target <60% · Alerta >65%',
+              tipTitle: 'Costo de Ventas %',
+              tip: 'Porcentaje de los ingresos consumido por costos directos: mano de obra directa, materiales y subcontratos necesarios para ejecutar los proyectos. COGS alto puede indicar exceso de subcontratación, baja productividad o precios de venta insuficientes.' },
+            { code: 'F-04', label: 'GAV %', value: qGAVpct, fmt: 'pct', target: 25, alert: 30, betterHigher: false, hint: 'Target <25% · Alerta >30%',
+              tipTitle: 'Gastos Adm. y Ventas %',
+              tip: 'Porcentaje de los ingresos consumido por la estructura fija: personal administrativo, alquileres, tecnología, marketing. Es un costo fijo: se paga aunque los ingresos bajen. Un GAV creciente con ingresos estancados comprime el EBITDA rápidamente.' },
+            { code: 'F-05', label: 'EBITDA %', value: qEBITDApct, fmt: 'pct', target: 15, alert: 8, betterHigher: true, hint: 'Target >15% · Alerta <8%',
+              tipTitle: 'EBITDA %',
+              tip: 'Resultado operativo antes de depreciación y amortización. Mide la rentabilidad operativa pura del negocio, independiente de decisiones de financiamiento o contables. Es el KPI financiero más importante para el Directorio: determina capacidad de reinversión, pago de deuda y atractivo para inversores.' },
+            ...(qDSO !== null ? [{ code: 'O-02', label: 'DSO (días)', value: qDSO, fmt: 'days', target: 60, alert: 90, betterHigher: false, hint: 'Target <60d · Alerta >90d',
+              tipTitle: 'Days Sales Outstanding',
+              tip: 'Días promedio que tarda la empresa en cobrar sus facturas. Un DSO alto significa que los clientes pagan tarde y el capital de trabajo queda atado a la cobranza. Cada 10 días adicionales comprometen liquidez para operación. Fórmula: (CxC Total / Ingresos del Período) × 90 días.' }] : []),
           ];
 
           // P&L rows para tabla resumen
@@ -3635,20 +3645,22 @@ export default function DashboardPage() {
                   </div>
 
                   {/* KPIs con semáforo */}
-                  <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                  <div className="kpi-card kpi-card-tooltips" style={{ marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 0.5rem 0', letterSpacing: '0.05em' }}>
                       INDICADORES CLAVE — Umbrales del Directorio
                     </h2>
                     <div style={{ fontSize: '0.7rem', color: '#8B97A8', marginBottom: '1rem' }}>
-                      Basado en {selectedQuarter} {selectedYear} · Marco B0 del Libro de Datos
+                      Basado en {selectedQuarter} {selectedYear} · Marco B0 del Libro de Datos · pasa el cursor sobre cada indicador para ver su definición
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
                       {kpis.map(k => {
                         const s = sem(k.value, k.target, k.alert, k.betterHigher);
                         return (
-                          <div key={k.code} style={{ background: s.bg, border: `1px solid ${s.color}33`, borderRadius: '0.6rem', padding: '0.9rem 1rem' }}>
+                          <div key={k.code} className="info-pill" style={{ background: s.bg, border: `1px solid ${s.color}33`, borderRadius: '0.6rem', padding: '0.9rem 1rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
-                              <span style={{ fontSize: '0.65rem', color: '#8B97A8', letterSpacing: '0.05em' }}>{k.code}</span>
+                              <span style={{ fontSize: '0.65rem', color: '#8B97A8', letterSpacing: '0.05em' }}>
+                                {k.code}<span className="info-icon">i</span>
+                              </span>
                               <span style={{ fontSize: '0.62rem', fontWeight: 700, color: s.color, padding: '0.1rem 0.5rem', background: `${s.color}1F`, borderRadius: '0.35rem' }}>{s.label}</span>
                             </div>
                             <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#F8FAFC', marginBottom: '0.2rem' }}>{k.label}</div>
@@ -3656,6 +3668,11 @@ export default function DashboardPage() {
                               {k.fmt === 'pct' ? `${k.value.toFixed(1)}%` : `${Math.round(k.value)}d`}
                             </div>
                             <div style={{ fontSize: '0.6rem', color: '#6B7280' }}>{k.hint}</div>
+                            <div className="info-tooltip">
+                              <div className="info-tip-title">{k.tipTitle} ({k.code})</div>
+                              <div>{k.tip}</div>
+                              <div className="info-tip-meta">Umbral: {k.hint}</div>
+                            </div>
                           </div>
                         );
                       })}
@@ -3714,23 +3731,41 @@ export default function DashboardPage() {
                     const totalCxC = cxc.totalSaldo || (t0_30 + t31_60 + t61_90 + t90mas);
                     const sortedClientes = [...clientes].sort((a, b) => (b.saldoTotal || 0) - (a.saldoTotal || 0));
                     return (
-                      <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                      <div className="kpi-card kpi-card-tooltips" style={{ marginBottom: '1.5rem' }}>
                         <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
                           07 · CUENTAS POR COBRAR — Aging al cierre
                         </h2>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                           {[
-                            { label: 'Total CxC',    val: totalCxC,  color: '#F8FAFC' },
-                            { label: '0-30 días',    val: t0_30,     color: '#10B981' },
-                            { label: '31-60 días',   val: t31_60,    color: '#F59E0B' },
-                            { label: '61-90 días',   val: t61_90,    color: '#F59E0B' },
-                            { label: '+90 días',     val: t90mas,    color: '#EF4444' },
-                            { label: 'Concentr. Top 3', val: cxc.concentracionTop3, color: '#5B86E5', isPct: true },
+                            { label: 'Total CxC',    val: totalCxC,  color: '#F8FAFC',
+                              tipTitle: 'Total Cuentas por Cobrar',
+                              tip: 'Suma de saldos pendientes de cobro a todos los clientes al cierre del período. Representa el capital de trabajo atado a la cobranza.' },
+                            { label: '0-30 días',    val: t0_30,     color: '#10B981',
+                              tipTitle: 'CxC 0-30 días',
+                              tip: 'Saldo en cartera reciente (cobranza dentro del plazo normal). Considerado deuda corriente — bajo riesgo de no cobro.' },
+                            { label: '31-60 días',   val: t31_60,    color: '#F59E0B',
+                              tipTitle: 'CxC 31-60 días',
+                              tip: 'Saldo con primer atraso. Requiere gestión activa de cobranza. Riesgo moderado de no cobro si no se actúa.' },
+                            { label: '61-90 días',   val: t61_90,    color: '#F59E0B',
+                              tipTitle: 'CxC 61-90 días',
+                              tip: 'Saldo con atraso significativo. Probabilidad de cobro decrece — debe evaluarse provisión preventiva.' },
+                            { label: '+90 días',     val: t90mas,    color: '#EF4444',
+                              tipTitle: 'CxC vencida +90 días',
+                              tip: 'Saldo con vencimiento mayor a 90 días. NIIF 9 exige provisión de incobrables. Considerar gestión legal o cesión a factoring.' },
+                            { label: 'Concentr. Top 3', val: cxc.concentracionTop3, color: '#5B86E5', isPct: true,
+                              tipTitle: 'Concentración Top 3 clientes',
+                              tip: 'Porcentaje del total de CxC concentrado en los 3 clientes con mayor saldo. Alta concentración (>50%) significa riesgo de quiebra de un solo cliente que comprometa la liquidez de la empresa.' },
                           ].map((b: any, i) => (
-                            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
-                              <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>{b.label}</div>
+                            <div key={i} className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                              <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>
+                                {b.label}<span className="info-icon">i</span>
+                              </div>
                               <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'monospace', color: b.color }}>
                                 {b.isPct ? `${(b.val || 0).toFixed(1)}%` : fmt(b.val || 0)}
+                              </div>
+                              <div className="info-tooltip">
+                                <div className="info-tip-title">{b.tipTitle}</div>
+                                <div>{b.tip}</div>
                               </div>
                             </div>
                           ))}
@@ -3780,7 +3815,7 @@ export default function DashboardPage() {
 
                   {/* 08 · Posición de Caja */}
                   {caja && (
-                    <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                    <div className="kpi-card kpi-card-tooltips" style={{ marginBottom: '1.5rem' }}>
                       <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
                         08 · POSICIÓN DE CAJA — {selectedQuarter} {selectedYear}
                       </h2>
@@ -3793,24 +3828,40 @@ export default function DashboardPage() {
                         return (
                           <>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-                              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Flujo Neto {selectedQuarter}</div>
+                              <div className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Flujo Neto {selectedQuarter}<span className="info-icon">i</span></div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: qNeto < 0 ? '#F87171' : '#10B981' }}>{fmt(qNeto)}</div>
+                                <div className="info-tooltip">
+                                  <div className="info-tip-title">Flujo Neto del Trimestre</div>
+                                  <div>Suma de entradas menos salidas de caja durante los 3 meses del trimestre. Si es positivo, la operación genera caja; si es negativo, se está consumiendo reserva.</div>
+                                </div>
                               </div>
-                              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Flujo Neto YTD</div>
+                              <div className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Flujo Neto YTD<span className="info-icon">i</span></div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: ytdNeto < 0 ? '#F87171' : '#10B981' }}>{fmt(ytdNeto)}</div>
+                                <div className="info-tooltip">
+                                  <div className="info-tip-title">Flujo Neto Acumulado del Año</div>
+                                  <div>Suma del flujo neto de caja de todos los meses transcurridos del año. Indica la generación/consumo de caja acumulado en el ejercicio.</div>
+                                </div>
                               </div>
                               {saldoCaja !== null && saldoCaja !== undefined && (
-                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
-                                  <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Último mes</div>
+                                <div className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                  <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Último mes<span className="info-icon">i</span></div>
                                   <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: (saldoCaja as number) < 0 ? '#F87171' : '#F8FAFC' }}>{fmt(saldoCaja as number)}</div>
+                                  <div className="info-tooltip">
+                                    <div className="info-tip-title">Saldo del Último Mes</div>
+                                    <div>Saldo neto de caja del mes más reciente con movimientos registrados. Refleja la fotografía actual de tesorería.</div>
+                                  </div>
                                 </div>
                               )}
                               {runway !== null && (
-                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
-                                  <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Cash Runway</div>
+                                <div className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                                  <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Cash Runway<span className="info-icon">i</span></div>
                                   <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: runway < 3 ? '#EF4444' : runway < 6 ? '#F59E0B' : '#10B981' }}>{runway} meses</div>
+                                  <div className="info-tooltip">
+                                    <div className="info-tip-title">Cash Runway (Pista de Caja)</div>
+                                    <div>Meses de operación que puede sostener la empresa con el saldo actual de caja al ritmo del gasto fijo mensual (GAV + Gastos Financieros). Menos de 3 meses = riesgo crítico de liquidez; 3-6 meses = atención; más de 6 meses = posición saludable.</div>
+                                  </div>
                                 </div>
                               )}
                             </div>

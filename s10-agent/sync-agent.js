@@ -1542,34 +1542,39 @@ ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 
 const VQ_RUC_GRUPO = ['22011489', '80688541', '80688706', '80688524', '20557987541'];
 
-const VQ_PARTIDA_DOBLE = (cod) => `
+const VQ_PARTIDA_DOBLE = (cod, year) => `
 SELECT
-  '${cod}' AS CodEmpresa,
-  COUNT(*) AS TotalAsientos,
+  ${year} AS Anio,
+  COUNT(*) AS NumAsientos,
   ROUND(SUM(ISNULL(Debito, 0)), 2)  AS SumDebito,
   ROUND(SUM(ISNULL(Credito, 0)), 2) AS SumCredito,
-  ROUND(SUM(ISNULL(Debito, 0)) - SUM(ISNULL(Credito, 0)), 2) AS Descuadre,
+  ROUND(ABS(SUM(ISNULL(Debito, 0)) - SUM(ISNULL(Credito, 0))), 2) AS Descuadre,
   COUNT(DISTINCT NroD) AS DocsDistintos,
   SUM(CASE WHEN NroD IS NULL THEN 1 ELSE 0 END) AS SinNroD
 FROM CMO.dbo.AsientoContable
 WHERE CodEmpresa = '${cod}'
+  AND YEAR(FechaAplicacionContable) = ${year}
+HAVING ABS(SUM(ISNULL(Debito, 0)) - SUM(ISNULL(Credito, 0))) > 0.01
+    OR SUM(CASE WHEN NroD IS NULL THEN 1 ELSE 0 END) > 0
 `;
 
-const VQ_APERTURA = (cod) => `
+const VQ_APERTURA = (cod, year) => `
 SELECT
   YEAR(ac.FechaAplicacionContable) AS Anio,
   CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerAsiento,
   COUNT(*) AS NumAsientos,
   COUNT(DISTINCT LEFT(pcd.CodCuenta,2)) AS NumClases,
   ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
+  ROUND(ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))), 2) AS Descuadre
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
   AND (ac.Glosa LIKE '%APERTURA%' OR ac.Glosa LIKE '%INICIO%' OR ac.Glosa LIKE '%ASIENTO INICIAL%')
   AND MONTH(ac.FechaAplicacionContable) <= 2
 GROUP BY YEAR(ac.FechaAplicacionContable)
-ORDER BY Anio DESC
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
 `;
 
 const VQ_PATRIMONIO_DETALLE = (cod) => `
@@ -2219,8 +2224,8 @@ async function runBatch4Validation(pool, company, year) {
     v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21,
     v22, v23, v24, v25, v26, v27, v28, v28b, v29, v30,
   ] = await Promise.all([
-    runQ(VQ_PARTIDA_DOBLE(cod)),
-    runQ(VQ_APERTURA(cod)),
+    runQ(VQ_PARTIDA_DOBLE(cod, year)),
+    runQ(VQ_APERTURA(cod, year)),
     runQ(VQ_PATRIMONIO_DETALLE(cod)),
     runQ(VQ_FACTURAS_SIN_ASIENTO(cod, year, ci)),
     runQ(VQ_FACTURAS_SIN_ASIENTO_RESUMEN(cod, ci)),

@@ -3147,8 +3147,8 @@ export default function DashboardPage() {
         {/* ═══ Validación Forense S10 ═══ */}
         {activeTab === 'validation_forense' && !newTabLoading && (() => {
           const VALIDATION_INFO: Record<string, { categoria: string; riesgo: string; norma: string; descripcion: string }> = {
-            V01_partida_doble:                { categoria: 'Integridad Contable', riesgo: 'CRÍTICO', norma: 'NIIF / Partida Doble',       descripcion: 'Verifica que cada asiento contable cuadre (Debe = Haber). Asientos descuadrados indican errores de registro, corrupción de datos o manipulación deliberada del libro contable.' },
-            V02_apertura:                     { categoria: 'Integridad Contable', riesgo: 'ALTO',    norma: 'NIC 1',                      descripcion: 'Detecta asientos registrados con fecha anterior al 01/01 del ejercicio seleccionado. Esto puede distorsionar el saldo de apertura y los resultados del período.' },
+            V01_partida_doble:                { categoria: 'Integridad Contable', riesgo: 'CRÍTICO', norma: 'NIIF / Partida Doble',       descripcion: 'Verifica que Σ Débitos = Σ Créditos en el año seleccionado (integridad global del libro). También detecta asientos sin NroD (sin documento de respaldo). Si no hay hallazgo, el año cuadra perfectamente.' },
+            V02_apertura:                     { categoria: 'Integridad Contable', riesgo: 'ALTO',    norma: 'NIC 1',                      descripcion: 'Verifica el asiento de apertura del año seleccionado (glosa APERTURA/INICIO en enero-febrero). HALLAZGO solo si el asiento de apertura está descuadrado (Σ Debe ≠ Σ Haber). Si no hay hallazgo, la apertura del año es correcta.' },
             V03_patrimonio:                   { categoria: 'Patrimonio',          riesgo: 'CRÍTICO', norma: 'Art. 220 LGS / NIC 1',       descripcion: 'Identifica cuentas de patrimonio (clases 50–59) con saldo deudor. Un patrimonio negativo sugiere pérdidas acumuladas, reducción de capital no contabilizada, o errores graves de clasificación contable.' },
             V04_facturas_sin_asiento_top:     { categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15 / Bancarización',    descripcion: 'Facturas de venta emitidas en el sistema que no tienen asiento contable asociado en el período. Implica ingresos no reconocidos, posible evasión tributaria o desconexión entre el área comercial y contabilidad.' },
             V04b_facturas_sin_asiento_resumen:{ categoria: 'Ingresos',            riesgo: 'ALTO',    norma: 'NIIF 15',                    descripcion: 'Resumen agrupado por cliente de facturas emitidas sin asiento contable. Permite identificar patrones: si el problema es sistemático con ciertos clientes o períodos.' },
@@ -3297,8 +3297,8 @@ export default function DashboardPage() {
                               )}
                               {isExpanded && rawRows.length > 0 && (() => {
                                 const colKeys = Object.keys(rawRows[0]);
-                                const isMoney = (k: string) => /monto|importe|total|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap/i.test(k);
-                                const isCount = (k: string) => /^(n|cant|count|num|nro_asientos?|qty)/i.test(k);
+                                const isMoney = (k: string) => /monto|importe|totalmonto|totalsaldo|totalimporte|totaldebe|totalhaber|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap/i.test(k);
+                                const isCount = (k: string) => /^(n|cant|count|num|nro_asientos?|qty|docs)/i.test(k);
                                 const isV17 = v.id === 'V17_reconciliacion_ingr';
                                 const endpointForClase = (clase: string): string | null => {
                                   if (['33','39','68'].includes(clase)) return 'activo-fijo-transactions';

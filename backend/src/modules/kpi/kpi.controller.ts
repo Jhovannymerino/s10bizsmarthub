@@ -141,10 +141,13 @@ export class KpiController {
     return this.kpiService.getDocumentoByNroD(companyId, nroD);
   }
 
-  /** Balance General — saldos acumulados por subcuenta */
+  /** Balance de 8 columnas — saldo inicial + movimiento + saldo final por año */
   @Get(':companyId/balance')
-  getBalance(@Param('companyId') companyId: string) {
-    return this.kpiService.getBalance(companyId);
+  getBalance(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    return this.kpiService.getBalance(companyId, Number(year) || new Date().getFullYear());
   }
 
   /** Otras CxC — aging clases 13,14,16,17,18 */

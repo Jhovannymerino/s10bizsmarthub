@@ -346,19 +346,33 @@ ORDER BY CodCuenta, Mes
 
 // Balance General: saldo acumulado histórico por subcuenta (todas las clases)
 // Activo: DB > CR → saldo positivo. Pasivo/Patrimonio: CR > DB → saldo positivo (se invierte en frontend)
-const QUERY_BALANCE = (codEmpresa) => `
+// Balance de 8 columnas: Saldo inicial | Movimiento del período | Saldo final
+// Saldo inicial = acumulado hasta el año anterior
+// Saldo final   = acumulado hasta fin del año seleccionado (neto deudor/acreedor)
+const QUERY_BALANCE = (codEmpresa, year) => `
 SELECT
-  LEFT(pcd.CodCuenta, 2)                           AS Clase,
-  LEFT(pcd.CodCuenta, 4)                           AS GrupoCuenta,
+  LEFT(pcd.CodCuenta, 2)   AS Clase,
+  LEFT(pcd.CodCuenta, 4)   AS GrupoCuenta,
   pcd.CodCuenta,
-  pcd.Descripcion                                  AS DesCuenta,
-  SUM(ISNULL(ac.Debito, 0))                        AS TotalDebito,
-  SUM(ISNULL(ac.Credito, 0))                       AS TotalCredito,
-  SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0)) AS SaldoNeto
+  pcd.Descripcion           AS DesCuenta,
+  -- Saldo inicial (antes del año)
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) < ${year}
+        THEN ISNULL(ac.Debito,0) ELSE 0 END)   AS SaldoIniDebe,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) < ${year}
+        THEN ISNULL(ac.Credito,0) ELSE 0 END)  AS SaldoIniHaber,
+  -- Movimiento del período
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+        THEN ISNULL(ac.Debito,0) ELSE 0 END)   AS MovDebe,
+  SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
+        THEN ISNULL(ac.Credito,0) ELSE 0 END)  AS MovHaber,
+  -- Totales para calcular saldo final neto
+  SUM(ISNULL(ac.Debito,0))  AS TotalDebe,
+  SUM(ISNULL(ac.Credito,0)) AS TotalHaber
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND YEAR(ac.FechaAplicacionContable) <= ${year}
   AND LEFT(pcd.CodCuenta, 2) IN (
     '10','11','12','13','14','15','16','17','18','19',
     '20','21','22','23','24','25','26','27','28','29',
@@ -2223,7 +2237,7 @@ async function main() {
         activoFijoResult, activoFijoTxnResult,
         patrimonioResult, inventariosResult,
       ] = await Promise.all([
-        pool.request().query(QUERY_BALANCE(company.codEmpresa)),
+        pool.request().query(QUERY_BALANCE(company.codEmpresa, year)),
         pool.request().query(QUERY_OTRAS_CXC(company.codEmpresa)),
         pool.request().query(QUERY_OTRAS_CXC_TXN(company.codEmpresa, year)),
         pool.request().query(QUERY_OTRAS_CXP(company.codEmpresa)),

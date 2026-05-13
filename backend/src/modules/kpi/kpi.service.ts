@@ -546,8 +546,8 @@ export class KpiService {
   // Balance General — saldos acumulados por subcuenta (sin filtro de año)
   // ─────────────────────────────────────────────
 
-  async getBalance(companyId: string) {
-    const cached = await this.getSnapshot(companyId, 'balance', 'current');
+  async getBalance(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'balance', `${year}`);
     if (!cached) return { rows: [], message: 'No data. Run sync first.' };
     return { rows: cached.data as any[], syncedAt: cached.syncedAt };
   }

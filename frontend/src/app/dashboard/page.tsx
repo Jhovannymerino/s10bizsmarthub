@@ -366,7 +366,7 @@ export default function DashboardPage() {
     const done = (setter: () => void) => { setter(); loadedRef.current[activeTab] = cacheKey; setNewTabLoading(false); };
 
     if (activeTab === 'balance') {
-      fetchApi(`/kpi/${id}/balance`, token)
+      fetchApi(`/kpi/${id}/balance?year=${selectedYear}`, token)
         .then(d => done(() => setBalanceData(d)))
         .catch(() => done(() => setBalanceData({ rows: [] })));
     } else if (activeTab === 'otras_cxc') {
@@ -2255,24 +2255,63 @@ export default function DashboardPage() {
             {!balanceData?.rows?.length ? <NoDataBanner kpi="Balance General" /> : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>{balanceData.rows.length} cuentas con saldo · Acumulado histórico</div>
+                  <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>{balanceData.rows.length} cuentas · Balance de 8 columnas · {selectedYear}</div>
                   <ExportBtn onClick={() => exportCSV('balance.csv',
-                    ['CodCuenta','DesCuenta','Clase','SaldoNeto'],
-                    balanceData.rows.map((r: any) => [r.CodCuenta, r.DesCuenta, r.Clase, r.SaldoNeto]))} />
+                    ['Cuenta','Descripcion','Clase','SaldoIniDebe','SaldoIniHaber','MovDebe','MovHaber','SaldoFinalDebe','SaldoFinalHaber'],
+                    balanceData.rows.map((r: any) => {
+                      const finDebe = Math.max(0, (r.TotalDebe||0) - (r.TotalHaber||0));
+                      const finHaber = Math.max(0, (r.TotalHaber||0) - (r.TotalDebe||0));
+                      return [r.CodCuenta, r.DesCuenta, r.Clase, r.SaldoIniDebe, r.SaldoIniHaber, r.MovDebe, r.MovHaber, finDebe, finHaber];
+                    }))} />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                  <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-                    <thead><tr><th>Cuenta</th><th style={{ minWidth: 280 }}>Descripción</th><th>Clase</th><th>Saldo Neto</th></tr></thead>
+                  <table className="table-s10" style={{ fontSize: '0.75rem' }}>
+                    <thead>
+                      <tr>
+                        <th rowSpan={2} style={{ verticalAlign: 'bottom' }}>Cuenta</th>
+                        <th rowSpan={2} style={{ minWidth: 220, verticalAlign: 'bottom' }}>Descripción</th>
+                        <th colSpan={2} style={{ textAlign: 'center', background: 'rgba(32,126,131,0.12)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Saldo Inicial</th>
+                        <th colSpan={2} style={{ textAlign: 'center', background: 'rgba(245,158,11,0.1)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Movimiento {selectedYear}</th>
+                        <th colSpan={2} style={{ textAlign: 'center', background: 'rgba(16,185,129,0.1)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Saldo Final</th>
+                      </tr>
+                      <tr>
+                        <th style={{ background: 'rgba(32,126,131,0.08)' }}>Debe</th>
+                        <th style={{ background: 'rgba(32,126,131,0.08)' }}>Haber</th>
+                        <th style={{ background: 'rgba(245,158,11,0.06)' }}>Debe</th>
+                        <th style={{ background: 'rgba(245,158,11,0.06)' }}>Haber</th>
+                        <th style={{ background: 'rgba(16,185,129,0.08)' }}>Debe</th>
+                        <th style={{ background: 'rgba(16,185,129,0.08)' }}>Haber</th>
+                      </tr>
+                    </thead>
                     <tbody>
-                      {balanceData.rows.map((r: any, i: number) => (
-                        <tr key={i}>
-                          <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.CodCuenta}</td>
-                          <td>{r.DesCuenta}</td>
-                          <td style={{ color: '#8B97A8' }}>{r.Clase}</td>
-                          <td style={{ fontWeight: 600, color: (r.SaldoNeto || 0) < 0 ? '#EF4444' : '#10B981' }}>{fmt(r.SaldoNeto)}</td>
-                        </tr>
-                      ))}
+                      {balanceData.rows.map((r: any, i: number) => {
+                        const finDebe  = Math.max(0, (r.TotalDebe||0) - (r.TotalHaber||0));
+                        const finHaber = Math.max(0, (r.TotalHaber||0) - (r.TotalDebe||0));
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontFamily: 'monospace', color: '#2BB4BB', whiteSpace: 'nowrap' }}>{r.CodCuenta}</td>
+                            <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta}</td>
+                            <td style={{ background: 'rgba(32,126,131,0.04)', color: (r.SaldoIniDebe||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.SaldoIniDebe||0) > 0 ? fmt(r.SaldoIniDebe) : '—'}</td>
+                            <td style={{ background: 'rgba(32,126,131,0.04)', color: (r.SaldoIniHaber||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.SaldoIniHaber||0) > 0 ? fmt(r.SaldoIniHaber) : '—'}</td>
+                            <td style={{ background: 'rgba(245,158,11,0.04)', color: (r.MovDebe||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.MovDebe||0) > 0 ? fmt(r.MovDebe) : '—'}</td>
+                            <td style={{ background: 'rgba(245,158,11,0.04)', color: (r.MovHaber||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.MovHaber||0) > 0 ? fmt(r.MovHaber) : '—'}</td>
+                            <td style={{ background: 'rgba(16,185,129,0.06)', fontWeight: 600, color: finDebe > 0 ? '#10B981' : '#4B5563' }}>{finDebe > 0 ? fmt(finDebe) : '—'}</td>
+                            <td style={{ background: 'rgba(16,185,129,0.06)', fontWeight: 600, color: finHaber > 0 ? '#EF4444' : '#4B5563' }}>{finHaber > 0 ? fmt(finHaber) : '—'}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
+                    <tfoot>
+                      <tr className="total-row">
+                        <td colSpan={2}>TOTAL</td>
+                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.SaldoIniDebe||0), 0))}</td>
+                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.SaldoIniHaber||0), 0))}</td>
+                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.MovDebe||0), 0))}</td>
+                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + (r.MovHaber||0), 0))}</td>
+                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalDebe||0)-(r.TotalHaber||0)), 0))}</td>
+                        <td>{fmt(balanceData.rows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalHaber||0)-(r.TotalDebe||0)), 0))}</td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </>

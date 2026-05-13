@@ -161,7 +161,7 @@ export class SyncService {
       // ── Nuevos módulos ──────────────────────────────────────────────
 
       if (data.balance?.length) {
-        await this.kpiService.saveSnapshot(companyId, companyName, 'balance', 'current', year, null, data.balance);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'balance', period, year, null, data.balance);
         logs.push({ kpiType: 'balance', rowsProcessed: data.balance.length, status: 'success' });
       }
 

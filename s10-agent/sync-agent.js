@@ -2071,6 +2071,132 @@ WHERE pcd.CodCuenta IN (
 ORDER BY pcd.CodCuenta
 `;
 
+const VQ_ASIENTOS_SIN_GLOSA = (cod) => `
+SELECT
+  YEAR(ac.FechaAplicacionContable) AS Anio,
+  COUNT(*) AS TotalAsientos,
+  SUM(CASE WHEN ac.Glosa IS NULL OR LTRIM(RTRIM(ac.Glosa)) = ''
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D')
+           THEN 1 ELSE 0 END) AS SinGlosa,
+  ROUND(100.0 * SUM(CASE WHEN ac.Glosa IS NULL OR LTRIM(RTRIM(ac.Glosa)) = ''
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D')
+           THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) AS PctSinGlosa
+FROM CMO.dbo.AsientoContable ac
+WHERE ac.CodEmpresa = '${cod}'
+  AND YEAR(ac.FechaAplicacionContable) >= 2022
+GROUP BY YEAR(ac.FechaAplicacionContable)
+ORDER BY Anio DESC
+`;
+
+const VQ_CXP_CONCENTRACION = (cod) => `
+SELECT TOP 15
+  ISNULL(i.Descripcion, CAST(ac.CodIdentificador AS VARCHAR)) AS Proveedor,
+  ISNULL(i.RUC, '') AS RUC,
+  ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) AS SaldoCxP,
+  COUNT(*) AS NumAsientos,
+  CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerMov,
+  CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${cod}'
+  AND LEFT(pcd.CodCuenta, 2) = '42'
+GROUP BY i.Descripcion, ac.CodIdentificador, i.RUC
+HAVING SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)) > 1000
+ORDER BY SaldoCxP DESC
+`;
+
+const VQ_NC_SOSPECHOSAS = (cod) => `
+SELECT
+  YEAR(doc.FechaDocumento) AS Anio,
+  COUNT(*) AS NumNC,
+  ROUND(SUM(ISNULL(doc.Total, 0)), 2) AS MontoNC,
+  ROUND(100.0 * SUM(ISNULL(doc.Total, 0)) / NULLIF((
+    SELECT SUM(ISNULL(d2.Total, 0))
+    FROM CMO.dbo.vw_12DocumentosPorCobrar d2
+    WHERE d2.CodEmpresa = '${cod}'
+      AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
+      AND d2.CodTipoDocumento IN ('060','125','131')
+  ), 0), 2) AS PctSobreFacturacion,
+  ROUND(SUM(ISNULL(doc.Total, 0)) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
+FROM CMO.dbo.vw_12DocumentosPorCobrar doc
+WHERE doc.CodEmpresa = '${cod}'
+  AND doc.CodTipoDocumento IN ('128', '134')
+  AND YEAR(doc.FechaDocumento) >= 2022
+GROUP BY YEAR(doc.FechaDocumento)
+ORDER BY Anio DESC
+`;
+
+const VQ_NC_DETALLE = (cod) => `
+SELECT TOP 50
+  YEAR(doc.FechaDocumento) AS Anio,
+  doc.SerieDocumento AS Serie,
+  doc.NumeroDocumento AS Numero,
+  CONVERT(VARCHAR(10), doc.FechaDocumento, 103) AS Fecha,
+  doc.CodTipoDocumento AS Tipo,
+  doc.DescripcionTipoDocumento AS DesTipo,
+  doc.DescripcionIdentificador AS Cliente,
+  doc.RUC,
+  ROUND(ISNULL(doc.Total, 0), 2) AS Total,
+  ISNULL(doc.DescripcionEstado, '') AS Estado
+FROM CMO.dbo.vw_12DocumentosPorCobrar doc
+WHERE doc.CodEmpresa = '${cod}'
+  AND doc.CodTipoDocumento IN ('128', '134')
+  AND YEAR(doc.FechaDocumento) >= 2022
+ORDER BY doc.Total DESC
+`;
+
+const VQ_FRACCIONAMIENTO_PAGOS = (cod) => `
+SELECT TOP 20
+  CONVERT(VARCHAR(10), p.FechaTrx, 103) AS Fecha,
+  cb.NoCuenta AS CuentaBancaria,
+  LEFT(ISNULL(cb.Descripcion,''), 50) AS DesBanco,
+  ISNULL(cb.CodMoneda,'') AS Moneda,
+  COUNT(*) AS NumPagos,
+  ROUND(SUM(ISNULL(p.PayAmt, 0)), 2) AS MontoTotal,
+  ROUND(MAX(ISNULL(p.PayAmt, 0)), 2) AS MayorPago
+FROM CMO.dbo.OB_Pago p
+LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
+WHERE p.CodIdentificador = '${cod}'
+  AND YEAR(p.FechaTrx) >= 2023
+  AND (p.MedioDePago IS NULL OR p.MedioDePago = 0)
+  AND ISNULL(p.PayAmt, 0) BETWEEN 500 AND 3499
+GROUP BY CONVERT(VARCHAR(10), p.FechaTrx, 103), p.BankAccount_ID, cb.NoCuenta, cb.Descripcion, cb.CodMoneda
+HAVING COUNT(*) >= 3
+  AND SUM(ISNULL(p.PayAmt, 0)) > 3500
+ORDER BY NumPagos DESC, MontoTotal DESC
+`;
+
+const VQ_PROVISIONES_SIN_REVERSO = (cod) => `
+SELECT
+  YEAR(ac.FechaAplicacionContable) AS AnioProvision,
+  LEFT(pcd.CodCuenta, 2) AS Clase,
+  pcd.CodCuenta,
+  LEFT(pcd.Descripcion, 60) AS DesCuenta,
+  COUNT(*) AS NumAsientos,
+  ROUND(SUM(ISNULL(ac.Credito, 0)), 2) AS MontoProvisionado,
+  ROUND(SUM(ISNULL(ac.Debito, 0)), 2) AS MontoReversado,
+  ROUND(SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0)), 2) AS SaldoSinReverso
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+WHERE ac.CodEmpresa = '${cod}'
+  AND MONTH(ac.FechaAplicacionContable) = 12
+  AND YEAR(ac.FechaAplicacionContable) >= 2022
+  AND (UPPER(ac.Glosa) LIKE '%PROVI%' OR UPPER(ac.Glosa) LIKE '%ESTIMACI%')
+  AND LEFT(pcd.CodCuenta, 2) IN ('40','41','42','43','44','45','46','47','68')
+  AND NOT EXISTS (
+    SELECT 1 FROM CMO.dbo.AsientoContable ac2
+    WHERE ac2.CodEmpresa = ac.CodEmpresa
+      AND ac2.NroPlanContableDetalle = ac.NroPlanContableDetalle
+      AND MONTH(ac2.FechaAplicacionContable) = 1
+      AND YEAR(ac2.FechaAplicacionContable) = YEAR(ac.FechaAplicacionContable) + 1
+      AND UPPER(ac2.Glosa) LIKE '%REVER%'
+  )
+GROUP BY YEAR(ac.FechaAplicacionContable), LEFT(pcd.CodCuenta, 2), pcd.CodCuenta, pcd.Descripcion
+HAVING ABS(SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))) > 100
+ORDER BY AnioProvision DESC, ABS(SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))) DESC
+`;
+
 async function runBatch4Validation(pool, company, year) {
   const cod = company.codEmpresa;
   const ci = company.claseIngreso;
@@ -2087,7 +2213,7 @@ async function runBatch4Validation(pool, company, year) {
   const [
     v01, v02, v03, v04, v04b, v05, v06, v07, v08, v09, v10,
     v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21,
-    v22, v23, v24, v25,
+    v22, v23, v24, v25, v26, v27, v28, v28b, v29, v30,
   ] = await Promise.all([
     runQ(VQ_PARTIDA_DOBLE(cod)),
     runQ(VQ_APERTURA(cod)),
@@ -2115,6 +2241,12 @@ async function runBatch4Validation(pool, company, year) {
     runQ(VQ_PL_ANUAL(cod, year, ci)),
     runQ(VQ_OB_VS_CONTABLE(cod, year)),
     runQ(VQ_PCD_CRITICAS(cod)),
+    runQ(VQ_ASIENTOS_SIN_GLOSA(cod)),
+    runQ(VQ_CXP_CONCENTRACION(cod)),
+    runQ(VQ_NC_SOSPECHOSAS(cod)),
+    runQ(VQ_NC_DETALLE(cod)),
+    runQ(VQ_FRACCIONAMIENTO_PAGOS(cod)),
+    runQ(VQ_PROVISIONES_SIN_REVERSO(cod)),
   ]);
 
   return {
@@ -2146,6 +2278,12 @@ async function runBatch4Validation(pool, company, year) {
     V23_pl_anual:                    v23,
     V24_ob_vs_contable:              v24,
     V25_pcd_criticas:                v25,
+    V26_asientos_sin_glosa:          v26,
+    V27_cxp_concentracion:           v27,
+    V28_nc_sospechosas:              v28,
+    V28b_nc_detalle:                 v28b,
+    V29_fraccionamiento_pagos:       v29,
+    V30_provisiones_sin_reverso:     v30,
   };
 }
 
@@ -2332,13 +2470,13 @@ async function main() {
       const recibidas  = markDups(reciResult.recordset);
       const honorarios = markDups(honorResult.recordset);
 
-      // Batch 4 — Validaciones forenses (25 queries, mismo conjunto que validation-agent.js)
-      console.log('  → Batch 4: Validaciones forenses (25 queries)...');
+      // Batch 4 — Validaciones forenses (31 queries)
+      console.log('  → Batch 4: Validaciones forenses (31 queries)...');
       const validationForense = await runBatch4Validation(pool, company, year);
       const v4ok = Object.values(validationForense)
         .filter((v) => v && typeof v === 'object' && 'ok' in v)
         .filter((v) => v.ok).length;
-      console.log(`     ✓ ${v4ok}/25 queries forenses OK`);
+      console.log(`     ✓ ${v4ok}/31 queries forenses OK`);
 
       // Log resumen
       const logRow = (label, rows) => console.log(`  ${label}: ${rows.length}`);

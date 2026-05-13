@@ -172,6 +172,7 @@ export default function DashboardPage() {
   const [auditData, setAuditData] = useState<any>(null);
   const [validacionForenseData, setValidacionForenseData] = useState<any>(null);
   const [validacionForenseExpanded, setValidacionForenseExpanded] = useState<string | null>(null);
+  const [forenseFacturasDrillKey, setForenseFacturasDrillKey] = useState<string | null>(null);
   const [tesoreriaData, setTesoreriaData] = useState<any>(null);
   const [patrimonioData, setPatrimonioData] = useState<any>(null);
   const [inventariosData, setInventariosData] = useState<any>(null);
@@ -3148,6 +3149,11 @@ export default function DashboardPage() {
             V23_pl_anual:                     { categoria: 'P&L',                 riesgo: 'MEDIO',   norma: 'NIIF 15 / NIC 1',           descripcion: 'Resumen anual del Estado de Resultados: ingresos, costos, GAV, EBITDA y utilidad neta. Identifica si el resultado del período es coherente con la actividad operativa declarada.' },
             V24_ob_vs_contable:               { categoria: 'Coherencia Modular',  riesgo: 'ALTO',    norma: 'Control Interno',            descripcion: 'Compara los saldos registrados en módulos auxiliares (cuentas por cobrar, por pagar, bancos) contra el mayor contable. Diferencias indican que los módulos no están sincronizados con la contabilidad.' },
             V25_pcd_criticas:                 { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'PCGR Perú',                  descripcion: 'Detecta cuentas contables críticas (del Plan de Cuentas) que deberían tener movimiento en el período pero aparecen sin registros. Puede indicar omisión de provisiones obligatorias o falta de cierre contable.' },
+            V26_asientos_sin_glosa:           { categoria: 'Calidad de Datos',    riesgo: 'ALTO',    norma: 'Control Interno',            descripcion: 'Asientos contables con campo Glosa vacío o con texto genérico ("VARIOS", "ASIENTO", "S/D"). Un porcentaje alto indica falta de trazabilidad: no se puede identificar la operación sin leer el documento físico. Riesgo de manipulación encubierta.' },
+            V27_cxp_concentracion:            { categoria: 'Cuentas por Pagar',   riesgo: 'ALTO',    norma: 'NIC 24 / Art. 32-A LIR',     descripcion: 'Top 15 proveedores (cuenta 42) por saldo acreedor total histórico. Alta concentración en 1-2 proveedores puede indicar partes vinculadas no declaradas, proveedores fictícios o sobrefacturación de gastos. Contrasta con V14 (intercompañía).' },
+            V28_nc_sospechosas:               { categoria: 'Ingresos',            riesgo: 'MEDIO',   norma: 'NIIF 15 / SUNAT',            descripcion: 'Notas de crédito (NC) y débito emitidas por año. Un porcentaje de NC sobre facturación > 10% es señal de alerta: puede indicar anulaciones masivas post-venta, correcciones retroactivas no autorizadas o ajustes fuera del período correspondiente.' },
+            V29_fraccionamiento_pagos:        { categoria: 'Cumplimiento',        riesgo: 'ALTO',    norma: 'Ley 28194',                  descripcion: 'Detecta días donde se realizaron 3 o más pagos sin medio bancarizado al mismo banco/cuenta, cada uno individualmente bajo S/3,500, pero cuya suma supera el umbral. Técnica de "fraccionamiento" usada para evadir la obligación de bancarización.' },
+            V30_provisiones_sin_reverso:      { categoria: 'Integridad Contable', riesgo: 'MEDIO',   norma: 'NIC 37 / PCGR Perú',         descripcion: 'Provisiones registradas en diciembre (con glosa PROVISIÓN o ESTIMACIÓN) en cuentas de pasivo o gasto, que no tienen asiento de reverso en enero del año siguiente. Puede indicar "provisiones fantasma" usadas para inflar gastos del ejercicio y reducir el impuesto a la renta.' },
           };
           const RIESGO_STYLE: Record<string, React.CSSProperties> = {
             CRÍTICO: { background: 'rgba(239,68,68,0.15)',   color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' },
@@ -3296,23 +3302,42 @@ export default function DashboardPage() {
                                         </thead>
                                         <tbody>
                                           {rawRows.slice(0, 50).map((row: any, ri: number) => {
-                                            const rowClase = String(row.Clase ?? row.CodCuenta ?? '').slice(0, 2);
-                                            const rowEndpoint = row.CodCuenta ? endpointForClase(rowClase) : null;
+                                            const effectiveCod: string | null = row.CodCuenta
+                                              ? String(row.CodCuenta)
+                                              : v.id === 'V06_sueldos_aging' ? '4111'
+                                              : v.id === 'V07_cts_depositos' ? '4151'
+                                              : row.Clase ? String(row.Clase)
+                                              : null;
+                                            const rowClase = effectiveCod ? effectiveCod.slice(0, 2) : '';
+                                            const rowEndpoint = effectiveCod ? endpointForClase(rowClase) : null;
+                                            const isV04b = v.id === 'V04b_facturas_sin_asiento_resumen';
+                                            const isV28 = v.id === 'V28_nc_sospechosas';
+                                            const v04bDrillKey = isV04b ? `v04b-${row.Anio}` : isV28 ? `v28-${row.Anio}` : null;
+                                            const v04bIsOpen = v04bDrillKey !== null && forenseFacturasDrillKey === v04bDrillKey;
                                             return (
-                                            <tr key={ri}>
+                                            <React.Fragment key={ri}>
+                                            <tr>
                                               {colKeys.map((k, vi) => {
                                                 const val = row[k];
                                                 const money = isMoney(k) && typeof val === 'number';
                                                 const cnt   = isCount(k) && typeof val === 'number';
-                                                const isNumAsientosCell = k === 'NumAsientos' && typeof val === 'number' && rowEndpoint;
+                                                const isNumAsientosCell = (k === 'NumAsientos' || k === 'NumFacturas') && typeof val === 'number' && val > 0 && rowEndpoint && !isV04b && !isV28;
+                                                const isV04bFacturas = (isV04b && k === 'NumFacturas') || (isV28 && k === 'NumNC');
+                                                const isV04bFacturasActive = isV04bFacturas && typeof val === 'number' && val > 0;
                                                 return (
                                                   <td key={vi} style={{ textAlign: money ? 'right' : 'left', whiteSpace: 'nowrap', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis',
                                                     color: money && val < 0 ? '#F87171' : money && val > 0 ? '#F8FAFC' : undefined,
                                                     fontFamily: (money || cnt) ? 'monospace' : undefined,
                                                   }}>
                                                     {val === null || val === undefined ? '—'
+                                                      : isV04bFacturasActive
+                                                        ? <button onClick={() => setForenseFacturasDrillKey(v04bIsOpen ? null : v04bDrillKey)}
+                                                            title={isV28 ? 'Ver notas de crédito individuales' : 'Ver facturas individuales'}
+                                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E25C1A', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                                                            {val} {v04bIsOpen ? '▲' : '▶'}
+                                                          </button>
                                                       : isNumAsientosCell
-                                                        ? <button onClick={() => setAccountTxDrill({ codCuenta: String(row.CodCuenta), descripcion: String(row.DesCuenta ?? row.CodCuenta), endpoint: rowEndpoint! })}
+                                                        ? <button onClick={() => setAccountTxDrill({ codCuenta: effectiveCod!, descripcion: String(row.DesCuenta ?? row.DesBanco ?? row.Tipo ?? effectiveCod), endpoint: rowEndpoint! })}
                                                             title="Ver asientos individuales"
                                                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
                                                             {val} ▶
@@ -3336,6 +3361,44 @@ export default function DashboardPage() {
                                                 );
                                               })()}
                                             </tr>
+                                            {v04bIsOpen && (() => {
+                                              const detailRows = isV28
+                                                ? (vfd.raw?.V28b_nc_detalle?.rows ?? []).filter((r: any) => r.Anio === row.Anio)
+                                                : (vfd.raw?.V04_facturas_sin_asiento_top?.rows ?? []).filter((r: any) => r.Anio === row.Anio && r.Tipo === row.Tipo);
+                                              const detailKeys = detailRows.length > 0 ? Object.keys(detailRows[0]) : [];
+                                              const totalCount = isV28 ? row.NumNC : row.NumFacturas;
+                                              const titulo = isV28
+                                                ? `Notas de crédito — ${row.Anio}`
+                                                : `Facturas sin asiento — ${row.Anio} · Tipo ${row.Tipo}`;
+                                              return (
+                                                <tr>
+                                                  <td colSpan={colKeys.length} style={{ padding: 0, background: 'rgba(226,92,26,0.06)', borderLeft: '3px solid #E25C1A' }}>
+                                                    <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.68rem', color: '#FBB040', fontWeight: 600, marginBottom: '0.25rem' }}>
+                                                      {titulo}
+                                                      {detailRows.length === 0 && <span style={{ color: '#8B97A8', fontWeight: 400, marginLeft: '0.5rem' }}>Sin datos — ejecuta sync para cargar el detalle</span>}
+                                                      {detailRows.length > 0 && <span style={{ color: '#8B97A8', fontWeight: 400, marginLeft: '0.5rem' }}>top {detailRows.length} por monto{totalCount > detailRows.length ? ` de ${totalCount} total` : ''}</span>}
+                                                    </div>
+                                                    {detailRows.length > 0 && (
+                                                      <div style={{ overflowX: 'auto', maxHeight: 280 }}>
+                                                        <table className="table-s10" style={{ fontSize: '0.68rem' }}>
+                                                          <thead><tr>{detailKeys.map((k: string) => <th key={k}>{k}</th>)}</tr></thead>
+                                                          <tbody>
+                                                            {detailRows.map((r: any, i: number) => (
+                                                              <tr key={i}>{detailKeys.map((k: string) => (
+                                                                <td key={k} style={{ whiteSpace: 'nowrap', textAlign: isMoney(k) ? 'right' : 'left' }}>
+                                                                  {isMoney(k) && typeof r[k] === 'number' ? fmt(r[k]) : String(r[k] ?? '—')}
+                                                                </td>
+                                                              ))}</tr>
+                                                            ))}
+                                                          </tbody>
+                                                        </table>
+                                                      </div>
+                                                    )}
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })()}
+                                            </React.Fragment>
                                           ); })}
                                           {rawRows.length > 50 && (
                                             <tr><td colSpan={isV17 ? colKeys.length + 1 : colKeys.length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>

@@ -1247,6 +1247,11 @@ export class KpiService {
       V23_pl_anual: 'V23 — P&L anual (ingresos, gastos, utilidad)',
       V24_ob_vs_contable: 'V24 — Coherencia OB_Pago vs Contable clase 10',
       V25_pcd_criticas: 'V25 — Cuentas críticas en PlanContableDetalle',
+      V26_asientos_sin_glosa: 'V26 — Asientos sin descripción (glosa vacía o genérica)',
+      V27_cxp_concentracion: 'V27 — Concentración CxP top 15 proveedores',
+      V28_nc_sospechosas: 'V28 — Notas de crédito / reversión de ingresos',
+      V29_fraccionamiento_pagos: 'V29 — Fraccionamiento de pagos (posible evasión Ley 28194)',
+      V30_provisiones_sin_reverso: 'V30 — Provisiones diciembre sin reverso en enero',
     };
 
     const summary = Object.entries(LABELS).map(([id, label]) => {

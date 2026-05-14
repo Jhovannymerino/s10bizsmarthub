@@ -94,6 +94,42 @@ const YoYBadge = React.memo(function YoYBadge({ curr, prev }: { curr: number; pr
 });
 
 // ═══════════════════════════════════════════════
+// DIRECTORIO — Input components (defined at module level
+// to preserve focus across re-renders of DashboardPage)
+// ═══════════════════════════════════════════════
+const DIR_INPUT_STYLE: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(43,180,187,0.25)',
+  borderRadius: '0.35rem', padding: '0.35rem 0.55rem', color: '#F8FAFC',
+  fontSize: '0.75rem', fontFamily: 'monospace', width: '100%',
+};
+const DIR_INPUT_TEXT: React.CSSProperties = { ...DIR_INPUT_STYLE, fontFamily: 'inherit' };
+const DIR_OPTION_STYLE: React.CSSProperties = { background: '#0E1A2E', color: '#F8FAFC' };
+
+function DirNumInput({ path, value, onChange }: { path: string; value: number; onChange: (p: string, v: any) => void }) {
+  // Permite vaciar el campo durante la edición sin saltar a "0"
+  const [local, setLocal] = React.useState<string>(value != null ? String(value) : '');
+  React.useEffect(() => { setLocal(value != null ? String(value) : ''); }, [value]);
+  return <input type="number" step="0.01" value={local} style={DIR_INPUT_STYLE}
+    onChange={e => setLocal(e.target.value)}
+    onBlur={() => onChange(path, parseFloat(local) || 0)} />;
+}
+function DirTextInput({ path, value, placeholder, onChange }: { path: string; value: string; placeholder?: string; onChange: (p: string, v: any) => void }) {
+  return <input type="text" value={value || ''} placeholder={placeholder} style={DIR_INPUT_TEXT}
+    onChange={e => onChange(path, e.target.value)} />;
+}
+function DirTextArea({ path, value, rows = 2, onChange }: { path: string; value: string; rows?: number; onChange: (p: string, v: any) => void }) {
+  return <textarea value={value || ''} rows={rows} style={{ ...DIR_INPUT_TEXT, resize: 'vertical', minHeight: 40 }}
+    onChange={e => onChange(path, e.target.value)} />;
+}
+function DirSelectInput({ path, value, options, onChange }: { path: string; value: string; options: string[]; onChange: (p: string, v: any) => void }) {
+  return (
+    <select value={value || options[0]} style={DIR_INPUT_STYLE} onChange={e => onChange(path, e.target.value)}>
+      {options.map(o => <option key={o} value={o} style={DIR_OPTION_STYLE}>{o}</option>)}
+    </select>
+  );
+}
+
+// ═══════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════
 export default function DashboardPage() {
@@ -4070,37 +4106,15 @@ export default function DashboardPage() {
                       });
                     };
 
-                    // Estilos compactos para inputs
-                    const inputStyle: React.CSSProperties = {
-                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(43,180,187,0.25)',
-                      borderRadius: '0.35rem', padding: '0.35rem 0.55rem', color: '#F8FAFC',
-                      fontSize: '0.75rem', fontFamily: 'monospace', width: '100%',
-                    };
-                    const inputText: React.CSSProperties = { ...inputStyle, fontFamily: 'inherit' };
                     const labelStyle: React.CSSProperties = {
                       fontSize: '0.65rem', color: '#8B97A8', letterSpacing: '0.03em', marginBottom: '0.25rem', display: 'block',
                     };
                     const sectionTitle: React.CSSProperties = {
                       fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em',
                     };
-
-                    const NumInput = ({ path, value }: { path: string; value: number }) => (
-                      <input type="number" step="0.01" value={value || 0} style={inputStyle}
-                        onChange={e => set(path, parseFloat(e.target.value) || 0)} />
-                    );
-                    const TextInput = ({ path, value, placeholder }: { path: string; value: string; placeholder?: string }) => (
-                      <input type="text" value={value || ''} placeholder={placeholder} style={inputText}
-                        onChange={e => set(path, e.target.value)} />
-                    );
-                    const TextArea = ({ path, value, rows = 2 }: { path: string; value: string; rows?: number }) => (
-                      <textarea value={value || ''} rows={rows} style={{ ...inputText, resize: 'vertical', minHeight: 40 }}
-                        onChange={e => set(path, e.target.value)} />
-                    );
-                    const SelectInput = ({ path, value, options }: { path: string; value: string; options: string[] }) => (
-                      <select value={value || options[0]} style={inputStyle} onChange={e => set(path, e.target.value)}>
-                        {options.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    );
+                    // Alias para reducir verbosidad: los componentes Dir* a nivel módulo
+                    // tienen identidad estable (preservan el foco al escribir).
+                    const onCh = set;
 
                     const pptoQ = d.presupuesto?.q || { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 };
                     const pptoY = d.presupuesto?.ytd || { ingresos: 0, costoDirecto: 0, gav: 0, da: 0 };
@@ -4127,12 +4141,12 @@ export default function DashboardPage() {
                                       <td>{label}</td>
                                       <td style={{ textAlign: 'right' }}>
                                         {editing
-                                          ? <NumInput path={`presupuesto.q.${k}`} value={(pptoQ as any)[k]} />
+                                          ? <DirNumInput onChange={onCh}path={`presupuesto.q.${k}`} value={(pptoQ as any)[k]} />
                                           : <span style={{ fontFamily: 'monospace' }}>{fmt((pptoQ as any)[k] || 0)}</span>}
                                       </td>
                                       <td style={{ textAlign: 'right' }}>
                                         {editing
-                                          ? <NumInput path={`presupuesto.ytd.${k}`} value={(pptoY as any)[k]} />
+                                          ? <DirNumInput onChange={onCh}path={`presupuesto.ytd.${k}`} value={(pptoY as any)[k]} />
                                           : <span style={{ fontFamily: 'monospace' }}>{fmt((pptoY as any)[k] || 0)}</span>}
                                       </td>
                                     </tr>
@@ -4157,7 +4171,7 @@ export default function DashboardPage() {
                                 <div key={k} className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
                                   <div style={labelStyle}>{label}<span className="info-icon">i</span></div>
                                   {editing
-                                    ? <NumInput path={`productividad.${k}`} value={d.productividad?.[k] || 0} />
+                                    ? <DirNumInput onChange={onCh}path={`productividad.${k}`} value={d.productividad?.[k] || 0} />
                                     : <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: '#F8FAFC' }}>{(d.productividad?.[k] || 0).toLocaleString('es-PE')}</div>}
                                   <div className="info-tooltip">
                                     <div className="info-tip-title">{label}</div>
@@ -4208,14 +4222,14 @@ export default function DashboardPage() {
                                 <tbody>
                                   {(d.backlog || []).map((r: any, i: number) => (
                                     <tr key={i}>
-                                      <td>{editing ? <TextInput path={`backlog.${i}.cliente`} value={r.cliente} /> : r.cliente}</td>
-                                      <td>{editing ? <TextInput path={`backlog.${i}.proyecto`} value={r.proyecto} /> : r.proyecto}</td>
-                                      <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`backlog.${i}.contrato`} value={r.contrato} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.contrato || 0)}</span>}</td>
-                                      <td>{editing ? <TextInput path={`backlog.${i}.inicio`} value={r.inicio} placeholder="dd/mm/aaaa" /> : r.inicio}</td>
-                                      <td>{editing ? <TextInput path={`backlog.${i}.termino`} value={r.termino} placeholder="dd/mm/aaaa" /> : r.termino}</td>
-                                      <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`backlog.${i}.avance`} value={r.avance} /> : `${(r.avance || 0).toFixed(0)}%`}</td>
-                                      <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`backlog.${i}.ingresoQ`} value={r.ingresoQ} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.ingresoQ || 0)}</span>}</td>
-                                      <td>{editing ? <SelectInput path={`backlog.${i}.estado`} value={r.estado} options={['En curso','En espera','Riesgo','Completado','Suspendido']} /> : r.estado}</td>
+                                      <td>{editing ? <DirTextInput onChange={onCh}path={`backlog.${i}.cliente`} value={r.cliente} /> : r.cliente}</td>
+                                      <td>{editing ? <DirTextInput onChange={onCh}path={`backlog.${i}.proyecto`} value={r.proyecto} /> : r.proyecto}</td>
+                                      <td style={{ textAlign: 'right' }}>{editing ? <DirNumInput onChange={onCh}path={`backlog.${i}.contrato`} value={r.contrato} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.contrato || 0)}</span>}</td>
+                                      <td>{editing ? <DirTextInput onChange={onCh}path={`backlog.${i}.inicio`} value={r.inicio} placeholder="dd/mm/aaaa" /> : r.inicio}</td>
+                                      <td>{editing ? <DirTextInput onChange={onCh}path={`backlog.${i}.termino`} value={r.termino} placeholder="dd/mm/aaaa" /> : r.termino}</td>
+                                      <td style={{ textAlign: 'right' }}>{editing ? <DirNumInput onChange={onCh}path={`backlog.${i}.avance`} value={r.avance} /> : `${(r.avance || 0).toFixed(0)}%`}</td>
+                                      <td style={{ textAlign: 'right' }}>{editing ? <DirNumInput onChange={onCh}path={`backlog.${i}.ingresoQ`} value={r.ingresoQ} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.ingresoQ || 0)}</span>}</td>
+                                      <td>{editing ? <DirSelectInput onChange={onCh}path={`backlog.${i}.estado`} value={r.estado} options={['En curso','En espera','Riesgo','Completado','Suspendido']} /> : r.estado}</td>
                                       {editing && <td><button onClick={() => removeItem('backlog', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button></td>}
                                     </tr>
                                   ))}
@@ -4266,11 +4280,11 @@ export default function DashboardPage() {
                                     const probColor = r.prob === 'A' ? '#10B981' : r.prob === 'B' ? '#F59E0B' : '#8B97A8';
                                     return (
                                       <tr key={i}>
-                                        <td>{editing ? <TextInput path={`pipeline.${i}.cliente`} value={r.cliente} /> : r.cliente}</td>
-                                        <td>{editing ? <TextInput path={`pipeline.${i}.proyecto`} value={r.proyecto} /> : r.proyecto}</td>
-                                        <td style={{ textAlign: 'right' }}>{editing ? <NumInput path={`pipeline.${i}.monto`} value={r.monto} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.monto || 0)}</span>}</td>
-                                        <td style={{ textAlign: 'center' }}>{editing ? <TextInput path={`pipeline.${i}.qCierre`} value={r.qCierre} placeholder="Q2 2026" /> : r.qCierre}</td>
-                                        <td style={{ textAlign: 'center' }}>{editing ? <SelectInput path={`pipeline.${i}.prob`} value={r.prob} options={['A','B','C']} /> : <span style={{ fontWeight: 700, color: probColor }}>{r.prob}</span>}</td>
+                                        <td>{editing ? <DirTextInput onChange={onCh}path={`pipeline.${i}.cliente`} value={r.cliente} /> : r.cliente}</td>
+                                        <td>{editing ? <DirTextInput onChange={onCh}path={`pipeline.${i}.proyecto`} value={r.proyecto} /> : r.proyecto}</td>
+                                        <td style={{ textAlign: 'right' }}>{editing ? <DirNumInput onChange={onCh}path={`pipeline.${i}.monto`} value={r.monto} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.monto || 0)}</span>}</td>
+                                        <td style={{ textAlign: 'center' }}>{editing ? <DirTextInput onChange={onCh}path={`pipeline.${i}.qCierre`} value={r.qCierre} placeholder="Q2 2026" /> : r.qCierre}</td>
+                                        <td style={{ textAlign: 'center' }}>{editing ? <DirSelectInput onChange={onCh}path={`pipeline.${i}.prob`} value={r.prob} options={['A','B','C']} /> : <span style={{ fontWeight: 700, color: probColor }}>{r.prob}</span>}</td>
                                         {editing && <td><button onClick={() => removeItem('pipeline', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button></td>}
                                       </tr>
                                     );
@@ -4311,10 +4325,10 @@ export default function DashboardPage() {
                             {(d.greenFlags || []).map((g: any, i: number) => (
                               <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '1fr 2fr auto' : '1fr 3fr', gap: '0.6rem', marginBottom: '0.6rem', padding: '0.6rem', background: 'rgba(16,185,129,0.05)', borderLeft: '3px solid #10B981', borderRadius: '0.3rem' }}>
                                 <div>
-                                  {editing ? <TextInput path={`greenFlags.${i}.titulo`} value={g.titulo} placeholder="Título del logro" /> : <b style={{ color: '#10B981' }}>{g.titulo}</b>}
+                                  {editing ? <DirTextInput onChange={onCh}path={`greenFlags.${i}.titulo`} value={g.titulo} placeholder="Título del logro" /> : <b style={{ color: '#10B981' }}>{g.titulo}</b>}
                                 </div>
                                 <div>
-                                  {editing ? <TextArea path={`greenFlags.${i}.descripcion`} value={g.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.8rem' }}>{g.descripcion}</span>}
+                                  {editing ? <DirTextArea onChange={onCh}path={`greenFlags.${i}.descripcion`} value={g.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.8rem' }}>{g.descripcion}</span>}
                                 </div>
                                 {editing && <button onClick={() => removeItem('greenFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
                               </div>
@@ -4343,12 +4357,12 @@ export default function DashboardPage() {
                                 <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '110px 1fr 1.5fr 1.5fr auto' : '110px 1fr 1.5fr 1.5fr', gap: '0.6rem', marginBottom: '0.6rem', padding: '0.6rem', background: `${critColor}11`, borderLeft: `3px solid ${critColor}`, borderRadius: '0.3rem' }}>
                                   <div>
                                     {editing
-                                      ? <SelectInput path={`redFlags.${i}.criticidad`} value={r.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
+                                      ? <DirSelectInput onChange={onCh}path={`redFlags.${i}.criticidad`} value={r.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
                                       : <span style={{ color: critColor, fontWeight: 700, fontSize: '0.72rem' }}>{r.criticidad}</span>}
                                   </div>
-                                  <div>{editing ? <TextInput path={`redFlags.${i}.titulo`} value={r.titulo} placeholder="Título del riesgo" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{r.titulo}</b>}</div>
-                                  <div>{editing ? <TextArea path={`redFlags.${i}.descripcion`} value={r.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{r.descripcion}</span>}</div>
-                                  <div>{editing ? <TextArea path={`redFlags.${i}.accion`} value={r.accion} /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>→ {r.accion}</span>}</div>
+                                  <div>{editing ? <DirTextInput onChange={onCh}path={`redFlags.${i}.titulo`} value={r.titulo} placeholder="Título del riesgo" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{r.titulo}</b>}</div>
+                                  <div>{editing ? <DirTextArea onChange={onCh}path={`redFlags.${i}.descripcion`} value={r.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{r.descripcion}</span>}</div>
+                                  <div>{editing ? <DirTextArea onChange={onCh}path={`redFlags.${i}.accion`} value={r.accion} /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>→ {r.accion}</span>}</div>
                                   {editing && <button onClick={() => removeItem('redFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
                                 </div>
                               );
@@ -4378,16 +4392,16 @@ export default function DashboardPage() {
                               const critColor = m.criticidad === 'CRÍTICO' || m.criticidad === 'CRITICO' ? '#EF4444' : m.criticidad === 'ALTO' ? '#F59E0B' : '#FBBF24';
                               return (
                                 <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '80px 110px 1fr 1.5fr 1fr 0.7fr auto' : '80px 110px 1fr 1.5fr 1fr 0.7fr', gap: '0.6rem', marginBottom: '0.6rem', padding: '0.6rem', background: `${critColor}11`, borderLeft: `3px solid ${critColor}`, borderRadius: '0.3rem' }}>
-                                  <div>{editing ? <TextInput path={`mustWin.${i}.codigo`} value={m.codigo} /> : <b style={{ color: '#5B86E5', fontSize: '0.78rem' }}>{m.codigo}</b>}</div>
+                                  <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.codigo`} value={m.codigo} /> : <b style={{ color: '#5B86E5', fontSize: '0.78rem' }}>{m.codigo}</b>}</div>
                                   <div>
                                     {editing
-                                      ? <SelectInput path={`mustWin.${i}.criticidad`} value={m.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
+                                      ? <DirSelectInput onChange={onCh}path={`mustWin.${i}.criticidad`} value={m.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
                                       : <span style={{ color: critColor, fontWeight: 700, fontSize: '0.72rem' }}>{m.criticidad}</span>}
                                   </div>
-                                  <div>{editing ? <TextInput path={`mustWin.${i}.titulo`} value={m.titulo} placeholder="Título del hito" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{m.titulo}</b>}</div>
-                                  <div>{editing ? <TextArea path={`mustWin.${i}.descripcion`} value={m.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.descripcion}</span>}</div>
-                                  <div>{editing ? <TextInput path={`mustWin.${i}.responsable`} value={m.responsable} placeholder="Responsable" /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>{m.responsable}</span>}</div>
-                                  <div>{editing ? <TextInput path={`mustWin.${i}.plazo`} value={m.plazo} placeholder="mes/año" /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.plazo}</span>}</div>
+                                  <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.titulo`} value={m.titulo} placeholder="Título del hito" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{m.titulo}</b>}</div>
+                                  <div>{editing ? <DirTextArea onChange={onCh}path={`mustWin.${i}.descripcion`} value={m.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.descripcion}</span>}</div>
+                                  <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.responsable`} value={m.responsable} placeholder="Responsable" /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>{m.responsable}</span>}</div>
+                                  <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.plazo`} value={m.plazo} placeholder="mes/año" /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.plazo}</span>}</div>
                                   {editing && <button onClick={() => removeItem('mustWin', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
                                 </div>
                               );
@@ -4413,7 +4427,7 @@ export default function DashboardPage() {
                             {(d.acuerdos || []).map((a: string, i: number) => (
                               <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '40px 1fr auto' : '40px 1fr', gap: '0.6rem', alignItems: 'center', marginBottom: '0.5rem' }}>
                                 <div style={{ color: '#2BB4BB', fontWeight: 700, fontSize: '0.85rem' }}>{i + 1}.</div>
-                                <div>{editing ? <TextArea path={`acuerdos.${i}`} value={a} /> : <span style={{ color: '#CBD5E1', fontSize: '0.82rem' }}>{a}</span>}</div>
+                                <div>{editing ? <DirTextArea onChange={onCh}path={`acuerdos.${i}`} value={a} /> : <span style={{ color: '#CBD5E1', fontSize: '0.82rem' }}>{a}</span>}</div>
                                 {editing && <button onClick={() => removeItem('acuerdos', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
                               </div>
                             ))}

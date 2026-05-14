@@ -2440,15 +2440,46 @@ export default function DashboardPage() {
                       })}
                     </tbody>
                     <tfoot>
-                      <tr className="total-row">
-                        <td colSpan={2}>TOTAL</td>
-                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.SaldoIniDebe||0), 0))}</td>
-                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.SaldoIniHaber||0), 0))}</td>
-                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.MovDebe||0), 0))}</td>
-                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + (r.MovHaber||0), 0))}</td>
-                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalDebe||0)-(r.TotalHaber||0)), 0))}</td>
-                        <td>{fmt(balanceRows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalHaber||0)-(r.TotalDebe||0)), 0))}</td>
-                      </tr>
+                      {(() => {
+                        const sumIniD  = balanceRows.reduce((s: number, r: any) => s + (r.SaldoIniDebe||0), 0);
+                        const sumIniH  = balanceRows.reduce((s: number, r: any) => s + (r.SaldoIniHaber||0), 0);
+                        const sumMovD  = balanceRows.reduce((s: number, r: any) => s + (r.MovDebe||0), 0);
+                        const sumMovH  = balanceRows.reduce((s: number, r: any) => s + (r.MovHaber||0), 0);
+                        const sumTotD  = balanceRows.reduce((s: number, r: any) => s + (r.TotalDebe||0), 0);
+                        const sumTotH  = balanceRows.reduce((s: number, r: any) => s + (r.TotalHaber||0), 0);
+                        const netFinD  = balanceRows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalDebe||0)-(r.TotalHaber||0)), 0);
+                        const netFinH  = balanceRows.reduce((s: number, r: any) => s + Math.max(0,(r.TotalHaber||0)-(r.TotalDebe||0)), 0);
+                        const difD = Math.abs(netFinD - netFinH);
+                        const balanced = difD < 1;
+                        return (<>
+                          <tr className="total-row">
+                            <td colSpan={2} style={{ fontSize: '0.68rem', letterSpacing: '0.05em' }}>SUMAS</td>
+                            <td>{fmt(sumIniD)}</td>
+                            <td>{fmt(sumIniH)}</td>
+                            <td>{fmt(sumMovD)}</td>
+                            <td>{fmt(sumMovH)}</td>
+                            <td>{fmt(sumTotD)}</td>
+                            <td>{fmt(sumTotH)}</td>
+                          </tr>
+                          <tr className="total-row" style={{ borderTop: '2px solid rgba(255,255,255,0.12)' }}>
+                            <td colSpan={2} style={{ fontSize: '0.68rem', letterSpacing: '0.05em' }}>SALDOS</td>
+                            <td style={{ color: sumIniD >= sumIniH ? '#10B981' : '#8B97A8' }}>{sumIniD >= sumIniH ? fmt(sumIniD - sumIniH) : '—'}</td>
+                            <td style={{ color: sumIniH > sumIniD  ? '#EF4444' : '#8B97A8' }}>{sumIniH > sumIniD  ? fmt(sumIniH - sumIniD)  : '—'}</td>
+                            <td style={{ color: sumMovD >= sumMovH ? '#10B981' : '#8B97A8' }}>{sumMovD >= sumMovH ? fmt(sumMovD - sumMovH) : '—'}</td>
+                            <td style={{ color: sumMovH > sumMovD  ? '#EF4444' : '#8B97A8' }}>{sumMovH > sumMovD  ? fmt(sumMovH - sumMovD)  : '—'}</td>
+                            <td style={{ color: '#10B981', fontWeight: 700 }}>{fmt(netFinD)}</td>
+                            <td style={{ color: '#EF4444', fontWeight: 700 }}>{fmt(netFinH)}</td>
+                          </tr>
+                          <tr style={{ background: balanced ? 'rgba(16,185,129,0.07)' : 'rgba(239,68,68,0.08)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <td colSpan={6} style={{ fontSize: '0.7rem', color: balanced ? '#10B981' : '#EF4444', fontWeight: 600, paddingLeft: '0.75rem' }}>
+                              {balanced ? '✓ Balance cuadrado' : `⚠ Descuadre: ${fmt(difD)}`}
+                            </td>
+                            <td colSpan={2} style={{ fontSize: '0.7rem', color: balanced ? '#10B981' : '#EF4444', fontWeight: 700, textAlign: 'right' }}>
+                              {balanced ? fmt(netFinD) : fmt(Math.abs(netFinD - netFinH))}
+                            </td>
+                          </tr>
+                        </>);
+                      })()}
                     </tfoot>
                   </table>
                 </div>

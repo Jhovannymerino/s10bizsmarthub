@@ -692,8 +692,7 @@ export default function DashboardPage() {
               setSyncMsg('Iniciando sincronización...');
               setSyncProgress(null);
               try {
-                const allYears = Array.from({ length: CURRENT_YEAR - 2022 + 1 }, (_, i) => 2022 + i).join(',');
-                const res = await fetch(`${API}/sync/trigger?years=${allYears}`, {
+                const res = await fetch(`${API}/sync/trigger?years=${CURRENT_YEAR}&fast=true`, {
                   method: 'POST', headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();

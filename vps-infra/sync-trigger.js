@@ -55,34 +55,24 @@ function parseLine(line) {
 
   progress.lastLine = line;
 
-  // "Processing: CMO GROUP S.A. (22011489)"
-  const companyMatch = line.match(/^Processing:\s+(.+?)\s+\(\d+\)/);
+  // "[22011489] Processing: CMO GROUP S.A." or legacy "Processing: CMO GROUP S.A. (22011489)"
+  const companyMatch = line.match(/Processing:\s+(.+?)(?:\s+\(\d+\))?$/) ||
+                       line.match(/\[\d+\]\s+Processing:\s+(.+)/);
   if (companyMatch) {
-    // Si ya había empresa, no la añadimos dos veces
-    if (progress.currentCompany && !progress.companiesDone.includes(progress.currentCompany)) {
-      // No la marcamos como done todavía — se marca cuando llega "✓ Pushed to VPS"
-    }
-    progress.currentCompany = companyMatch[1];
+    progress.currentCompany = companyMatch[1].trim();
     progress.currentBatch = null;
     return;
   }
 
-  // "  → Batch 1: P&L, CxC, CxP..."
+  // "[22011489] → Batch 1: ..." or "  → Batch 1: ..."
   const batchMatch = line.match(/→ (Batch \d+[^.]*)/);
   if (batchMatch) {
     progress.currentBatch = batchMatch[1].trim();
     return;
   }
 
-  // "  → Batch 4: Validaciones forenses..."
-  const batch4Match = line.match(/→ (Batch 4[^.]*)/);
-  if (batch4Match) {
-    progress.currentBatch = batch4Match[1].trim();
-    return;
-  }
-
-  // "  ✓ Pushed to VPS — 52 KPI types saved"
-  if (line.includes('Pushed to VPS') && progress.currentCompany) {
+  // "[22011489] ✓ Pushed — 52 KPI types saved"
+  if ((line.includes('Pushed to VPS') || line.includes('✓ Pushed')) && progress.currentCompany) {
     if (!progress.companiesDone.includes(progress.currentCompany)) {
       progress.companiesDone.push(progress.currentCompany);
     }
@@ -126,6 +116,7 @@ const server = http.createServer((req, res) => {
     const years = url.searchParams.get('years')
       ? url.searchParams.get('years').split(',').filter(Boolean)
       : defaultYears();
+    const fast = url.searchParams.get('fast') === '1' || url.searchParams.get('fast') === 'true';
 
     resetProgress();
     progress.running = true;
@@ -134,7 +125,7 @@ const server = http.createServer((req, res) => {
     progress.startedAt = Date.now();
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'started', years }));
+    res.end(JSON.stringify({ status: 'started', years, fast }));
 
     // Corre los años secuencialmente en background
     (async () => {
@@ -146,8 +137,9 @@ const server = http.createServer((req, res) => {
         progress.currentBatch = null;
         progress.companiesDone = [];
 
+        const scriptArgs = fast ? [year, 'fast'] : [year];
         await new Promise((resolve) => {
-          const child = spawn(SCRIPT, [year], { stdio: ['ignore', 'pipe', 'pipe'] });
+          const child = spawn(SCRIPT, scriptArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
 
           let buf = '';
           child.stdout.on('data', (d) => {

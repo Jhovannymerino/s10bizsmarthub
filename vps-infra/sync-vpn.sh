@@ -4,6 +4,7 @@
 set -e
 
 YEAR=${1:-$(date +%Y)}
+FAST_FLAG=${2:-}   # "fast" → pasa --fast al agente; vacío → sync completo
 LOG=/var/log/s10-sync.log
 PIDFILE=/tmp/openfortivpn.pid
 
@@ -70,8 +71,10 @@ fi
 
 # Sync
 cd /opt/apps/s10bizsmarthub/s10-agent
-log "Corriendo sync --year=$YEAR"
-node sync-agent.js --year=$YEAR >> "$LOG" 2>&1
+EXTRA_FLAGS=""
+[ "$FAST_FLAG" = "fast" ] && EXTRA_FLAGS="--fast"
+log "Corriendo sync --year=$YEAR $EXTRA_FLAGS"
+node sync-agent.js --year=$YEAR $EXTRA_FLAGS >> "$LOG" 2>&1
 STATUS=${PIPESTATUS[0]}
 
 # Solo desconectar si nosotros conectamos

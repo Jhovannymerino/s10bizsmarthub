@@ -5,11 +5,16 @@
  * Lee datos financieros de S10 y los envía al VPS por HTTPS.
  *
  * Uso:
- *   node sync-agent.js [--year=2026] [--company=80688541]
+ *   node sync-agent.js [--year=2026] [--company=80688541] [--fast] [--forensics]
+ *
+ *   --fast       Salta Batch 3 y 4 (solo KPIs core). Ideal para sync desde botón.
+ *                Las 4 empresas corren en paralelo. Tiempo estimado: <30s.
+ *   --forensics  Incluye Batch 4 (33 queries forenses). Solo para crontab nocturno.
+ *                Sin este flag, el crontab corre Batches 1+2+3 (2 empresas en paralelo).
  *
  * Programar en Windows Task Scheduler:
  *   Trigger: Diario 07:00, Lunes-Viernes
- *   Acción:  node "C:\ruta\al\sync-agent.js" --year=2026
+ *   Acción:  node "C:\ruta\al\sync-agent.js" --year=2026 --forensics
  * ============================================================
  */
 
@@ -2419,109 +2424,78 @@ function sanitizeCompanyId(raw) {
   return raw;
 }
 
-async function main() {
-  const args = parseArgs();
-  const year = sanitizeYear(args.year || new Date().getFullYear());
-  const targetCompany = sanitizeCompanyId(args.company);
-
-  const companies = targetCompany
-    ? CONFIG.COMPANIES.filter((c) => c.codEmpresa === targetCompany)
-    : CONFIG.COMPANIES;
-
-  if (!companies.length) {
-    console.error(`No companies found${targetCompany ? ` for codEmpresa=${targetCompany}` : ''}`);
-    process.exit(1);
+// Ejecuta fn sobre cada item con hasta `concurrency` en paralelo
+async function runWithConcurrency(items, concurrency, fn) {
+  const results = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const chunk = items.slice(i, i + concurrency);
+    const chunkResults = await Promise.all(chunk.map(fn));
+    results.push(...chunkResults);
   }
+  return results;
+}
 
-  console.log(`\nS10 Sync Agent — ${new Date().toISOString()}`);
-  console.log(`Year: ${year} | Companies: ${companies.map((c) => c.name).join(', ')}\n`);
+async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
+  const { fast, forensics } = opts;
+  const tag = `[${company.codEmpresa}]`;
+  console.log(`\n${tag} Processing: ${company.name}`);
 
-  const pool = await new mssql.ConnectionPool({
-    server: CONFIG.S10_HOST,
-    port: CONFIG.S10_PORT,
-    user: CONFIG.S10_USER,
-    password: CONFIG.S10_PASSWORD,
-    database: CONFIG.S10_DATABASE,
-    options: {
-      encrypt: false,
-      trustServerCertificate: true,
-      enableArithAbort: true,
-    },
-    pool: {
-      max: 30,      // Batch 3 lanza hasta 27 queries en paralelo
-      min: 2,
-      acquireTimeoutMillis: 60000,
-      idleTimeoutMillis: 30000,
-    },
-    connectionTimeout: 30000,
-    requestTimeout: 300000,
-  }).connect();
+  try {
+    // Batch 1 — KPIs core (siempre corre)
+    console.log(`${tag} → Batch 1: P&L, CxC, CxP, Caja, GAV, documentos...`);
+    const [
+      plResult, cxcResult, cxcSplitResult, cxpResult, cajaResult, gavResult,
+      txResult, cxcTxResult, cxpTxResult,
+      emitResult, reciResult, honorResult,
+    ] = await Promise.all([
+      pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
+      pool.request().query(QUERY_CXC(company.codEmpresa)),
+      pool.request().query(QUERY_CXC_SPLIT(company.codEmpresa)),
+      pool.request().query(QUERY_CXP(company.codEmpresa)),
+      pool.request().query(QUERY_CAJA(company.codEmpresa, fechaInicio, fechaFin)),
+      pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
+      pool.request().query(QUERY_TRANSACTIONS(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
+      pool.request().query(QUERY_CXC_TRANSACTIONS(company.codEmpresa, year)),
+      pool.request().query(QUERY_CXP_TRANSACTIONS(company.codEmpresa, year)),
+      pool.request().query(QUERY_FACTURAS_EMITIDAS(company.codEmpresa, year, company.claseIngreso)),
+      pool.request().query(QUERY_FACTURAS_RECIBIDAS(company.codEmpresa, year)),
+      pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
+    ]);
 
-  console.log('✓ Connected to S10 SQL Server');
+    // Batch 2 — Balance, Otras CxC/CxP, Tributos, Laboral, Activo Fijo, Patrimonio, Inventarios
+    console.log(`${tag} → Batch 2: Balance, Otras CxC/CxP, Tributos, Activo Fijo, Patrimonio, Inventarios...`);
+    const [
+      balanceResult, otrasCxcResult, otrasCxcTxnResult,
+      otrasCxpResult, otrasCxpTxnResult,
+      tributosResult, tributosTxnResult,
+      laboralResult, laboralTxnResult,
+      activoFijoResult, activoFijoTxnResult,
+      patrimonioResult, patrimonioTxnResult, inventariosResult,
+    ] = await Promise.all([
+      pool.request().query(QUERY_BALANCE(company.codEmpresa, year)),
+      pool.request().query(QUERY_OTRAS_CXC(company.codEmpresa)),
+      pool.request().query(QUERY_OTRAS_CXC_TXN(company.codEmpresa, year)),
+      pool.request().query(QUERY_OTRAS_CXP(company.codEmpresa)),
+      pool.request().query(QUERY_OTRAS_CXP_TXN(company.codEmpresa, year)),
+      pool.request().query(QUERY_TRIBUTOS(company.codEmpresa, year)),
+      pool.request().query(QUERY_TRIBUTOS_TXN(company.codEmpresa, year)),
+      pool.request().query(QUERY_LABORAL(company.codEmpresa)),
+      pool.request().query(QUERY_LABORAL_TXN(company.codEmpresa, year)),
+      pool.request().query(QUERY_ACTIVO_FIJO(company.codEmpresa)),
+      pool.request().query(QUERY_ACTIVO_FIJO_TXN(company.codEmpresa)),
+      pool.request().query(QUERY_PATRIMONIO(company.codEmpresa)),
+      pool.request().query(QUERY_PATRIMONIO_TXN(company.codEmpresa, year)),
+      pool.request().query(QUERY_INVENTARIOS(company.codEmpresa, year)),
+    ]);
 
-  const fechaInicio = `${year}-01-01`;
-  const currentYear = new Date().getFullYear();
-  // Para años históricos usar dic-31 como corte; para el año en curso usar hoy.
-  // Evita que las queries agrupadas por mes mezclen datos de años distintos.
-  const fechaFin = year < currentYear
-    ? `${year}-12-31`
-    : new Date().toISOString().slice(0, 10);
+    const emitidas   = markDups(emitResult.recordset);
+    const recibidas  = markDups(reciResult.recordset);
+    const honorarios = markDups(honorResult.recordset);
 
-  for (const company of companies) {
-    console.log(`\nProcessing: ${company.name} (${company.codEmpresa})`);
-
-    try {
-      // Batch 1 — queries existentes (P&L, CxC, CxP, Caja, GAV, transacciones, documentos)
-      console.log('  → Batch 1: P&L, CxC, CxP, Caja, GAV, documentos...');
-      const [
-        plResult, cxcResult, cxcSplitResult, cxpResult, cajaResult, gavResult,
-        txResult, cxcTxResult, cxpTxResult,
-        emitResult, reciResult, honorResult,
-      ] = await Promise.all([
-        pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
-        pool.request().query(QUERY_CXC(company.codEmpresa)),
-        pool.request().query(QUERY_CXC_SPLIT(company.codEmpresa)),
-        pool.request().query(QUERY_CXP(company.codEmpresa)),
-        pool.request().query(QUERY_CAJA(company.codEmpresa, fechaInicio, fechaFin)),
-        pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
-        pool.request().query(QUERY_TRANSACTIONS(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
-        pool.request().query(QUERY_CXC_TRANSACTIONS(company.codEmpresa, year)),
-        pool.request().query(QUERY_CXP_TRANSACTIONS(company.codEmpresa, year)),
-        pool.request().query(QUERY_FACTURAS_EMITIDAS(company.codEmpresa, year, company.claseIngreso)),
-        pool.request().query(QUERY_FACTURAS_RECIBIDAS(company.codEmpresa, year)),
-        pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
-      ]);
-
-      // Batch 2 — módulos nuevos: Balance, Otras CxC/CxP, Tributos, Laboral, Activo Fijo,
-      //           Patrimonio, Inventarios
-      console.log('  → Batch 2: Balance, Otras CxC/CxP, Tributos, Activo Fijo, Patrimonio, Inventarios...');
-      const [
-        balanceResult, otrasCxcResult, otrasCxcTxnResult,
-        otrasCxpResult, otrasCxpTxnResult,
-        tributosResult, tributosTxnResult,
-        laboralResult, laboralTxnResult,
-        activoFijoResult, activoFijoTxnResult,
-        patrimonioResult, patrimonioTxnResult, inventariosResult,
-      ] = await Promise.all([
-        pool.request().query(QUERY_BALANCE(company.codEmpresa, year)),
-        pool.request().query(QUERY_OTRAS_CXC(company.codEmpresa)),
-        pool.request().query(QUERY_OTRAS_CXC_TXN(company.codEmpresa, year)),
-        pool.request().query(QUERY_OTRAS_CXP(company.codEmpresa)),
-        pool.request().query(QUERY_OTRAS_CXP_TXN(company.codEmpresa, year)),
-        pool.request().query(QUERY_TRIBUTOS(company.codEmpresa, year)),
-        pool.request().query(QUERY_TRIBUTOS_TXN(company.codEmpresa, year)),
-        pool.request().query(QUERY_LABORAL(company.codEmpresa)),
-        pool.request().query(QUERY_LABORAL_TXN(company.codEmpresa, year)),
-        pool.request().query(QUERY_ACTIVO_FIJO(company.codEmpresa)),
-        pool.request().query(QUERY_ACTIVO_FIJO_TXN(company.codEmpresa)),
-        pool.request().query(QUERY_PATRIMONIO(company.codEmpresa)),
-        pool.request().query(QUERY_PATRIMONIO_TXN(company.codEmpresa, year)),
-        pool.request().query(QUERY_INVENTARIOS(company.codEmpresa, year)),
-      ]);
-
-      // Batch 3 — Préstamos, Transferencias, Caja saldos/detalle, Gastos naturaleza,
-      //           Tesorería, Auditoría
-      console.log('  → Batch 3: Préstamos, Transferencias, Caja, Tesorería, Gastos, Auditoría...');
+    // Batch 3 — Préstamos, Caja, Tesorería, Gastos, Auditoría (omitido en --fast)
+    let b3 = null;
+    if (!fast) {
+      console.log(`${tag} → Batch 3: Préstamos, Caja, Tesorería, Gastos, Auditoría...`);
       const [
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
         cajaSaldosResult, cajaTxnResult, cajaAsientoFullResult,
@@ -2566,157 +2540,188 @@ async function main() {
         pool.request().query(QUERY_AUDIT_ATIPICOS(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_CONCILIACION(company.codEmpresa, company.claseIngreso, fechaInicio, fechaFin, year)),
       ]);
+      b3 = {
+        prestamosOtorgResult, prestamosReciResult, transferenciasResult,
+        cajaSaldosResult, cajaTxnResult, cajaAsientoFullResult,
+        tesoreriaResult, obSaldosBancoResult,
+        conciliacionBancariaResult, movsSinConciliarResult, obPagosResult,
+        obLibrosCajaResult, obCajaResult, obAsignMetricasResult,
+        pagosSinAsignacionResult, compensacionesResult,
+        bancarizacionMetricasResult, pagosNoBancarizadosResult, beneficiariosSinCuentaResult,
+        pagosTrabajadoresResult, ctsDepositosResult, laboralMetricasResult,
+        gastosNatResult, gastosNatTxnResult,
+        auditSinDocResult, auditSinDocTxnResult,
+        auditDescuadresResult, auditAtipicosResult,
+        auditConciliacionResult,
+      };
+    } else {
+      console.log(`${tag} → Batch 3: OMITIDO (modo --fast)`);
+    }
 
-      const emitidas   = markDups(emitResult.recordset);
-      const recibidas  = markDups(reciResult.recordset);
-      const honorarios = markDups(honorResult.recordset);
-
-      // Batch 4 — Validaciones forenses (31 queries)
-      console.log('  → Batch 4: Validaciones forenses (31 queries)...');
-      const validationForense = await runBatch4Validation(pool, company, year);
+    // Batch 4 — Validaciones forenses (solo con --forensics)
+    let validationForense = null;
+    if (forensics) {
+      console.log(`${tag} → Batch 4: Validaciones forenses (33 queries)...`);
+      validationForense = await runBatch4Validation(pool, company, year);
       const v4ok = Object.values(validationForense)
         .filter((v) => v && typeof v === 'object' && 'ok' in v)
         .filter((v) => v.ok).length;
-      console.log(`     ✓ ${v4ok}/31 queries forenses OK`);
-
-      // Log resumen
-      const logRow = (label, rows) => console.log(`  ${label}: ${rows.length}`);
-      logRow('P&L rows', plResult.recordset);
-      logRow('CxC', cxcResult.recordset);
-      logRow('CxC Split', cxcSplitResult.recordset);
-      logRow('CxP', cxpResult.recordset);
-      logRow('Transacciones', txResult.recordset);
-      logRow('Facturas emitidas', emitidas);
-      logRow('Balance cuentas', balanceResult.recordset);
-      logRow('Otras CxC', otrasCxcResult.recordset);
-      logRow('Otras CxP', otrasCxpResult.recordset);
-      logRow('Tributos', tributosResult.recordset);
-      logRow('Activo Fijo', activoFijoResult.recordset);
-      logRow('Activo Fijo TXN', activoFijoTxnResult.recordset);
-      logRow('Patrimonio', patrimonioResult.recordset);
-      logRow('Inventarios', inventariosResult.recordset);
-      logRow('Laboral TXN', laboralTxnResult.recordset);
-      logRow('Tesorería', tesoreriaResult.recordset);
-      logRow('OB Saldos Banco', obSaldosBancoResult.recordset);
-      logRow('Conciliación Bancaria', conciliacionBancariaResult.recordset);
-      logRow('Movs sin Conciliar', movsSinConciliarResult.recordset);
-      logRow('OB Pagos (libro pagos)', obPagosResult.recordset);
-      logRow('OB Libros Caja', obLibrosCajaResult.recordset);
-      logRow('OB Caja (operaciones)', obCajaResult.recordset);
-      logRow('OB Asignaciones métricas', obAsignMetricasResult.recordset);
-      logRow('Pagos sin asignación', pagosSinAsignacionResult.recordset);
-      logRow('Compensaciones', compensacionesResult.recordset);
-      logRow('Bancarización métricas', bancarizacionMetricasResult.recordset);
-      logRow('Pagos NO Bancarizados', pagosNoBancarizadosResult.recordset);
-      logRow('Beneficiarios sin Cuenta', beneficiariosSinCuentaResult.recordset);
-      logRow('Pagos Trabajadores', pagosTrabajadoresResult.recordset);
-      logRow('CTS Depósitos', ctsDepositosResult.recordset);
-      logRow('Laboral Métricas', laboralMetricasResult.recordset);
-      logRow('Préstamos otorgados', prestamosOtorgResult.recordset);
-      logRow('Préstamos recibidos', prestamosReciResult.recordset);
-      logRow('Transferencias', transferenciasResult.recordset);
-      logRow('Caja saldos', cajaSaldosResult.recordset);
-      logRow('Caja asiento full', cajaAsientoFullResult.recordset);
-      logRow('Gastos naturaleza', gastosNatResult.recordset);
-      logRow('Gastos Nat TXN', gastosNatTxnResult.recordset);
-      logRow('Audit sin doc (clases)', auditSinDocResult.recordset);
-      logRow('Audit descuadres', auditDescuadresResult.recordset);
-      logRow('Audit atípicos', auditAtipicosResult.recordset);
-
-      // Build payload
-      const payload = {
-        companyId: company.codEmpresa,
-        companyName: company.name,
-        claseIngreso: company.claseIngreso,
-        year,
-        data: {
-          // Existentes
-          pl: plResult.recordset,
-          cxc: cxcResult.recordset,
-          cxc_split: cxcSplitResult.recordset,
-          cxp: cxpResult.recordset,
-          caja: cajaResult.recordset,
-          gav: gavResult.recordset,
-          transactions: txResult.recordset,
-          cxc_transactions: cxcTxResult.recordset,
-          cxp_transactions: cxpTxResult.recordset,
-          facturas_emitidas: emitidas,
-          facturas_recibidas: recibidas,
-          honorarios_recibidos: honorarios,
-          // Nuevos
-          balance: balanceResult.recordset,
-          otras_cxc: otrasCxcResult.recordset,
-          otras_cxc_txn: otrasCxcTxnResult.recordset,
-          otras_cxp: otrasCxpResult.recordset,
-          otras_cxp_txn: otrasCxpTxnResult.recordset,
-          tributos: tributosResult.recordset,
-          tributos_txn: tributosTxnResult.recordset,
-          laboral: laboralResult.recordset,
-          laboral_txn: laboralTxnResult.recordset,
-          activo_fijo: activoFijoResult.recordset,
-          activo_fijo_txn: activoFijoTxnResult.recordset,
-          patrimonio: patrimonioResult.recordset,
-          patrimonio_txn: patrimonioTxnResult.recordset,
-          inventarios: inventariosResult.recordset,
-          prestamos_otorgados: prestamosOtorgResult.recordset,
-          prestamos_recibidos: prestamosReciResult.recordset,
-          transferencias: transferenciasResult.recordset,
-          caja_saldos: cajaSaldosResult.recordset,
-          caja_txn: cajaTxnResult.recordset,
-          caja_asiento_full: cajaAsientoFullResult.recordset,
-          tesoreria: tesoreriaResult.recordset,
-          ob_saldos_banco: obSaldosBancoResult.recordset,
-          conciliacion_bancaria: conciliacionBancariaResult.recordset,
-          movs_sin_conciliar: movsSinConciliarResult.recordset,
-          ob_pagos: obPagosResult.recordset,
-          ob_libros_caja: obLibrosCajaResult.recordset,
-          ob_caja: obCajaResult.recordset,
-          ob_asignaciones_metricas: obAsignMetricasResult.recordset,
-          pagos_sin_asignacion: pagosSinAsignacionResult.recordset,
-          compensaciones: compensacionesResult.recordset,
-          bancarizacion_metricas: bancarizacionMetricasResult.recordset,
-          pagos_no_bancarizados: pagosNoBancarizadosResult.recordset,
-          beneficiarios_sin_cuenta: beneficiariosSinCuentaResult.recordset,
-          pagos_trabajadores: pagosTrabajadoresResult.recordset,
-          cts_depositos: ctsDepositosResult.recordset,
-          laboral_metricas: laboralMetricasResult.recordset,
-          gastos_naturaleza: gastosNatResult.recordset,
-          gastos_nat_txn: gastosNatTxnResult.recordset,
-          audit_sin_doc: auditSinDocResult.recordset,
-          audit_sin_doc_txn: auditSinDocTxnResult.recordset,
-          audit_descuadres: auditDescuadresResult.recordset,
-          audit_atipicos: auditAtipicosResult.recordset,
-          audit_conciliacion: auditConciliacionResult.recordset,
-          // Validación forense — 25 queries idénticas a validation-agent.js
-          validation_forense: validationForense,
-        },
-      };
-
-      // POST to VPS
-      const response = await fetch(`${CONFIG.VPS_URL}/api/sync/push`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-sync-key': CONFIG.SYNC_API_KEY,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`VPS returned ${response.status}: ${text}`);
-      }
-
-      const result = await response.json();
-      console.log(`  ✓ Pushed to VPS — ${result.processed?.length || 0} KPI types saved`);
-
-    } catch (err) {
-      console.error(`  ✗ Error syncing ${company.name}: ${err.message}`);
+      console.log(`${tag}    ✓ ${v4ok}/33 queries forenses OK`);
+    } else {
+      console.log(`${tag} → Batch 4: OMITIDO (usar --forensics para incluir)`);
     }
+
+    // Build payload
+    const payload = {
+      companyId: company.codEmpresa,
+      companyName: company.name,
+      claseIngreso: company.claseIngreso,
+      year,
+      data: {
+        pl: plResult.recordset,
+        cxc: cxcResult.recordset,
+        cxc_split: cxcSplitResult.recordset,
+        cxp: cxpResult.recordset,
+        caja: cajaResult.recordset,
+        gav: gavResult.recordset,
+        transactions: txResult.recordset,
+        cxc_transactions: cxcTxResult.recordset,
+        cxp_transactions: cxpTxResult.recordset,
+        facturas_emitidas: emitidas,
+        facturas_recibidas: recibidas,
+        honorarios_recibidos: honorarios,
+        balance: balanceResult.recordset,
+        otras_cxc: otrasCxcResult.recordset,
+        otras_cxc_txn: otrasCxcTxnResult.recordset,
+        otras_cxp: otrasCxpResult.recordset,
+        otras_cxp_txn: otrasCxpTxnResult.recordset,
+        tributos: tributosResult.recordset,
+        tributos_txn: tributosTxnResult.recordset,
+        laboral: laboralResult.recordset,
+        laboral_txn: laboralTxnResult.recordset,
+        activo_fijo: activoFijoResult.recordset,
+        activo_fijo_txn: activoFijoTxnResult.recordset,
+        patrimonio: patrimonioResult.recordset,
+        patrimonio_txn: patrimonioTxnResult.recordset,
+        inventarios: inventariosResult.recordset,
+        ...(b3 && {
+          prestamos_otorgados:       b3.prestamosOtorgResult.recordset,
+          prestamos_recibidos:       b3.prestamosReciResult.recordset,
+          transferencias:            b3.transferenciasResult.recordset,
+          caja_saldos:               b3.cajaSaldosResult.recordset,
+          caja_txn:                  b3.cajaTxnResult.recordset,
+          caja_asiento_full:         b3.cajaAsientoFullResult.recordset,
+          tesoreria:                 b3.tesoreriaResult.recordset,
+          ob_saldos_banco:           b3.obSaldosBancoResult.recordset,
+          conciliacion_bancaria:     b3.conciliacionBancariaResult.recordset,
+          movs_sin_conciliar:        b3.movsSinConciliarResult.recordset,
+          ob_pagos:                  b3.obPagosResult.recordset,
+          ob_libros_caja:            b3.obLibrosCajaResult.recordset,
+          ob_caja:                   b3.obCajaResult.recordset,
+          ob_asignaciones_metricas:  b3.obAsignMetricasResult.recordset,
+          pagos_sin_asignacion:      b3.pagosSinAsignacionResult.recordset,
+          compensaciones:            b3.compensacionesResult.recordset,
+          bancarizacion_metricas:    b3.bancarizacionMetricasResult.recordset,
+          pagos_no_bancarizados:     b3.pagosNoBancarizadosResult.recordset,
+          beneficiarios_sin_cuenta:  b3.beneficiariosSinCuentaResult.recordset,
+          pagos_trabajadores:        b3.pagosTrabajadoresResult.recordset,
+          cts_depositos:             b3.ctsDepositosResult.recordset,
+          laboral_metricas:          b3.laboralMetricasResult.recordset,
+          gastos_naturaleza:         b3.gastosNatResult.recordset,
+          gastos_nat_txn:            b3.gastosNatTxnResult.recordset,
+          audit_sin_doc:             b3.auditSinDocResult.recordset,
+          audit_sin_doc_txn:         b3.auditSinDocTxnResult.recordset,
+          audit_descuadres:          b3.auditDescuadresResult.recordset,
+          audit_atipicos:            b3.auditAtipicosResult.recordset,
+          audit_conciliacion:        b3.auditConciliacionResult.recordset,
+        }),
+        ...(validationForense && { validation_forense: validationForense }),
+      },
+    };
+
+    // POST to VPS
+    const response = await fetch(`${CONFIG.VPS_URL}/api/sync/push`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-sync-key': CONFIG.SYNC_API_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`VPS returned ${response.status}: ${text}`);
+    }
+
+    const result = await response.json();
+    console.log(`${tag} ✓ Pushed — ${result.processed?.length || 0} KPI types saved`);
+
+  } catch (err) {
+    console.error(`  ✗ Error syncing ${company.name}: ${err.message}`);
+  }
+}
+
+async function main() {
+  const args = parseArgs();
+  const year = sanitizeYear(args.year || new Date().getFullYear());
+  const targetCompany = sanitizeCompanyId(args.company);
+  const fast = 'fast' in args;
+  const forensics = 'forensics' in args;
+
+  const companies = targetCompany
+    ? CONFIG.COMPANIES.filter((c) => c.codEmpresa === targetCompany)
+    : CONFIG.COMPANIES;
+
+  if (!companies.length) {
+    console.error(`No companies found${targetCompany ? ` for codEmpresa=${targetCompany}` : ''}`);
+    process.exit(1);
   }
 
+  const mode = fast ? 'FAST (Batches 1+2 only)' : forensics ? 'FULL + FORENSICS' : 'FULL (Batches 1+2+3)';
+  const concurrency = fast ? 4 : 2;
+  console.log(`\nS10 Sync Agent — ${new Date().toISOString()}`);
+  console.log(`Year: ${year} | Mode: ${mode} | Concurrency: ${concurrency} | Companies: ${companies.map((c) => c.name).join(', ')}\n`);
+
+  const pool = await new mssql.ConnectionPool({
+    server: CONFIG.S10_HOST,
+    port: CONFIG.S10_PORT,
+    user: CONFIG.S10_USER,
+    password: CONFIG.S10_PASSWORD,
+    database: CONFIG.S10_DATABASE,
+    options: {
+      encrypt: false,
+      trustServerCertificate: true,
+      enableArithAbort: true,
+    },
+    pool: {
+      max: 40,
+      min: 2,
+      acquireTimeoutMillis: 60000,
+      idleTimeoutMillis: 30000,
+    },
+    connectionTimeout: 30000,
+    requestTimeout: 300000,
+  }).connect();
+
+  console.log('✓ Connected to S10 SQL Server');
+
+  const fechaInicio = `${year}-01-01`;
+  const currentYear = new Date().getFullYear();
+  const fechaFin = year < currentYear
+    ? `${year}-12-31`
+    : new Date().toISOString().slice(0, 10);
+
+  const t0 = Date.now();
+  await runWithConcurrency(
+    companies,
+    concurrency,
+    (company) => syncCompany(company, pool, year, fechaInicio, fechaFin, { fast, forensics }),
+  );
+
   await pool.close();
-  console.log('\nSync completed.');
+  const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+  console.log(`\nSync completed in ${elapsed}s.`);
 }
 
 main().catch((err) => {

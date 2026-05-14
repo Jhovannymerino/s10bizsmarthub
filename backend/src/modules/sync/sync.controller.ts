@@ -37,11 +37,11 @@ export class SyncController {
    */
   @Post('trigger')
   @UseGuards(JwtAuthGuard)
-  async trigger(@Query('years') years?: string) {
+  async trigger(@Query('years') years?: string, @Query('fast') fast?: string) {
     const yearList = years
       ? years.split(',').map(Number).filter(Boolean)
       : [new Date().getFullYear()];
-    return this.syncService.triggerVpnSync(yearList);
+    return this.syncService.triggerVpnSync(yearList, fast === 'true' || fast === '1');
   }
 
   /**

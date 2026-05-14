@@ -424,7 +424,7 @@ export class SyncService {
   private readonly TRIGGER_URL = 'http://host.docker.internal:3299';
   private readonly SYNC_KEY = process.env.SYNC_API_KEY ?? '';
 
-  async triggerVpnSync(years: number[] = [new Date().getFullYear()]) {
+  async triggerVpnSync(years: number[] = [new Date().getFullYear()], fast = false) {
     // Primero verificar si el servicio trigger está disponible
     let serviceAvailable = false;
     try {
@@ -451,9 +451,11 @@ export class SyncService {
       };
     }
 
-    this.logger.log(`VPN sync trigger → host:3299 years: ${years.join(', ')}`);
+    this.logger.log(`VPN sync trigger → host:3299 years: ${years.join(', ')} fast: ${fast}`);
 
-    const res = await fetch(`${this.TRIGGER_URL}/trigger?years=${years.join(',')}`, {
+    const params = new URLSearchParams({ years: years.join(',') });
+    if (fast) params.set('fast', '1');
+    const res = await fetch(`${this.TRIGGER_URL}/trigger?${params}`, {
       method: 'POST',
       headers: { 'x-sync-key': this.SYNC_KEY },
       signal: AbortSignal.timeout(5000),

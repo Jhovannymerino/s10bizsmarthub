@@ -221,7 +221,7 @@ export default function DashboardPage() {
   const [conciliacionData, setConciliacionData] = useState<any>(null);
   const [newTabLoading, setNewTabLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [navCollapsed, setNavCollapsed] = useState<Record<string, boolean>>({ balance: false, auditoria: false });
+  const [navCollapsed, setNavCollapsed] = useState<Record<string, boolean>>({ balance: true, tesoreria: true, obligaciones: true, auditoria: true });
   // Cache key: tabName → `${companyId}:${year}` (year-dependent) or `${companyId}` (static)
   const loadedRef = useRef<Record<string, string>>({});
 
@@ -549,6 +549,20 @@ export default function DashboardPage() {
     setSidebarOpen(false);
   };
 
+  // Auto-expand the section that contains the active tab
+  useEffect(() => {
+    const sectionOf: Record<string, string> = {
+      balance: 'balance', otras_cxc: 'balance', otras_cxp: 'balance',
+      prestamos: 'balance', patrimonio: 'balance', inventarios: 'balance',
+      tesoreria: 'tesoreria', caja_saldos: 'tesoreria',
+      conciliacion: 'tesoreria', gastos_nat: 'tesoreria',
+      tributos: 'obligaciones', laboral: 'obligaciones', activo_fijo: 'obligaciones',
+      audit: 'auditoria', validation_forense: 'auditoria',
+    };
+    const sec = sectionOf[activeTab];
+    if (sec) setNavCollapsed(s => ({ ...s, [sec]: false }));
+  }, [activeTab]);
+
   return (
     <div style={{ display: 'flex', minHeight: '100dvh', background: '#050a12' } as React.CSSProperties}>
 
@@ -777,28 +791,25 @@ export default function DashboardPage() {
             🏠  Inicio
           </button>
 
+          {/* Directorio — ítem suelto, sin label de sección */}
           {!isGrupo && (
-            <>
-              <div className="sidebar-section-label" style={{ marginTop: '0.5rem' }}>Directorio</div>
-              <button onClick={() => handleTabChange('directorio')}
-                className={`sidebar-link ${activeTab === 'directorio' ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                🏛️  Reporte Directorio
-              </button>
-            </>
+            <button onClick={() => handleTabChange('directorio')}
+              className={`sidebar-link ${activeTab === 'directorio' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+              🎯  Directorio
+            </button>
           )}
 
-          <div className="sidebar-section-label" style={{ marginTop: '0.5rem' }}>Resultados</div>
+          {/* Resultados — siempre visible, sin colapso */}
+          <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Resultados</div>
           {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).map((tab) => (
-            <button key={tab}
-              onClick={() => handleTabChange(tab)}
+            <button key={tab} onClick={() => handleTabChange(tab)}
               className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-            >
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
               {tab === 'pl'   && '📊  P&L'}
               {tab === 'cxc'  && '💰  CxC Aging'}
               {tab === 'cxp'  && '🏪  CxP Aging'}
-              {tab === 'caja' && '🏦  Posición Caja'}
+              {tab === 'caja' && '💵  Posición Caja'}
               {tab === 'gav'  && '📋  GAV Detalle'}
               {tab === 'docs' && '🧾  Documentos'}
             </button>
@@ -806,50 +817,82 @@ export default function DashboardPage() {
 
           {!isGrupo && (
             <>
-              {/* Balance Sheet — collapsible */}
-              <div
-                className="sidebar-section-label nav-group-header"
+              {/* Balance & Patrimonio — colapsable */}
+              <div className="sidebar-section-label nav-group-header accent-blue"
                 style={{ marginTop: '0.75rem' }}
-                onClick={() => setNavCollapsed(s => ({ ...s, balance: !s.balance }))}
-              >
-                Balance & Ops
+                onClick={() => setNavCollapsed(s => ({ ...s, balance: !s.balance }))}>
+                <span className="sidebar-section-label-text">Balance & Patrimonio</span>
                 <span className={`nav-group-arrow${!navCollapsed.balance ? ' open' : ''}`}>›</span>
               </div>
-              {!navCollapsed.balance && (['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','caja_saldos','gastos_nat'] as const).map((tab) => (
-                <button key={tab} onClick={() => handleTabChange(tab)}
-                  className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                  {tab === 'balance'    && '⚖️  Balance General'}
-                  {tab === 'otras_cxc' && '📌  Otras CxC'}
-                  {tab === 'otras_cxp' && '📋  Otras CxP'}
-                  {tab === 'prestamos' && '💳  Préstamos'}
-                  {tab === 'tributos'  && '🏛️  Tributos'}
-                  {tab === 'laboral'   && '👷  Laboral'}
-                  {tab === 'activo_fijo' && '🏗️  Activo Fijo'}
-                  {tab === 'tesoreria'   && '🏦  Tesorería'}
-                  {tab === 'patrimonio'  && '🏛️  Patrimonio'}
-                  {tab === 'inventarios' && '📦  Inventarios'}
-                  {tab === 'caja_saldos' && '🏦  Saldos Banco'}
-                  {tab === 'gastos_nat'  && '📊  Gastos Naturaleza'}
-                </button>
-              ))}
+              {!navCollapsed.balance && (
+                <div className="nav-section-items">
+                  {(['balance','otras_cxc','otras_cxp','prestamos','patrimonio','inventarios'] as const).map((tab) => (
+                    <button key={tab} onClick={() => handleTabChange(tab)}
+                      className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      {tab === 'balance'    && '⚖️  Balance General'}
+                      {tab === 'otras_cxc' && '📌  Otras CxC'}
+                      {tab === 'otras_cxp' && '🗃️  Otras CxP'}
+                      {tab === 'prestamos' && '💳  Préstamos'}
+                      {tab === 'patrimonio' && '🏛️  Patrimonio'}
+                      {tab === 'inventarios' && '📦  Inventarios'}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              {/* Auditoría — collapsible */}
-              <div
-                className="sidebar-section-label nav-group-header"
-                style={{ marginTop: '0.75rem' }}
-                onClick={() => setNavCollapsed(s => ({ ...s, auditoria: !s.auditoria }))}
-              >
-                Auditoría
+              {/* Tesorería & Bancos — colapsable */}
+              <div className="sidebar-section-label nav-group-header accent-green"
+                style={{ marginTop: '0.5rem' }}
+                onClick={() => setNavCollapsed(s => ({ ...s, tesoreria: !s.tesoreria }))}>
+                <span className="sidebar-section-label-text">Tesorería & Bancos</span>
+                <span className={`nav-group-arrow${!navCollapsed.tesoreria ? ' open' : ''}`}>›</span>
+              </div>
+              {!navCollapsed.tesoreria && (
+                <div className="nav-section-items">
+                  {(['tesoreria','caja_saldos','conciliacion','gastos_nat'] as const).map((tab) => (
+                    <button key={tab} onClick={() => handleTabChange(tab)}
+                      className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      {tab === 'tesoreria'   && '💹  Tesorería'}
+                      {tab === 'caja_saldos' && '🏦  Saldos Banco'}
+                      {tab === 'conciliacion' && '🔄  Conciliación Bancaria'}
+                      {tab === 'gastos_nat'  && '📈  Gastos Naturaleza'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Obligaciones — colapsable */}
+              <div className="sidebar-section-label nav-group-header accent-amber"
+                style={{ marginTop: '0.5rem' }}
+                onClick={() => setNavCollapsed(s => ({ ...s, obligaciones: !s.obligaciones }))}>
+                <span className="sidebar-section-label-text">Obligaciones</span>
+                <span className={`nav-group-arrow${!navCollapsed.obligaciones ? ' open' : ''}`}>›</span>
+              </div>
+              {!navCollapsed.obligaciones && (
+                <div className="nav-section-items">
+                  {(['tributos','laboral','activo_fijo'] as const).map((tab) => (
+                    <button key={tab} onClick={() => handleTabChange(tab)}
+                      className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      {tab === 'tributos'    && '📜  Tributos'}
+                      {tab === 'laboral'     && '👷  Laboral'}
+                      {tab === 'activo_fijo' && '🏗️  Activo Fijo'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Auditoría — colapsable */}
+              <div className="sidebar-section-label nav-group-header accent-purple"
+                style={{ marginTop: '0.5rem' }}
+                onClick={() => setNavCollapsed(s => ({ ...s, auditoria: !s.auditoria }))}>
+                <span className="sidebar-section-label-text">Auditoría</span>
                 <span className={`nav-group-arrow${!navCollapsed.auditoria ? ' open' : ''}`}>›</span>
               </div>
               {!navCollapsed.auditoria && (
-                <>
-                  <button onClick={() => handleTabChange('conciliacion')}
-                    className={`sidebar-link ${activeTab === 'conciliacion' ? 'active' : ''}`}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                    🏦  Conciliación Bancaria
-                  </button>
+                <div className="nav-section-items">
                   <button onClick={() => handleTabChange('audit')}
                     className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -860,10 +903,12 @@ export default function DashboardPage() {
                     style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                     🧪  Validación Forense S10
                   </button>
-                </>
+                </div>
               )}
             </>
           )}
+
+          {/* Configuración — solo admin */}
           {userRole === 'admin' && (
             <>
               <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Configuración</div>
@@ -878,9 +923,8 @@ export default function DashboardPage() {
                     .catch(() => setAdminLoading(false));
                 }}
                 className={`sidebar-link ${activeTab === 'admin' ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-              >
-                ⚙  Administración
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                ⚙️  Administración
               </button>
             </>
           )}

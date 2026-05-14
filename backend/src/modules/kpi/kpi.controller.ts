@@ -157,6 +157,12 @@ export class KpiController {
     return this.kpiService.getBalance(companyId, Number(year) || new Date().getFullYear());
   }
 
+  /** CxC split — comercial (facturas) vs otras (préstamos, DSP, transferencias) */
+  @Get(':companyId/cxc-split')
+  getCxCSplit(@Param('companyId') companyId: string) {
+    return this.kpiService.getCxCSplit(companyId);
+  }
+
   /** Otras CxC — aging clases 13,14,16,17,18 */
   @Get(':companyId/otras-cxc')
   getOtrasCxC(@Param('companyId') companyId: string) {

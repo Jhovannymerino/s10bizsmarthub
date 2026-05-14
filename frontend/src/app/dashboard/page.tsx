@@ -196,6 +196,7 @@ export default function DashboardPage() {
   const [docsOnlyDuplicados, setDocsOnlyDuplicados] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   // ── Nuevos módulos (lazy-loaded al seleccionar el tab) ──
+  const [cxcSplitData, setCxcSplitData] = useState<any>(null);
   const [balanceData, setBalanceData] = useState<any>(null);
   const [otrasCxCData, setOtrasCxCData] = useState<any>(null);
   const [otrasCxPData, setOtrasCxPData] = useState<any>(null);
@@ -310,6 +311,7 @@ export default function DashboardPage() {
 
     loadedRef.current = {};
     setLoading(true);
+    setCxcSplitData(null);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
@@ -348,14 +350,16 @@ export default function DashboardPage() {
         fetchApi(`/kpi/${id}/caja?year=${selectedYear}`, token, signal),
         fetchApi(`/kpi/${id}/gav?year=${selectedYear}`, token, signal),
         fetchApi(`/kpi/${id}/last-sync?year=${selectedYear}`, token, signal),
+        fetchApi(`/kpi/${id}/cxc-split`, token, signal),
       ])
-        .then(([plData, cxcData, cxpData, cajaData, gavData, syncData]) => {
+        .then(([plData, cxcData, cxpData, cajaData, gavData, syncData, splitData]) => {
           setPL(plData?.plMonthly ? plData : null);
           setCxC(cxcData?.clientes ? cxcData : null);
           setCxP(cxpData?.proveedores ? cxpData : null);
           setCaja(cajaData?.bancos ? cajaData : null);
           setGAV(gavData?.categorias ? gavData : null);
           setLastSync(syncData?.lastSync ?? null);
+          setCxcSplitData(splitData?.rows?.length ? splitData : null);
           setLoading(false);
         })
         .catch((err) => {
@@ -1160,8 +1164,21 @@ export default function DashboardPage() {
                       sub={pct(ytd.ebitdaPct)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.ebitdaPct)}` : undefined} />
                     <KpiCard label="Utilidad Neta" value={fmt(ytd.utilidadNeta)} signal={semaforo('margenNetoPct', ytd.margenNetoPct ?? 0)}
                       sub={pct(ytd.margenNetoPct ?? 0)} />
-                    {cxc && <KpiCard label="CxC Total" value={fmt(cxc.totalSaldo)} signal={dso && dso > 60 ? 'red' : dso && dso > 45 ? 'yellow' : 'green'}
-                      sub={dso ? `DSO ${dso}d` : 'sin DSO'} />}
+                    {cxcSplitData
+                      ? <>
+                          <KpiCard label="CxC Comercial" value={fmt(cxcSplitData.comercial)}
+                            signal={dso && dso > 60 ? 'red' : dso && dso > 45 ? 'yellow' : 'green'}
+                            sub={dso ? `DSO ${dso}d` : 'sin DSO'}
+                            hint="Solo facturas y NC (131/125/128/134)"
+                            onClick={() => setActiveTab('cxc')} />
+                          {cxcSplitData.otras > 0 && <KpiCard label="Otras CxC" value={fmt(cxcSplitData.otras)}
+                            signal="neutral"
+                            sub="Préstamos, DSP, transferencias"
+                            hint="Tipos 071, 058, 060 y otros no tributarios"
+                            onClick={() => setActiveTab('otras_cxc')} />}
+                        </>
+                      : cxc && <KpiCard label="CxC Total" value={fmt(cxc.totalSaldo)} signal={dso && dso > 60 ? 'red' : dso && dso > 45 ? 'yellow' : 'green'}
+                          sub={dso ? `DSO ${dso}d` : 'sin DSO'} />}
                     {saldoCaja != null && <KpiCard label="Saldo Caja" value={fmt(saldoCaja)} signal={saldoCaja > 0 ? 'green' : 'red'}
                       sub={runway ? `Runway ${runway}m` : 'sin runway'} />}
                   </div>

@@ -26,6 +26,7 @@ export class SyncService {
     data: {
       pl?: any[];
       cxc?: any[];
+      cxc_split?: any[];
       cxp?: any[];
       caja?: any[];
       gav?: any[];
@@ -110,6 +111,11 @@ export class SyncService {
         const cxcData = this.kpiService.buildCxC(data.cxc);
         await this.kpiService.saveSnapshot(companyId, companyName, 'cxc', 'current', year, null, cxcData);
         logs.push({ kpiType: 'cxc', rowsProcessed: data.cxc.length, status: 'success' });
+      }
+
+      if (data.cxc_split?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_split', 'current', year, null, data.cxc_split);
+        logs.push({ kpiType: 'cxc_split', rowsProcessed: data.cxc_split.length, status: 'success' });
       }
 
       if (data.cxp?.length) {

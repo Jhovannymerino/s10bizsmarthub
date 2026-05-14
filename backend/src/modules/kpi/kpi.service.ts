@@ -553,6 +553,19 @@ export class KpiService {
   }
 
   // ─────────────────────────────────────────────
+  // CxC Split — comercial vs otras (por CodTipoDocumento)
+  // ─────────────────────────────────────────────
+
+  async getCxCSplit(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'cxc_split', 'current');
+    if (!cached) return { rows: [], comercial: 0, otras: 0 };
+    const rows = cached.data as any[];
+    const comercial = rows.filter((r: any) => r.Grupo === 'comercial').reduce((s: number, r: any) => s + (parseFloat(r.SaldoPendiente) || 0), 0);
+    const otras     = rows.filter((r: any) => r.Grupo === 'otras').reduce((s: number, r: any) => s + (parseFloat(r.SaldoPendiente) || 0), 0);
+    return { rows, comercial: round(comercial), otras: round(otras), syncedAt: cached.syncedAt };
+  }
+
+  // ─────────────────────────────────────────────
   // Otras CxC — clases 13,14,16,17,18 aging + detalle
   // ─────────────────────────────────────────────
 

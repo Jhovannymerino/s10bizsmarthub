@@ -1,11 +1,11 @@
 import React from 'react';
 import { Signal, SIGNAL_COLOR, SIGNAL_DOT } from '../_lib/semaforo';
 
-export function KpiCard({ label, value, sub, signal, hint }: {
-  label: string; value: string; sub?: string; signal?: Signal; hint?: string;
+export function KpiCard({ label, value, sub, signal, hint, onClick }: {
+  label: string; value: string; sub?: string; signal?: Signal; hint?: string; onClick?: () => void;
 }) {
   return (
-    <div className="kpi-card" title={hint}>
+    <div className="kpi-card" title={hint} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
       <div style={{ fontSize: '0.7rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>
         {label}
         {signal && signal !== 'neutral' && (

@@ -120,6 +120,24 @@ HAVING SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) > 0
 ORDER BY SaldoTotal DESC
 `;
 
+// CxC split por naturaleza: comercial (facturas/NC) vs otras (préstamos, DSP, transferencias, etc.)
+const QUERY_CXC_SPLIT = (codEmpresa) => `
+SELECT
+  CASE WHEN doc.CodTipoDocumento IN ('131','125','128','134') THEN 'comercial' ELSE 'otras' END AS Grupo,
+  doc.CodTipoDocumento                                                AS Tipo,
+  LEFT(MAX(doc.DescripcionTipoDocumento), 40)                         AS DesTipo,
+  COUNT(*)                                                            AS NDocs,
+  COUNT(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
+  ROUND(SUM(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
+                 THEN (doc.Total - ISNULL(doc.TotalPagado,0)) ELSE 0 END), 0) AS SaldoPendiente
+FROM CMO.dbo.vw_12DocumentosPorCobrar doc
+WHERE doc.CodEmpresa = '${codEmpresa}'
+GROUP BY
+  CASE WHEN doc.CodTipoDocumento IN ('131','125','128','134') THEN 'comercial' ELSE 'otras' END,
+  doc.CodTipoDocumento
+ORDER BY Grupo, SaldoPendiente DESC
+`;
+
 const QUERY_CXC_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
   ac.CodUnico                                              AS NroAsiento,
@@ -2455,12 +2473,13 @@ async function main() {
       // Batch 1 — queries existentes (P&L, CxC, CxP, Caja, GAV, transacciones, documentos)
       console.log('  → Batch 1: P&L, CxC, CxP, Caja, GAV, documentos...');
       const [
-        plResult, cxcResult, cxpResult, cajaResult, gavResult,
+        plResult, cxcResult, cxcSplitResult, cxpResult, cajaResult, gavResult,
         txResult, cxcTxResult, cxpTxResult,
         emitResult, reciResult, honorResult,
       ] = await Promise.all([
         pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_CXC(company.codEmpresa)),
+        pool.request().query(QUERY_CXC_SPLIT(company.codEmpresa)),
         pool.request().query(QUERY_CXP(company.codEmpresa)),
         pool.request().query(QUERY_CAJA(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),
@@ -2563,6 +2582,7 @@ async function main() {
       const logRow = (label, rows) => console.log(`  ${label}: ${rows.length}`);
       logRow('P&L rows', plResult.recordset);
       logRow('CxC', cxcResult.recordset);
+      logRow('CxC Split', cxcSplitResult.recordset);
       logRow('CxP', cxpResult.recordset);
       logRow('Transacciones', txResult.recordset);
       logRow('Facturas emitidas', emitidas);
@@ -2612,6 +2632,7 @@ async function main() {
           // Existentes
           pl: plResult.recordset,
           cxc: cxcResult.recordset,
+          cxc_split: cxcSplitResult.recordset,
           cxp: cxpResult.recordset,
           caja: cajaResult.recordset,
           gav: gavResult.recordset,

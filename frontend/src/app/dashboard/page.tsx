@@ -181,7 +181,7 @@ export default function DashboardPage() {
   const [cxcTxDrill, setCxCTxDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
   const [cxpTxDrill, setCxPTxDrill] = useState<{ proveedor: string; codProveedor: string } | null>(null);
   const [cajaTxDrill, setCajaTxDrill] = useState<{ codBanco: string; desBanco: string } | null>(null);
-  const [accountTxDrill, setAccountTxDrill] = useState<{ codCuenta: string; descripcion: string; endpoint: string; codTercero?: string } | null>(null);
+  const [accountTxDrill, setAccountTxDrill] = useState<{ codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; yearOverride?: number; mesPreset?: number } | null>(null);
   const [auditSinDocDrill, setAuditSinDocDrill] = useState<{ clase: string; desClase: string } | null>(null);
   const [gavDrill, setGavDrill] = useState<{ cod: string; descripcion: string; meses: Record<number, number>; ytd: number } | null>(null);
   const [cxcSearch, setCxcSearch] = useState('');
@@ -626,6 +626,8 @@ export default function DashboardPage() {
           descripcion={accountTxDrill.descripcion}
           endpoint={accountTxDrill.endpoint}
           codTercero={accountTxDrill.codTercero}
+          yearOverride={accountTxDrill.yearOverride}
+          mesPreset={accountTxDrill.mesPreset}
           onClose={() => setAccountTxDrill(null)}
         />
       )}
@@ -3405,6 +3407,7 @@ export default function DashboardPage() {
                                             const rowEndpoint = effectiveCod ? endpointForClase(rowClase) : null;
                                             const isV04b = v.id === 'V04b_facturas_sin_asiento_resumen';
                                             const isV28 = v.id === 'V28_nc_sospechosas';
+                                            const isMultiYearV = ['V06_sueldos_aging', 'V07_cts_depositos', 'V08_participaciones'].includes(v.id);
                                             const v04bDrillKey = isV04b ? `v04b-${row.Anio}` : isV28 ? `v28-${row.Anio}` : null;
                                             const v04bIsOpen = v04bDrillKey !== null && forenseFacturasDrillKey === v04bDrillKey;
                                             return (
@@ -3430,7 +3433,7 @@ export default function DashboardPage() {
                                                             {val} {v04bIsOpen ? '▲' : '▶'}
                                                           </button>
                                                       : isNumAsientosCell
-                                                        ? <button onClick={() => setAccountTxDrill({ codCuenta: effectiveCod!, descripcion: String(row.DesCuenta ?? row.DesBanco ?? row.Tipo ?? effectiveCod), endpoint: rowEndpoint! })}
+                                                        ? <button onClick={() => setAccountTxDrill({ codCuenta: effectiveCod!, descripcion: String(row.DesCuenta ?? row.DesBanco ?? row.Tipo ?? effectiveCod), endpoint: rowEndpoint!, ...(isMultiYearV && row.Anio ? { yearOverride: Number(row.Anio), ...(row.Mes ? { mesPreset: Number(row.Mes) } : {}) } : {}) })}
                                                             title="Ver asientos individuales"
                                                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
                                                             {val} ▶

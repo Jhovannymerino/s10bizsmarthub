@@ -4,21 +4,22 @@ import { API, MESES } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { DocPreview } from './DocPreview';
 
-export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, codTercero, onClose }: {
-  companyId: string; year: number; codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; onClose: () => void;
+export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, codTercero, yearOverride, mesPreset, onClose }: {
+  companyId: string; year: number; codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; yearOverride?: number; mesPreset?: number; onClose: () => void;
 }) {
+  const fetchYear = yearOverride ?? year;
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [mesFilter, setMesFilter] = useState<number | null>(null);
+  const [mesFilter, setMesFilter] = useState<number | null>(mesPreset ?? null);
   const [anioFilter, setAnioFilter] = useState<number | null>(null);
   const [docPreview, setDocPreview] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true); setFetchError(false);
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const params = new URLSearchParams({ year: String(year), codCuenta });
+    const params = new URLSearchParams({ year: String(fetchYear), codCuenta });
     if (codTercero) params.set('codTercero', codTercero);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
@@ -29,7 +30,7 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
       .then(d => { setTxns(d.transactions || []); setLoading(false); })
       .catch(() => { setFetchError(true); setLoading(false); })
       .finally(() => clearTimeout(timer));
-  }, [companyId, year, codCuenta, codTercero, endpoint, retryCount]);
+  }, [companyId, fetchYear, codCuenta, codTercero, endpoint, retryCount]);
 
   const isActivoFijo = endpoint === 'activo-fijo-transactions';
   const aniosPresentes = isActivoFijo ? Array.from(new Set(txns.map((t: any) => t.Anio as number))).sort((a, b) => b - a) : [];
@@ -47,7 +48,7 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {year} · {filtered.length} movimientos · 🔗 = documento origen</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {fetchYear} · {filtered.length} movimientos · 🔗 = documento origen</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
@@ -76,7 +77,7 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
             {isActivoFijo
               ? (anioFilter || mesFilter ? 'Sin movimientos con los filtros seleccionados.' : 'Sin movimientos históricos para esta cuenta.')
-              : `Sin asientos para esta cuenta en ${year}.`
+              : `Sin asientos para esta cuenta en ${fetchYear}.`
             }
           </div>
         )

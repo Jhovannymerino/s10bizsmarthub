@@ -190,7 +190,7 @@ export default function DashboardPage() {
   const [cxpSort, setCxpSort] = useState<SortState>({ col: 'saldoTotal', dir: 'desc' });
   const [gavSort, setGavSort] = useState<SortState>({ col: 'ytd', dir: 'desc' });
   const [docs, setDocs] = useState<{ emitidas: any[]; recibidas: any[]; honorarios: any[] } | null>(null);
-  const [docsTab, setDocsTab] = useState<'emitidas' | 'recibidas' | 'honorarios'>('emitidas');
+  const [docsTab, setDocsTab] = useState<'emitidas' | 'recibidas' | 'honorarios' | 'operativos'>('emitidas');
   const [docsSearch, setDocsSearch] = useState('');
   const [docsOnlySinAsiento, setDocsOnlySinAsiento] = useState(false);
   const [docsOnlyDuplicados, setDocsOnlyDuplicados] = useState(false);
@@ -1849,16 +1849,29 @@ export default function DashboardPage() {
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando documentos...</div>
         )}
         {activeTab === 'docs' && !isGrupo && docs && (() => {
-          const lista = docsTab === 'emitidas' ? docs.emitidas : docsTab === 'recibidas' ? docs.recibidas : docs.honorarios;
-          const sinAsientoCount = lista.filter((d: any) => d.SinAsiento === 1).length;
-          const sinAsientoMonto = lista.filter((d: any) => d.SinAsiento === 1).reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
+          // Tipos no tributarios — sin comprobante de pago en sentido fiscal
+          const CODTIPOS_OPER = ['060','058','071','048','070','069','073','075','056'];
+          const DESC_OPER = ['SIN COMPROBANTE','TRANSFERENCIA BANCARIA','PRESTAMO','ANTICIPO','ENTREGA A RENDIR','FONDO ROTATORIO','DEVOLUCION','PLANILLA','NOTA DE ABONO'];
+          const esOperativo = (d: any) => d.CodTipo
+            ? CODTIPOS_OPER.includes(String(d.CodTipo))
+            : DESC_OPER.some(k => (d.TipoDocumento || '').toUpperCase().includes(k));
+          const tributarios = docs.emitidas.filter((d: any) => !esOperativo(d));
+          const operativos  = docs.emitidas.filter((d: any) => esOperativo(d));
+          const lista = docsTab === 'emitidas' ? tributarios
+                      : docsTab === 'recibidas' ? docs.recibidas
+                      : docsTab === 'honorarios' ? docs.honorarios
+                      : operativos;
+          // Sin asiento solo aplica a comprobantes tributarios
+          const listaParaAlerta = docsTab === 'emitidas' ? tributarios : docsTab === 'recibidas' ? docs.recibidas : docsTab === 'honorarios' ? docs.honorarios : [];
+          const sinAsientoCount = listaParaAlerta.filter((d: any) => d.SinAsiento === 1).length;
+          const sinAsientoMonto = listaParaAlerta.filter((d: any) => d.SinAsiento === 1).reduce((s: number, d: any) => s + (d.TotalNeto || 0), 0);
           const duplicadosCount = lista.filter((d: any) => d.EsDuplicado === 1).length;
           const q = docsSearch.toLowerCase();
           const filtrada = lista.filter((d: any) => {
-            if (docsOnlySinAsiento && d.SinAsiento !== 1) return false;
+            if (docsOnlySinAsiento && docsTab !== 'operativos' && d.SinAsiento !== 1) return false;
             if (docsOnlyDuplicados && d.EsDuplicado !== 1) return false;
             if (!q) return true;
-            const nombre = docsTab === 'emitidas' ? (d.Cliente || '') : (d.Proveedor || '');
+            const nombre = (docsTab === 'emitidas' || docsTab === 'operativos') ? (d.Cliente || '') : (d.Proveedor || '');
             const num = `${d.Serie || ''}-${d.Numero || ''}`;
             const tipo = d.TipoDocumento || '';
             return nombre.toLowerCase().includes(q) || num.toLowerCase().includes(q) || tipo.toLowerCase().includes(q);
@@ -1867,7 +1880,7 @@ export default function DashboardPage() {
           const ncSign = (d: any) => d.EsNotaCredito ? -1 : 1;
           const totalMonto = filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.Total || 0), 0);
           const totalNeto  = filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.TotalNeto || 0), 0);
-          const totalSaldo = docsTab === 'emitidas'
+          const totalSaldo = (docsTab === 'emitidas' || docsTab === 'operativos')
             ? filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.Saldo || 0), 0)
             : filtrada.reduce((s: number, d: any) => s + ncSign(d) * (d.TotalSaldo || 0), 0);
           const ncCount = filtrada.filter((d: any) => d.EsNotaCredito).length;
@@ -1875,14 +1888,17 @@ export default function DashboardPage() {
             <div>
               {/* Sub-tabs */}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {(['emitidas', 'recibidas', 'honorarios'] as const).map((t) => (
+                {(['emitidas', 'recibidas', 'honorarios', 'operativos'] as const).map((t) => (
                   <button key={t} onClick={() => { setDocsTab(t); setDocsSearch(''); setDocsOnlySinAsiento(false); setDocsOnlyDuplicados(false); }}
                     style={{ padding: '0.4rem 1.2rem', borderRadius: '0.375rem', border: '1px solid',
-                      borderColor: docsTab === t ? 'rgba(32,126,131,0.5)' : 'rgba(255,255,255,0.1)',
-                      background: docsTab === t ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)',
-                      color: docsTab === t ? '#2BB4BB' : '#8B97A8',
+                      borderColor: docsTab === t ? (t === 'operativos' ? 'rgba(245,158,11,0.5)' : 'rgba(32,126,131,0.5)') : 'rgba(255,255,255,0.1)',
+                      background: docsTab === t ? (t === 'operativos' ? 'rgba(245,158,11,0.15)' : 'rgba(32,126,131,0.2)') : 'rgba(255,255,255,0.04)',
+                      color: docsTab === t ? (t === 'operativos' ? '#F59E0B' : '#2BB4BB') : '#8B97A8',
                       fontWeight: docsTab === t ? 700 : 400, fontSize: '0.85rem', cursor: 'pointer' }}>
-                    {t === 'emitidas' ? `Facturas Emitidas (${docs.emitidas.length})` : t === 'recibidas' ? `Facturas Recibidas (${docs.recibidas.length})` : `Honorarios (${docs.honorarios.length})`}
+                    {t === 'emitidas' ? `Facturas Emitidas (${tributarios.length})`
+                     : t === 'recibidas' ? `Facturas Recibidas (${docs.recibidas.length})`
+                     : t === 'honorarios' ? `Honorarios (${docs.honorarios.length})`
+                     : `Operativos (${operativos.length})`}
                   </button>
                 ))}
                 {sinAsientoCount > 0 && (
@@ -1912,7 +1928,10 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
                     <div style={{ fontWeight: 700, color: '#F8FAFC' }}>
-                      {docsTab === 'emitidas' ? 'Facturas emitidas a clientes' : docsTab === 'recibidas' ? 'Facturas y boletas recibidas' : 'Recibos por Honorarios Profesionales'}
+                      {docsTab === 'emitidas' ? 'Facturas emitidas a clientes'
+                       : docsTab === 'recibidas' ? 'Facturas y boletas recibidas'
+                       : docsTab === 'honorarios' ? 'Recibos por Honorarios Profesionales'
+                       : 'Documentos operativos / sin comprobante tributario'}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.2rem' }}>
                       {filtrada.length - ncCount} docs{ncCount > 0 ? ` · ${ncCount} NC (restadas)` : ''} · Neto {fmt(totalNeto)} · Total c/IGV {fmt(totalMonto)} · Pendiente {fmt(totalSaldo)}
@@ -1921,7 +1940,7 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <input
                       type="text"
-                      placeholder={docsTab === 'emitidas' ? 'Buscar cliente o número...' : 'Buscar proveedor o número...'}
+                      placeholder={(docsTab === 'emitidas' || docsTab === 'operativos') ? 'Buscar cliente o número...' : 'Buscar proveedor o número...'}
                       value={docsSearch}
                       onChange={e => setDocsSearch(e.target.value)}
                       style={{ padding: '0.4rem 0.75rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 200, background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }}
@@ -1929,7 +1948,7 @@ export default function DashboardPage() {
                     <ExportBtn onClick={() => {
                       const tab = docsTab;
                       const fname = `Docs_${tab}_${selectedCompany.shortName}_${selectedYear}.csv`;
-                      if (tab === 'emitidas') {
+                      if (tab === 'emitidas' || tab === 'operativos') {
                         const headers = ['Serie-Número', 'Fecha', 'Tipo', 'Cliente', 'Neto', 'IGV', 'Total', 'Pagado', 'Saldo', 'SinAsiento', 'Duplicado'];
                         const rows = filtrada.map((d: any) => [`${d.Serie || ''}-${d.Numero}`, d.FechaDocumento, d.TipoDocumento, d.Cliente, d.TotalNeto, d.TotalImpuesto, d.Total, d.TotalPagado, d.Saldo, d.SinAsiento === 1 ? 'Sí' : 'No', d.EsDuplicado === 1 ? 'Sí' : 'No']);
                         exportCSV(fname, headers, rows);
@@ -1993,7 +2012,7 @@ export default function DashboardPage() {
                         </tr>
                       </tfoot>
                     </table>
-                  ) : docsTab === 'emitidas' ? (
+                  ) : (docsTab === 'emitidas' || docsTab === 'operativos') ? (
                     <table className="table-s10" style={{ fontSize: '0.8rem' }}>
                       <thead>
                         <tr>

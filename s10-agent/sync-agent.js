@@ -186,7 +186,7 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
-const TIPOS_EMITIDAS = `'060','125','128','131','134'`;
+const TIPOS_EMITIDAS = `'125','128','131','134'`;
 const TIPOS_RECIBIDAS = `'001','002','004','012','015','091','123','143','144'`;
 const TIPOS_HONORARIOS = `'010'`;
 const TIPOS_PRESTAMOS  = `'071'`;
@@ -201,6 +201,7 @@ SELECT
   ISNULL(doc.NumeroDocumento, '')                            AS Numero,
   CONVERT(VARCHAR(10), doc.FechaDocumento, 103)              AS FechaDocumento,
   CONVERT(VARCHAR(10), doc.FechaVencimiento, 103)            AS FechaVencimiento,
+  doc.CodTipoDocumento                                        AS CodTipo,
   ISNULL(doc.DescripcionTipoDocumento, '')                   AS TipoDocumento,
   ISNULL(doc.DescripcionIdentificador, '')                   AS Cliente,
   ISNULL(doc.RUC, '')                                        AS RucCliente,

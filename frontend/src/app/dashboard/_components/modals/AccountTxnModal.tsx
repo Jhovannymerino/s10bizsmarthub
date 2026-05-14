@@ -84,7 +84,7 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
         : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
-              <thead><tr><th style={{ width: 32 }}></th><th>Fecha</th><th>Nro. Asiento</th><th style={{ minWidth: 240 }}>Glosa</th><th style={{ minWidth: 140 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th></tr></thead>
+              <thead><tr><th style={{ width: 32 }}></th><th>Fecha</th><th title="Número de asiento en S10 (CodUnico) — úsalo para buscarlo en el sistema">Asiento S10</th><th style={{ minWidth: 240 }}>Glosa</th><th style={{ minWidth: 140 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th></tr></thead>
               <tbody>
                 {filtered.map((t: any, i: number) => {
                   const neto = (t.Debito || 0) - (t.Credito || 0);

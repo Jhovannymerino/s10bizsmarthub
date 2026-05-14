@@ -74,7 +74,7 @@ ORDER BY Clase, CodCuenta, Mes
 
 const QUERY_TRANSACTIONS = (claseIngreso, codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   MONTH(ac.FechaAplicacionContable)                        AS Mes,
@@ -92,7 +92,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
   AND LEFT(pcd.CodCuenta, 2) IN ('${claseIngreso}', '91', '94', '97')
-ORDER BY ac.FechaAplicacionContable, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable, ac.CodUnico
 `;
 
 const QUERY_CXC = (codEmpresa) => `
@@ -122,7 +122,7 @@ ORDER BY SaldoTotal DESC
 
 const QUERY_CXC_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -141,12 +141,12 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '12'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 const QUERY_CXP_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -165,7 +165,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '42'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 const TIPOS_EMITIDAS = `'060','125','128','131','134'`;
@@ -422,7 +422,7 @@ ORDER BY Clase, SaldoTotal DESC
 // Detalle de transacciones de Otras CxC para drilldown (últimos 2 años)
 const QUERY_OTRAS_CXC_TXN = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -443,7 +443,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('13','14','16','17','18')
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // Otras CxP: clases 43 (fact. por pagar interco), 44 (otras CxP directores), 45 (leasing),
@@ -479,7 +479,7 @@ ORDER BY Clase, SaldoTotal DESC
 // Detalle transacciones Otras CxP para drilldown (año de sync)
 const QUERY_OTRAS_CXP_TXN = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -500,7 +500,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('43','44','45','46','47')
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // Tributos por pagar (clase 40): IGV, Renta, AFP, ONP, ESSALUD, etc.
@@ -534,7 +534,7 @@ ORDER BY SaldoPorPagar DESC, ProvisionadoAnio DESC
 // Detalle transacciones tributos para drilldown (año de sync)
 const QUERY_TRIBUTOS_TXN = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -550,7 +550,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '40'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // Obligaciones laborales (clase 41): CTS, remuneraciones por pagar, vacaciones
@@ -605,7 +605,7 @@ ORDER BY pcd.CodCuenta
 // Los activos son históricos acumulados; el filtro de año se aplica en la UI.
 const QUERY_ACTIVO_FIJO_TXN = (codEmpresa) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -624,7 +624,7 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('33', '39')
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // Préstamos otorgados (docs tipo 071 emitidos) — todos los años, con estado de pago
@@ -728,7 +728,7 @@ ORDER BY Clase, GrupoCuenta, pcd.CodCuenta, Mes
 // Detalle transacciones gastos naturaleza (clases 60-68) para drilldown
 const QUERY_GASTOS_NAT_TXN = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -749,7 +749,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
   AND LEFT(pcd.CodCuenta, 2) IN ('60','61','62','63','64','65','66','67','68')
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // Saldos bancarios acumulados (clase 10) — histórico por subcuenta
@@ -775,7 +775,7 @@ ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 // Transacciones bancarias detalle para drilldown (año de sync, clase 10)
 const QUERY_CAJA_TXN = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -795,14 +795,14 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '10'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // Asientos bancarios completos: todas las líneas de cada asiento que toca clase 10
 // Permite ver el asiento doble completo (banco + contrapartida) en el modal de Tesorería
 const QUERY_CAJA_ASIENTO_FULL = (codEmpresa, year) => `
 SELECT
-  ac2.NroAsientoContable                                   AS NroAsiento,
+  ac2.CodUnico                                             AS NroAsiento,
   CONVERT(VARCHAR(10), ac2.FechaAplicacionContable, 103)   AS Fecha,
   ac2.NroD                                                 AS NroD,
   LEFT(pcd2.CodCuenta, 2)                                  AS Clase,
@@ -818,8 +818,8 @@ JOIN CMO.dbo.PlanContableDetalle pcd2
 LEFT JOIN CMO.dbo.Identificador i2
   ON ac2.CodIdentificador = i2.CodIdentificador
 WHERE ac2.CodEmpresa = '${codEmpresa}'
-  AND ac2.NroAsientoContable IN (
-    SELECT DISTINCT ac1.NroAsientoContable
+  AND ac2.CodUnico IN (
+    SELECT DISTINCT ac1.CodUnico
     FROM CMO.dbo.AsientoContable ac1
     JOIN CMO.dbo.PlanContableDetalle pcd1
       ON ac1.NroPlanContableDetalle = pcd1.NroPlanContableDetalle
@@ -827,7 +827,7 @@ WHERE ac2.CodEmpresa = '${codEmpresa}'
       AND LEFT(pcd1.CodCuenta, 2) = '10'
       AND YEAR(ac1.FechaAplicacionContable) = ${year}
   )
-ORDER BY ac2.NroAsientoContable, pcd2.CodCuenta
+ORDER BY ac2.CodUnico, pcd2.CodCuenta
 `;
 
 // Auditoría: asientos sin NroD por clase (año en curso)
@@ -852,7 +852,7 @@ ORDER BY SinDocumento DESC
 // Auditoría: detalle de asientos sin NroD (año en curso)
 const QUERY_AUDIT_SIN_DOC_TXN = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   LEFT(pcd.CodCuenta, 2)                                   AS Clase,
   pcd.CodCuenta                                            AS CodCuenta,
@@ -905,7 +905,7 @@ ORDER BY Descuadre DESC
 // Auditoría: movimientos atípicos >100K en una línea
 const QUERY_AUDIT_ATIPICOS = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   LEFT(pcd.CodCuenta, 2)                                   AS Clase,
@@ -1001,7 +1001,7 @@ ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
 // Patrimonio (clases 50-59): asientos individuales del año para drill-down
 const QUERY_PATRIMONIO_TXN = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -1022,7 +1022,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('50','51','52','53','54','55','56','57','58','59')
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // Inventarios y existencias: clases 20-29 con saldo histórico y movimiento del año
@@ -1053,7 +1053,7 @@ ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
 // Detalle transacciones laborales (clase 41) para drilldown
 const QUERY_LABORAL_TXN = (codEmpresa, year) => `
 SELECT
-  ac.NroAsientoContable                                    AS NroAsiento,
+  ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -1072,7 +1072,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '41'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-ORDER BY ac.FechaAplicacionContable DESC, ac.NroAsientoContable
+ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
 // FASE C — Auditoría Laboral (las 4 empresas NO usan AFPNet/PDT-PLAME formal de S10;
@@ -1670,7 +1670,7 @@ ORDER BY Anio DESC, Tipo
 
 const VQ_INGRESOS_SIN_DOC = (cod, year, claseIngreso) => `
 SELECT
-  ac.NroAsientoContable AS NroAsiento,
+  ac.CodUnico AS NroAsiento,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103) AS Fecha,
   pcd.CodCuenta,
   pcd.Descripcion AS DesCuenta,

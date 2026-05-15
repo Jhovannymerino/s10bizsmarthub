@@ -106,21 +106,32 @@ const QUERY_CXC = (codEmpresa) => `
 SELECT
   ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)               AS Cliente,
   ISNULL(doc.CodIdentificador,'')                                          AS CodCliente,
-  ROUND(SUM(doc.Total - ISNULL(doc.TotalPagado,0)), 2)                     AS SaldoTotal,
+  ROUND(SUM((doc.Total - ISNULL(doc.TotalPagado,0)) *
+    CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END), 2) AS SaldoTotal,
+  ROUND(SUM(CASE WHEN doc.CodMoneda='02' THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2) AS SaldoTotalUSD,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) >= GETDATE()
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)     AS SaldoVigente,
+           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
+                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+           ELSE 0 END), 2)     AS SaldoVigente,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_0_30,
+           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
+                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+           ELSE 0 END), 2)    AS Dias_0_30,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_31_60,
+           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
+                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+           ELSE 0 END), 2)    AS Dias_31_60,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_61_90,
+           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
+                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+           ELSE 0 END), 2)    AS Dias_61_90,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) < DATEADD(DAY,-90,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_90_mas
+           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
+                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+           ELSE 0 END), 2)    AS Dias_90_mas
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
-  AND doc.CodMoneda = '01'
   AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
 GROUP BY doc.DescripcionIdentificador, doc.CodIdentificador
 ORDER BY SaldoTotal DESC
@@ -135,10 +146,11 @@ SELECT
   COUNT(*)                                                            AS NDocs,
   COUNT(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
   ROUND(SUM(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
-                 THEN (doc.Total - ISNULL(doc.TotalPagado,0)) ELSE 0 END), 0) AS SaldoPendiente
+                 THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
+                      CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+                 ELSE 0 END), 0) AS SaldoPendiente
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
-  AND doc.CodMoneda = '01'
 GROUP BY
   CASE WHEN doc.CodTipoDocumento IN ('131','125','128','134') THEN 'comercial' ELSE 'otras' END,
   doc.CodTipoDocumento
@@ -990,13 +1002,16 @@ LEFT JOIN (
 ) ing ON ing.Mes = m.Mes
 LEFT JOIN (
   SELECT MONTH(doc.FechaDocumento) AS Mes,
-         SUM(CASE WHEN doc.CodTipoDocumento NOT IN ('128','134') THEN ISNULL(doc.Total,0) ELSE 0 END) AS FacturasEmitidas,
-         SUM(CASE WHEN doc.CodTipoDocumento IN ('128','134') THEN ISNULL(doc.Total,0) ELSE 0 END) AS NotasCredito
+         SUM(CASE WHEN doc.CodTipoDocumento NOT IN ('128','134')
+                  THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+                  ELSE 0 END) AS FacturasEmitidas,
+         SUM(CASE WHEN doc.CodTipoDocumento IN ('128','134')
+                  THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+                  ELSE 0 END) AS NotasCredito
   FROM CMO.dbo.vw_12DocumentosPorCobrar doc
   WHERE doc.CodEmpresa = '${codEmpresa}'
     AND YEAR(doc.FechaDocumento) = ${year}
     AND doc.CodTipoDocumento IN (${TIPOS_EMITIDAS})
-    AND doc.CodMoneda = '01'
   GROUP BY MONTH(doc.FechaDocumento)
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
@@ -1682,11 +1697,10 @@ SELECT
   YEAR(doc.FechaDocumento) AS Anio,
   doc.CodTipoDocumento AS Tipo,
   COUNT(*) AS NumFacturas,
-  ROUND(SUM(ISNULL(doc.Total, 0)), 2) AS MontoTotal
+  ROUND(SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END), 2) AS MontoTotal
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${cod}'
   AND doc.CodTipoDocumento IN ('060','125','128','131','134')
-  AND doc.CodMoneda = '01'
   AND NOT EXISTS (
     SELECT 1 FROM CMO.dbo.AsientoContable ac
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -1977,12 +1991,14 @@ LEFT JOIN (
 ) ing ON ing.Mes = m.Mes
 LEFT JOIN (
   SELECT MONTH(doc.FechaDocumento) AS Mes,
-         ROUND(SUM(CASE WHEN doc.CodTipoDocumento NOT IN ('128','134') THEN ISNULL(doc.Total,0) ELSE -ISNULL(doc.Total,0) END), 2) AS MontoFacturado
+         ROUND(SUM(CASE WHEN doc.CodTipoDocumento NOT IN ('128','134')
+                        THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+                        ELSE -ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+                   END), 2) AS MontoFacturado
   FROM CMO.dbo.vw_12DocumentosPorCobrar doc
   WHERE doc.CodEmpresa = '${cod}'
     AND YEAR(doc.FechaDocumento) = ${year}
     AND doc.CodTipoDocumento IN ('060','125','128','131','134')
-    AND doc.CodMoneda = '01'
   GROUP BY MONTH(doc.FechaDocumento)
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
@@ -2213,29 +2229,26 @@ const VQ_NC_SOSPECHOSAS = (cod) => `
 SELECT
   YEAR(doc.FechaDocumento) AS Anio,
   COUNT(*) AS NumNC,
-  ROUND(SUM(ISNULL(doc.Total, 0)), 2) AS MontoNC,
-  ROUND(100.0 * SUM(ISNULL(doc.Total, 0)) / NULLIF((
-    SELECT SUM(ISNULL(d2.Total, 0))
+  ROUND(SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END), 2) AS MontoNC,
+  ROUND(100.0 * SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) / NULLIF((
+    SELECT SUM(ISNULL(d2.Total,0) * CASE WHEN d2.CodMoneda='01' THEN 1.0 ELSE ISNULL(d2.TipoCambio,3.80) END)
     FROM CMO.dbo.vw_12DocumentosPorCobrar d2
     WHERE d2.CodEmpresa = '${cod}'
       AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
       AND d2.CodTipoDocumento IN ('060','125','131')
-      AND d2.CodMoneda = '01'
   ), 0), 2) AS PctSobreFacturacion,
-  ROUND(SUM(ISNULL(doc.Total, 0)) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
+  ROUND(SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${cod}'
   AND doc.CodTipoDocumento IN ('128', '134')
-  AND doc.CodMoneda = '01'
   AND YEAR(doc.FechaDocumento) >= 2022
 GROUP BY YEAR(doc.FechaDocumento)
-HAVING ROUND(100.0 * SUM(ISNULL(doc.Total, 0)) / NULLIF((
-    SELECT SUM(ISNULL(d2.Total, 0))
+HAVING ROUND(100.0 * SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) / NULLIF((
+    SELECT SUM(ISNULL(d2.Total,0) * CASE WHEN d2.CodMoneda='01' THEN 1.0 ELSE ISNULL(d2.TipoCambio,3.80) END)
     FROM CMO.dbo.vw_12DocumentosPorCobrar d2
     WHERE d2.CodEmpresa = '${cod}'
       AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
       AND d2.CodTipoDocumento IN ('060','125','131')
-      AND d2.CodMoneda = '01'
   ), 0), 2) > 3
 ORDER BY Anio DESC
 `;

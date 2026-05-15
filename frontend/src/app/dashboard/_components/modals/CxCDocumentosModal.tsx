@@ -4,7 +4,16 @@ import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 
 const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const fMon = (moneda: string, v: number) => moneda === '02' ? fUSD(v) : fmt(v);
+
+// CodMoneda en S10: '01'=PEN, '02'=USD — toleramos el campo como 'Moneda' o 'CodMoneda', y '02' o '2'
+function getMoneda(d: any): 'USD' | 'PEN' {
+  const raw = String(d.Moneda ?? d.CodMoneda ?? '01').trim();
+  return raw === '02' || raw === '2' ? 'USD' : 'PEN';
+}
+
+function fMon(moneda: 'USD' | 'PEN', v: number) {
+  return moneda === 'USD' ? fUSD(v) : fmt(v);
+}
 
 export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: {
   companyId: string; cliente: string; codCliente: string; onClose: () => void;
@@ -30,9 +39,9 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
     return true;
   });
 
-  const totalPEN = filtered.filter(d => d.Moneda === '01').reduce((s, d) => s + (d.Saldo ?? 0), 0);
-  const totalUSD = filtered.filter(d => d.Moneda === '02').reduce((s, d) => s + (d.Saldo ?? 0), 0);
-  const hasMixed = filtered.some(d => d.Moneda === '02') && filtered.some(d => d.Moneda === '01');
+  const totalPEN = filtered.filter(d => getMoneda(d) === 'PEN').reduce((s, d) => s + (d.Saldo ?? 0), 0);
+  const totalUSD = filtered.filter(d => getMoneda(d) === 'USD').reduce((s, d) => s + (d.Saldo ?? 0), 0);
+  const hasMixed = totalPEN > 0 && totalUSD > 0;
 
   const diasColor = (dias: number) => {
     if (dias <= 0) return '#10B981';
@@ -87,7 +96,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
                   <th>Fecha Doc.</th>
                   <th>Vencimiento</th>
                   <th style={{ textAlign: 'right' }}>Días Venc.</th>
-                  <th>Mon.</th>
+                  <th style={{ textAlign: 'center' }}>Moneda</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
                   <th style={{ textAlign: 'right' }}>Pagado</th>
                   <th style={{ textAlign: 'right' }}>Saldo</th>
@@ -95,29 +104,38 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((d: any, i: number) => (
-                  <tr key={i}>
-                    <td style={{ color: '#8B97A8', fontSize: '0.72rem' }}>{d.DesTipo || d.TipoDoc}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
-                      {d.Serie ? `${d.Serie}-${d.Numero}` : d.Numero || '—'}
-                    </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{d.FechaVencimiento}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: diasColor(d.DiasVencido ?? 0) }}>
-                      {(d.DiasVencido ?? 0) > 0 ? `+${d.DiasVencido}` : d.DiasVencido <= 0 ? 'Vigente' : '0'}
-                    </td>
-                    <td style={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 600,
-                      color: d.Moneda === '02' ? '#4ade80' : '#E25C1A' }}>
-                      {d.Moneda === '02' ? 'USD' : 'PEN'}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>{fMon(d.Moneda, d.Total ?? 0)}</td>
-                    <td style={{ textAlign: 'right', color: '#8B97A8' }}>{fMon(d.Moneda, d.Pagado ?? 0)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
-                      {fMon(d.Moneda, d.Saldo ?? 0)}
-                    </td>
-                    <td style={{ fontSize: '0.70rem', color: '#8B97A8' }}>{d.Estado || '—'}</td>
-                  </tr>
-                ))}
+                {filtered.map((d: any, i: number) => {
+                  const moneda = getMoneda(d);
+                  const isUSD = moneda === 'USD';
+                  return (
+                    <tr key={i} style={{ background: isUSD ? 'rgba(74,222,128,0.03)' : undefined }}>
+                      <td style={{ color: '#8B97A8', fontSize: '0.72rem' }}>{d.DesTipo || d.TipoDoc}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
+                        {d.Serie ? `${d.Serie}-${d.Numero}` : d.Numero || '—'}
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{d.FechaVencimiento}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: diasColor(d.DiasVencido ?? 0) }}>
+                        {(d.DiasVencido ?? 0) > 0 ? `+${d.DiasVencido}` : 'Vigente'}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span style={{
+                          fontSize: '0.70rem', fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                          background: isUSD ? 'rgba(74,222,128,0.15)' : 'rgba(226,92,26,0.15)',
+                          color: isUSD ? '#4ade80' : '#E25C1A',
+                        }}>
+                          {isUSD ? '$ USD' : 'S/ PEN'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>{fMon(moneda, d.Total ?? 0)}</td>
+                      <td style={{ textAlign: 'right', color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
+                        {fMon(moneda, d.Saldo ?? 0)}
+                      </td>
+                      <td style={{ fontSize: '0.70rem', color: '#8B97A8' }}>{d.Estado || '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="total-row">

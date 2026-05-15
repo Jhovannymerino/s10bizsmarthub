@@ -65,8 +65,8 @@ SELECT
   pcd.CodCuenta,
   pcd.Descripcion                          AS DesCuenta,
   MONTH(ac.FechaAplicacionContable)         AS Mes,
-  SUM(ISNULL(ac.DebitoMN, 0))                AS TotalDebito,
-  SUM(ISNULL(ac.CreditoMN, 0))               AS TotalCredito
+  SUM(ISNULL(ac.Debito, 0))                AS TotalDebito,
+  SUM(ISNULL(ac.Credito, 0))               AS TotalCredito
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -88,9 +88,6 @@ SELECT
   ISNULL(ac.Glosa, '')                                     AS Glosa,
   ISNULL(ac.Debito, 0)                                     AS Debito,
   ISNULL(ac.Credito, 0)                                    AS Credito,
-  ISNULL(ac.DebitoMN, 0)                                   AS DebitoMN,
-  ISNULL(ac.CreditoMN, 0)                                  AS CreditoMN,
-  ISNULL(ac.CodMoneda, '01')                               AS Moneda,
   ISNULL(i.Descripcion, '')                                AS Tercero
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
@@ -123,6 +120,7 @@ SELECT
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
+  AND doc.CodMoneda = '01'
   AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
 GROUP BY doc.DescripcionIdentificador, doc.CodIdentificador
 ORDER BY SaldoTotal DESC
@@ -140,6 +138,7 @@ SELECT
                  THEN (doc.Total - ISNULL(doc.TotalPagado,0)) ELSE 0 END), 0) AS SaldoPendiente
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
+  AND doc.CodMoneda = '01'
 GROUP BY
   CASE WHEN doc.CodTipoDocumento IN ('131','125','128','134') THEN 'comercial' ELSE 'otras' END,
   doc.CodTipoDocumento
@@ -313,7 +312,7 @@ const QUERY_CXP = (codEmpresa) => `
 SELECT
   ISNULL(i.Descripcion, CAST(ac.CodIdentificador AS VARCHAR))  AS Proveedor,
   ac.CodIdentificador                                           AS CodProveedor,
-  SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0))        AS SaldoTotal,
+  SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))        AS SaldoTotal,
   SUM(CASE WHEN ac.FechaAplicacionContable >= DATEADD(DAY,-30,GETDATE())
            THEN ISNULL(ac.Credito,0)-ISNULL(ac.Debito,0) ELSE 0 END) AS Dias_0_30,
   SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
@@ -330,7 +329,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '42'
 GROUP BY i.Descripcion, ac.CodIdentificador
-HAVING SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0)) > 0
+HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) > 0
 ORDER BY SaldoTotal DESC
 `;
 
@@ -339,7 +338,7 @@ SELECT
   pcd.Descripcion                                         AS Banco,
   pcd.CodCuenta                                           AS CodBanco,
   MONTH(ac.FechaAplicacionContable)                       AS Mes,
-  SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))   AS FlujoNeto
+  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))   AS FlujoNeto
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -355,7 +354,7 @@ SELECT
   LEFT(d.CodCuenta, 3)                                    AS CodCuenta,
   MAX(ISNULL(p.Descripcion, d.Descripcion))               AS DesCuenta,
   MONTH(ac.FechaAplicacionContable)                       AS Mes,
-  SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))   AS GAV
+  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))   AS GAV
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle d
   ON ac.NroPlanContableDetalle = d.NroPlanContableDetalle
@@ -395,8 +394,8 @@ SELECT
   SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
         THEN ISNULL(ac.Credito,0) ELSE 0 END)  AS MovHaber,
   -- Totales para calcular saldo final neto
-  SUM(ISNULL(ac.DebitoMN,0))  AS TotalDebe,
-  SUM(ISNULL(ac.CreditoMN,0)) AS TotalHaber
+  SUM(ISNULL(ac.Debito,0))  AS TotalDebe,
+  SUM(ISNULL(ac.Credito,0)) AS TotalHaber
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -411,7 +410,7 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
   )
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
 HAVING (
-  ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 0.01
+  ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
   OR SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
              THEN ISNULL(ac.Debito,0) + ISNULL(ac.Credito,0) ELSE 0 END) > 0.01
 )
@@ -427,7 +426,7 @@ SELECT
   pcd.Descripcion                                          AS DesCuenta,
   ISNULL(i.Descripcion, CAST(ac.CodIdentificador AS VARCHAR)) AS Tercero,
   ac.CodIdentificador                                       AS CodTercero,
-  SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))    AS SaldoTotal,
+  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))    AS SaldoTotal,
   SUM(CASE WHEN ac.FechaAplicacionContable >= DATEADD(DAY,-30,GETDATE())
            THEN ISNULL(ac.Debito,0)-ISNULL(ac.Credito,0) ELSE 0 END) AS Dias_0_30,
   SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
@@ -444,7 +443,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('13','14','16','17','18')
 GROUP BY LEFT(pcd.CodCuenta,2), pcd.CodCuenta, pcd.Descripcion, i.Descripcion, ac.CodIdentificador
-HAVING ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 0.5
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.5
 ORDER BY Clase, SaldoTotal DESC
 `;
 
@@ -484,7 +483,7 @@ SELECT
   pcd.Descripcion                                           AS DesCuenta,
   ISNULL(i.Descripcion, CAST(ac.CodIdentificador AS VARCHAR)) AS Tercero,
   ac.CodIdentificador                                        AS CodTercero,
-  SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0))     AS SaldoTotal,
+  SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))     AS SaldoTotal,
   SUM(CASE WHEN ac.FechaAplicacionContable >= DATEADD(DAY,-30,GETDATE())
            THEN ISNULL(ac.Credito,0)-ISNULL(ac.Debito,0) ELSE 0 END) AS Dias_0_30,
   SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
@@ -501,7 +500,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('43','44','45','46','47')
 GROUP BY LEFT(pcd.CodCuenta,2), pcd.CodCuenta, pcd.Descripcion, i.Descripcion, ac.CodIdentificador
-HAVING ABS(SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0))) > 0.5
+HAVING ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
 ORDER BY Clase, SaldoTotal DESC
 `;
 
@@ -540,7 +539,7 @@ const QUERY_TRIBUTOS = (codEmpresa, year) => `
 SELECT
   pcd.CodCuenta,
   pcd.Descripcion                                          AS DesTributo,
-  SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0))   AS SaldoPorPagar,
+  SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))   AS SaldoPorPagar,
   SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
       THEN ISNULL(ac.Credito,0) ELSE 0 END)               AS ProvisionadoAnio,
   SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
@@ -556,7 +555,7 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 GROUP BY pcd.CodCuenta, pcd.Descripcion
 HAVING SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
            THEN ISNULL(ac.Credito,0) ELSE 0 END) > 0
-   OR ABS(SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0))) > 0.5
+   OR ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
 ORDER BY SaldoPorPagar DESC, ProvisionadoAnio DESC
 `;
 
@@ -587,9 +586,9 @@ const QUERY_LABORAL = (codEmpresa) => `
 SELECT
   pcd.CodCuenta,
   pcd.Descripcion                                          AS DesConcepto,
-  SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0))   AS SaldoPorPagar,
-  SUM(ISNULL(ac.CreditoMN,0))                               AS TotalProvisionado,
-  SUM(ISNULL(ac.DebitoMN,0))                                AS TotalPagado,
+  SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))   AS SaldoPorPagar,
+  SUM(ISNULL(ac.Credito,0))                               AS TotalProvisionado,
+  SUM(ISNULL(ac.Debito,0))                                AS TotalPagado,
   MAX(ac.FechaAplicacionContable)                          AS UltimoMovimiento
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
@@ -597,7 +596,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '41'
 GROUP BY pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0))) > 0.5
+HAVING ABS(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))) > 0.5
 ORDER BY SaldoPorPagar DESC
 `;
 
@@ -612,13 +611,13 @@ SELECT
   pcd.CodCuenta,
   pcd.Descripcion                                          AS DesActivo,
   COUNT(*)                                                  AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.DebitoMN, 0)), 2)                      AS TotalDebito,
-  ROUND(SUM(ISNULL(ac.CreditoMN, 0)), 2)                     AS TotalCredito,
+  ROUND(SUM(ISNULL(ac.Debito, 0)), 2)                      AS TotalDebito,
+  ROUND(SUM(ISNULL(ac.Credito, 0)), 2)                     AS TotalCredito,
   -- Saldo en su naturaleza: clase 33 deudor (Db-Cr), clase 39 acreedor (Cr-Db)
   ROUND(
     CASE WHEN LEFT(pcd.CodCuenta, 2) = '33'
-         THEN SUM(ISNULL(ac.DebitoMN, 0)) - SUM(ISNULL(ac.CreditoMN, 0))
-         ELSE SUM(ISNULL(ac.CreditoMN, 0)) - SUM(ISNULL(ac.DebitoMN, 0))
+         THEN SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))
+         ELSE SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))
     END, 2)                                                AS Saldo
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
@@ -626,7 +625,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('33', '39')
 GROUP BY pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.DebitoMN, 0)) - SUM(ISNULL(ac.CreditoMN, 0))) > 0.5
+HAVING ABS(SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))) > 0.5
 ORDER BY pcd.CodCuenta
 `;
 
@@ -742,7 +741,7 @@ SELECT
   pcd.CodCuenta,
   pcd.Descripcion                                          AS DesCuenta,
   MONTH(ac.FechaAplicacionContable)                        AS Mes,
-  SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))    AS Monto
+  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))    AS Monto
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -750,7 +749,7 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
   AND LEFT(pcd.CodCuenta, 2) IN ('60','61','62','63','64','65','66','67','68')
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion, MONTH(ac.FechaAplicacionContable)
-HAVING ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 0.01
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
 ORDER BY Clase, GrupoCuenta, pcd.CodCuenta, Mes
 `;
 
@@ -786,10 +785,9 @@ const QUERY_CAJA_SALDOS = (codEmpresa) => `
 SELECT
   pcd.CodCuenta                                            AS CodBanco,
   pcd.Descripcion                                          AS DesBanco,
-  MAX(ISNULL(ac.CodMoneda,'01'))                           AS Moneda,
-  SUM(ISNULL(ac.DebitoMN,0))                              AS TotalDebito,
-  SUM(ISNULL(ac.CreditoMN,0))                             AS TotalCredito,
-  SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0)) AS SaldoActual,
+  SUM(ISNULL(ac.Debito,0))                              AS TotalDebito,
+  SUM(ISNULL(ac.Credito,0))                             AS TotalCredito,
+  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) AS SaldoActual,
   MAX(ac.FechaAplicacionContable)                          AS UltimoMovimiento,
   COUNT(*)                                                 AS NumAsientos,
   SUM(CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END)        AS SinDocumento
@@ -799,7 +797,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '10'
 GROUP BY pcd.CodCuenta, pcd.Descripcion
-ORDER BY ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) DESC
+ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 `;
 
 // Transacciones bancarias detalle para drilldown (año de sync, clase 10)
@@ -815,9 +813,6 @@ SELECT
   ISNULL(ac.Glosa, '')                                     AS Glosa,
   ISNULL(ac.Debito, 0)                                     AS Debito,
   ISNULL(ac.Credito, 0)                                    AS Credito,
-  ISNULL(ac.DebitoMN, 0)                                   AS DebitoMN,
-  ISNULL(ac.CreditoMN, 0)                                  AS CreditoMN,
-  ISNULL(ac.CodMoneda, '01')                               AS Moneda,
   ISNULL(i.Descripcion, '')                                AS Tercero,
   CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END              AS SinDocumento
 FROM CMO.dbo.AsientoContable ac
@@ -917,9 +912,9 @@ SELECT
   MIN(CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)) AS Fecha,
   COUNT(*)                                                  AS Lineas,
   COUNT(DISTINCT LEFT(pcd.CodCuenta,2))                    AS Clases,
-  SUM(ISNULL(ac.DebitoMN,0))                                 AS TotalDebito,
-  SUM(ISNULL(ac.CreditoMN,0))                                AS TotalCredito,
-  ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) AS Descuadre,
+  SUM(ISNULL(ac.Debito,0))                                 AS TotalDebito,
+  SUM(ISNULL(ac.Credito,0))                                AS TotalCredito,
+  ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) AS Descuadre,
   LEFT(MAX(ISNULL(ac.Glosa,'')), 60)                       AS Glosa,
   MAX(ISNULL(i.Descripcion,''))                            AS Tercero
 FROM CMO.dbo.AsientoContable ac
@@ -931,7 +926,7 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
   AND ac.NroD IS NOT NULL
 GROUP BY ac.NroD
-HAVING ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 1
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 1
 ORDER BY Descuadre DESC
 `;
 
@@ -947,12 +942,9 @@ SELECT
   ISNULL(ac.Glosa, '')                                     AS Glosa,
   ISNULL(ac.Debito, 0)                                     AS Debito,
   ISNULL(ac.Credito, 0)                                    AS Credito,
-  ISNULL(ac.DebitoMN, 0)                                   AS DebitoMN,
-  ISNULL(ac.CreditoMN, 0)                                  AS CreditoMN,
-  ISNULL(ac.CodMoneda, '01')                               AS Moneda,
-  CASE WHEN ISNULL(ac.DebitoMN,0) >= ISNULL(ac.CreditoMN,0)
-       THEN ISNULL(ac.DebitoMN,0)
-       ELSE ISNULL(ac.CreditoMN,0)
+  CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
+       THEN ISNULL(ac.Debito,0)
+       ELSE ISNULL(ac.Credito,0)
   END                                                      AS Monto,
   ISNULL(i.Descripcion, '')                                AS Tercero,
   CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END              AS SinDocumento
@@ -963,7 +955,7 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND (ISNULL(ac.DebitoMN,0) > 100000 OR ISNULL(ac.CreditoMN,0) > 100000)
+  AND (ISNULL(ac.Debito,0) > 100000 OR ISNULL(ac.Credito,0) > 100000)
   AND ISNULL(ac.Glosa,'') NOT LIKE '%Apertura%'
   AND ISNULL(ac.Glosa,'') NOT LIKE '%Cierre%'
 ORDER BY CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
@@ -987,7 +979,7 @@ FROM (
 ) m
 LEFT JOIN (
   SELECT MONTH(ac.FechaAplicacionContable) AS Mes,
-         SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0)) AS IngresosContables
+         SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) AS IngresosContables
   FROM CMO.dbo.AsientoContable ac
   JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
   WHERE ac.CodEmpresa = '${codEmpresa}'
@@ -1004,6 +996,7 @@ LEFT JOIN (
   WHERE doc.CodEmpresa = '${codEmpresa}'
     AND YEAR(doc.FechaDocumento) = ${year}
     AND doc.CodTipoDocumento IN (${TIPOS_EMITIDAS})
+    AND doc.CodMoneda = '01'
   GROUP BY MONTH(doc.FechaDocumento)
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
@@ -1021,16 +1014,16 @@ SELECT
   LEFT(pcd.CodCuenta, 4)                                   AS GrupoCuenta,
   pcd.CodCuenta,
   pcd.Descripcion                                          AS DesCuenta,
-  SUM(ISNULL(ac.DebitoMN, 0))                                AS TotalDebito,
-  SUM(ISNULL(ac.CreditoMN, 0))                               AS TotalCredito,
-  SUM(ISNULL(ac.CreditoMN, 0)) - SUM(ISNULL(ac.DebitoMN, 0))  AS SaldoNeto
+  SUM(ISNULL(ac.Debito, 0))                                AS TotalDebito,
+  SUM(ISNULL(ac.Credito, 0))                               AS TotalCredito,
+  SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))  AS SaldoNeto
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('50','51','52','53','54','55','56','57','58','59')
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 0.01
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
 ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
 `;
 
@@ -1068,7 +1061,7 @@ SELECT
   LEFT(pcd.CodCuenta, 4)                                   AS GrupoCuenta,
   pcd.CodCuenta,
   pcd.Descripcion                                          AS DesCuenta,
-  SUM(ISNULL(ac.DebitoMN, 0)) - SUM(ISNULL(ac.CreditoMN, 0))  AS SaldoHistorico,
+  SUM(ISNULL(ac.Debito, 0)) - SUM(ISNULL(ac.Credito, 0))  AS SaldoHistorico,
   SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
       THEN ISNULL(ac.Debito,0) ELSE 0 END)                 AS IngresoAnio,
   SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
@@ -1080,7 +1073,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) IN ('20','21','22','23','24','25','26','27','28','29')
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 0.01
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
    OR SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
          THEN ISNULL(ac.Debito,0) + ISNULL(ac.Credito,0) ELSE 0 END) > 0.01
 ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
@@ -1143,8 +1136,8 @@ const QUERY_CTS_DEPOSITOS = (codEmpresa) => `
 SELECT
   YEAR(ac.FechaAplicacionContable)                 AS Anio,
   MONTH(ac.FechaAplicacionContable)                AS Mes,
-  ROUND(SUM(ISNULL(ac.DebitoMN, 0)), 2)              AS MontoDepositado,
-  ROUND(SUM(ISNULL(ac.CreditoMN, 0)), 2)             AS MontoProvisionado,
+  ROUND(SUM(ISNULL(ac.Debito, 0)), 2)              AS MontoDepositado,
+  ROUND(SUM(ISNULL(ac.Credito, 0)), 2)             AS MontoProvisionado,
   CASE
     WHEN MONTH(ac.FechaAplicacionContable) IN (5, 11) THEN 'En plazo (DL 650)'
     WHEN MONTH(ac.FechaAplicacionContable) IN (4, 10) THEN 'Anticipado'
@@ -1157,7 +1150,7 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
   AND pcd.CodCuenta LIKE '4151%'
   AND YEAR(ac.FechaAplicacionContable) IN (${new Date().getFullYear() - 1}, ${new Date().getFullYear()})
 GROUP BY YEAR(ac.FechaAplicacionContable), MONTH(ac.FechaAplicacionContable)
-HAVING SUM(ISNULL(ac.DebitoMN, 0)) + SUM(ISNULL(ac.CreditoMN, 0)) > 0
+HAVING SUM(ISNULL(ac.Debito, 0)) + SUM(ISNULL(ac.Credito, 0)) > 0
 ORDER BY YEAR(ac.FechaAplicacionContable), MONTH(ac.FechaAplicacionContable)
 `;
 
@@ -1555,7 +1548,7 @@ SELECT
       THEN ISNULL(ac.Debito,0) ELSE 0 END)                AS EntradasAnio,
   SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
       THEN ISNULL(ac.Credito,0) ELSE 0 END)               AS SalidasAnio,
-  SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))   AS SaldoFinal,
+  SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))   AS SaldoFinal,
   MAX(ac.FechaAplicacionContable)                          AS UltimoMovimiento,
   COUNT(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN 1 END) AS MovimientosAnio,
   SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year}
@@ -1566,9 +1559,9 @@ JOIN CMO.dbo.PlanContableDetalle pcd
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '10'
 GROUP BY pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 0.01
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
    OR COUNT(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN 1 END) > 0
-ORDER BY ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) DESC
+ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 `;
 
 // ─────────────────────────────────────────────
@@ -1599,9 +1592,9 @@ SELECT
   CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerAsiento,
   COUNT(*) AS NumAsientos,
   COUNT(DISTINCT LEFT(pcd.CodCuenta,2)) AS NumClases,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS SumCredito,
-  ROUND(ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))), 2) AS Descuadre
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
+  ROUND(ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))), 2) AS Descuadre
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
@@ -1609,7 +1602,7 @@ WHERE ac.CodEmpresa = '${cod}'
   AND (ac.Glosa LIKE '%APERTURA%' OR ac.Glosa LIKE '%INICIO%' OR ac.Glosa LIKE '%ASIENTO INICIAL%')
   AND MONTH(ac.FechaAplicacionContable) <= 2
 GROUP BY YEAR(ac.FechaAplicacionContable)
-HAVING ABS(SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0))) > 0.01
+HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
 `;
 
 const VQ_PATRIMONIO_DETALLE = (cod) => `
@@ -1619,9 +1612,9 @@ SELECT
   pcd.CodCuenta,
   pcd.Descripcion AS DesCuenta,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS SumCredito,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0)), 2) AS SaldoAcreedor,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
+  ROUND(SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)), 2) AS SaldoAcreedor,
   CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerMov,
   CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
 FROM CMO.dbo.AsientoContable ac
@@ -1629,7 +1622,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanC
 WHERE ac.CodEmpresa = '${cod}'
   AND LEFT(pcd.CodCuenta, 2) IN ('50','51','52','57','58','59')
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
-HAVING SUM(ISNULL(ac.CreditoMN,0)) - SUM(ISNULL(ac.DebitoMN,0)) < -0.01
+HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) < -0.01
 ORDER BY Clase, pcd.CodCuenta
 `;
 
@@ -1693,6 +1686,7 @@ SELECT
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${cod}'
   AND doc.CodTipoDocumento IN ('060','125','128','131','134')
+  AND doc.CodMoneda = '01'
   AND NOT EXISTS (
     SELECT 1 FROM CMO.dbo.AsientoContable ac
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -1729,8 +1723,8 @@ SELECT
   YEAR(ac.FechaAplicacionContable)  AS Anio,
   MONTH(ac.FechaAplicacionContable) AS Mes,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS Provisionado,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS Pagado,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS Provisionado,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS Pagado,
   ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) AS SaldoMes
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -1747,8 +1741,8 @@ SELECT
   YEAR(ac.FechaAplicacionContable)  AS Anio,
   MONTH(ac.FechaAplicacionContable) AS Mes,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS Provisionado,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS Pagado,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS Provisionado,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS Pagado,
   ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) AS SaldoPorDepositar,
   CASE
     WHEN MONTH(ac.FechaAplicacionContable) = 5  THEN 'CTS Primer Semestre'
@@ -1773,8 +1767,8 @@ SELECT
   pcd.Descripcion AS DesCuenta,
   YEAR(ac.FechaAplicacionContable) AS Anio,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS Provisionado,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS Pagado,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS Provisionado,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS Pagado,
   ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) AS Saldo,
   CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerMov,
   CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
@@ -1793,8 +1787,8 @@ SELECT
   pcd.CodCuenta,
   pcd.Descripcion AS DesBanco,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS SumCredito,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
   ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS SaldoNeto,
   ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= 2022 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin2022,
   ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= 2023 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin2023,
@@ -1887,7 +1881,7 @@ LEFT JOIN CMO.dbo.Identificador i ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${cod}'
   AND LEFT(pcd.CodCuenta,2) = '12'
 GROUP BY i.Descripcion, ac.CodIdentificador
-HAVING SUM(ISNULL(ac.DebitoMN,0)) - SUM(ISNULL(ac.CreditoMN,0)) > 1000
+HAVING SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) > 1000
 ORDER BY Saldo DESC
 `;
 
@@ -1900,8 +1894,8 @@ SELECT
   ISNULL(i.Descripcion, '') AS Tercero,
   ISNULL(i.RUC, '') AS RUC,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS SumCredito,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
   ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS Saldo,
   CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerMov,
   CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
@@ -1929,8 +1923,8 @@ SELECT
   pcd.CodCuenta,
   LEFT(pcd.Descripcion, 50) AS DesCuenta,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS SumCredito,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
   ROUND(
     CASE WHEN LEFT(pcd.CodCuenta,2) = '33'
          THEN SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0))
@@ -1988,6 +1982,7 @@ LEFT JOIN (
   WHERE doc.CodEmpresa = '${cod}'
     AND YEAR(doc.FechaDocumento) = ${year}
     AND doc.CodTipoDocumento IN ('060','125','128','131','134')
+    AND doc.CodMoneda = '01'
   GROUP BY MONTH(doc.FechaDocumento)
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
@@ -2000,8 +1995,8 @@ SELECT
   pcd.CodCuenta,
   LEFT(pcd.Descripcion, 60) AS DesCuenta,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS Provisionado,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS Pagado,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS Provisionado,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS Pagado,
   ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) AS SaldoPorPagar,
   CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
 FROM CMO.dbo.AsientoContable ac
@@ -2019,8 +2014,8 @@ SELECT
   LEFT(pcd.CodCuenta, 1) AS GrupoMayor,
   LEFT(pcd.CodCuenta, 2) AS Clase,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.DebitoMN,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS SumCredito,
+  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
+  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
   ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS SaldoNeto,
   ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN ISNULL(ac.Debito,0) ELSE 0 END), 2) AS DebitoAnio,
   ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN ISNULL(ac.Credito,0) ELSE 0 END), 2) AS CreditoAnio
@@ -2145,7 +2140,7 @@ LEFT JOIN (
 ) ob ON ob.Mes = m.Mes
 LEFT JOIN (
   SELECT MONTH(ac.FechaAplicacionContable) AS Mes,
-         ROUND(SUM(ISNULL(ac.CreditoMN,0)), 2) AS MontoContable
+         ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS MontoContable
   FROM CMO.dbo.AsientoContable ac
   JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
   WHERE ac.CodEmpresa = '${cod}'
@@ -2225,11 +2220,13 @@ SELECT
     WHERE d2.CodEmpresa = '${cod}'
       AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
       AND d2.CodTipoDocumento IN ('060','125','131')
+      AND d2.CodMoneda = '01'
   ), 0), 2) AS PctSobreFacturacion,
   ROUND(SUM(ISNULL(doc.Total, 0)) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${cod}'
   AND doc.CodTipoDocumento IN ('128', '134')
+  AND doc.CodMoneda = '01'
   AND YEAR(doc.FechaDocumento) >= 2022
 GROUP BY YEAR(doc.FechaDocumento)
 HAVING ROUND(100.0 * SUM(ISNULL(doc.Total, 0)) / NULLIF((
@@ -2238,6 +2235,7 @@ HAVING ROUND(100.0 * SUM(ISNULL(doc.Total, 0)) / NULLIF((
     WHERE d2.CodEmpresa = '${cod}'
       AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
       AND d2.CodTipoDocumento IN ('060','125','131')
+      AND d2.CodMoneda = '01'
   ), 0), 2) > 3
 ORDER BY Anio DESC
 `;
@@ -2289,9 +2287,9 @@ SELECT
   pcd.CodCuenta,
   LEFT(pcd.Descripcion, 60) AS DesCuenta,
   COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.CreditoMN, 0)), 2) AS MontoProvisionado,
-  ROUND(SUM(ISNULL(ac.DebitoMN, 0)), 2) AS MontoReversado,
-  ROUND(SUM(ISNULL(ac.CreditoMN, 0)) - SUM(ISNULL(ac.DebitoMN, 0)), 2) AS SaldoSinReverso
+  ROUND(SUM(ISNULL(ac.Credito, 0)), 2) AS MontoProvisionado,
+  ROUND(SUM(ISNULL(ac.Debito, 0)), 2) AS MontoReversado,
+  ROUND(SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0)), 2) AS SaldoSinReverso
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
@@ -2308,8 +2306,8 @@ WHERE ac.CodEmpresa = '${cod}'
       AND UPPER(ac2.Glosa) LIKE '%REVER%'
   )
 GROUP BY YEAR(ac.FechaAplicacionContable), LEFT(pcd.CodCuenta, 2), pcd.CodCuenta, pcd.Descripcion
-HAVING ABS(SUM(ISNULL(ac.CreditoMN, 0)) - SUM(ISNULL(ac.DebitoMN, 0))) > 100
-ORDER BY AnioProvision DESC, ABS(SUM(ISNULL(ac.CreditoMN, 0)) - SUM(ISNULL(ac.DebitoMN, 0))) DESC
+HAVING ABS(SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))) > 100
+ORDER BY AnioProvision DESC, ABS(SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))) DESC
 `;
 
 async function runBatch4Validation(pool, company, year) {

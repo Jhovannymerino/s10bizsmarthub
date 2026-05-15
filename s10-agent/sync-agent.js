@@ -106,35 +106,26 @@ const QUERY_CXC = (codEmpresa) => `
 SELECT
   ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)               AS Cliente,
   ISNULL(doc.CodIdentificador,'')                                          AS CodCliente,
-  ROUND(SUM((doc.Total - ISNULL(doc.TotalPagado,0)) *
-    CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END), 2) AS SaldoTotal,
-  ROUND(SUM(CASE WHEN doc.CodMoneda='02' THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2) AS SaldoTotalUSD,
+  doc.CodMoneda                                                             AS Moneda,
+  ROUND(SUM(doc.Total - ISNULL(doc.TotalPagado,0)), 2)                     AS SaldoTotal,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) >= GETDATE()
-           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
-                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
-           ELSE 0 END), 2)     AS SaldoVigente,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)     AS SaldoVigente,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
-           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
-                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
-           ELSE 0 END), 2)    AS Dias_0_30,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_0_30,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
-           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
-                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
-           ELSE 0 END), 2)    AS Dias_31_60,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_31_60,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
-           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
-                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
-           ELSE 0 END), 2)    AS Dias_61_90,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_61_90,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) < DATEADD(DAY,-90,GETDATE())
-           THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
-                CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
-           ELSE 0 END), 2)    AS Dias_90_mas
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_90_mas,
+  MAX(ISNULL(doc.TipoCambio, 3.80))                                        AS TipoCambio
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
   AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
-GROUP BY doc.DescripcionIdentificador, doc.CodIdentificador
-ORDER BY SaldoTotal DESC
+GROUP BY doc.DescripcionIdentificador, doc.CodIdentificador, doc.CodMoneda
+ORDER BY SUM((doc.Total - ISNULL(doc.TotalPagado,0)) *
+  CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) DESC
 `;
 
 // CxC split por naturaleza: comercial (facturas/NC) vs otras (préstamos, DSP, transferencias, etc.)

@@ -1634,7 +1634,8 @@ export default function DashboardPage() {
         {activeTab === 'cxc' && cxc && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-              <KpiCard label="Cartera Total" value={fmt(cxc.totalSaldo)} signal="neutral" />
+              {(cxc.totalSaldoPEN ?? 0) > 0 && <KpiCard label="Cartera PEN" value={fmt(cxc.totalSaldoPEN)} signal="neutral" />}
+              {(cxc.totalSaldoUSD ?? 0) > 0 && <KpiCard label="Cartera USD" value={`$ ${Number(cxc.totalSaldoUSD).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} signal="neutral" />}
               <KpiCard
                 label="+90 días vencido"
                 value={fmt(cxc.total90mas)}
@@ -1663,55 +1664,66 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                   <SearchInput value={cxcSearch} onChange={setCxcSearch} placeholder="Buscar cliente..." />
                   <ExportBtn onClick={() => {
-                    const headers = ['Cliente', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Cartera'];
+                    const headers = ['Cliente', 'Moneda', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total'];
                     const rows = sortRows(cxc.clientes, cxcSort.col, cxcSort.dir).map((c: any) => [
-                      c.cliente, c.dias0_30, c.dias31_60, c.dias61_90, c.dias90mas, c.saldoTotal,
-                      cxc.totalSaldo > 0 ? `${((c.saldoTotal / cxc.totalSaldo) * 100).toFixed(1)}%` : '',
+                      c.cliente, c.moneda ?? 'PEN', c.dias0_30, c.dias31_60, c.dias61_90, c.dias90mas, c.saldoTotal,
                     ]);
                     exportCSV(`CxC_${selectedCompany.shortName}.csv`, headers, rows);
                   }} />
                 </div>
               </div>
-              <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>Click en un cliente para ver los asientos individuales · Ordenar por columna</div>
+              <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>Click en un cliente para ver los asientos individuales · Montos en moneda original del documento</div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-s10">
                   <thead>
                     <tr>
                       <SortTh label="Cliente" col="cliente" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                      <th style={{ width: 54 }}>Mon.</th>
+                      <SortTh label="Vigente" col="saldoVigente" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                       <SortTh label="0-30 días" col="dias0_30" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                       <SortTh label="31-60 días" col="dias31_60" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                       <SortTh label="61-90 días" col="dias61_90" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                       <SortTh label="+90 días" col="dias90mas" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                       <SortTh label="Total" col="saldoTotal" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
-                      <th>% Cartera</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortRows(cxc.clientes, cxcSort.col, cxcSort.dir)
                       .filter((c: any) => !cxcSearch || c.cliente?.toLowerCase().includes(cxcSearch.toLowerCase()))
-                      .map((c: any) => (
-                      <tr key={c.codCliente} data-clickable="1"
-                        onClick={() => setCxCTxDrill({ cliente: c.cliente, codCliente: String(c.codCliente) })}
-                        title="Ver asientos individuales">
-                        <td style={{ color: '#2BB4BB' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
-                        <td>{fmt(c.dias0_30)}</td>
-                        <td>{fmt(c.dias31_60)}</td>
-                        <td>{fmt(c.dias61_90)}</td>
-                        <td className={c.dias90mas > 0 ? 'negative' : ''}>{fmt(c.dias90mas)}</td>
-                        <td style={{ fontWeight: 600 }}>{fmt(c.saldoTotal)}</td>
-                        <td style={{ color: '#8B97A8' }}>{cxc.totalSaldo > 0 ? pct((c.saldoTotal / cxc.totalSaldo) * 100) : '—'}</td>
-                      </tr>
-                    ))}
+                      .map((c: any, i: number) => {
+                        const isUSD = c.moneda === 'USD';
+                        const f = (v: number) => isUSD
+                          ? `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                          : fmt(v);
+                        return (
+                          <tr key={`${c.codCliente}-${c.moneda}-${i}`} data-clickable="1"
+                            onClick={() => setCxCTxDrill({ cliente: c.cliente, codCliente: String(c.codCliente) })}
+                            title="Ver asientos individuales">
+                            <td style={{ color: '#2BB4BB' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                            <td>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: 3,
+                                background: isUSD ? 'rgba(34,197,94,0.15)' : 'rgba(226,92,26,0.15)',
+                                color: isUSD ? '#4ade80' : '#E25C1A' }}>
+                                {isUSD ? 'USD' : 'PEN'}
+                              </span>
+                            </td>
+                            <td>{f(c.saldoVigente)}</td>
+                            <td>{f(c.dias0_30)}</td>
+                            <td>{f(c.dias31_60)}</td>
+                            <td>{f(c.dias61_90)}</td>
+                            <td className={c.dias90mas > 0 ? 'negative' : ''}>{f(c.dias90mas)}</td>
+                            <td style={{ fontWeight: 600 }}>{f(c.saldoTotal)}</td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                   <tfoot>
                     <tr className="total-row">
-                      <td>TOTAL ({cxc.clientes?.length} clientes)</td>
-                      <td>{fmt(cxc.clientes?.reduce((s: number, c: any) => s + c.dias0_30, 0))}</td>
-                      <td>{fmt(cxc.clientes?.reduce((s: number, c: any) => s + c.dias31_60, 0))}</td>
-                      <td>{fmt(cxc.clientes?.reduce((s: number, c: any) => s + c.dias61_90, 0))}</td>
+                      <td colSpan={2}>TOTAL ({cxc.clientes?.length} filas)</td>
+                      <td>{fmt(cxc.totalVigente)}</td>
+                      <td colSpan={3} style={{ color: '#8B97A8', fontSize: '0.7rem' }}>aging en equiv. soles</td>
                       <td className="negative">{fmt(cxc.total90mas)}</td>
-                      <td>{fmt(cxc.totalSaldo)}</td>
-                      <td>100%</td>
+                      <td>{(cxc.totalSaldoPEN ?? 0) > 0 && fmt(cxc.totalSaldoPEN)}{(cxc.totalSaldoUSD ?? 0) > 0 && ` + $ ${Number(cxc.totalSaldoUSD).toLocaleString('es-PE',{maximumFractionDigits:0})}`}</td>
                     </tr>
                   </tfoot>
                 </table>

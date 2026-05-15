@@ -381,7 +381,10 @@ export class KpiService {
   }
 
   buildCxCVinculadas(rows: any[]) {
-    const clientMap = new Map<string, { codCliente: string; cliente: string; saldoSoles: number; numDocs: number }>();
+    const clientMap = new Map<string, {
+      codCliente: string; cliente: string;
+      saldoPEN: number; saldoUSD: number; saldoSoles: number; numDocs: number;
+    }>();
     let totalSaldo = 0;
     let totalSaldoPEN = 0;
     let totalSaldoUSD = 0;
@@ -397,10 +400,12 @@ export class KpiService {
 
       const key = String(r.CodCliente);
       if (!clientMap.has(key)) {
-        clientMap.set(key, { codCliente: key, cliente: r.Cliente || key, saldoSoles: 0, numDocs: 0 });
+        clientMap.set(key, { codCliente: key, cliente: r.Cliente || key, saldoPEN: 0, saldoUSD: 0, saldoSoles: 0, numDocs: 0 });
       }
       const c = clientMap.get(key)!;
-      c.saldoSoles += saldoSoles;
+      if (moneda === '01') c.saldoPEN = round(c.saldoPEN + saldo);
+      else                 c.saldoUSD = round(c.saldoUSD + saldo);
+      c.saldoSoles = round(c.saldoSoles + saldoSoles);
       c.numDocs++;
     }
 

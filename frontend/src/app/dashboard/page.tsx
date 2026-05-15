@@ -8,6 +8,7 @@ import {
 import { DocPreview } from './_components/modals/DocPreview';
 import { TransactionModal } from './_components/modals/TransactionModal';
 import { CxCDocumentosModal } from './_components/modals/CxCDocumentosModal';
+import { CxCVinculadasModal } from './_components/modals/CxCVinculadasModal';
 import { CxPTransactionModal } from './_components/modals/CxPTransactionModal';
 import { GavCategoryModal } from './_components/modals/GavCategoryModal';
 import { DetalleModal } from './_components/modals/DetalleModal';
@@ -200,6 +201,7 @@ export default function DashboardPage() {
   const [cxcSplitData, setCxcSplitData] = useState<any>(null);
   const [cxcVinculadas, setCxcVinculadas] = useState<any>(null);
   const [cxcVinExpanded, setCxcVinExpanded] = useState(false);
+  const [cxcVinDrill, setCxcVinDrill] = useState<{ cliente: string; codCliente: string } | null>(null);
   const [balanceData, setBalanceData] = useState<any>(null);
   const [otrasCxCData, setOtrasCxCData] = useState<any>(null);
   const [otrasCxPData, setOtrasCxPData] = useState<any>(null);
@@ -627,6 +629,13 @@ export default function DashboardPage() {
           cliente={cxcTxDrill.cliente}
           codCliente={cxcTxDrill.codCliente}
           onClose={() => setCxCTxDrill(null)}
+        />
+      )}
+      {cxcVinDrill && cxcVinculadas && (
+        <CxCVinculadasModal
+          cliente={cxcVinDrill.cliente}
+          docs={(cxcVinculadas.docs ?? []).filter((d: any) => String(d.CodCliente) === cxcVinDrill.codCliente)}
+          onClose={() => setCxcVinDrill(null)}
         />
       )}
       {cxpTxDrill && (
@@ -1732,92 +1741,86 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* ── Cartera Especial (Estado 6) ── */}
-              {cxcVinculadas && (cxcVinculadas.numDocs ?? 0) > 0 && (
-                <div style={{ marginTop: '1.5rem' }}>
-                  <div
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: '0.5rem' }}
-                    onClick={() => setCxcVinExpanded(v => !v)}
-                  >
-                    <span style={{ fontSize: '0.75rem', color: '#8B97A8' }}>{cxcVinExpanded ? '▼' : '▶'}</span>
-                    <span style={{ fontWeight: 700, color: '#F59E0B', fontSize: '0.88rem' }}>Cartera Especial (Estado 6)</span>
-                    <span style={{
-                      fontSize: '0.72rem', padding: '2px 8px', borderRadius: '1rem',
-                      background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)',
-                    }}>
-                      {cxcVinculadas.numDocs} docs · {cxcVinculadas.numClientes} clientes
-                    </span>
-                    <span style={{ marginLeft: 'auto', fontWeight: 700, color: '#F59E0B' }}>
-                      {fmt(cxcVinculadas.totalSaldo)}
-                    </span>
-                    <span style={{ fontSize: '0.72rem', color: '#8B97A8' }}>
-                      vinculadas · intercompañía · en disputa
-                    </span>
-                  </div>
-
-                  {cxcVinExpanded && (
-                    <div className="kpi-card" style={{ borderColor: 'rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.03)' }}>
-                      <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginBottom: '0.75rem' }}>
-                        Documentos con Estado 6 en S10 — no forman parte del aging comercial ordinario.
-                        Pueden ser facturas a consorcios vinculados, operaciones en arbitraje o documentos en proceso especial de cobro.
-                      </div>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table className="table-s10" style={{ fontSize: '0.78rem' }}>
-                          <thead>
-                            <tr>
-                              <th>Cliente</th>
-                              <th>Documento</th>
-                              <th>Tipo</th>
-                              <th>Fecha Doc.</th>
-                              <th style={{ textAlign: 'center' }}>Moneda</th>
-                              <th style={{ textAlign: 'right' }}>Saldo</th>
-                              <th style={{ textAlign: 'right' }}>Equiv. S/</th>
-                              <th style={{ textAlign: 'right' }}>Antigüedad</th>
-                              <th>Observación</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(cxcVinculadas.docs ?? []).map((d: any, i: number) => {
-                              const isUSD = String(d.Moneda ?? '01') === '02';
-                              const fSaldo = isUSD
-                                ? `$ ${Number(d.Saldo).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
-                                : fmt(d.Saldo);
-                              return (
-                                <tr key={i}>
-                                  <td style={{ color: '#F59E0B', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Cliente}>{d.Cliente}</td>
-                                  <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{d.Serie ? `${d.Serie}-${d.Numero}` : d.Numero}</td>
-                                  <td style={{ color: '#8B97A8', fontSize: '0.70rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento}</td>
-                                  <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
-                                  <td style={{ textAlign: 'center' }}>
-                                    <span style={{
-                                      fontSize: '0.70rem', fontWeight: 700, padding: '1px 6px', borderRadius: 3,
-                                      background: isUSD ? 'rgba(74,222,128,0.15)' : 'rgba(226,92,26,0.15)',
-                                      color: isUSD ? '#4ade80' : '#E25C1A',
-                                    }}>{isUSD ? '$ USD' : 'S/ PEN'}</span>
-                                  </td>
-                                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{fSaldo}</td>
-                                  <td style={{ textAlign: 'right', color: '#8B97A8' }}>{fmt(d.SaldoSoles)}</td>
-                                  <td style={{ textAlign: 'right', color: d.DiasAntiguedad > 365 ? '#EF4444' : '#8B97A8' }}>
-                                    {d.DiasAntiguedad > 0 ? `${d.DiasAntiguedad}d` : '—'}
-                                  </td>
-                                  <td style={{ color: '#8B97A8', fontSize: '0.70rem', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Observacion}>{d.Observacion || '—'}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                          <tfoot>
-                            <tr className="total-row">
-                              <td colSpan={6} style={{ textAlign: 'right' }}>TOTAL CARTERA ESPECIAL</td>
-                              <td style={{ textAlign: 'right' }}>{fmt(cxcVinculadas.totalSaldo)}</td>
-                              <td colSpan={2} />
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
+              {/* ── Cartera Especial (Estado 6 / Vinculadas) ── */}
+              {cxcVinculadas && (cxcVinculadas.numDocs ?? 0) > 0 && (() => {
+                const vinHasUSD = (cxcVinculadas.totalSaldoUSD ?? 0) > 0;
+                const fUSDv = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+                return (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: '0.75rem', padding: '0.5rem 0' }}
+                      onClick={() => setCxcVinExpanded(v => !v)}
+                    >
+                      <span style={{ fontSize: '0.75rem', color: '#8B97A8' }}>{cxcVinExpanded ? '▼' : '▶'}</span>
+                      <span style={{ fontWeight: 700, color: '#F59E0B', fontSize: '0.92rem' }}>Cartera Especial</span>
+                      <span style={{
+                        fontSize: '0.72rem', padding: '2px 10px', borderRadius: '1rem',
+                        background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)',
+                      }}>
+                        {cxcVinculadas.numClientes} clientes · {cxcVinculadas.numDocs} docs
+                      </span>
+                      <span style={{ marginLeft: 'auto', fontWeight: 700, color: '#F59E0B', fontSize: '0.95rem' }}>
+                        {fmt(cxcVinculadas.totalSaldo)}
+                      </span>
                     </div>
-                  )}
-                </div>
-              )}
+
+                    {cxcVinExpanded && (
+                      <div className="kpi-card" style={{ borderColor: 'rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.02)' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginBottom: '0.75rem' }}>
+                          Facturas vinculadas, intercompañía o en proceso especial de cobro (Estado 6 en S10).
+                          No forman parte del aging comercial ordinario. Haz clic en un cliente para ver el detalle de documentos.
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="table-s10">
+                            <thead>
+                              <tr>
+                                <th>Cliente</th>
+                                <th style={{ textAlign: 'right' }}>S/ PEN</th>
+                                {vinHasUSD && <th style={{ textAlign: 'right' }}>$ USD</th>}
+                                <th style={{ textAlign: 'right' }}>Total equiv. S/</th>
+                                <th style={{ textAlign: 'right' }}>N° Docs</th>
+                                <th>% Cartera Esp.</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(cxcVinculadas.clientes ?? []).map((c: any, i: number) => (
+                                <tr key={i} data-clickable="1"
+                                  onClick={() => setCxcVinDrill({ cliente: c.cliente, codCliente: String(c.codCliente) })}
+                                  title="Ver documentos">
+                                  <td style={{ color: '#F59E0B' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                                  <td style={{ textAlign: 'right', color: (c.saldoPEN ?? 0) > 0 ? '#E25C1A' : '#4B5563' }}>
+                                    {(c.saldoPEN ?? 0) > 0 ? fmt(c.saldoPEN) : '—'}
+                                  </td>
+                                  {vinHasUSD && (
+                                    <td style={{ textAlign: 'right', color: (c.saldoUSD ?? 0) > 0 ? '#4ade80' : '#4B5563' }}>
+                                      {(c.saldoUSD ?? 0) > 0 ? fUSDv(c.saldoUSD) : '—'}
+                                    </td>
+                                  )}
+                                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(c.saldoSoles)}</td>
+                                  <td style={{ textAlign: 'right', color: '#8B97A8' }}>{c.numDocs}</td>
+                                  <td style={{ color: '#8B97A8' }}>
+                                    {cxcVinculadas.totalSaldo > 0 ? pct((c.saldoSoles / cxcVinculadas.totalSaldo) * 100) : '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr className="total-row">
+                                <td>TOTAL ({cxcVinculadas.numClientes} clientes)</td>
+                                <td style={{ textAlign: 'right' }}>{fmt(cxcVinculadas.totalSaldoPEN)}</td>
+                                {vinHasUSD && <td style={{ textAlign: 'right' }}>{fUSDv(cxcVinculadas.totalSaldoUSD)}</td>}
+                                <td style={{ textAlign: 'right' }}>{fmt(cxcVinculadas.totalSaldo)}</td>
+                                <td style={{ textAlign: 'right' }}>{cxcVinculadas.numDocs}</td>
+                                <td>100%</td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </>
           );
         })()}

@@ -4194,12 +4194,22 @@ export default function DashboardPage() {
                   {cxc?.clientes && (cxc.clientes as any[]).length > 0 && (() => {
                     const clientes = cxc.clientes as any[];
                     const sum = (k: string) => clientes.reduce((s, c) => s + Number(c[k] || 0), 0);
+                    const tVigente = cxc.totalVigente || sum('saldoVigente');
                     const t0_30 = sum('dias0_30');
                     const t31_60 = sum('dias31_60');
                     const t61_90 = sum('dias61_90');
                     const t90mas = sum('dias90mas');
-                    const totalCxC = cxc.totalSaldo || (t0_30 + t31_60 + t61_90 + t90mas);
+                    const totalCxC = cxc.totalSaldo || (tVigente + t0_30 + t31_60 + t61_90 + t90mas);
                     const sortedClientes = [...clientes].sort((a, b) => (b.saldoTotal || 0) - (a.saldoTotal || 0));
+                    const draft = directorioDraft || {};
+                    const isEditing = directorioEditing;
+                    const setCxcField = (field: string, value: any) =>
+                      setDirectorioDraft((cur: any) => ({ ...cur, [field]: value }));
+                    const setCxcComment = (codCliente: string, value: string) =>
+                      setDirectorioDraft((cur: any) => ({
+                        ...cur,
+                        cxcComentarios: { ...(cur?.cxcComentarios || {}), [codCliente]: value },
+                      }));
                     return (
                       <div className="kpi-card kpi-card-tooltips" style={{ marginBottom: '1.5rem' }}>
                         <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
@@ -4209,22 +4219,25 @@ export default function DashboardPage() {
                           {[
                             { label: 'Total CxC',    val: totalCxC,  color: '#F8FAFC',
                               tipTitle: 'Total Cuentas por Cobrar',
-                              tip: 'Suma de saldos pendientes de cobro a todos los clientes al cierre del período. Representa el capital de trabajo atado a la cobranza.' },
+                              tip: 'Suma de saldos pendientes de cobro a todos los clientes al cierre del período.' },
+                            { label: 'Vigente',      val: tVigente,  color: '#10B981',
+                              tipTitle: 'Cartera Vigente',
+                              tip: 'Saldos cuya fecha de vencimiento aún no ha llegado. Sin mora.' },
                             { label: '0-30 días',    val: t0_30,     color: '#10B981',
-                              tipTitle: 'CxC 0-30 días',
-                              tip: 'Saldo en cartera reciente (cobranza dentro del plazo normal). Considerado deuda corriente — bajo riesgo de no cobro.' },
+                              tipTitle: 'CxC vencida 0-30 días',
+                              tip: 'Saldo vencido en los últimos 30 días. Primer escalón de mora — gestión activa de cobranza.' },
                             { label: '31-60 días',   val: t31_60,    color: '#F59E0B',
                               tipTitle: 'CxC 31-60 días',
-                              tip: 'Saldo con primer atraso. Requiere gestión activa de cobranza. Riesgo moderado de no cobro si no se actúa.' },
+                              tip: 'Saldo con primer atraso. Requiere gestión activa de cobranza. Riesgo moderado.' },
                             { label: '61-90 días',   val: t61_90,    color: '#F59E0B',
                               tipTitle: 'CxC 61-90 días',
-                              tip: 'Saldo con atraso significativo. Probabilidad de cobro decrece — debe evaluarse provisión preventiva.' },
+                              tip: 'Saldo con atraso significativo. Probabilidad de cobro decrece — considerar provisión preventiva.' },
                             { label: '+90 días',     val: t90mas,    color: '#EF4444',
                               tipTitle: 'CxC vencida +90 días',
                               tip: 'Saldo con vencimiento mayor a 90 días. NIIF 9 exige provisión de incobrables. Considerar gestión legal o cesión a factoring.' },
                             { label: 'Concentr. Top 3', val: cxc.concentracionTop3, color: '#5B86E5', isPct: true,
                               tipTitle: 'Concentración Top 3 clientes',
-                              tip: 'Porcentaje del total de CxC concentrado en los 3 clientes con mayor saldo. Alta concentración (>50%) significa riesgo de quiebra de un solo cliente que comprometa la liquidez de la empresa.' },
+                              tip: 'Porcentaje del total de CxC concentrado en los 3 clientes con mayor saldo. Alta concentración (>50%) implica riesgo de liquidez.' },
                           ].map((b: any, i) => (
                             <div key={i} className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
                               <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>
@@ -4240,42 +4253,79 @@ export default function DashboardPage() {
                             </div>
                           ))}
                         </div>
+
+                        {/* Campos manuales para slide — solo visibles en modo edición o cuando tienen valor */}
+                        {(isEditing || (draft.cxcCedido || 0) > 0 || (draft.cxcIncobrable || 0) > 0) && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1rem', padding: '0.75rem', background: 'rgba(226,92,26,0.04)', borderRadius: '0.5rem', border: '1px dashed rgba(226,92,26,0.2)' }}>
+                            <div style={{ fontSize: '0.65rem', color: '#E25C1A', fontWeight: 600, letterSpacing: '0.05em', gridColumn: '1/-1', marginBottom: '0.25rem' }}>
+                              CAMPOS MANUALES — aparecen en slide 07 del Directorio
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.65rem', color: '#8B97A8', display: 'block', marginBottom: '0.25rem' }}>Cedido a Factoring (S/)</label>
+                              {isEditing
+                                ? <input type="number" value={draft.cxcCedido || ''} onChange={e => setCxcField('cxcCedido', parseFloat(e.target.value) || 0)}
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', color: '#F8FAFC', padding: '0.4rem 0.6rem', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                : <div style={{ fontFamily: 'monospace', color: '#3B82F6', fontWeight: 700 }}>{fmt(draft.cxcCedido || 0)}</div>}
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.65rem', color: '#8B97A8', display: 'block', marginBottom: '0.25rem' }}>Incobrable / Provisión (S/)</label>
+                              {isEditing
+                                ? <input type="number" value={draft.cxcIncobrable || ''} onChange={e => setCxcField('cxcIncobrable', parseFloat(e.target.value) || 0)}
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', color: '#F8FAFC', padding: '0.4rem 0.6rem', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                : <div style={{ fontFamily: 'monospace', color: '#EF4444', fontWeight: 700 }}>{fmt(draft.cxcIncobrable || 0)}</div>}
+                            </div>
+                          </div>
+                        )}
+
                         <div style={{ overflowX: 'auto' }}>
                           <table className="table-s10" style={{ width: '100%', fontSize: '0.75rem' }}>
                             <thead>
                               <tr>
                                 <th style={{ textAlign: 'left' }}>Cliente</th>
+                                <th style={{ textAlign: 'right' }}>Vigente</th>
                                 <th style={{ textAlign: 'right' }}>0-30</th>
                                 <th style={{ textAlign: 'right' }}>31-60</th>
                                 <th style={{ textAlign: 'right' }}>61-90</th>
                                 <th style={{ textAlign: 'right' }}>+90</th>
                                 <th style={{ textAlign: 'right' }}>Total</th>
+                                <th style={{ textAlign: 'left', minWidth: isEditing ? 160 : undefined }}>Comentario</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {sortedClientes.slice(0, 10).map((c: any, i: number) => (
+                              {sortedClientes.slice(0, 9).map((c: any, i: number) => (
                                 <tr key={i}>
-                                  <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.cliente}</td>
+                                  <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.cliente}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.saldoVigente || 0) > 0 ? '#10B981' : undefined }}>{fmt(c.saldoVigente || 0)}</td>
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.dias0_30 || 0)}</td>
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias31_60 || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias31_60 || 0)}</td>
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias61_90 || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias61_90 || 0)}</td>
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias90mas || 0) > 0 ? '#EF4444' : undefined }}>{fmt(c.dias90mas || 0)}</td>
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.saldoTotal || 0)}</td>
+                                  <td>
+                                    {isEditing
+                                      ? <input value={draft.cxcComentarios?.[c.codCliente] || ''}
+                                          onChange={e => setCxcComment(c.codCliente, e.target.value)}
+                                          placeholder="comentario…"
+                                          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.25rem', color: '#F8FAFC', padding: '0.2rem 0.4rem', fontSize: '0.72rem' }} />
+                                      : <span style={{ color: '#8B97A8', fontStyle: 'italic', fontSize: '0.7rem' }}>{draft.cxcComentarios?.[c.codCliente] || ''}</span>}
+                                  </td>
                                 </tr>
                               ))}
                               <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
                                 <td>TOTAL ({clientes.length} clientes)</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(tVigente)}</td>
                                 <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t0_30)}</td>
                                 <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t31_60)}</td>
                                 <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t61_90)}</td>
                                 <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(t90mas)}</td>
                                 <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(totalCxC)}</td>
+                                <td></td>
                               </tr>
                             </tbody>
                           </table>
-                          {clientes.length > 10 && (
+                          {clientes.length > 9 && (
                             <div style={{ fontSize: '0.7rem', color: '#8B97A8', fontStyle: 'italic', padding: '0.5rem 0' }}>
-                              Top 10 de {clientes.length} clientes por saldo
+                              Top 9 de {clientes.length} clientes por saldo
                             </div>
                           )}
                         </div>
@@ -4377,6 +4427,7 @@ export default function DashboardPage() {
                       ventasFuente: { referidos: 0, licitacionesPublicas: 0, licitacionesPrivadas: 0, iniciativaDirecta: 0 },
                       backlog: [], pipeline: [], greenFlags: [], redFlags: [], mustWin: [], acuerdos: [],
                       comentarios: { resumenEjecutivo: '', ebitda: '' },
+                      cxcCedido: 0, cxcIncobrable: 0, cxcComentarios: {},
                     };
                     const d = directorioDraft || EMPTY_DIRECTORIO;
                     const editing = directorioEditing;

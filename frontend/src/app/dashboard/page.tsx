@@ -158,6 +158,7 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
+  const [cajaPosicion, setCajaPosicion] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio'>('inicio');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
@@ -372,6 +373,17 @@ export default function DashboardPage() {
 
     return () => ctrl.abort();
   }, [router, selectedCompany, selectedYear, refreshKey]);
+
+  useEffect(() => {
+    if (activeTab !== 'caja' || isGrupo) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    setCajaPosicion(null);
+    fetchApi(`/kpi/${id}/caja-posicion?year=${selectedYear}&quarter=${selectedQuarter}`, token)
+      .then(data => setCajaPosicion(data))
+      .catch(() => {});
+  }, [activeTab, selectedCompany, selectedYear, selectedQuarter, isGrupo]);
 
   useEffect(() => {
     if (activeTab !== 'docs' || isGrupo) return;
@@ -738,6 +750,65 @@ export default function DashboardPage() {
             }}
           >
             {syncStatus === 'running' ? '⏳ Sincronizando…' : syncStatus === 'done' ? '✓ Datos actualizados' : syncStatus === 'error' ? '✗ Reintentar sync' : syncStatus === 'unavailable' ? '⚠ No disponible' : '↻ Sincronizar datos'}
+          </button>
+
+          {/* Sync histórico: todos los años 2022→actual, fast mode */}
+          <button
+            disabled={syncStatus === 'running'}
+            onClick={async () => {
+              const token = localStorage.getItem('token');
+              if (!token) return;
+              setSyncStatus('running');
+              setSyncMsg('Iniciando sync histórico...');
+              setSyncProgress(null);
+              try {
+                const allYears = Array.from({ length: CURRENT_YEAR - 2022 + 1 }, (_, i) => 2022 + i).join(',');
+                const res = await fetch(`${API}/sync/trigger?years=${allYears}&fast=true`, {
+                  method: 'POST', headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json();
+                if (data.status === 'unavailable') {
+                  setSyncStatus('unavailable');
+                  setSyncMsg(data.message || 'Servicio no disponible');
+                  setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 10000);
+                  return;
+                }
+                setSyncMsg(data.status === 'busy' ? 'Sync en progreso — monitoreando...' : 'Conectando a S10 vía VPN...');
+                if (!syncPollRef.current) {
+                  const poll = setInterval(async () => {
+                    try {
+                      const st = await fetch(`${API}/sync/status`, { headers: { Authorization: `Bearer ${token}` } });
+                      const s = await st.json();
+                      setSyncProgress(s);
+                      if (!s.running) {
+                        clearInterval(poll);
+                        syncPollRef.current = null;
+                        setSyncStatus('done');
+                        setSyncMsg('');
+                        setRefreshKey(k => k + 1);
+                        setTimeout(() => { setSyncStatus('idle'); setSyncProgress(null); }, 12000);
+                      }
+                    } catch { clearInterval(poll); syncPollRef.current = null; setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }
+                  }, 4000);
+                  syncPollRef.current = poll;
+                  setTimeout(() => { clearInterval(poll); syncPollRef.current = null; setSyncStatus(prev => prev === 'running' ? 'idle' : prev); setSyncProgress(null); }, 1500000);
+                }
+              } catch {
+                setSyncStatus('error');
+                setSyncMsg('No se pudo conectar al servidor.');
+                setTimeout(() => { setSyncStatus('idle'); setSyncMsg(''); setSyncProgress(null); }, 6000);
+              }
+            }}
+            style={{
+              width: '100%', marginTop: '0.35rem', padding: '0.35rem 0.75rem', borderRadius: '0.5rem',
+              border: '1px solid rgba(139,97,184,0.25)',
+              background: syncStatus === 'running' ? 'rgba(245,158,11,0.08)' : 'rgba(139,97,184,0.07)',
+              color: syncStatus === 'running' ? '#F59E0B' : '#9B72CF',
+              fontSize: '0.68rem', fontWeight: 600, cursor: syncStatus === 'running' ? 'default' : 'pointer',
+              letterSpacing: '0.03em', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            {syncStatus === 'running' ? '⏳ Sincronizando…' : '⟳ Sync histórico 2022→' + CURRENT_YEAR}
           </button>
 
           {syncStatus === 'running' && syncProgress?.running && syncProgress?.totalYears > 0 && (() => {
@@ -1835,6 +1906,135 @@ export default function DashboardPage() {
                 </table>
               </div>
             </div>
+
+            {/* ── Posición de Caja Trimestral ── */}
+            {(() => {
+              const Q_MONTHS_FE: Record<string, number[]> = { Q1:[1,2,3], Q2:[4,5,6], Q3:[7,8,9], Q4:[10,11,12] };
+              const MES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+              const fmtCash = (n: number) => n === 0 ? '—' : fmt(n);
+              const quarters = ['Q1','Q2','Q3','Q4'] as const;
+              const cp = cajaPosicion;
+
+              return (
+                <div className="kpi-card" style={{ marginTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ fontWeight: 700, color: '#F8FAFC', fontSize: '1rem' }}>
+                      Posición de Caja — {selectedQuarter} {selectedYear}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      {quarters.map(q => (
+                        <button key={q} onClick={() => setSelectedQuarter(q)}
+                          style={{ padding: '0.3rem 0.85rem', borderRadius: '0.375rem', border: '1px solid',
+                            borderColor: selectedQuarter === q ? 'rgba(226,92,26,0.6)' : 'rgba(255,255,255,0.12)',
+                            background: selectedQuarter === q ? 'rgba(226,92,26,0.15)' : 'transparent',
+                            color: selectedQuarter === q ? '#FF8B4D' : '#8B97A8',
+                            fontWeight: selectedQuarter === q ? 700 : 400, fontSize: '0.82rem', cursor: 'pointer' }}>
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {!cp ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
+                  ) : (
+                    <>
+                      {/* 4 KPI cards */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                        {[
+                          { label: `Saldo Inicial ${selectedQuarter}`, val: cp.saldoInicialQ, color: '#5B86E5' },
+                          { label: 'Total Entradas', val: cp.totalEntradas, color: '#10B981' },
+                          { label: 'Total Salidas', val: cp.totalSalidas, color: '#EF4444' },
+                          { label: `Saldo Final ${selectedQuarter}`, val: cp.saldoFinalQ, color: (cp.saldoFinalQ ?? 0) >= 0 ? '#10B981' : '#EF4444' },
+                        ].map(({ label, val, color }) => (
+                          <div key={label} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${color}`, borderRadius: '0.5rem', padding: '0.75rem 1rem' }}>
+                            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginBottom: '0.35rem' }}>{label}</div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color, fontFamily: 'monospace' }}>S/ {fmt(val ?? 0)}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Tabla detallada */}
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="table-s10" style={{ fontSize: '0.82rem', minWidth: 600 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left', minWidth: 220 }}>Concepto</th>
+                              {(cp.meses || []).map((m: any) => <th key={m.mes} style={{ textAlign: 'right' }}>{MES_SHORT[m.mes - 1]}</th>)}
+                              <th style={{ textAlign: 'right', fontWeight: 700 }}>{selectedQuarter} Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Saldo inicial */}
+                            <tr style={{ fontWeight: 600 }}>
+                              <td>Saldo inicial del período</td>
+                              {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(m.saldoInicial)}</td>)}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>{fmt(cp.saldoInicialQ ?? 0)}</td>
+                            </tr>
+                            {/* Entradas header */}
+                            <tr style={{ background: 'rgba(16,185,129,0.18)' }}>
+                              <td colSpan={(cp.meses?.length ?? 3) + 2} style={{ fontWeight: 700, color: '#10B981', padding: '0.4rem 0.75rem' }}>ENTRADAS DE CAJA</td>
+                            </tr>
+                            <tr>
+                              <td style={{ paddingLeft: '1.5rem', color: '#8B97A8' }}>Cobros a clientes / facturas y otros</td>
+                              {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10B981' }}>{fmtCash(m.entradas)}</td>)}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10B981', fontWeight: 700 }}>{fmtCash(cp.totalEntradas ?? 0)}</td>
+                            </tr>
+                            <tr style={{ background: 'rgba(16,185,129,0.07)', fontWeight: 600 }}>
+                              <td>Total Entradas</td>
+                              {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10B981' }}>{fmtCash(m.entradas)}</td>)}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10B981', fontWeight: 700 }}>{fmtCash(cp.totalEntradas ?? 0)}</td>
+                            </tr>
+                            {/* Salidas header */}
+                            <tr style={{ background: 'rgba(239,68,68,0.18)' }}>
+                              <td colSpan={(cp.meses?.length ?? 3) + 2} style={{ fontWeight: 700, color: '#EF4444', padding: '0.4rem 0.75rem' }}>SALIDAS DE CAJA</td>
+                            </tr>
+                            <tr>
+                              <td style={{ paddingLeft: '1.5rem', color: '#8B97A8' }}>Remuneraciones y honorarios{!cp.hasLaboral ? ' *' : ''}</td>
+                              {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtCash(m.remuneraciones)}</td>)}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>{fmtCash(cp.totalRemuneraciones ?? 0)}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ paddingLeft: '1.5rem', color: '#8B97A8' }}>Proveedores, arriendo, servicios y otros</td>
+                              {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtCash(m.proveedores)}</td>)}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>{fmtCash(cp.totalProveedores ?? 0)}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ paddingLeft: '1.5rem', color: '#8B97A8' }}>SUNAT / impuestos</td>
+                              {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmtCash(m.sunat)}</td>)}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>{fmtCash(cp.totalSunat ?? 0)}</td>
+                            </tr>
+                            <tr style={{ background: 'rgba(239,68,68,0.07)', fontWeight: 600 }}>
+                              <td>Total Salidas</td>
+                              {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#EF4444' }}>{fmtCash(m.salidas)}</td>)}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#EF4444', fontWeight: 700 }}>{fmtCash(cp.totalSalidas ?? 0)}</td>
+                            </tr>
+                          </tbody>
+                          <tfoot>
+                            <tr className="total-row">
+                              <td style={{ fontWeight: 700 }}>SALDO FINAL</td>
+                              {(cp.meses || []).map((m: any) => (
+                                <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace', color: m.saldoFinal >= 0 ? '#10B981' : '#EF4444', fontWeight: 700 }}>
+                                  {fmt(m.saldoFinal)}
+                                </td>
+                              ))}
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (cp.saldoFinalQ ?? 0) >= 0 ? '#10B981' : '#EF4444', fontWeight: 700 }}>
+                                {fmt(cp.saldoFinalQ ?? 0)}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      {!cp.hasLaboral && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#8B97A8', fontStyle: 'italic' }}>
+                          * Remuneraciones requiere sync completo (crontab nocturno sin --fast)
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </>
         )}
 

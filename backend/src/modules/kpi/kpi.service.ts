@@ -376,6 +376,106 @@ export class KpiService {
   }
 
   // ─────────────────────────────────────────────
+  // Caja — Posición Trimestral
+  // ─────────────────────────────────────────────
+
+  async getCajaPosicion(companyId: string, year: number, quarter: string) {
+    const Q_MONTHS: Record<string, number[]> = {
+      Q1: [1,2,3], Q2: [4,5,6], Q3: [7,8,9], Q4: [10,11,12],
+    };
+    const months = Q_MONTHS[quarter] ?? [1,2,3];
+    // Cuentas de tránsito interno — excluir de entradas/salidas reales
+    const TRANSIT = new Set(['10300010','10300011','10300012']);
+
+    const [cajaTxnSnap, tesoreriaSnap, tributosTxnSnap, laboralTxnSnap] = await Promise.all([
+      this.getSnapshot(companyId, 'caja_txn', `${year}`),
+      this.getSnapshot(companyId, 'tesoreria', `${year}`),
+      this.getSnapshot(companyId, 'tributos_txn', `${year}`),
+      this.getSnapshot(companyId, 'laboral_txn', `${year}`),
+    ]);
+
+    const cajaTxn      = (cajaTxnSnap?.data as any[]) ?? [];
+    const tesoreria    = (tesoreriaSnap?.data as any[]) ?? [];
+    const tributosTxn  = (tributosTxnSnap?.data as any[]) ?? [];
+    const laboralTxn   = (laboralTxnSnap?.data as any[]) ?? [];
+
+    // Saldo inicial del año (balance al 01/01/year) desde tesoreria, excl. tránsito
+    const saldoInicialAnio = round(
+      tesoreria
+        .filter(b => !TRANSIT.has(b.CodBanco))
+        .reduce((s, b) => s + (Number(b.SaldoInicial) || 0), 0),
+    );
+
+    // Acumular flujos mensuales de caja_txn (excl. tránsito)
+    const txnPorMes: Record<number, { entradas: number; salidas: number }> = {};
+    for (let m = 1; m <= 12; m++) {
+      const txns = cajaTxn.filter(t => Number(t.Mes) === m && !TRANSIT.has(t.CodBanco));
+      txnPorMes[m] = {
+        entradas: round(txns.reduce((s, t) => s + (Number(t.Debito) || 0), 0)),
+        salidas:  round(txns.reduce((s, t) => s + (Number(t.Credito) || 0), 0)),
+      };
+    }
+
+    // Remuneraciones pagadas por mes: debitos en cuenta 411 (Sueldos por Pagar)
+    const remuPorMes: Record<number, number> = {};
+    for (const t of laboralTxn) {
+      const m = Number(t.Mes);
+      if (m >= 1 && m <= 12) remuPorMes[m] = round((remuPorMes[m] || 0) + (Number(t.Debito) || 0));
+    }
+
+    // Tributos pagados por mes: debitos en cuentas 40x (reducción deuda SUNAT)
+    const sunatPorMes: Record<number, number> = {};
+    for (const t of tributosTxn) {
+      const m = Number(t.Mes);
+      if (m >= 1 && m <= 12) sunatPorMes[m] = round((sunatPorMes[m] || 0) + (Number(t.Debito) || 0));
+    }
+
+    // Saldo inicial del Q = saldo inicio año + flujos netos de meses previos al Q
+    let saldoInicialQ = saldoInicialAnio;
+    for (let m = 1; m < months[0]; m++) {
+      const d = txnPorMes[m];
+      saldoInicialQ += (d?.entradas || 0) - (d?.salidas || 0);
+    }
+    saldoInicialQ = round(saldoInicialQ);
+
+    // Datos mes a mes del Q
+    let saldoAcum = saldoInicialQ;
+    const meses = months.map(m => {
+      const ent  = txnPorMes[m]?.entradas ?? 0;
+      const sal  = txnPorMes[m]?.salidas  ?? 0;
+      const remu = remuPorMes[m] ?? 0;
+      const sun  = sunatPorMes[m] ?? 0;
+      const prov = round(Math.max(0, sal - remu - sun));
+      const saldoInicial = saldoAcum;
+      saldoAcum = round(saldoAcum + ent - sal);
+      return { mes: m, saldoInicial, entradas: ent, salidas: sal, remuneraciones: remu, sunat: sun, proveedores: prov, saldoFinal: saldoAcum };
+    });
+
+    const totalEntradas     = round(meses.reduce((s, m) => s + m.entradas, 0));
+    const totalSalidas      = round(meses.reduce((s, m) => s + m.salidas, 0));
+    const totalRemuneraciones = round(meses.reduce((s, m) => s + m.remuneraciones, 0));
+    const totalSunat        = round(meses.reduce((s, m) => s + m.sunat, 0));
+    const totalProveedores  = round(meses.reduce((s, m) => s + m.proveedores, 0));
+    const saldoFinalQ       = round(saldoInicialQ + totalEntradas - totalSalidas);
+
+    return {
+      quarter,
+      year,
+      saldoInicialQ,
+      saldoFinalQ,
+      totalEntradas,
+      totalSalidas,
+      totalRemuneraciones,
+      totalSunat,
+      totalProveedores,
+      meses,
+      hasCajaTxn:    cajaTxn.length > 0,
+      hasTesoreria:  tesoreria.length > 0,
+      hasLaboral:    laboralTxn.length > 0,
+    };
+  }
+
+  // ─────────────────────────────────────────────
   // GAV
   // ─────────────────────────────────────────────
 

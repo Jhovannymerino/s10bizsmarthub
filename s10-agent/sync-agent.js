@@ -191,7 +191,9 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
-const TIPOS_EMITIDAS = `'125','128','131','134'`;
+// Tributarios: 125 128 131 134 — Operativos: 060 056 058 069 070 071 073 075 048
+// El frontend separa ambos grupos en sub-tabs (Facturas vs Operativos)
+const TIPOS_EMITIDAS = `'060','056','058','069','070','071','073','075','048','125','128','131','134'`;
 const TIPOS_RECIBIDAS = `'001','002','004','012','015','091','123','143','144'`;
 const TIPOS_HONORARIOS = `'010'`;
 const TIPOS_PRESTAMOS  = `'071'`;

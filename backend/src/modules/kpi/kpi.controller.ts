@@ -129,6 +129,18 @@ export class KpiController {
     return this.kpiService.getHonorariosRecibidos(companyId, y);
   }
 
+  /** Posición de caja trimestral */
+  @Get(':companyId/caja-posicion')
+  getCajaPosicion(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('quarter') quarter?: string,
+  ) {
+    const y = parseYear(year);
+    const q = (quarter || 'Q1').toUpperCase();
+    return this.kpiService.getCajaPosicion(companyId, y, q);
+  }
+
   /** GAV por categoría */
   @Get(':companyId/gav')
   getGAV(
@@ -533,12 +545,13 @@ export class KpiController {
 
     // Cargar todo en paralelo
     const company = await this.prisma.company.findUnique({ where: { codEmpresa: companyId } });
-    const [pl, gav, cxc, caja, directorio] = await Promise.all([
+    const [pl, gav, cxc, caja, directorio, cajaPosicion] = await Promise.all([
       this.kpiService.getDashboard(companyId, y),
       this.kpiService.getGAV(companyId, y),
       this.kpiService.getCxC(companyId),
       this.kpiService.getCaja(companyId, y),
       this.kpiService.getDirectorio(companyId, y, q),
+      this.kpiService.getCajaPosicion(companyId, y, q),
     ]);
 
     // Calcular qData y ytdData del P&L mensual
@@ -567,6 +580,7 @@ export class KpiController {
       gav,
       cxc,
       caja,
+      cajaPosicion,
       directorio: (directorio as any)?.data || {},
     });
 

@@ -55,9 +55,10 @@ export class DirectorioPptxService {
     gav: any;          // { categorias: [], total }
     cxc: any;          // { clientes: [], totalSaldo, concentracionTop3 }
     caja: any;         // { totalPorMes }
+    cajaPosicion: any; // { saldoInicialQ, saldoFinalQ, totalEntradas, totalSalidas, meses[] }
     directorio: any;   // draft manual
   }): Promise<Buffer> {
-    const { empresa, quarter, year, qData, ytdData, pptoQ, pptoYTD, gav, cxc, caja, directorio } = ctx;
+    const { empresa, quarter, year, qData, ytdData, pptoQ, pptoYTD, gav, cxc, caja, cajaPosicion, directorio } = ctx;
     const d = directorio || {};
     const qLabel = Q_LABELS[quarter] || quarter;
 
@@ -372,51 +373,117 @@ export class DirectorioPptxService {
     }
 
     // ═══════════════════════════════════════
-    // SLIDE 8 — Posición de Caja
+    // SLIDE 8 — Posición de Caja (detallado)
     // ═══════════════════════════════════════
-    if (caja?.totalPorMes) {
+    {
       const s = pres.addSlide();
-      addTitle(s, '06', 'POSICIÓN DE CAJA');
-      const totalPorMes = caja.totalPorMes || {};
-      const qMeses = Q_MONTHS[quarter] || [];
-      const qFlujo = qMeses.map(m => Number(totalPorMes[m] || 0));
-      const qNeto = qFlujo.reduce((sum, v) => sum + v, 0);
-      const ytdNeto = Object.values(totalPorMes as Record<string, number>).reduce((sum: number, v: any) => sum + (Number(v) || 0), 0);
+      addTitle(s, '06', `POSICIÓN DE CAJA  ${quarter} ${year}`);
+      const cp = cajaPosicion || {};
+      const qMeses: number[] = Q_MONTHS[quarter] || [1,2,3];
+      const meses: any[] = cp.meses || qMeses.map(m => ({ mes: m, saldoInicial: 0, entradas: 0, salidas: 0, remuneraciones: 0, sunat: 0, proveedores: 0, saldoFinal: 0 }));
 
-      const cards = [
-        { label: `Flujo Neto ${quarter}`, val: qNeto, color: qNeto < 0 ? RED : GREEN },
-        { label: 'Flujo Neto YTD', val: ytdNeto, color: ytdNeto < 0 ? RED : GREEN },
+      const si  = cp.saldoInicialQ    ?? 0;
+      const ent = cp.totalEntradas    ?? 0;
+      const sal = cp.totalSalidas     ?? 0;
+      const sf  = cp.saldoFinalQ      ?? 0;
+
+      // 4 KPI cards
+      const kCards = [
+        { label: `Saldo Inicial ${quarter}`, val: si,  color: BLUE   },
+        { label: 'Total Entradas',           val: ent, color: GREEN  },
+        { label: 'Total Salidas',            val: sal, color: RED    },
+        { label: `Saldo Final ${quarter}`,   val: sf,  color: sf >= 0 ? GREEN : RED },
       ];
-      cards.forEach((c, i) => {
-        const x = 0.4 + i * 6.3;
-        s.addShape('rect', { x, y: 1.3, w: 6.1, h: 1.2, fill: { color: 'FFFFFF' }, line: { color: c.color, width: 1.5 } });
-        s.addText(c.label, { x: x + 0.2, y: 1.4, w: 5.7, h: 0.3, color: SUBTLE, fontSize: 11 });
-        s.addText(`S/ ${fmt(c.val)}`, { x: x + 0.2, y: 1.75, w: 5.7, h: 0.7, color: c.color, fontSize: 28, bold: true, fontFace: 'Consolas' });
+      const cardW = (12.5 - 0.6) / 4;
+      kCards.forEach((c, i) => {
+        const x = 0.4 + i * (cardW + 0.2);
+        s.addShape('rect', { x, y: 1.15, w: cardW, h: 0.18, fill: { color: c.color } });
+        s.addShape('rect', { x, y: 1.33, w: cardW, h: 1.2, fill: { color: 'FFFFFF' }, line: { color: 'E5E7EB', width: 1 } });
+        s.addText(c.label, { x: x + 0.1, y: 1.38, w: cardW - 0.2, h: 0.3, color: SUBTLE, fontSize: 9.5, align: 'center' });
+        s.addText(`S/ ${fmt(c.val)}`, { x: x + 0.05, y: 1.72, w: cardW - 0.1, h: 0.7, color: c.color, fontSize: 18, bold: true, align: 'center', fontFace: 'Consolas' });
       });
 
-      // Tabla flujo mensual del Q
+      // Tabla flujo detallado
+      const mesHeaders = meses.map(m => ({
+        text: MES_NAMES[m.mes - 1],
+        options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'right' as const },
+      }));
       const header = [
-        { text: 'Mes', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
-        { text: `Flujo Neto (S/)`, options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'right' as const } },
+        { text: 'Concepto', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
+        ...mesHeaders,
+        { text: `${quarter} Total`, options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10, align: 'right' as const } },
       ];
-      const rows = qMeses.map(m => {
-        const v = Number(totalPorMes[m] || 0);
+
+      const totalCols = meses.length + 2; // concepto + N meses + Q Total
+      const conceptW = 3.8;
+      const mesW = (12.5 - conceptW) / (meses.length + 1);
+      const colW = [conceptW, ...Array(meses.length + 1).fill(mesW)];
+
+      const makeRow = (
+        label: string,
+        getter: (m: any) => number,
+        total: number,
+        opts: { bold?: boolean; fill?: string; headerFill?: string; color?: string; indent?: boolean } = {},
+      ) => {
+        const { bold = false, fill, color, indent = false } = opts;
+        const labelText = indent ? `  ${label}` : label;
+        const baseOpts = { fontSize: 10, ...(bold ? { bold: true } : {}), ...(fill ? { fill: { color: fill } } : {}) };
         return [
-          { text: `${MES_NAMES[m-1]} ${year}`, options: { fontSize: 10 } },
-          { text: fmt(v), options: { fontSize: 10, align: 'right' as const, fontFace: 'Consolas', color: v < 0 ? RED : v > 0 ? GREEN : SUBTLE } },
+          { text: labelText, options: { ...baseOpts, color: color || TEXT } },
+          ...meses.map(m => {
+            const v = getter(m);
+            return { text: v !== 0 ? fmt(v) : '—', options: { ...baseOpts, fontSize: 10, align: 'right' as const, fontFace: 'Consolas', color: v < 0 ? RED : (color || TEXT) } };
+          }),
+          { text: total !== 0 ? fmt(total) : '—', options: { ...baseOpts, fontSize: 10, align: 'right' as const, fontFace: 'Consolas', bold: true, color: total < 0 ? RED : (color || TEXT) } },
         ];
-      });
-      rows.push([
-        { text: `TOTAL ${quarter}`, options: { fontSize: 10, bold: true, fill: { color: 'FFF7ED' } } as any },
-        { text: fmt(qNeto), options: { fontSize: 10, align: 'right' as const, bold: true, fill: { color: 'FFF7ED' }, fontFace: 'Consolas', color: qNeto < 0 ? RED : GREEN } as any },
-      ]);
-      s.addTable([header, ...rows], {
-        x: 0.4, y: 2.8, w: 6.1,
-        colW: [3, 3.1],
-        rowH: 0.34,
+      };
+
+      const saldoInicialRow = makeRow('Saldo inicial del período', m => m.saldoInicial, si, { bold: true });
+      const entHeaderRow = [
+        { text: 'ENTRADAS DE CAJA', options: { bold: true, fill: { color: '1A6B30' }, color: 'FFFFFF', fontSize: 10 } },
+        ...Array(meses.length + 1).fill({ text: '', options: { fill: { color: '1A6B30' } } }),
+      ];
+      const cobrosRow   = makeRow('Cobros a clientes / facturas', m => m.entradas, ent, { indent: true, color: '1A6B30' });
+      const totalEntRow = makeRow('Total Entradas', m => m.entradas, ent, { bold: true, fill: 'E8F5E9', color: '1A6B30' });
+      const salHeaderRow = [
+        { text: 'SALIDAS DE CAJA', options: { bold: true, fill: { color: 'B91C1C' }, color: 'FFFFFF', fontSize: 10 } },
+        ...Array(meses.length + 1).fill({ text: '', options: { fill: { color: 'B91C1C' } } }),
+      ];
+      const remuRow     = makeRow('Remuneraciones y honorarios', m => m.remuneraciones, cp.totalRemuneraciones ?? 0, { indent: true });
+      const provRow     = makeRow('Proveedores, arriendo, servicios y otros', m => m.proveedores, cp.totalProveedores ?? 0, { indent: true });
+      const sunatRow    = makeRow('SUNAT / impuestos', m => m.sunat, cp.totalSunat ?? 0, { indent: true });
+      const totalSalRow = makeRow('Total Salidas', m => m.salidas, sal, { bold: true, fill: 'FEE2E2', color: RED });
+      const saldoFinalRow = makeRow('SALDO FINAL', m => m.saldoFinal, sf, { bold: true, fill: '1E3A5F', color: sf >= 0 ? GREEN : RED });
+      // Override fill on SALDO FINAL to navy bg
+      (saldoFinalRow[0] as any).options = { ...((saldoFinalRow[0] as any).options), fill: { color: NAVY }, color: 'FFFFFF', bold: true, fontSize: 10 };
+      for (let i = 1; i < saldoFinalRow.length; i++) {
+        const v = i < meses.length + 1 ? meses[i-1]?.saldoFinal : sf;
+        (saldoFinalRow[i] as any).options = { fontSize: 10, align: 'right', fontFace: 'Consolas', bold: true, fill: { color: NAVY }, color: (v ?? 0) >= 0 ? '86EFAC' : 'FCA5A5' };
+      }
+
+      s.addTable([
+        header,
+        saldoInicialRow,
+        entHeaderRow as any,
+        cobrosRow,
+        totalEntRow,
+        salHeaderRow as any,
+        remuRow,
+        provRow,
+        sunatRow,
+        totalSalRow,
+        saldoFinalRow,
+      ], {
+        x: 0.4, y: 2.65, w: 12.5,
+        colW,
+        rowH: 0.31,
         fontFace: 'Inter',
         border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
       });
+
+      if (!cp.hasLaboral) {
+        s.addText('* Remuneraciones: requiere sync con Batch 3 (crontab nocturno)', { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
+      }
       addFooter(s, '06');
     }
 

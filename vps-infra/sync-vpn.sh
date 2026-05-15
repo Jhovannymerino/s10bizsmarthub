@@ -53,13 +53,19 @@ else
       log "Ruta VPN específica: 192.168.1.0/24 → ppp0"
 
       # Espera adicional hasta que el SQL Server responda (max 30s)
+      SQL_OK=false
       for j in $(seq 1 30); do
         if timeout 2 bash -c '</dev/tcp/192.168.1.51/1433' 2>/dev/null; then
           log "SQL accesible tras ${j}s - listo para sync"
+          SQL_OK=true
           break
         fi
         sleep 1
       done
+      if [ "$SQL_OK" = "false" ]; then
+        log "ERROR: SQL Server 192.168.1.51:1433 no accesible tras 30s — abortando"
+        kill $VPN_PID 2>/dev/null; rm -f "$PIDFILE"; exit 1
+      fi
       break
     fi
     if [ $i -eq 60 ]; then

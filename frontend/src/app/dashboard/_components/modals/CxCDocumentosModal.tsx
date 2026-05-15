@@ -99,6 +99,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
                   <th style={{ textAlign: 'center' }}>Moneda</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
                   <th style={{ textAlign: 'right' }}>Pagado</th>
+                  <th style={{ textAlign: 'right' }}>Detracción</th>
                   <th style={{ textAlign: 'right' }}>Saldo</th>
                   <th>Estado</th>
                 </tr>
@@ -129,6 +130,9 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
                       </td>
                       <td style={{ textAlign: 'right' }}>{fMon(moneda, d.Total ?? 0)}</td>
                       <td style={{ textAlign: 'right', color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</td>
+                      <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? '#F59E0B' : '#4B5563', fontSize: '0.72rem' }}>
+                        {(d.Detraccion ?? 0) > 0 ? fMon(moneda, d.Detraccion) : '—'}
+                      </td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
                         {fMon(moneda, d.Saldo ?? 0)}
                       </td>
@@ -139,7 +143,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
               </tbody>
               <tfoot>
                 <tr className="total-row">
-                  <td colSpan={8} style={{ textAlign: 'right' }}>SALDO PENDIENTE</td>
+                  <td colSpan={9} style={{ textAlign: 'right' }}>SALDO PENDIENTE</td>
                   <td style={{ textAlign: 'right' }}>
                     {hasMixed ? (
                       <>

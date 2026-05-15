@@ -32,6 +32,7 @@ export class SyncService {
       gav?: any[];
       transactions?: any[];
       cxc_docs?: any[];
+      cxc_vinculadas?: any[];
       cxc_transactions?: any[];
       cxp_transactions?: any[];
       facturas_emitidas?: any[];
@@ -117,6 +118,12 @@ export class SyncService {
       if (data.cxc_docs?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_docs', 'current', year, null, data.cxc_docs);
         logs.push({ kpiType: 'cxc_docs', rowsProcessed: data.cxc_docs.length, status: 'success' });
+      }
+
+      if (data.cxc_vinculadas !== undefined) {
+        const vin = this.kpiService.buildCxCVinculadas(data.cxc_vinculadas ?? []);
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_vinculadas', 'current', year, null, vin);
+        logs.push({ kpiType: 'cxc_vinculadas', rowsProcessed: data.cxc_vinculadas?.length ?? 0, status: 'success' });
       }
 
       if (data.cxc_split?.length) {

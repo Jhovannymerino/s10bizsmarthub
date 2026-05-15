@@ -58,6 +58,12 @@ export class KpiController {
     return this.kpiService.getCxCDocs(companyId, codCliente);
   }
 
+  /** Cartera Especial (Estado 6): vinculadas, intercompañía, en disputa */
+  @Get(':companyId/cxc-vinculadas')
+  getCxCVinculadas(@Param('companyId') companyId: string) {
+    return this.kpiService.getCxCVinculadas(companyId);
+  }
+
   /** CxP Aging por proveedor */
   @Get(':companyId/cxp')
   getCxP(@Param('companyId') companyId: string) {

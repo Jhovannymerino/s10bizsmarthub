@@ -103,29 +103,55 @@ ORDER BY ac.FechaAplicacionContable, ac.CodUnico
 // Aging CxC por FechaVencimiento del documento (no por fecha contable)
 // Vigente = no vencido; 0-30/30-60/60-90/+90 = días de mora
 const QUERY_CXC = (codEmpresa) => `
+-- Saldo por documento: facturas positivo, NCs como negativo (compensan balance del cliente)
+-- NC aplicada (TotalPagado<0): contribuye 0 (ya reflejada en TotalPagado de la factura)
+-- NC flotante (TotalPagado>=0): contribuye negativo (reduce lo que debe el cliente)
 SELECT
   ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)               AS Cliente,
   ISNULL(doc.CodIdentificador,'')                                          AS CodCliente,
   doc.CodMoneda                                                             AS Moneda,
-  ROUND(SUM(doc.Total - ISNULL(doc.TotalPagado,0)), 2)                     AS SaldoTotal,
+  ROUND(SUM(
+    CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+      THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
+                ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
+    ELSE doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)
+    END
+  ), 2)                                                                     AS SaldoTotal,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) >= GETDATE()
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)     AS SaldoVigente,
+                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)     AS SaldoVigente,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_0_30,
+                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_0_30,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_31_60,
+                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_31_60,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_61_90,
+                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_61_90,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) < DATEADD(DAY,-90,GETDATE())
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_90_mas,
+                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_90_mas,
   MAX(ISNULL(doc.TipoCambio, 3.80))                                        AS TipoCambio
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
-  AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
+  AND doc.DescripcionEstado = '1'
 GROUP BY doc.DescripcionIdentificador, doc.CodIdentificador, doc.CodMoneda
-ORDER BY SUM((doc.Total - ISNULL(doc.TotalPagado,0)) *
-  CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) DESC
+HAVING SUM(
+  CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+    THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
+              ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
+  ELSE doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)
+  END
+) > 0.01
+ORDER BY SUM(
+  CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+    THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
+              ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
+  ELSE doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)
+  END * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+) DESC
 `;
 
 // CxC split por naturaleza: comercial (facturas/NC) vs otras (préstamos, DSP, transferencias, etc.)
@@ -164,16 +190,47 @@ SELECT
   doc.CodMoneda                                                      AS Moneda,
   ROUND(doc.Total, 2)                                                AS Total,
   ROUND(ISNULL(doc.TotalPagado,0), 2)                                AS Pagado,
-  ROUND(doc.Total - ISNULL(doc.TotalPagado,0), 2)                    AS Saldo,
+  ROUND(ISNULL(doc.MontoDetraccion,0), 2)                            AS Detraccion,
+  ROUND(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0), 2) AS Saldo,
   DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) AS DiasVencido,
   ISNULL(doc.DescripcionEstado,'')                                   AS Estado
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
-  AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
+  AND doc.DescripcionEstado = '1'
+  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+  AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
 ORDER BY doc.CodIdentificador,
          DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,
          doc.Total DESC
+`;
+
+// Cartera especial Estado='6': vinculadas, intercompañía, en disputa, provisionadas
+// Se muestra SEPARADA del aging normal para no inflar la CxC comercial
+const QUERY_CXC_VINCULADAS = (codEmpresa) => `
+SELECT
+  ISNULL(doc.CodIdentificador,'')                                             AS CodCliente,
+  ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)                  AS Cliente,
+  doc.CodMoneda                                                               AS Moneda,
+  ISNULL(doc.DescripcionTipoDocumento,'')                                     AS TipoDocumento,
+  ISNULL(doc.SerieDocumento,'')                                               AS Serie,
+  ISNULL(doc.NumeroDocumento,'')                                              AS Numero,
+  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)                               AS FechaDocumento,
+  CONVERT(VARCHAR(10), ISNULL(doc.FechaVencimiento, doc.FechaDocumento), 103) AS FechaVencimiento,
+  ROUND(doc.Total, 2)                                                         AS Total,
+  ROUND(ISNULL(doc.TotalPagado,0), 2)                                         AS Pagado,
+  ROUND(ISNULL(doc.MontoDetraccion,0), 2)                                     AS Detraccion,
+  ROUND(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0), 2)  AS Saldo,
+  ROUND((doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0))
+    * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END, 0) AS SaldoSoles,
+  DATEDIFF(DAY, doc.FechaDocumento, GETDATE())                                AS DiasAntiguedad,
+  LEFT(ISNULL(doc.Observacion,''), 150)                                       AS Observacion
+FROM CMO.dbo.vw_12DocumentosPorCobrar doc
+WHERE doc.CodEmpresa = '${codEmpresa}'
+  AND doc.CodTipoDocumento IN ('131','125','128','134')
+  AND doc.DescripcionEstado = '6'
+  AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
+ORDER BY SaldoSoles DESC
 `;
 
 const QUERY_CXC_TRANSACTIONS = (codEmpresa, year) => `
@@ -249,7 +306,8 @@ SELECT
   ISNULL(doc.TotalImpuesto, 0)                               AS TotalImpuesto,
   ISNULL(doc.Total, 0)                                       AS Total,
   ISNULL(doc.TotalPagado, 0)                                 AS TotalPagado,
-  doc.Total - ISNULL(doc.TotalPagado, 0)                     AS Saldo,
+  ISNULL(doc.MontoDetraccion, 0)                             AS Detraccion,
+  doc.Total - ISNULL(doc.TotalPagado, 0) - ISNULL(doc.MontoDetraccion, 0) AS Saldo,
   ISNULL(doc.DescripcionEstado, '')                          AS Estado,
   ISNULL(doc.Observacion, '')                                AS Observacion,
   ISNULL(doc.CodMoneda, '01')                                AS Moneda,
@@ -2490,7 +2548,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
     const [
       plResult, cxcResult, cxcSplitResult, cxpResult, cajaResult, gavResult,
       txResult, cxcTxResult, cxpTxResult,
-      emitResult, reciResult, honorResult, cxcDocsResult,
+      emitResult, reciResult, honorResult, cxcDocsResult, cxcVinResult,
     ] = await Promise.all([
       pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
       pool.request().query(QUERY_CXC(company.codEmpresa)),
@@ -2505,6 +2563,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
       pool.request().query(QUERY_FACTURAS_RECIBIDAS(company.codEmpresa, year)),
       pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
       pool.request().query(QUERY_CXC_DOCS(company.codEmpresa)),
+      pool.request().query(QUERY_CXC_VINCULADAS(company.codEmpresa)),
     ]);
 
     // Batch 2 — Balance, Otras CxC/CxP, Tributos, Laboral, Activo Fijo, Patrimonio, Inventarios
@@ -2626,6 +2685,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
         pl: plResult.recordset,
         cxc: cxcResult.recordset,
         cxc_docs: cxcDocsResult.recordset,
+        cxc_vinculadas: cxcVinResult.recordset,
         cxc_split: cxcSplitResult.recordset,
         cxp: cxpResult.recordset,
         caja: cajaResult.recordset,

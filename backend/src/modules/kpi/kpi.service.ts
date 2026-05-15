@@ -380,6 +380,48 @@ export class KpiService {
     return { docs, syncedAt: cached.syncedAt };
   }
 
+  buildCxCVinculadas(rows: any[]) {
+    const clientMap = new Map<string, { codCliente: string; cliente: string; saldoSoles: number; numDocs: number }>();
+    let totalSaldo = 0;
+    let totalSaldoPEN = 0;
+    let totalSaldoUSD = 0;
+
+    for (const r of rows) {
+      const saldoSoles = parseFloat(r.SaldoSoles) || 0;
+      const saldo      = parseFloat(r.Saldo)      || 0;
+      const moneda     = String(r.Moneda ?? '01');
+
+      totalSaldo += saldoSoles;
+      if (moneda === '01') totalSaldoPEN += saldo;
+      else                 totalSaldoUSD += saldo;
+
+      const key = String(r.CodCliente);
+      if (!clientMap.has(key)) {
+        clientMap.set(key, { codCliente: key, cliente: r.Cliente || key, saldoSoles: 0, numDocs: 0 });
+      }
+      const c = clientMap.get(key)!;
+      c.saldoSoles += saldoSoles;
+      c.numDocs++;
+    }
+
+    return {
+      docs: rows,
+      clientes: [...clientMap.values()].sort((a, b) => b.saldoSoles - a.saldoSoles),
+      totalSaldo:    round(totalSaldo),
+      totalSaldoPEN: round(totalSaldoPEN),
+      totalSaldoUSD: round(totalSaldoUSD),
+      numDocs:     rows.length,
+      numClientes: clientMap.size,
+      syncedAt: new Date().toISOString(),
+    };
+  }
+
+  async getCxCVinculadas(companyId: string) {
+    const cached = await this.getSnapshot(companyId, 'cxc_vinculadas', 'current');
+    if (!cached) return { docs: [], clientes: [], totalSaldo: 0, totalSaldoPEN: 0, totalSaldoUSD: 0, numDocs: 0, numClientes: 0 };
+    return cached.data;
+  }
+
   // ─────────────────────────────────────────────
   // Caja — con totales consolidados
   // ─────────────────────────────────────────────

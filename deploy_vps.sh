@@ -125,8 +125,10 @@ log "── Paso 4b: Instalando sync-trigger systemd service ──"
 
 ssh $SSH_OPTS "$VPS" "
   set -e
-  # Copiar sync-trigger.js al lugar que espera el service file
+  # Copiar archivos de vps-infra al directorio raíz donde los espera el service
   cp $VPS_APP_DIR/vps-infra/sync-trigger.js $VPS_APP_DIR/sync-trigger.js
+  cp $VPS_APP_DIR/vps-infra/sync-vpn.sh $VPS_APP_DIR/sync-vpn.sh
+  chmod +x $VPS_APP_DIR/sync-vpn.sh
 
   # Instalar unit file
   cp $VPS_APP_DIR/vps-infra/s10-sync-trigger.service /etc/systemd/system/s10-sync-trigger.service
@@ -239,30 +241,12 @@ log "── Paso 8: Levantando contenedores ──"
 ssh $SSH_OPTS "$VPS" "
   cd $VPS_APP_DIR
 
-  # Detectar qué cambió para minimizar builds y uso de RAM
-  CHANGED_BACKEND=\$(git diff HEAD~1 HEAD --name-only 2>/dev/null | grep -c '^backend/' || echo 0)
-  CHANGED_FRONTEND=\$(git diff HEAD~1 HEAD --name-only 2>/dev/null | grep -c '^frontend/' || echo 0)
+  # El VPS no tiene git history (extrae tarball), siempre rebuilding para garantizar cambios
+  echo 'Rebuilding todos los servicios...'
 
-  echo \"Cambios detectados — backend: \$CHANGED_BACKEND, frontend: \$CHANGED_FRONTEND\"
-
-  # DB siempre levanta sin rebuild
   docker compose -f docker-compose.prod.yml up -d s10biz-db
-
-  if [ \"\$CHANGED_BACKEND\" -gt 0 ] || ! docker ps --filter 'name=s10biz-api' --filter 'status=running' -q | grep -q .; then
-    echo 'Rebuilding backend...'
-    docker compose -f docker-compose.prod.yml up -d --build s10biz-backend
-  else
-    echo 'Backend sin cambios — saltando rebuild'
-    docker compose -f docker-compose.prod.yml up -d s10biz-backend
-  fi
-
-  if [ \"\$CHANGED_FRONTEND\" -gt 0 ] || ! docker ps --filter 'name=s10biz-web' --filter 'status=running' -q | grep -q .; then
-    echo 'Rebuilding frontend...'
-    docker compose -f docker-compose.prod.yml up -d --build s10biz-frontend
-  else
-    echo 'Frontend sin cambios — saltando rebuild'
-    docker compose -f docker-compose.prod.yml up -d s10biz-frontend
-  fi
+  docker compose -f docker-compose.prod.yml up -d --build s10biz-backend
+  docker compose -f docker-compose.prod.yml up -d --build s10biz-frontend
 
   echo ''
   echo 'Estado de contenedores s10biz:'

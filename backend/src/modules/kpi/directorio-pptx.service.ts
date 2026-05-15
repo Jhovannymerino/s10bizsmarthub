@@ -317,59 +317,93 @@ export class DirectorioPptxService {
     }
 
     // ═══════════════════════════════════════
-    // SLIDE 7 — CxC Aging
+    // SLIDE 7 — CxC Aging por FechaVencimiento
     // ═══════════════════════════════════════
     if (cxc?.clientes && cxc.clientes.length > 0) {
       const s = pres.addSlide();
-      addTitle(s, '05', 'CUENTAS POR COBRAR — Aging al cierre');
-      const sumF = (k: string) => (cxc.clientes as any[]).reduce((sum, c) => sum + Number(c[k] || 0), 0);
-      const tots = { t030: sumF('dias0_30'), t3160: sumF('dias31_60'), t6190: sumF('dias61_90'), t90: sumF('dias90mas') };
-      const totalCxC = cxc.totalSaldo || tots.t030 + tots.t3160 + tots.t6190 + tots.t90;
+      addTitle(s, '07', `ANÁLISIS DE CUENTAS x COBRAR (CxC) — Al cierre  ${quarter} ${year}`);
 
-      // KPI strip
-      const kpisCxC = [
-        { label: 'Total CxC', val: totalCxC, color: TEXT },
-        { label: '0-30 días', val: tots.t030, color: GREEN },
-        { label: '31-60 días', val: tots.t3160, color: YELLOW },
-        { label: '61-90 días', val: tots.t6190, color: YELLOW },
-        { label: '+90 días', val: tots.t90, color: RED },
-        { label: 'Conc. Top 3', val: cxc.concentracionTop3 || 0, color: BLUE, isPct: true },
+      const sumF = (k: string) => (cxc.clientes as any[]).reduce((sum, c) => sum + Number(c[k] || 0), 0);
+      const totalCxC     = cxc.totalSaldo   || 0;
+      const totalVigente = cxc.totalVigente  || sumF('saldoVigente');
+      const totalCedido  = Number(d.cxcCedido   || 0);
+      const totalIncobrabe = Number(d.cxcIncobrable || 0);
+
+      // 4 KPI cards
+      const kCards = [
+        { label: 'Total CxC',              val: totalCxC,     color: NAVY   },
+        { label: 'Total Vigente',           val: totalVigente, color: GREEN  },
+        { label: 'Total Cedido (Factoring)',val: totalCedido,  color: BLUE   },
+        { label: 'Total Incobrable',        val: totalIncobrabe, color: RED  },
       ];
-      const cardW = (12.5 - 1.0) / 6;
-      kpisCxC.forEach((k, i) => {
+      const cardW = (12.5 - 0.6) / 4;
+      kCards.forEach((c, i) => {
         const x = 0.4 + i * (cardW + 0.2);
-        s.addShape('rect', { x, y: 1.2, w: cardW, h: 1.0, fill: { color: 'FFFFFF' }, line: { color: 'E5E7EB', width: 1 } });
-        s.addText(k.label, { x: x + 0.05, y: 1.25, w: cardW - 0.1, h: 0.25, color: SUBTLE, fontSize: 9, align: 'center' });
-        const text = k.isPct ? `${k.val.toFixed(1)}%` : fmt(k.val);
-        s.addText(text, { x: x + 0.05, y: 1.55, w: cardW - 0.1, h: 0.55, color: k.color, fontSize: 16, bold: true, align: 'center', fontFace: 'Consolas' });
+        s.addShape('rect', { x, y: 1.1, w: cardW, h: 0.18, fill: { color: c.color } });
+        s.addShape('rect', { x, y: 1.28, w: cardW, h: 1.15, fill: { color: 'FFFFFF' }, line: { color: 'E5E7EB', width: 1 } });
+        s.addText(c.label, { x: x + 0.1, y: 1.33, w: cardW - 0.2, h: 0.3, color: SUBTLE, fontSize: 9.5, align: 'center' });
+        s.addText(`S/ ${fmt(c.val)}`, { x: x + 0.05, y: 1.65, w: cardW - 0.1, h: 0.65, color: c.color, fontSize: 18, bold: true, align: 'center', fontFace: 'Consolas' });
       });
 
-      // Top 8 clientes
-      const sortedCli = [...cxc.clientes].sort((a, b) => (b.saldoTotal || 0) - (a.saldoTotal || 0)).slice(0, 8);
-      const header = [
-        { text: 'Cliente', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9 } },
-        { text: '0-30', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
-        { text: '31-60', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
-        { text: '61-90', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
-        { text: '+90', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
-        { text: 'Total', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const } },
+      // Tabla aging por cliente
+      const sortedCli = [...cxc.clientes].sort((a, b) => (b.saldoTotal || 0) - (a.saldoTotal || 0)).slice(0, 9);
+      const comentarios: Record<string, string> = d.cxcComentarios || {};
+      const colHeaders = [
+        { text: 'Cliente',    fill: NAVY,     w: 3.5 },
+        { text: 'Vigente',    fill: '1A6B30', w: 1.35 },
+        { text: '0–30 días',  fill: '1E5FAD', w: 1.35 },
+        { text: '30–60 días', fill: 'B45309', w: 1.35 },
+        { text: '60–90 días', fill: 'C2410C', w: 1.35 },
+        { text: '+90 días',   fill: 'B91C1C', w: 1.35 },
+        { text: 'TOTAL',      fill: NAVY,     w: 1.35 },
+        { text: 'Comentario', fill: '374151', w: 1.35 },
       ];
-      const rows = sortedCli.map((c: any) => [
-        { text: (c.cliente || '').substring(0, 50), options: { fontSize: 9 } },
-        { text: fmt(c.dias0_30 || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
-        { text: fmt(c.dias31_60 || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias31_60 || 0) > 0 ? YELLOW : TEXT } },
-        { text: fmt(c.dias61_90 || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias61_90 || 0) > 0 ? YELLOW : TEXT } },
-        { text: fmt(c.dias90mas || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias90mas || 0) > 0 ? RED : TEXT } },
-        { text: fmt(c.saldoTotal || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', bold: true } },
-      ]);
-      s.addTable([header, ...rows], {
-        x: 0.4, y: 2.4, w: 12.5,
-        colW: [5.5, 1.4, 1.4, 1.4, 1.4, 1.4],
-        rowH: 0.28,
+      const colW = colHeaders.map(c => c.w);
+      const header = colHeaders.map(c => ({
+        text: c.text,
+        options: { bold: true, fill: { color: c.fill }, color: 'FFFFFF', fontSize: 9, align: c.text === 'Cliente' || c.text === 'Comentario' ? ('left' as const) : ('right' as const) },
+      }));
+
+      const agingColor = (v: number, warn: string, alert: string) => v > 0 ? (v > 1000 ? alert : warn) : TEXT;
+      const rows = sortedCli.map((c: any) => {
+        const cod = String(c.codCliente || c.cliente || '').slice(0, 10);
+        const nota = comentarios[cod] || comentarios[c.cliente] || '';
+        return [
+          { text: (c.cliente || '').substring(0, 42), options: { fontSize: 9 } },
+          { text: (c.saldoVigente || 0) > 0 ? fmt(c.saldoVigente) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: GREEN } },
+          { text: (c.dias0_30 || 0) > 0 ? fmt(c.dias0_30) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: BLUE } },
+          { text: (c.dias31_60 || 0) > 0 ? fmt(c.dias31_60) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: agingColor(c.dias31_60, YELLOW, ORANGE) } },
+          { text: (c.dias61_90 || 0) > 0 ? fmt(c.dias61_90) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: agingColor(c.dias61_90, ORANGE, RED) } },
+          { text: (c.dias90mas || 0) > 0 ? fmt(c.dias90mas) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias90mas || 0) > 0 ? RED : TEXT, bold: (c.dias90mas || 0) > 0 } },
+          { text: fmt(c.saldoTotal || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', bold: true } },
+          { text: nota || '—', options: { fontSize: 8, color: SUBTLE, italic: !nota } },
+        ];
+      });
+
+      // Fila TOTAL
+      const totalRow = [
+        { text: 'TOTAL', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9 } },
+        { text: fmt(totalVigente), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(sumF('dias0_30')), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(sumF('dias31_60')), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(sumF('dias61_90')), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(sumF('dias90mas')), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(totalCxC), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: '', options: { fill: { color: NAVY } } },
+      ];
+
+      s.addTable([header, ...rows, totalRow as any], {
+        x: 0.4, y: 2.6, w: 12.5,
+        colW,
+        rowH: 0.315,
         fontFace: 'Inter',
         border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
       });
-      addFooter(s, '05');
+
+      if (cxc.clientes.length > 9) {
+        s.addText(`Top 9 de ${cxc.clientes.length} clientes · Aging por FechaVencimiento del documento`, { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
+      }
+      addFooter(s, '07');
     }
 
     // ═══════════════════════════════════════

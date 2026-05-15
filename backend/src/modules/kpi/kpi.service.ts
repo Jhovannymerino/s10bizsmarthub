@@ -303,14 +303,16 @@ export class KpiService {
       cliente: r.Cliente || r.CodCliente,
       codCliente: r.CodCliente,
       saldoTotal: round(parseFloat(r.SaldoTotal) || 0),
+      saldoVigente: round(parseFloat(r.SaldoVigente) || 0),
       dias0_30: round(parseFloat(r.Dias_0_30) || 0),
       dias31_60: round(parseFloat(r.Dias_31_60) || 0),
       dias61_90: round(parseFloat(r.Dias_61_90) || 0),
       dias90mas: round(parseFloat(r.Dias_90_mas) || 0),
     }));
 
-    const totalSaldo = clientes.reduce((sum, c) => sum + c.saldoTotal, 0);
-    const total90mas = clientes.reduce((sum, c) => sum + c.dias90mas, 0);
+    const totalSaldo   = clientes.reduce((sum, c) => sum + c.saldoTotal, 0);
+    const totalVigente = clientes.reduce((sum, c) => sum + c.saldoVigente, 0);
+    const total90mas   = clientes.reduce((sum, c) => sum + c.dias90mas, 0);
 
     // Concentración: top 3 clientes por saldo
     const sorted = [...clientes].sort((a, b) => b.saldoTotal - a.saldoTotal);
@@ -319,8 +321,9 @@ export class KpiService {
 
     return {
       clientes,
-      totalSaldo: round(totalSaldo),
-      total90mas: round(total90mas),
+      totalSaldo:    round(totalSaldo),
+      totalVigente:  round(totalVigente),
+      total90mas:    round(total90mas),
       pct90mas: totalSaldo > 0 ? round((total90mas / totalSaldo) * 100) : 0,
       concentracionTop3,
       numClientes: clientes.length,

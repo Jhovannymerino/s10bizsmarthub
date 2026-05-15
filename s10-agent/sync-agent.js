@@ -162,13 +162,15 @@ SELECT
   doc.CodTipoDocumento                                                AS Tipo,
   LEFT(MAX(doc.DescripcionTipoDocumento), 40)                         AS DesTipo,
   COUNT(*)                                                            AS NDocs,
-  COUNT(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
-  ROUND(SUM(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
-                 THEN (doc.Total - ISNULL(doc.TotalPagado,0)) *
+  COUNT(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
+  ROUND(SUM(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
+                 THEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) *
                       CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
                  ELSE 0 END), 0) AS SaldoPendiente
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
+  AND doc.DescripcionEstado = '1'
+  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
 GROUP BY
   CASE WHEN doc.CodTipoDocumento IN ('131','125','128','134') THEN 'comercial' ELSE 'otras' END,
   doc.CodTipoDocumento

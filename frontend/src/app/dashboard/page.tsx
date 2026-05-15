@@ -2226,6 +2226,7 @@ export default function DashboardPage() {
                           <th>Fecha</th>
                           <th style={{ minWidth: 140 }}>Tipo</th>
                           <th style={{ minWidth: 200 }}>Cliente</th>
+                          <th style={{ textAlign: 'center' }}>Moneda</th>
                           <th>Neto</th>
                           <th>IGV</th>
                           <th>Total</th>
@@ -2238,6 +2239,8 @@ export default function DashboardPage() {
                           const sinAsiento = d.SinAsiento === 1;
                           const esDuplicado = d.EsDuplicado === 1;
                           const esNC = d.EsNotaCredito === 1;
+                          const monRaw = String(d.Moneda ?? '01').trim();
+                          const esUSD = monRaw === '02' || monRaw === '2';
                           return (
                           <tr key={i} style={{ background: esNC ? 'rgba(239,68,68,0.04)' : esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
@@ -2249,6 +2252,13 @@ export default function DashboardPage() {
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
                             <td style={{ fontSize: '0.72rem', color: esNC ? '#EF4444' : '#2BB4BB', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Cliente}>{d.Cliente || '—'}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span style={{ fontSize: '0.70rem', fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                                background: esUSD ? 'rgba(74,222,128,0.15)' : 'rgba(226,92,26,0.15)',
+                                color: esUSD ? '#4ade80' : '#E25C1A' }}>
+                                {esUSD ? '$ USD' : 'S/ PEN'}
+                              </span>
+                            </td>
                             <td style={{ color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.TotalNeto)}</td>
                             <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
                             <td style={{ fontWeight: 600, color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.Total)}</td>
@@ -2260,7 +2270,7 @@ export default function DashboardPage() {
                       </tbody>
                       <tfoot>
                         <tr className="total-row">
-                          <td colSpan={4}>NETO ({filtrada.length - ncCount} fact.{ncCount > 0 ? ` − ${ncCount} NC` : ''})</td>
+                          <td colSpan={5}>NETO ({filtrada.length - ncCount} fact.{ncCount > 0 ? ` − ${ncCount} NC` : ''})</td>
                           <td>{fmt(totalNeto)}</td>
                           <td>{fmt(filtrada.filter((d:any)=>!d.EsNotaCredito).reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
                           <td>{fmt(totalMonto)}</td>
@@ -2278,6 +2288,7 @@ export default function DashboardPage() {
                           <th>Vencimiento</th>
                           <th style={{ minWidth: 120 }}>Tipo</th>
                           <th style={{ minWidth: 200 }}>Proveedor</th>
+                          <th style={{ textAlign: 'center' }}>Moneda</th>
                           <th>Neto</th>
                           <th>IGV</th>
                           <th>Total</th>
@@ -2290,6 +2301,8 @@ export default function DashboardPage() {
                           const sinAsiento = d.SinAsiento === 1;
                           const esDuplicado = d.EsDuplicado === 1;
                           const esNC = d.EsNotaCredito === 1;
+                          const monRaw = String(d.Moneda ?? '01').trim();
+                          const esUSD = monRaw === '02' || monRaw === '2';
                           return (
                           <tr key={i} style={{ background: esNC ? 'rgba(239,68,68,0.04)' : esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
@@ -2302,6 +2315,13 @@ export default function DashboardPage() {
                             <td style={{ whiteSpace: 'nowrap', color: (d.TotalSaldo || 0) > 0 ? '#EF4444' : '#8B97A8' }}>{d.FechaVencimiento}</td>
                             <td style={{ fontSize: '0.72rem', color: esNC ? '#EF4444' : '#2BB4BB', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento}>{d.TipoDocumento || '—'}</td>
                             <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Proveedor}>{d.Proveedor || '—'}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span style={{ fontSize: '0.70rem', fontWeight: 700, padding: '1px 6px', borderRadius: 3,
+                                background: esUSD ? 'rgba(74,222,128,0.15)' : 'rgba(226,92,26,0.15)',
+                                color: esUSD ? '#4ade80' : '#E25C1A' }}>
+                                {esUSD ? '$ USD' : 'S/ PEN'}
+                              </span>
+                            </td>
                             <td style={{ color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.TotalNeto)}</td>
                             <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
                             <td style={{ fontWeight: 600, color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.Total)}</td>
@@ -2313,7 +2333,7 @@ export default function DashboardPage() {
                       </tbody>
                       <tfoot>
                         <tr className="total-row">
-                          <td colSpan={5}>NETO ({filtrada.length - ncCount} fact.{ncCount > 0 ? ` − ${ncCount} NC` : ''})</td>
+                          <td colSpan={6}>NETO ({filtrada.length - ncCount} fact.{ncCount > 0 ? ` − ${ncCount} NC` : ''})</td>
                           <td>{fmt(totalNeto)}</td>
                           <td>{fmt(filtrada.filter((d:any)=>!d.EsNotaCredito).reduce((s: number, d: any) => s + (d.TotalImpuesto || 0), 0))}</td>
                           <td>{fmt(totalMonto)}</td>

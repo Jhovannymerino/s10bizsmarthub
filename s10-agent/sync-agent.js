@@ -252,6 +252,7 @@ SELECT
   doc.Total - ISNULL(doc.TotalPagado, 0)                     AS Saldo,
   ISNULL(doc.DescripcionEstado, '')                          AS Estado,
   ISNULL(doc.Observacion, '')                                AS Observacion,
+  ISNULL(doc.CodMoneda, '01')                                AS Moneda,
   CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento,
   CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%' THEN 1 ELSE 0 END AS EsNotaCredito
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
@@ -287,6 +288,7 @@ SELECT
   doc.Total - ISNULL(doc.TotalPagado, 0)                     AS TotalSaldo,
   ISNULL(doc.DescripcionEstado, '')                          AS Estado,
   ISNULL(doc.DescripcionCategoria, '')                       AS Categoria,
+  ISNULL(doc.CodMoneda, '01')                                AS Moneda,
   CASE WHEN ac_chk.NroD IS NULL THEN 1 ELSE 0 END           AS SinAsiento,
   CASE WHEN doc.CodTipoDocumento = '004' THEN 1 ELSE 0 END  AS EsNotaCredito
 FROM CMO.dbo.vw_12DocumentosPorPagar doc

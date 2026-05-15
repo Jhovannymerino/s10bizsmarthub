@@ -380,6 +380,17 @@ export class KpiService {
     return { docs, syncedAt: cached.syncedAt };
   }
 
+  async getCxPDocs(companyId: string, codProveedor?: string) {
+    const cached = await this.getSnapshot(companyId, 'cxp_docs', 'current');
+    if (!cached) return { docs: [], message: 'No data available. Run sync first.' };
+
+    let docs = cached.data as any[];
+    if (codProveedor) {
+      docs = docs.filter((d: any) => String(d.CodProveedor) === String(codProveedor));
+    }
+    return { docs, syncedAt: cached.syncedAt };
+  }
+
   buildCxCVinculadas(rows: any[]) {
     const clientMap = new Map<string, {
       codCliente: string; cliente: string;

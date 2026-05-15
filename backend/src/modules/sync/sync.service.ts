@@ -33,6 +33,7 @@ export class SyncService {
       transactions?: any[];
       cxc_docs?: any[];
       cxc_vinculadas?: any[];
+      cxp_docs?: any[];
       cxc_transactions?: any[];
       cxp_transactions?: any[];
       facturas_emitidas?: any[];
@@ -134,6 +135,11 @@ export class SyncService {
       if (data.cxp?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'cxp', 'current', year, null, data.cxp);
         logs.push({ kpiType: 'cxp', rowsProcessed: data.cxp.length, status: 'success' });
+      }
+
+      if (data.cxp_docs?.length) {
+        await this.kpiService.saveSnapshot(companyId, companyName, 'cxp_docs', 'current', year, null, data.cxp_docs);
+        logs.push({ kpiType: 'cxp_docs', rowsProcessed: data.cxp_docs.length, status: 'success' });
       }
 
       if (data.caja?.length) {

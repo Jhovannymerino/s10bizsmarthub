@@ -70,6 +70,15 @@ export class KpiController {
     return this.kpiService.getCxP(companyId);
   }
 
+  /** Documentos pendientes CxP desde vw_12DocumentosPorPagar */
+  @Get(':companyId/cxp-docs')
+  getCxPDocs(
+    @Param('companyId') companyId: string,
+    @Query('codProveedor') codProveedor?: string,
+  ) {
+    return this.kpiService.getCxPDocs(companyId, codProveedor);
+  }
+
   /** Posición de Caja por banco */
   @Get(':companyId/caja')
   getCaja(

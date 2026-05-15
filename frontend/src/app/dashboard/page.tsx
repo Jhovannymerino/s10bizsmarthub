@@ -9,7 +9,7 @@ import { DocPreview } from './_components/modals/DocPreview';
 import { TransactionModal } from './_components/modals/TransactionModal';
 import { CxCDocumentosModal } from './_components/modals/CxCDocumentosModal';
 import { CxCVinculadasModal } from './_components/modals/CxCVinculadasModal';
-import { CxPTransactionModal } from './_components/modals/CxPTransactionModal';
+import { CxPDocumentosModal } from './_components/modals/CxPDocumentosModal';
 import { GavCategoryModal } from './_components/modals/GavCategoryModal';
 import { DetalleModal } from './_components/modals/DetalleModal';
 import { CajaTxnModal } from './_components/modals/CajaTxnModal';
@@ -639,9 +639,8 @@ export default function DashboardPage() {
         />
       )}
       {cxpTxDrill && (
-        <CxPTransactionModal
+        <CxPDocumentosModal
           companyId={selectedCompany.codEmpresa}
-          year={selectedYear}
           proveedor={cxpTxDrill.proveedor}
           codProveedor={cxpTxDrill.codProveedor}
           onClose={() => setCxPTxDrill(null)}

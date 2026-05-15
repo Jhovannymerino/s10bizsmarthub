@@ -429,6 +429,36 @@ HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) > 0
 ORDER BY SaldoTotal DESC
 `;
 
+// Documentos pendientes de pago por proveedor (reemplaza drilldown de asientos contables)
+const QUERY_CXP_DOCS = (codEmpresa) => `
+SELECT
+  ISNULL(doc.CodIdentificador,'')                                    AS CodProveedor,
+  ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)         AS Proveedor,
+  doc.NroD,
+  doc.CodTipoDocumento                                               AS TipoDoc,
+  ISNULL(doc.DescripcionTipoDocumento,'')                            AS DesTipo,
+  ISNULL(doc.SerieDocumento,'')                                      AS Serie,
+  ISNULL(doc.NumeroDocumento,'')                                     AS Numero,
+  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)                      AS FechaDocumento,
+  CONVERT(VARCHAR(10), ISNULL(doc.FechaVencimiento, doc.FechaDocumento), 103) AS FechaVencimiento,
+  doc.CodMoneda                                                      AS Moneda,
+  ROUND(doc.Total, 2)                                                AS Total,
+  ROUND(ISNULL(doc.TotalPagado,0), 2)                                AS Pagado,
+  ROUND(ISNULL(doc.MontoDetraccion,0), 2)                            AS Detraccion,
+  ROUND(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0), 2) AS Saldo,
+  DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) AS DiasVencido,
+  ISNULL(doc.DescripcionEstado,'')                                   AS Estado
+FROM CMO.dbo.vw_12DocumentosPorPagar doc
+WHERE doc.CodEmpresa = '${codEmpresa}'
+  AND doc.DescripcionEstado = '1'
+  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
+  AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
+ORDER BY doc.CodIdentificador,
+         DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,
+         doc.Total DESC
+`;
+
 const QUERY_CAJA = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
   pcd.Descripcion                                         AS Banco,
@@ -2553,7 +2583,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
     const [
       plResult, cxcResult, cxcSplitResult, cxpResult, cajaResult, gavResult,
       txResult, cxcTxResult, cxpTxResult,
-      emitResult, reciResult, honorResult, cxcDocsResult, cxcVinResult,
+      emitResult, reciResult, honorResult, cxcDocsResult, cxcVinResult, cxpDocsResult,
     ] = await Promise.all([
       pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
       pool.request().query(QUERY_CXC(company.codEmpresa)),
@@ -2569,6 +2599,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
       pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
       pool.request().query(QUERY_CXC_DOCS(company.codEmpresa)),
       pool.request().query(QUERY_CXC_VINCULADAS(company.codEmpresa)),
+      pool.request().query(QUERY_CXP_DOCS(company.codEmpresa)),
     ]);
 
     // Batch 2 — Balance, Otras CxC/CxP, Tributos, Laboral, Activo Fijo, Patrimonio, Inventarios
@@ -2693,6 +2724,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
         cxc_vinculadas: cxcVinResult.recordset,
         cxc_split: cxcSplitResult.recordset,
         cxp: cxpResult.recordset,
+        cxp_docs: cxpDocsResult.recordset,
         caja: cajaResult.recordset,
         gav: gavResult.recordset,
         transactions: txResult.recordset,

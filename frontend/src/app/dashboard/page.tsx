@@ -1256,10 +1256,10 @@ export default function DashboardPage() {
                             sub={dso ? `DSO ${dso}d` : 'sin DSO'}
                             hint="Solo facturas y NC (131/125/128/134)"
                             onClick={() => setActiveTab('cxc')} />
-                          {cxcSplitData.otras > 0 && <KpiCard label="Otras CxC" value={fmt(cxcSplitData.otras)}
+                          {cxcSplitData.otrasCxCTotal != null && cxcSplitData.otrasCxCTotal > 0 && <KpiCard label="Otras CxC" value={fmt(cxcSplitData.otrasCxCTotal)}
                             signal="neutral"
-                            sub="Préstamos, DSP, transferencias"
-                            hint="Tipos 071, 058, 060 y otros no tributarios"
+                            sub="Préstamos, depósitos, seguros, otros"
+                            hint="Cuentas 13,14,16,17,18 — coincide con el detalle del tab"
                             onClick={() => setActiveTab('otras_cxc')} />}
                         </>
                       : cxc && <KpiCard label="CxC Total" value={fmt(cxc.totalSaldo)} signal={dso && dso > 60 ? 'red' : dso && dso > 45 ? 'yellow' : 'green'}

@@ -162,11 +162,18 @@ SELECT
   doc.CodTipoDocumento                                                AS Tipo,
   LEFT(MAX(doc.DescripcionTipoDocumento), 40)                         AS DesTipo,
   COUNT(*)                                                            AS NDocs,
-  COUNT(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
-  ROUND(SUM(CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
-                 THEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) *
-                      CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
-                 ELSE 0 END), 0) AS SaldoPendiente
+  COUNT(CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+              AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
+  ROUND(SUM(
+    CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+      THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
+                ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
+    ELSE CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
+              THEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0))
+              ELSE 0 END
+    END *
+    CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+  ), 0) AS SaldoPendiente
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.DescripcionEstado = '1'

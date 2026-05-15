@@ -767,12 +767,18 @@ export class KpiService {
   // ─────────────────────────────────────────────
 
   async getCxCSplit(companyId: string) {
-    const cached = await this.getSnapshot(companyId, 'cxc_split', 'current');
-    if (!cached) return { rows: [], comercial: 0, otras: 0 };
+    const [cached, otrasCxCSnap] = await Promise.all([
+      this.getSnapshot(companyId, 'cxc_split', 'current'),
+      this.getSnapshot(companyId, 'otras_cxc', 'current'),
+    ]);
+    if (!cached) return { rows: [], comercial: 0, otras: 0, otrasCxCTotal: null };
     const rows = cached.data as any[];
     const comercial = rows.filter((r: any) => r.Grupo === 'comercial').reduce((s: number, r: any) => s + (parseFloat(r.SaldoPendiente) || 0), 0);
     const otras     = rows.filter((r: any) => r.Grupo === 'otras').reduce((s: number, r: any) => s + (parseFloat(r.SaldoPendiente) || 0), 0);
-    return { rows, comercial: round(comercial), otras: round(otras), syncedAt: cached.syncedAt };
+    const otrasCxCTotal = otrasCxCSnap
+      ? round((otrasCxCSnap.data as any[]).reduce((s: number, r: any) => s + (parseFloat(r.SaldoTotal) || 0), 0))
+      : null;
+    return { rows, comercial: round(comercial), otras: round(otras), otrasCxCTotal, syncedAt: cached.syncedAt };
   }
 
   // ─────────────────────────────────────────────

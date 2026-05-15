@@ -49,6 +49,15 @@ export class KpiController {
     return this.kpiService.getCxC(companyId);
   }
 
+  /** Documentos pendientes CxC desde vw_12DocumentosPorCobrar */
+  @Get(':companyId/cxc-docs')
+  getCxCDocs(
+    @Param('companyId') companyId: string,
+    @Query('codCliente') codCliente?: string,
+  ) {
+    return this.kpiService.getCxCDocs(companyId, codCliente);
+  }
+
   /** CxP Aging por proveedor */
   @Get(':companyId/cxp')
   getCxP(@Param('companyId') companyId: string) {

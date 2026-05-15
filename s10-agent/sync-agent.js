@@ -148,6 +148,34 @@ GROUP BY
 ORDER BY Grupo, SaldoPendiente DESC
 `;
 
+// Documentos pendientes de cobro por cliente (trazabilidad en modal)
+// Reemplaza el drilldown de asientos contables — muestra los documentos reales
+const QUERY_CXC_DOCS = (codEmpresa) => `
+SELECT
+  ISNULL(doc.CodIdentificador,'')                                    AS CodCliente,
+  ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)         AS Cliente,
+  doc.NroD,
+  doc.CodTipoDocumento                                               AS TipoDoc,
+  ISNULL(doc.DescripcionTipoDocumento,'')                            AS DesTipo,
+  ISNULL(doc.SerieDocumento,'')                                      AS Serie,
+  ISNULL(doc.NumeroDocumento,'')                                     AS Numero,
+  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)                      AS FechaDocumento,
+  CONVERT(VARCHAR(10), ISNULL(doc.FechaVencimiento, doc.FechaDocumento), 103) AS FechaVencimiento,
+  doc.CodMoneda                                                      AS Moneda,
+  ROUND(doc.Total, 2)                                                AS Total,
+  ROUND(ISNULL(doc.TotalPagado,0), 2)                                AS Pagado,
+  ROUND(doc.Total - ISNULL(doc.TotalPagado,0), 2)                    AS Saldo,
+  DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) AS DiasVencido,
+  ISNULL(doc.DescripcionEstado,'')                                   AS Estado
+FROM CMO.dbo.vw_12DocumentosPorCobrar doc
+WHERE doc.CodEmpresa = '${codEmpresa}'
+  AND doc.CodTipoDocumento IN ('131','125','128','134')
+  AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
+ORDER BY doc.CodIdentificador,
+         DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,
+         doc.Total DESC
+`;
+
 const QUERY_CXC_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
   ac.CodUnico                                              AS NroAsiento,
@@ -2460,7 +2488,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
     const [
       plResult, cxcResult, cxcSplitResult, cxpResult, cajaResult, gavResult,
       txResult, cxcTxResult, cxpTxResult,
-      emitResult, reciResult, honorResult,
+      emitResult, reciResult, honorResult, cxcDocsResult,
     ] = await Promise.all([
       pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
       pool.request().query(QUERY_CXC(company.codEmpresa)),
@@ -2474,6 +2502,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
       pool.request().query(QUERY_FACTURAS_EMITIDAS(company.codEmpresa, year, company.claseIngreso)),
       pool.request().query(QUERY_FACTURAS_RECIBIDAS(company.codEmpresa, year)),
       pool.request().query(QUERY_HONORARIOS_RECIBIDOS(company.codEmpresa, year)),
+      pool.request().query(QUERY_CXC_DOCS(company.codEmpresa)),
     ]);
 
     // Batch 2 — Balance, Otras CxC/CxP, Tributos, Laboral, Activo Fijo, Patrimonio, Inventarios
@@ -2594,6 +2623,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
       data: {
         pl: plResult.recordset,
         cxc: cxcResult.recordset,
+        cxc_docs: cxcDocsResult.recordset,
         cxc_split: cxcSplitResult.recordset,
         cxp: cxpResult.recordset,
         caja: cajaResult.recordset,

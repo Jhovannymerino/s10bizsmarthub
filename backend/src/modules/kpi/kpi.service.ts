@@ -299,39 +299,60 @@ export class KpiService {
   }
 
   buildCxC(rows: any[]) {
-    const clientes = rows.map((r) => {
+    // Merge rows by client — each client may have one PEN row + one USD row
+    const clientMap = new Map<string, any>();
+
+    for (const r of rows) {
       const moneda = r.Moneda === '02' ? 'USD' : 'PEN';
       const tc = parseFloat(r.TipoCambio) || 3.80;
-      const saldo = round(parseFloat(r.SaldoTotal) || 0);
-      return {
-        cliente: r.Cliente || r.CodCliente,
-        codCliente: r.CodCliente,
-        moneda,
-        tipoCambio: tc,
-        saldoTotal: saldo,
-        saldoTotalSoles: moneda === 'USD' ? round(saldo * tc) : saldo,
-        saldoVigente: round(parseFloat(r.SaldoVigente) || 0),
-        dias0_30:  round(parseFloat(r.Dias_0_30)  || 0),
-        dias31_60: round(parseFloat(r.Dias_31_60) || 0),
-        dias61_90: round(parseFloat(r.Dias_61_90) || 0),
-        dias90mas: round(parseFloat(r.Dias_90_mas) || 0),
-      };
-    });
+      const toSoles = (v: number) => moneda === 'USD' ? round(v * tc) : v;
+      const saldo   = round(parseFloat(r.SaldoTotal)   || 0);
+      const vigente = round(parseFloat(r.SaldoVigente) || 0);
+      const d0_30   = round(parseFloat(r.Dias_0_30)    || 0);
+      const d31_60  = round(parseFloat(r.Dias_31_60)   || 0);
+      const d61_90  = round(parseFloat(r.Dias_61_90)   || 0);
+      const d90mas  = round(parseFloat(r.Dias_90_mas)  || 0);
 
-    // Totales en soles (equivalente económico) para DSO y scorecard
-    const totalSaldo   = clientes.reduce((s, c) => s + c.saldoTotalSoles, 0);
-    const totalVigente = clientes.reduce((s, c) =>
-      s + (c.moneda === 'USD' ? round(c.saldoVigente * c.tipoCambio) : c.saldoVigente), 0);
-    const total90mas = clientes.reduce((s, c) =>
-      s + (c.moneda === 'USD' ? round(c.dias90mas * c.tipoCambio) : c.dias90mas), 0);
+      const key = String(r.CodCliente);
+      if (!clientMap.has(key)) {
+        clientMap.set(key, {
+          codCliente: r.CodCliente,
+          cliente: r.Cliente || r.CodCliente,
+          saldoPEN: 0,
+          saldoUSD: 0,
+          tipoCambioUSD: 3.80,
+          saldoTotalSoles: 0,
+          saldoVigente: 0,
+          dias0_30: 0,
+          dias31_60: 0,
+          dias61_90: 0,
+          dias90mas: 0,
+        });
+      }
+      const c = clientMap.get(key)!;
+      if (moneda === 'PEN') {
+        c.saldoPEN = round(c.saldoPEN + saldo);
+      } else {
+        c.saldoUSD = round(c.saldoUSD + saldo);
+        c.tipoCambioUSD = tc;
+      }
+      c.saldoTotalSoles = round(c.saldoTotalSoles + toSoles(saldo));
+      c.saldoVigente    = round(c.saldoVigente    + toSoles(vigente));
+      c.dias0_30        = round(c.dias0_30        + toSoles(d0_30));
+      c.dias31_60       = round(c.dias31_60       + toSoles(d31_60));
+      c.dias61_90       = round(c.dias61_90       + toSoles(d61_90));
+      c.dias90mas       = round(c.dias90mas       + toSoles(d90mas));
+    }
 
-    // Totales por moneda en moneda original
-    const totalSaldoPEN = clientes.filter(c => c.moneda === 'PEN').reduce((s, c) => s + c.saldoTotal, 0);
-    const totalSaldoUSD = clientes.filter(c => c.moneda === 'USD').reduce((s, c) => s + c.saldoTotal, 0);
+    const clientes = [...clientMap.values()].sort((a, b) => b.saldoTotalSoles - a.saldoTotalSoles);
 
-    // Concentración sobre equivalente en soles
-    const sorted = [...clientes].sort((a, b) => b.saldoTotalSoles - a.saldoTotalSoles);
-    const top3Saldo = sorted.slice(0, 3).reduce((s, c) => s + c.saldoTotalSoles, 0);
+    const totalSaldo    = clientes.reduce((s, c) => s + c.saldoTotalSoles, 0);
+    const totalVigente  = clientes.reduce((s, c) => s + c.saldoVigente,    0);
+    const total90mas    = clientes.reduce((s, c) => s + c.dias90mas,       0);
+    const totalSaldoPEN = clientes.reduce((s, c) => s + c.saldoPEN,        0);
+    const totalSaldoUSD = clientes.reduce((s, c) => s + c.saldoUSD,        0);
+
+    const top3Saldo = clientes.slice(0, 3).reduce((s, c) => s + c.saldoTotalSoles, 0);
     const concentracionTop3 = totalSaldo > 0 ? round((top3Saldo / totalSaldo) * 100) : 0;
 
     return {
@@ -346,6 +367,17 @@ export class KpiService {
       numClientes: clientes.length,
       syncedAt: new Date().toISOString(),
     };
+  }
+
+  async getCxCDocs(companyId: string, codCliente?: string) {
+    const cached = await this.getSnapshot(companyId, 'cxc_docs', 'current');
+    if (!cached) return { docs: [], message: 'No data available. Run sync first.' };
+
+    let docs = cached.data as any[];
+    if (codCliente) {
+      docs = docs.filter((d: any) => String(d.CodCliente) === String(codCliente));
+    }
+    return { docs, syncedAt: cached.syncedAt };
   }
 
   // ─────────────────────────────────────────────

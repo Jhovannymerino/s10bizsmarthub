@@ -1949,7 +1949,7 @@ export default function DashboardPage() {
                         ].map(({ label, val, color }) => (
                           <div key={label} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,0.08)`, borderTop: `3px solid ${color}`, borderRadius: '0.5rem', padding: '0.75rem 1rem' }}>
                             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginBottom: '0.35rem' }}>{label}</div>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color, fontFamily: 'monospace' }}>S/ {fmt(val ?? 0)}</div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color, fontFamily: 'monospace' }}>{fmt(val ?? 0)}</div>
                           </div>
                         ))}
                       </div>

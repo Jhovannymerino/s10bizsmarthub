@@ -130,6 +130,10 @@ ssh $SSH_OPTS "$VPS" "
   cp $VPS_APP_DIR/vps-infra/sync-vpn.sh $VPS_APP_DIR/sync-vpn.sh
   chmod +x $VPS_APP_DIR/sync-vpn.sh
 
+  # Instalar dependencias del sync-agent si no están o si cambiaron
+  cd $VPS_APP_DIR/s10-agent && npm install --omit=dev --prefer-offline 2>/dev/null || npm install --omit=dev
+  cd $VPS_APP_DIR
+
   # Instalar unit file
   cp $VPS_APP_DIR/vps-infra/s10-sync-trigger.service /etc/systemd/system/s10-sync-trigger.service
 

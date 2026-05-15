@@ -137,6 +137,7 @@ FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
   AND doc.DescripcionEstado = '1'
+  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
 GROUP BY doc.DescripcionIdentificador, doc.CodIdentificador, doc.CodMoneda
 HAVING SUM(
   CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
@@ -199,6 +200,7 @@ WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
   AND doc.DescripcionEstado = '1'
   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
   AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
 ORDER BY doc.CodIdentificador,
          DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,
@@ -228,7 +230,10 @@ SELECT
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
-  AND doc.DescripcionEstado = '6'
+  AND (
+    doc.DescripcionEstado = '6'
+    OR UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%VINCULADA%'
+  )
   AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
 ORDER BY SaldoSoles DESC
 `;

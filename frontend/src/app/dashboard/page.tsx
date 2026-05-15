@@ -347,6 +347,11 @@ export default function DashboardPage() {
     } else {
       const id = selectedCompany.codEmpresa;
       setLastSync(null);
+      // cxc-vinculadas se carga independiente para no romper el Promise.all principal si falla
+      fetchApi(`/kpi/${id}/cxc-vinculadas`, token, signal)
+        .then(d => setCxcVinculadas((d?.numDocs ?? 0) > 0 ? d : null))
+        .catch(() => setCxcVinculadas(null));
+
       Promise.all([
         fetchApi(`/kpi/${id}/dashboard?year=${selectedYear}`, token, signal),
         fetchApi(`/kpi/${id}/cxc`, token, signal),
@@ -355,9 +360,8 @@ export default function DashboardPage() {
         fetchApi(`/kpi/${id}/gav?year=${selectedYear}`, token, signal),
         fetchApi(`/kpi/${id}/last-sync?year=${selectedYear}`, token, signal),
         fetchApi(`/kpi/${id}/cxc-split`, token, signal),
-        fetchApi(`/kpi/${id}/cxc-vinculadas`, token, signal),
       ])
-        .then(([plData, cxcData, cxpData, cajaData, gavData, syncData, splitData, vinData]) => {
+        .then(([plData, cxcData, cxpData, cajaData, gavData, syncData, splitData]) => {
           setPL(plData?.plMonthly ? plData : null);
           setCxC(cxcData?.clientes ? cxcData : null);
           setCxP(cxpData?.proveedores ? cxpData : null);
@@ -365,7 +369,6 @@ export default function DashboardPage() {
           setGAV(gavData?.categorias ? gavData : null);
           setLastSync(syncData?.lastSync ?? null);
           setCxcSplitData(splitData?.rows?.length ? splitData : null);
-          setCxcVinculadas((vinData?.numDocs ?? 0) > 0 ? vinData : null);
           setLoading(false);
         })
         .catch((err) => {

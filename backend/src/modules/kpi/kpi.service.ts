@@ -717,13 +717,62 @@ export class KpiService {
   // CxP — aging por proveedor (clase 42)
   // ─────────────────────────────────────────────
 
+  private classifyCxPDoc(desTipo: string): 'comercial' | 'rrhh' | 'prestamo' | 'anticipo' | 'otro' {
+    const t = (desTipo || '').toUpperCase();
+    if (t.includes('REQUERIMIENTO DE PAGOS RR')) return 'rrhh';
+    if (t.includes('PRESTAMO') || t.includes('PRÉSTAMO')) return 'prestamo';
+    if (t.includes('ANTICIPO')) return 'anticipo';
+    if (
+      t.includes('TRANSFERENCIA BANCARIA') ||
+      t.includes('ENTREGA A RENDIR') ||
+      t.includes('COMPROBANTE DE RETENCION') ||
+      t.includes('COMPROBANTE DE RETENCIÓN') ||
+      t.includes('PLANILLA DE PAGOS EXTORNO') ||
+      t.includes('AJUSTES POR REDONDEO') ||
+      t.includes('RECIBO FONDO ROTATORIO') ||
+      t.includes('RETENCION POR RECUPERAR') ||
+      t.includes('DEVOLUCIONES')
+    ) return 'otro';
+    return 'comercial';
+  }
+
   async getCxP(companyId: string) {
-    const cached = await this.getSnapshot(companyId, 'cxp', 'current');
-    if (cached) {
-      const raw = cached.data as any[];
-      return this.buildCxP(raw);
+    const [cached, docsSnap] = await Promise.all([
+      this.getSnapshot(companyId, 'cxp', 'current'),
+      this.getSnapshot(companyId, 'cxp_docs', 'current'),
+    ]);
+    if (!cached) return { message: 'No data available. Run sync first.' };
+    const result: any = this.buildCxP(cached.data as any[]);
+    if (docsSnap) {
+      result.breakdown = this.buildCxPBreakdown(docsSnap.data as any[]);
     }
-    return { message: 'No data available. Run sync first.' };
+    return result;
+  }
+
+  buildCxPBreakdown(docs: any[]) {
+    const pen = { comercial: 0, rrhh: 0, prestamo: 0, anticipo: 0, otro: 0 };
+    const usd = { comercial: 0, rrhh: 0, prestamo: 0, anticipo: 0, otro: 0 };
+    for (const d of docs) {
+      const cat = this.classifyCxPDoc(d.DesTipo || '');
+      const saldo = parseFloat(d.Saldo) || 0;
+      const isUSD = String(d.Moneda || '01').trim() === '02';
+      if (isUSD) usd[cat] += saldo;
+      else pen[cat] += saldo;
+    }
+    const totalPEN = Object.values(pen).reduce((a, b) => a + b, 0);
+    return {
+      comercialPEN: round(pen.comercial),
+      rrhhPEN:      round(pen.rrhh),
+      prestamoPEN:  round(pen.prestamo),
+      anticipoPEN:  round(pen.anticipo),
+      otroPEN:      round(pen.otro),
+      comercialUSD: round(usd.comercial),
+      rrhhUSD:      round(usd.rrhh),
+      prestamoUSD:  round(usd.prestamo),
+      anticipoUSD:  round(usd.anticipo),
+      otroUSD:      round(usd.otro),
+      totalPEN:     round(totalPEN),
+    };
   }
 
   buildCxP(rows: any[]) {

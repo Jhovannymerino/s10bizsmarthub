@@ -1862,6 +1862,51 @@ export default function DashboardPage() {
                   signal={semaforo('concentracion', cxp.concentracionTop3)}
                 />
               </div>
+
+              {/* ── Composición de CxP ── */}
+              {cxp.breakdown && (() => {
+                const bd = cxp.breakdown;
+                const total = bd.totalPEN || 1;
+                const cats = [
+                  { key: 'comercial', label: 'Comercial', pen: bd.comercialPEN, usd: bd.comercialUSD, color: '#2BB4BB', hint: 'Facturas, boletas, recibos, honorarios, servicios' },
+                  { key: 'rrhh',      label: 'RR.HH.',    pen: bd.rrhhPEN,      usd: bd.rrhhUSD,      color: '#6366F1', hint: 'Requerimientos de pago al personal' },
+                  { key: 'prestamo',  label: 'Préstamos',  pen: bd.prestamoPEN,  usd: bd.prestamoUSD,  color: '#F59E0B', hint: 'Deberían estar en cuenta 45 — revisar con contador' },
+                  { key: 'anticipo',  label: 'Anticipos',  pen: bd.anticipoPEN,  usd: bd.anticipoUSD,  color: '#8B5CF6', hint: 'Ya pagados, esperando factura del proveedor' },
+                  { key: 'otro',      label: 'Otros',      pen: bd.otroPEN,      usd: bd.otroUSD,      color: '#64748B', hint: 'Retenciones, extornos, entregas a rendir, etc.' },
+                ].filter(c => c.pen > 0.01 || c.usd > 0.01);
+                return (
+                  <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                      Composición de CxP
+                    </div>
+                    {/* Barra proporcional */}
+                    <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: '1rem', gap: 1 }}>
+                      {cats.map(c => (
+                        <div key={c.key} style={{
+                          width: `${(c.pen / total) * 100}%`, background: c.color, minWidth: c.pen > 0.01 ? 2 : 0,
+                          transition: 'width 0.3s',
+                        }} title={`${c.label}: ${fmt(c.pen)}`} />
+                      ))}
+                    </div>
+                    {/* Leyenda */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                      {cats.map(c => (
+                        <div key={c.key} style={{ display: 'flex', flexDirection: 'column', minWidth: 120 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.15rem' }}>
+                            <div style={{ width: 10, height: 10, borderRadius: 2, background: c.color, flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.72rem', color: '#8B97A8' }}>{c.label}</span>
+                          </div>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#F8FAFC' }}>{fmt(c.pen)}</span>
+                          {c.usd > 0.01 && <span style={{ fontSize: '0.70rem', color: '#4ade80' }}>+ $ {c.usd.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</span>}
+                          <span style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '0.1rem' }}>{pct((c.pen / total) * 100)}</span>
+                          <span style={{ fontSize: '0.65rem', color: '#475569', marginTop: '0.1rem', maxWidth: 150 }}>{c.hint}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Proveedor</div>

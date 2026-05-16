@@ -1,7 +1,9 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { API, MESES } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
+import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 import { DocPreview } from './DocPreview';
 
 export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, codTercero, yearOverride, mesPreset, onClose }: {
@@ -14,7 +16,10 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
   const [retryCount, setRetryCount] = useState(0);
   const [mesFilter, setMesFilter] = useState<number | null>(mesPreset ?? null);
   const [anioFilter, setAnioFilter] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [docPreview, setDocPreview] = useState<string | null>(null);
+  const onSort = (col: string) => setSort(s => toggleSort(s, col));
 
   useEffect(() => {
     setLoading(true); setFetchError(false);
@@ -35,11 +40,25 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
   const isActivoFijo = endpoint === 'activo-fijo-transactions';
   const aniosPresentes = isActivoFijo ? Array.from(new Set(txns.map((t: any) => t.Anio as number))).sort((a, b) => b - a) : [];
   const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
-  const filtered = txns
+
+  const byFilters = txns
     .filter((t: any) => !anioFilter || t.Anio === anioFilter)
     .filter((t: any) => !mesFilter || t.Mes === mesFilter);
+
+  const filtered = useMemo(
+    () => sortRows(searchRows(byFilters, search), sort.col, sort.dir),
+    [byFilters, search, sort]
+  );
+
   const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
   const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
+
+  const btnStyle = (active: boolean, accent?: string) => ({
+    padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
+    border: active ? `1px solid ${accent ? 'rgba(226,92,26,0.5)' : 'rgba(32,126,131,0.5)'}` : '1px solid rgba(255,255,255,0.1)',
+    background: active ? (accent ? 'rgba(226,92,26,0.15)' : 'rgba(32,126,131,0.2)') : 'rgba(255,255,255,0.04)',
+    color: active ? (accent ? '#E25C1A' : '#2BB4BB') : '#8B97A8',
+  });
 
   return (
   <>
@@ -55,17 +74,22 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
         {isActivoFijo && aniosPresentes.length > 0 && (
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontSize: '0.7rem', color: '#6B7280', marginRight: '0.25rem' }}>Año:</span>
-            <button onClick={() => setAnioFilter(null)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === null ? '1px solid rgba(226,92,26,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === null ? 'rgba(226,92,26,0.15)' : 'rgba(255,255,255,0.04)', color: anioFilter === null ? '#E25C1A' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>Todos</button>
+            <button onClick={() => setAnioFilter(null)} style={btnStyle(anioFilter === null, 'orange')}>Todos</button>
             {aniosPresentes.map(a => (
-              <button key={a} onClick={() => setAnioFilter(a)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === a ? '1px solid rgba(226,92,26,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === a ? 'rgba(226,92,26,0.15)' : 'rgba(255,255,255,0.04)', color: anioFilter === a ? '#E25C1A' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>{a}</button>
+              <button key={a} onClick={() => setAnioFilter(a)} style={btnStyle(anioFilter === a, 'orange')}>{a}</button>
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <button onClick={() => setMesFilter(null)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>Todos</button>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={() => setMesFilter(null)} style={btnStyle(mesFilter === null)}>Todos</button>
           {mesesPresentes.map(m => (
-            <button key={m} onClick={() => setMesFilter(m)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === m ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === m ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === m ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>{MESES[m - 1]}</button>
+            <button key={m} onClick={() => setMesFilter(m)} style={btnStyle(mesFilter === m)}>{MESES[m - 1]}</button>
           ))}
+          <input
+            type="text" placeholder="Buscar..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={searchInputStyle}
+          />
         </div>
         {loading ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando asientos...</div>
         : fetchError ? (
@@ -75,7 +99,7 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
-            {isActivoFijo
+            {search ? `Sin resultados para "${search}".` : isActivoFijo
               ? (anioFilter || mesFilter ? 'Sin movimientos con los filtros seleccionados.' : 'Sin movimientos históricos para esta cuenta.')
               : `Sin asientos para esta cuenta en ${fetchYear}.`
             }
@@ -84,7 +108,18 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
         : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
-              <thead><tr><th style={{ width: 32 }}></th><th>Fecha</th><th title="Número de asiento en S10 (CodUnico) — úsalo para buscarlo en el sistema">Asiento S10</th><th style={{ minWidth: 240 }}>Glosa</th><th style={{ minWidth: 140 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th></tr></thead>
+              <thead>
+                <tr>
+                  <th style={{ width: 32 }}></th>
+                  <SortTh col="Fecha" label="Fecha" sort={sort} onSort={onSort} />
+                  <SortTh col="NroAsiento" label="Asiento S10" sort={sort} onSort={onSort} style={{ cursor: 'pointer' }} />
+                  <SortTh col="Glosa" label="Glosa" sort={sort} onSort={onSort} style={{ minWidth: 240 }} />
+                  <SortTh col="Tercero" label="Tercero" sort={sort} onSort={onSort} style={{ minWidth: 140 }} />
+                  <SortTh col="Debito" label="Débito" sort={sort} onSort={onSort} />
+                  <SortTh col="Credito" label="Crédito" sort={sort} onSort={onSort} />
+                  <th>Neto</th>
+                </tr>
+              </thead>
               <tbody>
                 {filtered.map((t: any, i: number) => {
                   const neto = (t.Debito || 0) - (t.Credito || 0);

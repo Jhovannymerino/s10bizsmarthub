@@ -1,7 +1,9 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
+import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 import { DocPreview } from './DocPreview';
 
 export function CxCTransactionModal({ companyId, year, cliente, codCliente, onClose }: {
@@ -10,7 +12,10 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [anioFilter, setAnioFilter] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [docPreview, setDocPreview] = useState<string | null>(null);
+  const onSort = (col: string) => setSort(s => toggleSort(s, col));
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -24,9 +29,22 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
   }, [companyId, year, codCliente]);
 
   const aniosPresentes = Array.from(new Set(txns.map((t: any) => t.Anio as number))).sort((a, b) => b - a);
-  const filtered = anioFilter ? txns.filter((t: any) => t.Anio === anioFilter) : txns;
+  const byAnio = anioFilter ? txns.filter((t: any) => t.Anio === anioFilter) : txns;
+
+  const filtered = useMemo(
+    () => sortRows(searchRows(byAnio, search), sort.col, sort.dir),
+    [byAnio, search, sort]
+  );
+
   const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
   const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
+
+  const btnStyle = (active: boolean) => ({
+    padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
+    border: active ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)',
+    background: active ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)',
+    color: active ? '#2BB4BB' : '#8B97A8',
+  });
 
   return (
     <>
@@ -41,17 +59,16 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <button onClick={() => setAnioFilter(null)}
-            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: anioFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
-            Todos
-          </button>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={() => setAnioFilter(null)} style={btnStyle(anioFilter === null)}>Todos</button>
           {aniosPresentes.map(a => (
-            <button key={a} onClick={() => setAnioFilter(a)}
-              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: anioFilter === a ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: anioFilter === a ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: anioFilter === a ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
-              {a}
-            </button>
+            <button key={a} onClick={() => setAnioFilter(a)} style={btnStyle(anioFilter === a)}>{a}</button>
           ))}
+          <input
+            type="text" placeholder="Buscar..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={searchInputStyle}
+          />
         </div>
         {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div> : (
           <div style={{ overflowX: 'auto' }}>
@@ -59,12 +76,12 @@ export function CxCTransactionModal({ companyId, year, cliente, codCliente, onCl
               <thead>
                 <tr>
                   <th style={{ width: 32 }}></th>
-                  <th>Fecha</th>
-                  <th>Nro. Asiento</th>
-                  <th>Cuenta</th>
-                  <th style={{ minWidth: 240 }}>Glosa</th>
-                  <th>Débito</th>
-                  <th>Crédito</th>
+                  <SortTh col="Fecha" label="Fecha" sort={sort} onSort={onSort} />
+                  <SortTh col="NroAsiento" label="Nro. Asiento" sort={sort} onSort={onSort} />
+                  <SortTh col="CodCuenta" label="Cuenta" sort={sort} onSort={onSort} />
+                  <SortTh col="Glosa" label="Glosa" sort={sort} onSort={onSort} style={{ minWidth: 240 }} />
+                  <SortTh col="Debito" label="Débito" sort={sort} onSort={onSort} />
+                  <SortTh col="Credito" label="Crédito" sort={sort} onSort={onSort} />
                   <th>Neto</th>
                 </tr>
               </thead>

@@ -1,8 +1,10 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { MESES } from '../../_lib/constants';
 import { fmt, pct } from '../../_lib/formatters';
+import { SortState, sortRows, toggleSort } from '../../_lib/sort';
+import { SortTh } from '../../_lib/SortTh';
 import { TransactionModal } from './TransactionModal';
 
 export function GavCategoryModal({ companyId, year, cat, onClose }: {
@@ -11,11 +13,19 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
   onClose: () => void;
 }) {
   const [txDrill, setTxDrill] = useState(false);
+  const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
+  const onSort = (col: string) => setSort(s => toggleSort(s, col));
+
   const mesesConDatos = Object.entries(cat.meses)
     .filter(([, v]) => (v as number) !== 0)
     .map(([k]) => parseInt(k))
     .sort((a, b) => a - b);
   const chartData = mesesConDatos.map(m => ({ mes: MESES[m - 1], value: cat.meses[m] || 0 }));
+
+  const tableRows = useMemo(() => {
+    const rows = mesesConDatos.map(m => ({ _mes: m, mes: MESES[m - 1], importe: cat.meses[m] || 0, pctYtd: cat.ytd > 0 ? ((cat.meses[m] || 0) / cat.ytd) * 100 : 0 }));
+    return sort.col ? sortRows(rows, sort.col, sort.dir) : rows;
+  }, [mesesConDatos, sort]);
 
   if (txDrill) {
     return <TransactionModal companyId={companyId} year={year} codCuenta={cat.cod} descripcion={cat.descripcion} onClose={() => setTxDrill(false)} />;
@@ -46,14 +56,18 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
         )}
         <table className="table-s10" style={{ marginTop: '1rem' }}>
           <thead>
-            <tr><th>Mes</th><th>Importe</th><th>% YTD</th></tr>
+            <tr>
+              <SortTh col="mes" label="Mes" sort={sort} onSort={onSort} />
+              <SortTh col="importe" label="Importe" sort={sort} onSort={onSort} />
+              <SortTh col="pctYtd" label="% YTD" sort={sort} onSort={onSort} />
+            </tr>
           </thead>
           <tbody>
-            {mesesConDatos.map(m => (
-              <tr key={m}>
-                <td>{MESES[m - 1]}</td>
-                <td>{fmt(cat.meses[m] || 0)}</td>
-                <td style={{ color: '#8B97A8' }}>{cat.ytd > 0 ? pct(((cat.meses[m] || 0) / cat.ytd) * 100) : '—'}</td>
+            {tableRows.map(row => (
+              <tr key={row._mes}>
+                <td>{row.mes}</td>
+                <td>{fmt(row.importe)}</td>
+                <td style={{ color: '#8B97A8' }}>{cat.ytd > 0 ? pct(row.pctYtd) : '—'}</td>
               </tr>
             ))}
           </tbody>

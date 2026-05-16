@@ -1,7 +1,9 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { API, MESES } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
+import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 import { DocPreview } from './DocPreview';
 
 function AsientoCompletoPanel({ companyId, year, nroAsiento, onClose }: {
@@ -94,8 +96,11 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [mesFilter, setMesFilter] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [docPreview, setDocPreview] = useState<string | null>(null);
   const [asientoCompleto, setAsientoCompleto] = useState<string | null>(null);
+  const onSort = (col: string) => setSort(s => toggleSort(s, col));
 
   useEffect(() => {
     setLoading(true);
@@ -115,9 +120,22 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
   }, [companyId, year, codBanco, retryCount]);
 
   const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
-  const filtered = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
+  const byMes = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;
+
+  const filtered = useMemo(
+    () => sortRows(searchRows(byMes, search), sort.col, sort.dir),
+    [byMes, search, sort]
+  );
+
   const totalDeb = filtered.reduce((s: number, t: any) => s + (t.Debito || 0), 0);
   const totalCred = filtered.reduce((s: number, t: any) => s + (t.Credito || 0), 0);
+
+  const btnStyle = (active: boolean) => ({
+    padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
+    border: active ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)',
+    background: active ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)',
+    color: active ? '#2BB4BB' : '#8B97A8',
+  });
 
   return (
     <>
@@ -134,17 +152,16 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <button onClick={() => setMesFilter(null)}
-            style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === null ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === null ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === null ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
-            Todos
-          </button>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={() => setMesFilter(null)} style={btnStyle(mesFilter === null)}>Todos</button>
           {mesesPresentes.map(m => (
-            <button key={m} onClick={() => setMesFilter(m)}
-              style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: mesFilter === m ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)', background: mesFilter === m ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)', color: mesFilter === m ? '#2BB4BB' : '#8B97A8', fontSize: '0.78rem', cursor: 'pointer' }}>
-              {MESES[m - 1]}
-            </button>
+            <button key={m} onClick={() => setMesFilter(m)} style={btnStyle(mesFilter === m)}>{MESES[m - 1]}</button>
           ))}
+          <input
+            type="text" placeholder="Buscar..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={searchInputStyle}
+          />
         </div>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando movimientos...</div>
@@ -158,15 +175,21 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
-            Sin movimientos para esta cuenta bancaria en {year}.
+            {search ? `Sin resultados para "${search}".` : `Sin movimientos para esta cuenta bancaria en ${year}.`}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
               <thead>
                 <tr>
-                  <th>Fecha</th><th>Nro. Asiento</th><th style={{ minWidth: 240 }}>Glosa</th>
-                  <th style={{ minWidth: 120 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Neto</th><th>Documento</th>
+                  <SortTh col="Fecha" label="Fecha" sort={sort} onSort={onSort} />
+                  <SortTh col="NroAsiento" label="Nro. Asiento" sort={sort} onSort={onSort} />
+                  <SortTh col="Glosa" label="Glosa" sort={sort} onSort={onSort} style={{ minWidth: 240 }} />
+                  <SortTh col="Tercero" label="Tercero" sort={sort} onSort={onSort} style={{ minWidth: 120 }} />
+                  <SortTh col="Debito" label="Débito" sort={sort} onSort={onSort} />
+                  <SortTh col="Credito" label="Crédito" sort={sort} onSort={onSort} />
+                  <th>Neto</th>
+                  <th>Documento</th>
                 </tr>
               </thead>
               <tbody>

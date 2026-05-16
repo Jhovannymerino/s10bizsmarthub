@@ -1,7 +1,9 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
+import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 
 const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -65,6 +67,8 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'vencido' | 'vigente' | 'otros'>('all');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -80,13 +84,18 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   const facturas = docs.filter(d => !isOtro(d));
   const otros = docs.filter(d => isOtro(d));
 
-  const filtered = filter === 'otros'
+  const baseFiltered = filter === 'otros'
     ? otros
     : facturas.filter(d => {
         if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0;
         if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0;
         return true;
       });
+
+  const filtered = useMemo(
+    () => sortRows(searchRows(baseFiltered, search), sort.col, sort.dir),
+    [baseFiltered, search, sort]
+  );
 
   const totalPEN = filtered.filter(d => getMoneda(d) === 'PEN').reduce((s, d) => s + (d.Saldo ?? 0), 0);
   const totalUSD = filtered.filter(d => getMoneda(d) === 'USD').reduce((s, d) => s + (d.Saldo ?? 0), 0);
@@ -114,6 +123,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   });
 
   const showingOtros = filter === 'otros';
+  const onSort = (col: string) => setSort(s => toggleSort(s, col));
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
@@ -126,14 +136,14 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               {showingOtros
-                ? `Anticipos y otros · ${otros.length} registros`
+                ? `Anticipos y otros · ${filtered.length} registros`
                 : `Documentos a pagar · ${filtered.length} de ${facturas.length} (facturas, recibos, boletas, letras, etc.)`}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button style={btnStyle(filter === 'all')} onClick={() => setFilter('all')}>
             Todos ({facturas.length})
           </button>
@@ -148,6 +158,11 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
               Anticipos y Otros ({otros.length})
             </button>
           )}
+          <input
+            type="text" placeholder="Buscar..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={searchInputStyle}
+          />
         </div>
 
         {loading ? (
@@ -180,16 +195,16 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
               <table className="table-s10" style={{ fontSize: '0.78rem' }}>
                 <thead>
                   <tr>
-                    <th>Tipo</th>
+                    <SortTh col="DesTipo" label="Tipo" sort={sort} onSort={onSort} />
                     {showingOtros && <th>Observación</th>}
-                    <th>Serie / N°</th>
-                    <th>Fecha Doc.</th>
-                    <th>Vencimiento</th>
-                    <th style={{ textAlign: 'right' }}>Días Venc.</th>
+                    <SortTh col="Numero" label="Serie / N°" sort={sort} onSort={onSort} />
+                    <SortTh col="FechaDocumento" label="Fecha Doc." sort={sort} onSort={onSort} />
+                    <SortTh col="FechaVencimiento" label="Vencimiento" sort={sort} onSort={onSort} />
+                    <SortTh col="DiasVencido" label="Días Venc." sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
                     <th style={{ textAlign: 'center' }}>Moneda</th>
-                    <th style={{ textAlign: 'right' }}>Total</th>
-                    <th style={{ textAlign: 'right' }}>Pagado</th>
-                    <th style={{ textAlign: 'right' }}>Saldo</th>
+                    <SortTh col="Total" label="Total" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                    <SortTh col="Pagado" label="Pagado" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                    <SortTh col="Saldo" label="Saldo" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
                     <th>Estado</th>
                   </tr>
                 </thead>

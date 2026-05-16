@@ -1,11 +1,12 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
+import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 
 const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-// CodMoneda en S10: '01'=PEN, '02'=USD — toleramos el campo como 'Moneda' o 'CodMoneda', y '02' o '2'
 function getMoneda(d: any): 'USD' | 'PEN' {
   const raw = String(d.Moneda ?? d.CodMoneda ?? '01').trim();
   return raw === '02' || raw === '2' ? 'USD' : 'PEN';
@@ -21,6 +22,8 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'vencido' | 'vigente'>('all');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -33,11 +36,16 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
       .catch(() => setLoading(false));
   }, [companyId, codCliente]);
 
-  const filtered = docs.filter(d => {
+  const baseFiltered = docs.filter(d => {
     if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0;
     if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0;
     return true;
   });
+
+  const filtered = useMemo(
+    () => sortRows(searchRows(baseFiltered, search), sort.col, sort.dir),
+    [baseFiltered, search, sort]
+  );
 
   const totalPEN = filtered.filter(d => getMoneda(d) === 'PEN').reduce((s, d) => s + (d.Saldo ?? 0), 0);
   const totalUSD = filtered.filter(d => getMoneda(d) === 'USD').reduce((s, d) => s + (d.Saldo ?? 0), 0);
@@ -57,6 +65,8 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
     color: active ? '#2BB4BB' : '#8B97A8',
   });
 
+  const onSort = (col: string) => setSort(s => toggleSort(s, col));
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
@@ -72,7 +82,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button style={btnStyle(filter === 'all')} onClick={() => setFilter('all')}>Todos ({docs.length})</button>
           <button style={btnStyle(filter === 'vencido')} onClick={() => setFilter('vencido')}>
             Vencidos ({docs.filter(d => (d.DiasVencido ?? 0) > 0).length})
@@ -80,6 +90,11 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
           <button style={btnStyle(filter === 'vigente')} onClick={() => setFilter('vigente')}>
             Vigentes ({docs.filter(d => (d.DiasVencido ?? 0) <= 0).length})
           </button>
+          <input
+            type="text" placeholder="Buscar..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={searchInputStyle}
+          />
         </div>
 
         {loading ? (
@@ -91,16 +106,16 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
               <thead>
                 <tr>
-                  <th>Tipo</th>
-                  <th>Serie / N°</th>
-                  <th>Fecha Doc.</th>
-                  <th>Vencimiento</th>
-                  <th style={{ textAlign: 'right' }}>Días Venc.</th>
+                  <SortTh col="DesTipo" label="Tipo" sort={sort} onSort={onSort} />
+                  <SortTh col="Numero" label="Serie / N°" sort={sort} onSort={onSort} />
+                  <SortTh col="FechaDocumento" label="Fecha Doc." sort={sort} onSort={onSort} />
+                  <SortTh col="FechaVencimiento" label="Vencimiento" sort={sort} onSort={onSort} />
+                  <SortTh col="DiasVencido" label="Días Venc." sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
                   <th style={{ textAlign: 'center' }}>Moneda</th>
-                  <th style={{ textAlign: 'right' }}>Total</th>
-                  <th style={{ textAlign: 'right' }}>Pagado</th>
-                  <th style={{ textAlign: 'right' }}>Detracción</th>
-                  <th style={{ textAlign: 'right' }}>Saldo</th>
+                  <SortTh col="Total" label="Total" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="Pagado" label="Pagado" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="Detraccion" label="Detracción" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="Saldo" label="Saldo" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
                   <th>Estado</th>
                 </tr>
               </thead>

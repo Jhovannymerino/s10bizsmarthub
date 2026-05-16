@@ -1,6 +1,8 @@
 'use client';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { fmt } from '../../_lib/formatters';
+import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
+import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 
 const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -18,8 +20,17 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
   docs: any[];
   onClose: () => void;
 }) {
-  const totalPEN = docs.filter(d => getMoneda(d) === 'PEN').reduce((s, d) => s + (d.Saldo ?? 0), 0);
-  const totalUSD = docs.filter(d => getMoneda(d) === 'USD').reduce((s, d) => s + (d.Saldo ?? 0), 0);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
+  const onSort = (col: string) => setSort(s => toggleSort(s, col));
+
+  const filtered = useMemo(
+    () => sortRows(searchRows(docs, search), sort.col, sort.dir),
+    [docs, search, sort]
+  );
+
+  const totalPEN = filtered.filter(d => getMoneda(d) === 'PEN').reduce((s, d) => s + (d.Saldo ?? 0), 0);
+  const totalUSD = filtered.filter(d => getMoneda(d) === 'USD').reduce((s, d) => s + (d.Saldo ?? 0), 0);
   const hasMixed = totalPEN > 0 && totalUSD > 0;
 
   return (
@@ -32,7 +43,7 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F59E0B' }}>{cliente}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
-              Cartera Especial · {docs.length} documento{docs.length !== 1 ? 's' : ''}
+              Cartera Especial · {filtered.length} documento{filtered.length !== 1 ? 's' : ''}
               <span style={{ marginLeft: '0.5rem', padding: '1px 7px', borderRadius: '1rem', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', fontSize: '0.70rem' }}>
                 Estado 6 / Vinculada
               </span>
@@ -41,27 +52,35 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
 
-        {docs.length === 0 ? (
+        <div style={{ marginBottom: '1rem' }}>
+          <input
+            type="text" placeholder="Buscar..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={searchInputStyle}
+          />
+        </div>
+
+        {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Sin documentos.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
               <thead>
                 <tr>
-                  <th>Tipo</th>
-                  <th>Serie / N°</th>
-                  <th>Fecha Doc.</th>
+                  <SortTh col="TipoDocumento" label="Tipo" sort={sort} onSort={onSort} />
+                  <SortTh col="Numero" label="Serie / N°" sort={sort} onSort={onSort} />
+                  <SortTh col="FechaDocumento" label="Fecha Doc." sort={sort} onSort={onSort} />
                   <th style={{ textAlign: 'center' }}>Moneda</th>
-                  <th style={{ textAlign: 'right' }}>Total</th>
-                  <th style={{ textAlign: 'right' }}>Pagado</th>
-                  <th style={{ textAlign: 'right' }}>Detracción</th>
-                  <th style={{ textAlign: 'right' }}>Saldo</th>
-                  <th style={{ textAlign: 'right' }}>Antigüedad</th>
-                  <th>Observación</th>
+                  <SortTh col="Total" label="Total" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="Pagado" label="Pagado" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="Detraccion" label="Detracción" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="Saldo" label="Saldo" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="DiasAntiguedad" label="Antigüedad" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                  <SortTh col="Observacion" label="Observación" sort={sort} onSort={onSort} />
                 </tr>
               </thead>
               <tbody>
-                {docs.map((d: any, i: number) => {
+                {filtered.map((d: any, i: number) => {
                   const moneda = getMoneda(d);
                   const isUSD = moneda === 'USD';
                   return (

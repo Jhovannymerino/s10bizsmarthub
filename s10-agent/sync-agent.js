@@ -438,6 +438,19 @@ WITH dedup AS (
     AND DescripcionEstado = '1'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
+    -- Excluir no-comerciales: aparecen en Composición y Auditoría de Clasificación, no en el aging
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%PRESTAMO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%PRÉSTAMO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%ANTICIPO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%TRANSFERENCIA BANCARIA%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%ENTREGA A RENDIR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%COMPROBANTE DE RETEN%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%PLANILLA DE PAGOS EXTORNO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%AJUSTES POR REDONDEO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%FONDO ROTATORIO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%RETENCION POR RECUPERAR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%RETENCIÓN POR RECUPERAR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%DEVOLUCION%'
 )
 SELECT
   ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR))  AS Proveedor,

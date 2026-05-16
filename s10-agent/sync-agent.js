@@ -186,64 +186,78 @@ ORDER BY Grupo, SaldoPendiente DESC
 
 // Documentos pendientes de cobro por cliente (trazabilidad en modal)
 // Reemplaza el drilldown de asientos contables — muestra los documentos reales
+// CTE dedup elimina duplicados que genera vw_12DocumentosPorCobrar por su JOIN interno
 const QUERY_CXC_DOCS = (codEmpresa) => `
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${codEmpresa}'
+    AND CodTipoDocumento IN ('131','125','128','134')
+    AND DescripcionEstado = '1'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
+    AND (Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
+)
 SELECT
-  ISNULL(doc.CodIdentificador,'')                                    AS CodCliente,
-  ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)         AS Cliente,
-  doc.NroD,
-  doc.CodTipoDocumento                                               AS TipoDoc,
-  ISNULL(doc.DescripcionTipoDocumento,'')                            AS DesTipo,
-  ISNULL(doc.SerieDocumento,'')                                      AS Serie,
-  ISNULL(doc.NumeroDocumento,'')                                     AS Numero,
-  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)                      AS FechaDocumento,
-  CONVERT(VARCHAR(10), ISNULL(doc.FechaVencimiento, doc.FechaDocumento), 103) AS FechaVencimiento,
-  doc.CodMoneda                                                      AS Moneda,
-  ROUND(doc.Total, 2)                                                AS Total,
-  ROUND(ISNULL(doc.TotalPagado,0), 2)                                AS Pagado,
-  ROUND(ISNULL(doc.MontoDetraccion,0), 2)                            AS Detraccion,
-  ROUND(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0), 2) AS Saldo,
-  DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) AS DiasVencido,
-  ISNULL(doc.DescripcionEstado,'')                                   AS Estado
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${codEmpresa}'
-  AND doc.CodTipoDocumento IN ('131','125','128','134')
-  AND doc.DescripcionEstado = '1'
-  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-  AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
-ORDER BY doc.CodIdentificador,
-         DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,
-         doc.Total DESC
+  ISNULL(CodIdentificador,'')                                        AS CodCliente,
+  ISNULL(DescripcionIdentificador, CodIdentificador)                 AS Cliente,
+  NroD,
+  CodTipoDocumento                                                   AS TipoDoc,
+  ISNULL(DescripcionTipoDocumento,'')                                AS DesTipo,
+  ISNULL(SerieDocumento,'')                                          AS Serie,
+  ISNULL(NumeroDocumento,'')                                         AS Numero,
+  CONVERT(VARCHAR(10), FechaDocumento, 103)                          AS FechaDocumento,
+  CONVERT(VARCHAR(10), ISNULL(FechaVencimiento, FechaDocumento), 103) AS FechaVencimiento,
+  CodMoneda                                                          AS Moneda,
+  ROUND(Total, 2)                                                    AS Total,
+  ROUND(ISNULL(TotalPagado,0), 2)                                    AS Pagado,
+  ROUND(ISNULL(MontoDetraccion,0), 2)                                AS Detraccion,
+  ROUND(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0), 2) AS Saldo,
+  DATEDIFF(DAY, ISNULL(FechaVencimiento, FechaDocumento), GETDATE()) AS DiasVencido,
+  ISNULL(DescripcionEstado,'')                                       AS Estado
+FROM dedup
+WHERE rn = 1
+ORDER BY CodIdentificador,
+         DATEDIFF(DAY, ISNULL(FechaVencimiento, FechaDocumento), GETDATE()) DESC,
+         Total DESC
 `;
 
 // Cartera especial Estado='6': vinculadas, intercompañía, en disputa, provisionadas
 // Se muestra SEPARADA del aging normal para no inflar la CxC comercial
+// CTE dedup elimina duplicados de vw_12DocumentosPorCobrar
 const QUERY_CXC_VINCULADAS = (codEmpresa) => `
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${codEmpresa}'
+    AND CodTipoDocumento IN ('131','125','128','134')
+    AND (
+      DescripcionEstado = '6'
+      OR UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%VINCULADA%'
+    )
+    AND (Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
+)
 SELECT
-  ISNULL(doc.CodIdentificador,'')                                             AS CodCliente,
-  ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)                  AS Cliente,
-  doc.CodMoneda                                                               AS Moneda,
-  ISNULL(doc.DescripcionTipoDocumento,'')                                     AS TipoDocumento,
-  ISNULL(doc.SerieDocumento,'')                                               AS Serie,
-  ISNULL(doc.NumeroDocumento,'')                                              AS Numero,
-  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)                               AS FechaDocumento,
-  CONVERT(VARCHAR(10), ISNULL(doc.FechaVencimiento, doc.FechaDocumento), 103) AS FechaVencimiento,
-  ROUND(doc.Total, 2)                                                         AS Total,
-  ROUND(ISNULL(doc.TotalPagado,0), 2)                                         AS Pagado,
-  ROUND(ISNULL(doc.MontoDetraccion,0), 2)                                     AS Detraccion,
-  ROUND(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0), 2)  AS Saldo,
-  ROUND((doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0))
-    * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END, 0) AS SaldoSoles,
-  DATEDIFF(DAY, doc.FechaDocumento, GETDATE())                                AS DiasAntiguedad,
-  LEFT(ISNULL(doc.Observacion,''), 150)                                       AS Observacion
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${codEmpresa}'
-  AND doc.CodTipoDocumento IN ('131','125','128','134')
-  AND (
-    doc.DescripcionEstado = '6'
-    OR UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%VINCULADA%'
-  )
-  AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
+  ISNULL(CodIdentificador,'')                                              AS CodCliente,
+  ISNULL(DescripcionIdentificador, CodIdentificador)                       AS Cliente,
+  CodMoneda                                                                AS Moneda,
+  ISNULL(DescripcionTipoDocumento,'')                                      AS TipoDocumento,
+  ISNULL(SerieDocumento,'')                                                AS Serie,
+  ISNULL(NumeroDocumento,'')                                               AS Numero,
+  CONVERT(VARCHAR(10), FechaDocumento, 103)                                AS FechaDocumento,
+  CONVERT(VARCHAR(10), ISNULL(FechaVencimiento, FechaDocumento), 103)      AS FechaVencimiento,
+  ROUND(Total, 2)                                                          AS Total,
+  ROUND(ISNULL(TotalPagado,0), 2)                                          AS Pagado,
+  ROUND(ISNULL(MontoDetraccion,0), 2)                                      AS Detraccion,
+  ROUND(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0), 2)     AS Saldo,
+  ROUND((Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0))
+    * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 0) AS SaldoSoles,
+  DATEDIFF(DAY, FechaDocumento, GETDATE())                                 AS DiasAntiguedad,
+  LEFT(ISNULL(Observacion,''), 150)                                        AS Observacion
+FROM dedup
+WHERE rn = 1
 ORDER BY SaldoSoles DESC
 `;
 

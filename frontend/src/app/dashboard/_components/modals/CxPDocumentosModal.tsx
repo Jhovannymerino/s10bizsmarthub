@@ -126,8 +126,8 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               {showingOtros
-                ? `Anticipos y otros documentos · ${otros.length} registros`
-                : `Documentos pendientes de pago · ${filtered.length} documentos`}
+                ? `Anticipos y otros · ${otros.length} registros`
+                : `Documentos a pagar · ${filtered.length} de ${facturas.length} (facturas, recibos, boletas, letras, etc.)`}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
@@ -135,10 +135,10 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <button style={btnStyle(filter === 'all')} onClick={() => setFilter('all')}>
-            Facturas ({facturas.length})
+            Todos ({facturas.length})
           </button>
           <button style={btnStyle(filter === 'vencido')} onClick={() => setFilter('vencido')}>
-            Vencidas ({facturas.filter(d => (d.DiasVencido ?? 0) > 0).length})
+            Vencidos ({facturas.filter(d => (d.DiasVencido ?? 0) > 0).length})
           </button>
           <button style={btnStyle(filter === 'vigente')} onClick={() => setFilter('vigente')}>
             Vigentes ({facturas.filter(d => (d.DiasVencido ?? 0) <= 0).length})

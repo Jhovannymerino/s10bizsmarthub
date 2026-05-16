@@ -1396,6 +1396,7 @@ export default function DashboardPage() {
                 value={pct(ytd.gavPct ?? 0)}
                 sub={fmt(ytd.gav)}
                 signal={semaforo('gavPct', ytd.gavPct)}
+                hint="Gastos Administrativos y de Ventas como % de ingresos. <20% saludable, >35% alerta"
               />
               {ytd.covIntereses !== null && ytd.covIntereses !== undefined && (
                 <KpiCard
@@ -1403,6 +1404,7 @@ export default function DashboardPage() {
                   value={fmtX(ytd.covIntereses)}
                   sub="EBITDA / Gastos Fin."
                   signal={semaforo('covIntereses', ytd.covIntereses)}
+                  hint="Capacidad de pagar intereses con el EBITDA. >1.5x aceptable, >3x saludable, <1x crítico"
                 />
               )}
               {!isGrupo && cxc?.totalSaldo != null && cxp?.totalSaldo != null && (() => {
@@ -1413,6 +1415,7 @@ export default function DashboardPage() {
                     value={fmt(wc)}
                     sub="CxC − CxP"
                     signal={wc >= 0 ? 'green' : 'red'}
+                    hint="Liquidez operativa neta. Positivo: la empresa cubre sus obligaciones con su cartera. Negativo: riesgo de liquidez"
                   />
                 );
               })()}
@@ -1655,13 +1658,13 @@ export default function DashboardPage() {
           return (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                {(cxc.totalSaldoPEN ?? 0) > 0 && <KpiCard label="Cartera S/ PEN" value={fmt(cxc.totalSaldoPEN)} signal="neutral" />}
-                {hasUSD && <KpiCard label="Cartera $ USD" value={fUSD(cxc.totalSaldoUSD)} signal="neutral" />}
+                {(cxc.totalSaldoPEN ?? 0) > 0 && <KpiCard label="Cartera S/ PEN" value={fmt(cxc.totalSaldoPEN)} signal="neutral" sub="Saldo pendiente de cobro en soles" hint="Facturas emitidas aún no cobradas, moneda soles" />}
+                {hasUSD && <KpiCard label="Cartera $ USD" value={fUSD(cxc.totalSaldoUSD)} signal="neutral" sub="Saldo pendiente de cobro en dólares" hint="Facturas emitidas aún no cobradas, moneda USD" />}
                 {dso !== null && (
-                  <KpiCard label="DSO (Días de Cobro)" value={fmtDays(dso)} sub="Equiv. soles / (Ingresos / 365)" signal={semaforo('dso', dso)} />
+                  <KpiCard label="DSO (Días de Cobro)" value={fmtDays(dso)} sub="Equiv. soles / (Ingresos / 365)" signal={semaforo('dso', dso)} hint="Days Sales Outstanding — cuántos días tarda en promedio cobrar una venta. <45d bueno, >60d alerta" />
                 )}
-                <KpiCard label="N° Clientes" value={String(cxc.numClientes ?? cxc.clientes?.length ?? 0)} signal="neutral" />
-                <KpiCard label="Concentración Top 3" value={pct(cxc.concentracionTop3 ?? 0)} sub="% cartera equiv. soles" signal={semaforo('concentracion', cxc.concentracionTop3)} />
+                <KpiCard label="N° Clientes" value={String(cxc.numClientes ?? cxc.clientes?.length ?? 0)} signal="neutral" sub="Con saldo pendiente de cobro" hint="Clientes que tienen al menos una factura pendiente de cobro" />
+                <KpiCard label="Concentración Top 3" value={pct(cxc.concentracionTop3 ?? 0)} sub="% cartera equiv. soles" signal={semaforo('concentracion', cxc.concentracionTop3)} hint="Mayor concentración en pocos clientes = mayor riesgo de incobrabilidad si uno falla" />
               </div>
               <div style={{ marginBottom: '0.5rem' }}>
                 <SearchInput value={cxcSearch} onChange={setCxcSearch} placeholder="Buscar cliente..." />
@@ -1839,20 +1842,22 @@ export default function DashboardPage() {
           return (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                <KpiCard label="Deuda Total Proveedores" value={fmt(cxp.totalSaldo)} signal="neutral" />
+                <KpiCard label="Deuda Total Proveedores" value={fmt(cxp.totalSaldo)} signal="neutral" sub="Clase 42 — cuentas por pagar acumuladas" hint="Saldo neto de asientos contables en cuenta 42. Incluye comercial, RR.HH., préstamos y otros — ver composición abajo" />
                 <KpiCard
                   label="+90 días vencido"
                   value={fmt(cxp.total90mas)}
                   sub={pct(cxp.pct90mas)}
                   signal={cxp.pct90mas <= 20 ? 'green' : cxp.pct90mas <= 40 ? 'yellow' : 'red'}
+                  hint="Deuda con más de 90 días sin pagar. >40% puede indicar problemas de liquidez o litigios con proveedores"
                 />
-                <KpiCard label="N° Proveedores" value={String(cxp.numProveedores ?? 0)} signal="neutral" />
+                <KpiCard label="N° Proveedores" value={String(cxp.numProveedores ?? 0)} signal="neutral" sub="Con saldo pendiente" hint="Proveedores con deuda activa en cuenta 42 mayor a S/ 0.01" />
                 {dpo !== null && (
                   <KpiCard
                     label="DPO (Días de Pago)"
                     value={fmtDays(dpo)}
                     sub="Deuda / (Costo Dir. / 365)"
                     signal={dpo <= 60 ? 'green' : dpo <= 90 ? 'yellow' : 'red'}
+                    hint="Days Payable Outstanding — cuántos días tarda la empresa en pagar a sus proveedores. Mayor DPO puede reflejar presión de liquidez"
                   />
                 )}
                 <KpiCard
@@ -1860,6 +1865,7 @@ export default function DashboardPage() {
                   value={pct(cxp.concentracionTop3 ?? 0)}
                   sub="% deuda en 3 principales proveedores"
                   signal={semaforo('concentracion', cxp.concentracionTop3)}
+                  hint=">60% en 3 proveedores indica dependencia. Si uno exige pago inmediato puede generar crisis de liquidez"
                 />
               </div>
 
@@ -1992,12 +1998,15 @@ export default function DashboardPage() {
                   value={`${runway} mes${runway !== 1 ? 'es' : ''}`}
                   sub="Saldo / gasto operativo mensual"
                   signal={runway >= 3 ? 'green' : runway >= 1 ? 'yellow' : 'red'}
+                  hint="Cuántos meses puede operar la empresa con el saldo actual sin nuevos ingresos. <1 mes: crítico, 1-3 meses: alerta, >3 meses: saludable"
                 />
               )}
               <KpiCard
                 label="Bancos activos"
                 value={String(caja.bancos?.filter((b: any) => Object.values(b.meses).some((v: any) => v !== 0)).length ?? 0)}
                 signal="neutral"
+                sub="Cuentas con movimiento en el período"
+                hint="Cuentas bancarias (clase 10) que registraron al menos un movimiento en el año seleccionado"
               />
             </div>
 
@@ -3139,9 +3148,9 @@ export default function DashboardPage() {
             {!activoFijoData?.rows?.length ? <NoDataBanner kpi="Activo Fijo" /> : (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
-                  <KpiCard label="Valor Bruto" value={fmt(activoFijoData.totalBruto)} signal="neutral" />
-                  <KpiCard label="Depreciación Acum." value={fmt(activoFijoData.totalDeprec)} signal="neutral" />
-                  <KpiCard label="Valor Neto" value={fmt(activoFijoData.totalNeto)} signal={activoFijoData.totalNeto > 0 ? 'green' : 'neutral'} />
+                  <KpiCard label="Valor Bruto" value={fmt(activoFijoData.totalBruto)} signal="neutral" sub="Costo histórico acumulado (clase 33)" hint="Suma del costo de adquisición de todos los activos fijos, sin descontar depreciación" />
+                  <KpiCard label="Depreciación Acum." value={fmt(activoFijoData.totalDeprec)} signal="neutral" sub="Total depreciado acumulado (clase 39)" hint="Depreciación acumulada histórica de todos los activos fijos" />
+                  <KpiCard label="Valor Neto" value={fmt(activoFijoData.totalNeto)} signal={activoFijoData.totalNeto > 0 ? 'green' : 'neutral'} sub="Valor en libros = Bruto − Depreciación" hint="Valor contable actual del activo fijo. Si es muy bajo puede indicar activos totalmente depreciados en uso" />
                 </div>
                 {/* Formato nuevo (post-fix mayo 2026): rows separados por Clase */}
                 {activoFijoData.activos ? (
@@ -3230,10 +3239,10 @@ export default function DashboardPage() {
             {!tesoreriaData?.bancos?.length ? <NoDataBanner kpi="Tesorería" /> : (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
-                  <KpiCard label="Saldo Inicial" value={fmt(tesoreriaData.totalSaldoInicial)} signal="neutral" />
-                  <KpiCard label={`Entradas ${selectedYear}`} value={fmt(tesoreriaData.totalEntradasAnio)} signal="green" />
-                  <KpiCard label={`Salidas ${selectedYear}`} value={fmt(tesoreriaData.totalSalidasAnio)} signal="neutral" />
-                  <KpiCard label="Saldo Final" value={fmt(tesoreriaData.totalSaldoFinal)} signal={tesoreriaData.totalSaldoFinal >= 0 ? 'green' : 'red'} />
+                  <KpiCard label="Saldo Inicial" value={fmt(tesoreriaData.totalSaldoInicial)} signal="neutral" sub={`Acumulado antes de ${selectedYear}`} hint="Posición bancaria neta al 31-dic del año anterior, heredada al inicio del año seleccionado" />
+                  <KpiCard label={`Entradas ${selectedYear}`} value={fmt(tesoreriaData.totalEntradasAnio)} signal="green" sub="Débitos en cuentas clase 10" hint="Total de entradas (cobros, transferencias recibidas) registradas en cuentas bancarias durante el año" />
+                  <KpiCard label={`Salidas ${selectedYear}`} value={fmt(tesoreriaData.totalSalidasAnio)} signal="neutral" sub="Créditos en cuentas clase 10" hint="Total de salidas (pagos, transferencias enviadas) registradas en cuentas bancarias durante el año" />
+                  <KpiCard label="Saldo Final" value={fmt(tesoreriaData.totalSaldoFinal)} signal={tesoreriaData.totalSaldoFinal >= 0 ? 'green' : 'red'} sub="Inicial + Entradas − Salidas" hint="Posición bancaria neta acumulada al cierre del año seleccionado" />
                 </div>
                 <div style={{ fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem' }}>
                   Clase 10 — Posición bancaria {selectedYear}: saldo antes del año, entradas/salidas del período y saldo neto acumulado.
@@ -3279,7 +3288,7 @@ export default function DashboardPage() {
                   <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>
                     Clases 50–59: capital social, reservas, resultados acumulados y del ejercicio.
                   </div>
-                  <KpiCard label="Patrimonio Neto" value={fmt(patrimonioData.totalPatrimonio)} signal={patrimonioData.totalPatrimonio >= 0 ? 'green' : 'red'} />
+                  <KpiCard label="Patrimonio Neto" value={fmt(patrimonioData.totalPatrimonio)} signal={patrimonioData.totalPatrimonio >= 0 ? 'green' : 'red'} sub="Activo − Pasivo total" hint="Clases 50–59: capital social, reservas y resultados. Negativo indica patrimonio deteriorado" />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -3323,7 +3332,7 @@ export default function DashboardPage() {
                   <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>
                     Clases 20–29: mercaderías, materias primas, suministros, existencias por recibir.
                   </div>
-                  <KpiCard label="Saldo Inventarios" value={fmt(inventariosData.totalSaldo)} signal={inventariosData.totalSaldo > 0 ? 'green' : 'neutral'} />
+                  <KpiCard label="Saldo Inventarios" value={fmt(inventariosData.totalSaldo)} signal={inventariosData.totalSaldo > 0 ? 'green' : 'neutral'} sub="Valor en libros de existencias" hint="Clases 20–29: mercaderías, materias primas, suministros y existencias por recibir" />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -3407,7 +3416,7 @@ export default function DashboardPage() {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div style={{ fontSize: '0.82rem', color: '#8B97A8' }}>Clase 10 — Saldo acumulado total (sin filtro de año)</div>
-                  <KpiCard label="Total Caja" value={fmt(cajaSaldosData.totalSaldo)} signal={cajaSaldosData.totalSaldo >= 0 ? 'green' : 'red'} />
+                  <KpiCard label="Total Caja" value={fmt(cajaSaldosData.totalSaldo)} signal={cajaSaldosData.totalSaldo >= 0 ? 'green' : 'red'} sub="Saldo acumulado histórico" hint="Clase 10 — posición bancaria neta acumulada sin filtro de año. Diferencia de débitos y créditos históricos" />
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -3445,10 +3454,10 @@ export default function DashboardPage() {
               {!conciliacionData ? <div style={{ color: '#8B97A8' }}>Sin datos disponibles.</div> : (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-                    <KpiCard label="Cuentas Bancarias" value={String(conciliacionData.totalCuentas || 0)} signal="neutral" />
-                    <KpiCard label="Con Estados Cargados" value={String(conciliacionData.cuentasConEstados || 0)} signal={conciliacionData.cuentasConEstados > 0 ? 'green' : 'red'} />
-                    <KpiCard label="Sin Conciliación" value={String(conciliacionData.cuentasSinEstados || 0)} signal={conciliacionData.cuentasSinEstados > 0 ? 'red' : 'green'} />
-                    <KpiCard label="Movs Sin Conciliar" value={String(conciliacionData.totalMovsSinConc || 0)} signal={conciliacionData.totalMovsSinConc > 0 ? 'yellow' : 'green'} />
+                    <KpiCard label="Cuentas Bancarias" value={String(conciliacionData.totalCuentas || 0)} signal="neutral" sub="Total cuentas clase 10" hint="Todas las subcuentas bancarias activas registradas en S10 (clase 10)" />
+                    <KpiCard label="Con Estados Cargados" value={String(conciliacionData.cuentasConEstados || 0)} signal={conciliacionData.cuentasConEstados > 0 ? 'green' : 'red'} sub="Cuentas con estado bancario en S10" hint="Cuentas que tienen al menos un estado de cuenta bancario cargado — necesario para conciliar" />
+                    <KpiCard label="Sin Conciliación" value={String(conciliacionData.cuentasSinEstados || 0)} signal={conciliacionData.cuentasSinEstados > 0 ? 'red' : 'green'} sub="Cuentas sin estado bancario" hint="Cuentas sin estados cargados — riesgo de fraude o error no detectado. Deben tener estados mensuales" />
+                    <KpiCard label="Movs Sin Conciliar" value={String(conciliacionData.totalMovsSinConc || 0)} signal={conciliacionData.totalMovsSinConc > 0 ? 'yellow' : 'green'} sub="Asientos sin documento de soporte" hint="Movimientos contables que no tienen un documento (factura, recibo) que los respalde. Deben ser cero" />
                   </div>
                   {!conciliacionData.usaModulo && (
                     <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', padding: '0.75rem', borderRadius: '0.5rem', color: '#EF4444', fontSize: '0.85rem' }}>

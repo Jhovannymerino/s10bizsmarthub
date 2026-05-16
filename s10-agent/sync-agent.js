@@ -2028,22 +2028,28 @@ HAVING SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02
 `;
 
 const VQ_PERGOLA_AGING = (cod) => `
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND (DescripcionIdentificador LIKE '%PERGOLA%' OR DescripcionIdentificador LIKE '%PÉRGOLA%')
+    AND (Total - ISNULL(TotalPagado,0)) > 0.5
+)
 SELECT
-  doc.SerieDocumento + '-' + doc.NumeroDocumento AS Documento,
-  CONVERT(VARCHAR(10), doc.FechaDocumento, 103) AS FechaDoc,
-  CONVERT(VARCHAR(10), doc.FechaVencimiento, 103) AS FechaVenc,
-  DATEDIFF(DAY, doc.FechaVencimiento, GETDATE()) AS DiasVencido,
-  doc.DescripcionIdentificador AS Cliente,
-  doc.RUC,
-  ROUND(ISNULL(doc.Total,0), 2) AS Total,
-  ROUND(ISNULL(doc.TotalPagado,0), 2) AS Pagado,
-  ROUND(ISNULL(doc.Total,0) - ISNULL(doc.TotalPagado,0), 2) AS Saldo,
-  ISNULL(doc.DescripcionEstado,'') AS Estado
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${cod}'
-  AND (doc.DescripcionIdentificador LIKE '%PERGOLA%' OR doc.DescripcionIdentificador LIKE '%PÉRGOLA%')
-  AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.5
-ORDER BY doc.FechaDocumento DESC
+  SerieDocumento + '-' + NumeroDocumento AS Documento,
+  CONVERT(VARCHAR(10), FechaDocumento, 103) AS FechaDoc,
+  CONVERT(VARCHAR(10), FechaVencimiento, 103) AS FechaVenc,
+  DATEDIFF(DAY, FechaVencimiento, GETDATE()) AS DiasVencido,
+  DescripcionIdentificador AS Cliente,
+  RUC,
+  ROUND(ISNULL(Total,0), 2) AS Total,
+  ROUND(ISNULL(TotalPagado,0), 2) AS Pagado,
+  ROUND(ISNULL(Total,0) - ISNULL(TotalPagado,0), 2) AS Saldo,
+  ISNULL(DescripcionEstado,'') AS Estado
+FROM dedup
+WHERE rn = 1
+ORDER BY FechaDocumento DESC
 `;
 
 const VQ_CXC_CONCENTRACION = (cod) => `
@@ -2085,7 +2091,7 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 LEFT JOIN CMO.dbo.Identificador i ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${cod}'
-  AND LEFT(pcd.CodCuenta,2) IN ('14','16','17')
+  AND LEFT(pcd.CodCuenta,2) IN ('14','16','17','42')
   AND (
     i.RUC IN (${VQ_RUC_GRUPO.map((r) => `'${r}'`).join(',')})
     OR ac.CodIdentificador IN (${VQ_RUC_GRUPO.map((r) => `'${r}'`).join(',')})
@@ -2376,20 +2382,41 @@ ORDER BY Anio DESC
 `;
 
 const VQ_CXP_CONCENTRACION = (cod) => `
+-- Solo deuda COMERCIAL (excluye préstamos, anticipos y no-comerciales de cta. 42)
+-- Mismos filtros que QUERY_CXP para coherencia con el aging operativo
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorPagar
+  WHERE CodEmpresa = '${cod}'
+    AND (Total - ISNULL(TotalPagado,0)) > 0.5
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%PRESTAMO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%PRÉSTAMO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%ANTICIPO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%TRANSFERENCIA BANCARIA%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%ENTREGA A RENDIR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%COMPROBANTE DE RETEN%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%PLANILLA DE PAGOS%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%AJUSTES POR REDONDEO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%FONDO ROTATORIO%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%REQUERIMIENTO DE PAGOS%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%BENEFICIO SOCIAL%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%LIQUIDACION DE BENEF%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%RETENCION POR RECUPERAR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%RETENCIÓN POR RECUPERAR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%DEVOLUCION%'
+)
 SELECT TOP 15
-  ISNULL(i.Descripcion, CAST(ac.CodIdentificador AS VARCHAR)) AS Proveedor,
-  ISNULL(i.RUC, '') AS RUC,
-  ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) AS SaldoCxP,
-  COUNT(*) AS NumAsientos,
-  CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerMov,
-  CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-LEFT JOIN CMO.dbo.Identificador i ON ac.CodIdentificador = i.CodIdentificador
-WHERE ac.CodEmpresa = '${cod}'
-  AND LEFT(pcd.CodCuenta, 2) = '42'
-GROUP BY i.Descripcion, ac.CodIdentificador, i.RUC
-HAVING SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)) > 1000
+  ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR)) AS Proveedor,
+  ISNULL(CodIdentificador,'') AS CodProveedor,
+  COUNT(*) AS NumDocumentos,
+  ROUND(SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)), 2) AS SaldoCxP,
+  CONVERT(VARCHAR(10), MIN(FechaDocumento), 103) AS PrimerDoc,
+  CONVERT(VARCHAR(10), MAX(FechaDocumento), 103) AS UltimoDoc
+FROM dedup
+WHERE rn = 1
+GROUP BY DescripcionIdentificador, CodIdentificador
+HAVING SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 1000
 ORDER BY SaldoCxP DESC
 `;
 

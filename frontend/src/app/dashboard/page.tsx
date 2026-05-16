@@ -15,6 +15,7 @@ import { DetalleModal } from './_components/modals/DetalleModal';
 import { CajaTxnModal } from './_components/modals/CajaTxnModal';
 import { AccountTxnModal } from './_components/modals/AccountTxnModal';
 import { AuditSinDocModal } from './_components/modals/AuditSinDocModal';
+import { AuditClasificacionModal } from './_components/modals/AuditClasificacionModal';
 import { API, COMPANIES, GRUPO, CURRENT_YEAR, MIN_YEAR, MESES, COLORS_PIE, COLORS_EMPRESA, CLASE_NAMES } from './_lib/constants';
 import { fmt, pct, fmtDays, fmtX, yoyPct } from './_lib/formatters';
 import { exportCSV } from './_lib/csv';
@@ -185,6 +186,7 @@ export default function DashboardPage() {
   const [cajaTxDrill, setCajaTxDrill] = useState<{ codBanco: string; desBanco: string } | null>(null);
   const [accountTxDrill, setAccountTxDrill] = useState<{ codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; yearOverride?: number; mesPreset?: number } | null>(null);
   const [auditSinDocDrill, setAuditSinDocDrill] = useState<{ clase: string; desClase: string } | null>(null);
+  const [showAuditClasif, setShowAuditClasif] = useState(false);
   const [gavDrill, setGavDrill] = useState<{ cod: string; descripcion: string; meses: Record<number, number>; ytd: number } | null>(null);
   const [cxcSearch, setCxcSearch] = useState('');
   const [cxpSearch, setCxpSearch] = useState('');
@@ -674,6 +676,12 @@ export default function DashboardPage() {
           yearOverride={accountTxDrill.yearOverride}
           mesPreset={accountTxDrill.mesPreset}
           onClose={() => setAccountTxDrill(null)}
+        />
+      )}
+      {showAuditClasif && (
+        <AuditClasificacionModal
+          companyId={selectedCompany.codEmpresa}
+          onClose={() => setShowAuditClasif(false)}
         />
       )}
       {auditSinDocDrill && (
@@ -1897,9 +1905,14 @@ export default function DashboardPage() {
                             {fmt(totalRevision)}{totalRevisionUSD > 0.01 ? ` + $ ${totalRevisionUSD.toLocaleString('es-PE', { minimumFractionDigits: 0 })} USD` : ''} requieren revisión contable
                           </span>
                           <span style={{ fontSize: '0.75rem', color: '#92400E', marginLeft: '0.5rem' }}>
-                            — Préstamos, anticipos u otros documentos mal clasificados en cuenta 42. Ver composición abajo y solicitar reclasificación.
+                            — Préstamos, anticipos u otros documentos mal clasificados en cuenta 42.
                           </span>
                         </div>
+                        <button
+                          onClick={() => setShowAuditClasif(true)}
+                          style={{ padding: '0.35rem 0.9rem', borderRadius: '0.5rem', border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.12)', color: '#F59E0B', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          Ver detalle ▶
+                        </button>
                       </div>
                     )}
                   </>

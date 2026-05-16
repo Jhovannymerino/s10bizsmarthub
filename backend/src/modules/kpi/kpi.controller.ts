@@ -505,6 +505,12 @@ export class KpiController {
     return this.kpiService.getAuditConciliacion(companyId, y);
   }
 
+  /** Auditoría de clasificación contable: ítems en cuenta 42 que deberían estar en 45 o 162 */
+  @Get(':companyId/audit/clasificacion')
+  getAuditClasificacion(@Param('companyId') companyId: string) {
+    return this.kpiService.getAuditClasificacion(companyId);
+  }
+
   /** Años disponibles (con datos sincronizados) para una empresa */
   @Get(':companyId/available-years')
   getAvailableYears(@Param('companyId') companyId: string) {

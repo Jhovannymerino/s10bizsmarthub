@@ -1341,6 +1341,99 @@ export class KpiService {
     return { rows: cached.data as any[], year, syncedAt: cached.syncedAt };
   }
 
+  async getAuditClasificacion(companyId: string) {
+    const [cxpDocsSnap, otrasCxpSnap, otrasCxcSnap] = await Promise.all([
+      this.getSnapshot(companyId, 'cxp_docs', 'current'),
+      this.getSnapshot(companyId, 'otras_cxp', 'current'),
+      this.getSnapshot(companyId, 'otras_cxc', 'current'),
+    ]);
+
+    // ── Items en cuenta 42 que no son deuda comercial ni planilla ──
+    const cxpDocs = (cxpDocsSnap?.data as any[]) ?? [];
+    const malClasificados: any[] = [];
+    for (const d of cxpDocs) {
+      const cat = this.classifyCxPDoc(d.DesTipo || '');
+      if (cat === 'comercial' || cat === 'rrhh') continue;
+      const pagado = parseFloat(d.Pagado) || 0;
+      let cuentaSugerida = '';
+      let motivo = '';
+      if (cat === 'prestamo') {
+        cuentaSugerida = '45 — Obligaciones Financieras';
+        motivo = 'Préstamo financiero registrado como CxP comercial';
+      } else if (cat === 'anticipo') {
+        cuentaSugerida = pagado > 0 ? '162 — Anticipos a Proveedores' : '42 o 162 — verificar si hay entrega pendiente';
+        motivo = pagado > 0
+          ? 'Anticipo ya abonado — el dinero ya salió, debería ser activo en cuenta 162'
+          : 'Anticipo sin pago registrado — verificar naturaleza con contador';
+      } else {
+        cuentaSugerida = 'Revisar con contador';
+        motivo = 'Documento no estándar en módulo CxP';
+      }
+      malClasificados.push({
+        categoria: cat,
+        cuentaActual: '42',
+        cuentaSugerida,
+        motivo,
+        proveedor: d.Proveedor || d.CodProveedor,
+        codProveedor: d.CodProveedor,
+        nroD: d.NroD,
+        serie: d.Serie || '',
+        numero: d.Numero || '',
+        tipo: d.DesTipo || d.TipoDoc,
+        fechaDocumento: d.FechaDocumento,
+        fechaVencimiento: d.FechaVencimiento,
+        moneda: d.Moneda,
+        total: round(parseFloat(d.Total) || 0),
+        pagado: round(pagado),
+        saldo: round(parseFloat(d.Saldo) || 0),
+      });
+    }
+
+    // ── Lo que SÍ está correctamente en cuenta 45 ──
+    const otrasCxp = (otrasCxpSnap?.data as any[]) ?? [];
+    const en45 = otrasCxp
+      .filter((r: any) => r.Clase === '45')
+      .map((r: any) => ({
+        cuenta: r.CodCuenta,
+        desCuenta: r.DesCuenta,
+        tercero: r.Tercero,
+        codTercero: r.CodTercero,
+        saldoTotal: round(parseFloat(r.SaldoTotal) || 0),
+      }))
+      .filter((r: any) => r.saldoTotal > 0.01);
+
+    // ── Lo que SÍ está correctamente en cuenta 16x (anticipos a proveedores) ──
+    const otrasCxc = (otrasCxcSnap?.data as any[]) ?? [];
+    const en16 = otrasCxc
+      .filter((r: any) => r.Clase === '16')
+      .map((r: any) => ({
+        cuenta: r.CodCuenta,
+        desCuenta: r.DesCuenta,
+        tercero: r.Tercero,
+        codTercero: r.CodTercero,
+        saldoTotal: round(parseFloat(r.SaldoTotal) || 0),
+      }))
+      .filter((r: any) => Math.abs(r.saldoTotal) > 0.01);
+
+    // ── Resumen por categoría ──
+    const resumen42: Record<string, { count: number; saldo: number }> = {};
+    for (const d of malClasificados) {
+      if (!resumen42[d.categoria]) resumen42[d.categoria] = { count: 0, saldo: 0 };
+      resumen42[d.categoria].count++;
+      resumen42[d.categoria].saldo = round(resumen42[d.categoria].saldo + d.saldo);
+    }
+
+    return {
+      malClasificados,
+      resumen42,
+      total42Revision: round(malClasificados.reduce((s, d) => s + d.saldo, 0)),
+      en45,
+      total45: round(en45.reduce((s, r) => s + r.saldoTotal, 0)),
+      en16,
+      total16: round(en16.reduce((s, r) => s + r.saldoTotal, 0)),
+    };
+  }
+
   async getAvailableYears(companyId: string) {
     const rows = await this.prisma.kpiSnapshot.findMany({
       where: { companyId, kpiType: 'pl' },

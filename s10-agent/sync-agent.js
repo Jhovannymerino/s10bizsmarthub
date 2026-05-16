@@ -462,7 +462,6 @@ WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.DescripcionEstado = '1'
   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%ANTICIPO%'
   AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
 ORDER BY doc.CodIdentificador,
          DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,

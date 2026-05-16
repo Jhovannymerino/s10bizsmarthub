@@ -439,33 +439,40 @@ ORDER BY SaldoTotal DESC
 `;
 
 // Documentos pendientes de pago por proveedor (reemplaza drilldown de asientos contables)
+// CTE dedup elimina duplicados que genera vw_12DocumentosPorPagar por su JOIN interno
 const QUERY_CXP_DOCS = (codEmpresa) => `
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorPagar
+  WHERE CodEmpresa = '${codEmpresa}'
+    AND DescripcionEstado = '1'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
+    AND (Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
+)
 SELECT
-  ISNULL(doc.CodIdentificador,'')                                    AS CodProveedor,
-  ISNULL(doc.DescripcionIdentificador, doc.CodIdentificador)         AS Proveedor,
-  doc.NroD,
-  doc.CodTipoDocumento                                               AS TipoDoc,
-  ISNULL(doc.DescripcionTipoDocumento,'')                            AS DesTipo,
-  ISNULL(doc.SerieDocumento,'')                                      AS Serie,
-  ISNULL(doc.NumeroDocumento,'')                                     AS Numero,
-  CONVERT(VARCHAR(10), doc.FechaDocumento, 103)                      AS FechaDocumento,
-  CONVERT(VARCHAR(10), ISNULL(doc.FechaVencimiento, doc.FechaDocumento), 103) AS FechaVencimiento,
-  doc.CodMoneda                                                      AS Moneda,
-  ROUND(doc.Total, 2)                                                AS Total,
-  ROUND(ISNULL(doc.TotalPagado,0), 2)                                AS Pagado,
-  ROUND(ISNULL(doc.MontoDetraccion,0), 2)                            AS Detraccion,
-  ROUND(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0), 2) AS Saldo,
-  DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) AS DiasVencido,
-  ISNULL(doc.DescripcionEstado,'')                                   AS Estado
-FROM CMO.dbo.vw_12DocumentosPorPagar doc
-WHERE doc.CodEmpresa = '${codEmpresa}'
-  AND doc.DescripcionEstado = '1'
-  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-  AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
-ORDER BY doc.CodIdentificador,
-         DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,
-         doc.Total DESC
+  ISNULL(CodIdentificador,'')                                        AS CodProveedor,
+  ISNULL(DescripcionIdentificador, CodIdentificador)                 AS Proveedor,
+  NroD,
+  CodTipoDocumento                                                   AS TipoDoc,
+  ISNULL(DescripcionTipoDocumento,'')                                AS DesTipo,
+  ISNULL(SerieDocumento,'')                                          AS Serie,
+  ISNULL(NumeroDocumento,'')                                         AS Numero,
+  CONVERT(VARCHAR(10), FechaDocumento, 103)                          AS FechaDocumento,
+  CONVERT(VARCHAR(10), ISNULL(FechaVencimiento, FechaDocumento), 103) AS FechaVencimiento,
+  CodMoneda                                                          AS Moneda,
+  ROUND(Total, 2)                                                    AS Total,
+  ROUND(ISNULL(TotalPagado,0), 2)                                    AS Pagado,
+  ROUND(ISNULL(MontoDetraccion,0), 2)                                AS Detraccion,
+  ROUND(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0), 2) AS Saldo,
+  DATEDIFF(DAY, ISNULL(FechaVencimiento, FechaDocumento), GETDATE()) AS DiasVencido,
+  ISNULL(DescripcionEstado,'')                                       AS Estado
+FROM dedup
+WHERE rn = 1
+ORDER BY CodIdentificador,
+         DATEDIFF(DAY, ISNULL(FechaVencimiento, FechaDocumento), GETDATE()) DESC,
+         Total DESC
 `;
 
 const QUERY_CAJA = (codEmpresa, fechaInicio, fechaFin) => `

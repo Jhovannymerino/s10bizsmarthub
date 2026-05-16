@@ -434,7 +434,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND LEFT(pcd.CodCuenta, 2) = '42'
 GROUP BY i.Descripcion, ac.CodIdentificador
-HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) > 0
+HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) > 0.01
 ORDER BY SaldoTotal DESC
 `;
 
@@ -462,6 +462,7 @@ WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.DescripcionEstado = '1'
   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
+  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%ANTICIPO%'
   AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
 ORDER BY doc.CodIdentificador,
          DATEDIFF(DAY, ISNULL(doc.FechaVencimiento, doc.FechaDocumento), GETDATE()) DESC,

@@ -1877,7 +1877,7 @@ export default function DashboardPage() {
                     }} />
                   </div>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>Click en un proveedor para ver los asientos individuales · Ordenar por columna</div>
+                <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>Click en un proveedor para ver sus documentos pendientes · Ordenar por columna</div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10">
                     <thead>

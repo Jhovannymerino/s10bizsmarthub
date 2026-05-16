@@ -727,15 +727,17 @@ export class KpiService {
   }
 
   buildCxP(rows: any[]) {
-    const proveedores = rows.map((r) => ({
-      proveedor: r.Proveedor || r.CodProveedor,
-      codProveedor: r.CodProveedor,
-      saldoTotal: round(parseFloat(r.SaldoTotal) || 0),
-      dias0_30:  round(parseFloat(r.Dias_0_30)  || 0),
-      dias31_60: round(parseFloat(r.Dias_31_60) || 0),
-      dias61_90: round(parseFloat(r.Dias_61_90) || 0),
-      dias90mas: round(parseFloat(r.Dias_90_mas) || 0),
-    }));
+    const proveedores = rows
+      .map((r) => ({
+        proveedor: r.Proveedor || r.CodProveedor,
+        codProveedor: r.CodProveedor,
+        saldoTotal: round(parseFloat(r.SaldoTotal) || 0),
+        dias0_30:  round(parseFloat(r.Dias_0_30)  || 0),
+        dias31_60: round(parseFloat(r.Dias_31_60) || 0),
+        dias61_90: round(parseFloat(r.Dias_61_90) || 0),
+        dias90mas: round(parseFloat(r.Dias_90_mas) || 0),
+      }))
+      .filter((p) => p.saldoTotal > 0.01);
 
     const totalSaldo  = proveedores.reduce((s, p) => s + p.saldoTotal, 0);
     const total90mas  = proveedores.reduce((s, p) => s + p.dias90mas, 0);

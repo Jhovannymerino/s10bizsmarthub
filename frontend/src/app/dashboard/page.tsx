@@ -1847,33 +1847,64 @@ export default function DashboardPage() {
             : null;
           return (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                <KpiCard label="Deuda Total Proveedores" value={fmt(cxp.totalSaldo)} signal="neutral" sub="Clase 42 — cuentas por pagar acumuladas" hint="Saldo neto de asientos contables en cuenta 42. Incluye comercial, RR.HH., préstamos y otros — ver composición abajo" />
-                <KpiCard
-                  label="+90 días vencido"
-                  value={fmt(cxp.total90mas)}
-                  sub={pct(cxp.pct90mas)}
-                  signal={cxp.pct90mas <= 20 ? 'green' : cxp.pct90mas <= 40 ? 'yellow' : 'red'}
-                  hint="Deuda con más de 90 días sin pagar. >40% puede indicar problemas de liquidez o litigios con proveedores"
-                />
-                <KpiCard label="N° Proveedores" value={String(cxp.numProveedores ?? 0)} signal="neutral" sub="Con saldo pendiente" hint="Proveedores con deuda activa en cuenta 42 mayor a S/ 0.01" />
-                {dpo !== null && (
-                  <KpiCard
-                    label="DPO (Días de Pago)"
-                    value={fmtDays(dpo)}
-                    sub="Deuda / (Costo Dir. / 365)"
-                    signal={dpo <= 60 ? 'green' : dpo <= 90 ? 'yellow' : 'red'}
-                    hint="Days Payable Outstanding — cuántos días tarda la empresa en pagar a sus proveedores. Mayor DPO puede reflejar presión de liquidez"
-                  />
-                )}
-                <KpiCard
-                  label="Concentración Top 3"
-                  value={pct(cxp.concentracionTop3 ?? 0)}
-                  sub="% deuda en 3 principales proveedores"
-                  signal={semaforo('concentracion', cxp.concentracionTop3)}
-                  hint=">60% en 3 proveedores indica dependencia. Si uno exige pago inmediato puede generar crisis de liquidez"
-                />
-              </div>
+              {(() => {
+                const bd = cxp.breakdown;
+                const totalComercial = bd ? (bd.comercialPEN + bd.rrhhPEN) : null;
+                const totalRevision  = bd ? (bd.prestamoPEN + bd.anticipoPEN + bd.otroPEN) : null;
+                const totalRevisionUSD = bd ? (bd.prestamoUSD + bd.anticipoUSD + bd.otroUSD) : 0;
+                return (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                      {totalComercial !== null ? (
+                        <KpiCard label="Deuda Comercial" value={fmt(totalComercial)} signal="neutral" sub="Facturas + planillas" hint="Deuda comercial real: facturas, boletas, recibos, honorarios y requerimientos de pago al personal" />
+                      ) : (
+                        <KpiCard label="Deuda Total Proveedores" value={fmt(cxp.totalSaldo)} signal="neutral" sub="Clase 42 — cuentas por pagar" hint="Incluye comercial, RR.HH., préstamos y otros — ver composición abajo" />
+                      )}
+                      <KpiCard
+                        label="+90 días vencido"
+                        value={fmt(cxp.total90mas)}
+                        sub={pct(cxp.pct90mas)}
+                        signal={cxp.pct90mas <= 20 ? 'green' : cxp.pct90mas <= 40 ? 'yellow' : 'red'}
+                        hint="Deuda con más de 90 días sin pagar. >40% puede indicar problemas de liquidez o litigios con proveedores"
+                      />
+                      <KpiCard label="N° Proveedores" value={String(cxp.numProveedores ?? 0)} signal="neutral" sub="Con saldo pendiente" hint="Proveedores con deuda activa en cuenta 42 mayor a S/ 0.01" />
+                      {dpo !== null && (
+                        <KpiCard
+                          label="DPO (Días de Pago)"
+                          value={fmtDays(dpo)}
+                          sub="Deuda / (Costo Dir. / 365)"
+                          signal={dpo <= 60 ? 'green' : dpo <= 90 ? 'yellow' : 'red'}
+                          hint="Days Payable Outstanding — cuántos días tarda la empresa en pagar a sus proveedores. Mayor DPO puede reflejar presión de liquidez"
+                        />
+                      )}
+                      <KpiCard
+                        label="Concentración Top 3"
+                        value={pct(cxp.concentracionTop3 ?? 0)}
+                        sub="% deuda en 3 principales proveedores"
+                        signal={semaforo('concentracion', cxp.concentracionTop3)}
+                        hint=">60% en 3 proveedores indica dependencia. Si uno exige pago inmediato puede generar crisis de liquidez"
+                      />
+                    </div>
+                    {totalRevision !== null && totalRevision > 0.01 && (
+                      <div style={{
+                        background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+                        borderRadius: '0.5rem', padding: '0.65rem 1rem', marginBottom: '1rem',
+                        display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+                      }}>
+                        <span style={{ fontSize: '1rem' }}>⚠️</span>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F59E0B' }}>
+                            {fmt(totalRevision)}{totalRevisionUSD > 0.01 ? ` + $ ${totalRevisionUSD.toLocaleString('es-PE', { minimumFractionDigits: 0 })} USD` : ''} requieren revisión contable
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#92400E', marginLeft: '0.5rem' }}>
+                            — Préstamos, anticipos u otros documentos mal clasificados en cuenta 42. Ver composición abajo y solicitar reclasificación.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* ── Composición de CxP ── */}
               {cxp.breakdown && (() => {

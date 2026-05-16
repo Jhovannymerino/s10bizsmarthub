@@ -1242,13 +1242,17 @@ export default function DashboardPage() {
                 {ytd ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
                     <KpiCard label="Ingresos YTD" value={fmt(ytd.ingresos)} signal="neutral"
-                      sub={prevYear ? `Ant: ${fmt(prevYear.ytd?.ingresos)}` : `${selectedYear}`} />
+                      sub={prevYear ? `Ant: ${fmt(prevYear.ytd?.ingresos)}` : `${selectedYear}`}
+                      onClick={() => setActiveTab('pl')} />
                     <KpiCard label="Margen Bruto" value={pct(ytd.margenBrutoPct)} signal={semaforo('margenBrutoPct', ytd.margenBrutoPct)}
-                      sub={fmt(ytd.margenBruto)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.margenBrutoPct)}` : undefined} />
+                      sub={fmt(ytd.margenBruto)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.margenBrutoPct)}` : undefined}
+                      onClick={() => setActiveTab('pl')} />
                     <KpiCard label="EBITDA" value={fmt(ytd.ebitda)} signal={semaforo('ebitdaPct', ytd.ebitdaPct)}
-                      sub={pct(ytd.ebitdaPct)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.ebitdaPct)}` : undefined} />
+                      sub={pct(ytd.ebitdaPct)} hint={prevYear ? `Ant: ${pct(prevYear.ytd?.ebitdaPct)}` : undefined}
+                      onClick={() => setActiveTab('pl')} />
                     <KpiCard label="Utilidad Neta" value={fmt(ytd.utilidadNeta)} signal={semaforo('margenNetoPct', ytd.margenNetoPct ?? 0)}
-                      sub={pct(ytd.margenNetoPct ?? 0)} />
+                      sub={pct(ytd.margenNetoPct ?? 0)}
+                      onClick={() => setActiveTab('pl')} />
                     {cxcSplitData
                       ? <>
                           <KpiCard label="CxC Comercial" value={fmt(cxcSplitData.comercial)}
@@ -1263,9 +1267,9 @@ export default function DashboardPage() {
                             onClick={() => setActiveTab('otras_cxc')} />}
                         </>
                       : cxc && <KpiCard label="CxC Total" value={fmt(cxc.totalSaldo)} signal={dso && dso > 60 ? 'red' : dso && dso > 45 ? 'yellow' : 'green'}
-                          sub={dso ? `DSO ${dso}d` : 'sin DSO'} />}
+                          sub={dso ? `DSO ${dso}d` : 'sin DSO'} onClick={() => setActiveTab('cxc')} />}
                     {saldoCaja != null && <KpiCard label="Saldo Caja" value={fmt(saldoCaja)} signal={saldoCaja > 0 ? 'green' : 'red'}
-                      sub={runway ? `Runway ${runway}m` : 'sin runway'} />}
+                      sub={runway ? `Runway ${runway}m` : 'sin runway'} onClick={() => setActiveTab('caja')} />}
                   </div>
                 ) : (
                   <div style={{ marginBottom: '1.75rem' }}>
@@ -1397,6 +1401,7 @@ export default function DashboardPage() {
                 sub={fmt(ytd.gav)}
                 signal={semaforo('gavPct', ytd.gavPct)}
                 hint="Gastos Administrativos y de Ventas como % de ingresos. <20% saludable, >35% alerta"
+                onClick={() => setActiveTab('gav')}
               />
               {ytd.covIntereses !== null && ytd.covIntereses !== undefined && (
                 <KpiCard
@@ -1416,6 +1421,7 @@ export default function DashboardPage() {
                     sub="CxC − CxP"
                     signal={wc >= 0 ? 'green' : 'red'}
                     hint="Liquidez operativa neta. Positivo: la empresa cubre sus obligaciones con su cartera. Negativo: riesgo de liquidez"
+                    onClick={() => setActiveTab(wc >= 0 ? 'cxc' : 'cxp')}
                   />
                 );
               })()}

@@ -1925,9 +1925,9 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <SearchInput value={cxpSearch} onChange={setCxpSearch} placeholder="Buscar proveedor..." />
                     <ExportBtn onClick={() => {
-                      const headers = ['Proveedor', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Deuda'];
+                      const headers = ['Proveedor', 'Vigente', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total', '% Deuda'];
                       const rows = sortRows(cxp.proveedores, cxpSort.col, cxpSort.dir).map((p: any) => [
-                        p.proveedor, p.dias0_30, p.dias31_60, p.dias61_90, p.dias90mas, p.saldoTotal,
+                        p.proveedor, p.saldoVigente, p.dias0_30, p.dias31_60, p.dias61_90, p.dias90mas, p.saldoTotal,
                         cxp.totalSaldo > 0 ? `${((p.saldoTotal / cxp.totalSaldo) * 100).toFixed(1)}%` : '',
                       ]);
                       exportCSV(`CxP_${selectedCompany.shortName}.csv`, headers, rows);
@@ -1940,6 +1940,7 @@ export default function DashboardPage() {
                     <thead>
                       <tr>
                         <SortTh label="Proveedor" col="proveedor" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
+                        <SortTh label="Vigente" col="saldoVigente" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
                         <SortTh label="0-30 días" col="dias0_30" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
                         <SortTh label="31-60 días" col="dias31_60" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
                         <SortTh label="61-90 días" col="dias61_90" sort={cxpSort} onSort={c => setCxpSort(toggleSort(cxpSort, c))} />
@@ -1956,10 +1957,11 @@ export default function DashboardPage() {
                           onClick={() => setCxPTxDrill({ proveedor: p.proveedor, codProveedor: String(p.codProveedor) })}
                           title="Ver asientos individuales">
                           <td style={{ color: '#2BB4BB' }}>{p.proveedor} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
-                          <td>{fmt(p.dias0_30)}</td>
-                          <td>{fmt(p.dias31_60)}</td>
-                          <td>{fmt(p.dias61_90)}</td>
-                          <td className={p.dias90mas > 0 ? 'negative' : ''}>{fmt(p.dias90mas)}</td>
+                          <td>{p.saldoVigente > 0 ? fmt(p.saldoVigente) : '—'}</td>
+                          <td>{p.dias0_30 > 0 ? fmt(p.dias0_30) : '—'}</td>
+                          <td>{p.dias31_60 > 0 ? fmt(p.dias31_60) : '—'}</td>
+                          <td>{p.dias61_90 > 0 ? fmt(p.dias61_90) : '—'}</td>
+                          <td className={p.dias90mas > 0 ? 'negative' : ''}>{p.dias90mas > 0 ? fmt(p.dias90mas) : '—'}</td>
                           <td style={{ fontWeight: 600 }}>{fmt(p.saldoTotal)}</td>
                           <td style={{ color: '#8B97A8' }}>{cxp.totalSaldo > 0 ? pct((p.saldoTotal / cxp.totalSaldo) * 100) : '—'}</td>
                         </tr>
@@ -1968,6 +1970,7 @@ export default function DashboardPage() {
                     <tfoot>
                       <tr className="total-row">
                         <td>TOTAL ({cxp.proveedores?.length} proveedores)</td>
+                        <td>{fmt(cxp.totalVigente ?? cxp.proveedores?.reduce((s: number, p: any) => s + (p.saldoVigente || 0), 0))}</td>
                         <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias0_30, 0))}</td>
                         <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias31_60, 0))}</td>
                         <td>{fmt(cxp.proveedores?.reduce((s: number, p: any) => s + p.dias61_90, 0))}</td>

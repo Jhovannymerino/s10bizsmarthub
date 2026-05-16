@@ -427,28 +427,36 @@ WHERE doc.CodEmpresa = '${codEmpresa}'
 ORDER BY SinAsiento DESC, doc.FechaDocumento DESC, doc.SerieDocumento, doc.NumeroDocumento
 `;
 
+// Aging CxP por FechaVencimiento del documento (igual que CxC) — evita buckets negativos
+// que ocurrían al usar AsientoContable con FechaAplicacionContable
 const QUERY_CXP = (codEmpresa) => `
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorPagar
+  WHERE CodEmpresa = '${codEmpresa}'
+    AND DescripcionEstado = '1'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
+)
 SELECT
-  ISNULL(i.Descripcion, CAST(ac.CodIdentificador AS VARCHAR))  AS Proveedor,
-  ac.CodIdentificador                                           AS CodProveedor,
-  SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0))        AS SaldoTotal,
-  SUM(CASE WHEN ac.FechaAplicacionContable >= DATEADD(DAY,-30,GETDATE())
-           THEN ISNULL(ac.Credito,0)-ISNULL(ac.Debito,0) ELSE 0 END) AS Dias_0_30,
-  SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
-           THEN ISNULL(ac.Credito,0)-ISNULL(ac.Debito,0) ELSE 0 END) AS Dias_31_60,
-  SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
-           THEN ISNULL(ac.Credito,0)-ISNULL(ac.Debito,0) ELSE 0 END) AS Dias_61_90,
-  SUM(CASE WHEN ac.FechaAplicacionContable < DATEADD(DAY,-90,GETDATE())
-           THEN ISNULL(ac.Credito,0)-ISNULL(ac.Debito,0) ELSE 0 END) AS Dias_90_mas
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle pcd
-  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-LEFT JOIN CMO.dbo.Identificador i
-  ON ac.CodIdentificador = i.CodIdentificador
-WHERE ac.CodEmpresa = '${codEmpresa}'
-  AND LEFT(pcd.CodCuenta, 2) = '42'
-GROUP BY i.Descripcion, ac.CodIdentificador
-HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) > 0.01
+  ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR))  AS Proveedor,
+  ISNULL(CodIdentificador,'')                                          AS CodProveedor,
+  ROUND(SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)), 2) AS SaldoTotal,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) >= GETDATE()
+            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS SaldoVigente,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
+            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_0_30,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
+            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_31_60,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
+            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_61_90,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) < DATEADD(DAY,-90,GETDATE())
+            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_90_mas
+FROM dedup
+WHERE rn = 1
+GROUP BY DescripcionIdentificador, CodIdentificador
+HAVING SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
 ORDER BY SaldoTotal DESC
 `;
 

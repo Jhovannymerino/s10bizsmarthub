@@ -27,11 +27,13 @@ function isOtro(d: any): boolean {
     t.includes('PRÉSTAMO') ||
     t.includes('TRANSFERENCIA BANCARIA') ||
     t.includes('ENTREGA A RENDIR') ||
-    t.includes('COMPROBANTE DE RETENCION') ||
-    t.includes('COMPROBANTE DE RETENCIÓN') ||
-    t.includes('PLANILLA DE PAGOS EXTORNO') ||
+    t.includes('COMPROBANTE DE RETEN') ||
+    t.includes('PLANILLA DE PAGOS') ||
     t.includes('AJUSTES POR REDONDEO') ||
-    t.includes('RECIBO FONDO ROTATORIO') ||
+    t.includes('FONDO ROTATORIO') ||
+    t.includes('REQUERIMIENTO DE PAGOS') ||
+    t.includes('BENEFICIO SOCIAL') ||
+    t.includes('LIQUIDACION DE BENEF') ||
     t.includes('RETENCION POR RECUPERAR') ||
     t.includes('RETENCIÓN POR RECUPERAR') ||
     t.includes('DEVOLUCIONES')

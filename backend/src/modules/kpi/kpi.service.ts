@@ -719,17 +719,20 @@ export class KpiService {
 
   private classifyCxPDoc(desTipo: string): 'comercial' | 'rrhh' | 'prestamo' | 'anticipo' | 'otro' {
     const t = (desTipo || '').toUpperCase();
-    if (t.includes('REQUERIMIENTO DE PAGOS RR')) return 'rrhh';
     if (t.includes('PRESTAMO') || t.includes('PRÉSTAMO')) return 'prestamo';
     if (t.includes('ANTICIPO')) return 'anticipo';
     if (
+      t.includes('REQUERIMIENTO DE PAGOS') ||
+      t.includes('PLANILLA DE PAGOS') ||
+      t.includes('BENEFICIO SOCIAL') ||
+      t.includes('LIQUIDACION DE BENEF')
+    ) return 'rrhh';
+    if (
       t.includes('TRANSFERENCIA BANCARIA') ||
       t.includes('ENTREGA A RENDIR') ||
-      t.includes('COMPROBANTE DE RETENCION') ||
-      t.includes('COMPROBANTE DE RETENCIÓN') ||
-      t.includes('PLANILLA DE PAGOS EXTORNO') ||
+      t.includes('COMPROBANTE DE RETEN') ||
       t.includes('AJUSTES POR REDONDEO') ||
-      t.includes('RECIBO FONDO ROTATORIO') ||
+      t.includes('FONDO ROTATORIO') ||
       t.includes('RETENCION POR RECUPERAR') ||
       t.includes('DEVOLUCIONES')
     ) return 'otro';

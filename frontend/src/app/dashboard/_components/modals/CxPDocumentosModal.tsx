@@ -4,6 +4,7 @@ import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
 import { SortTh, searchInputStyle } from '../../_lib/SortTh';
+import { DocPaymentsModal } from './DocPaymentsModal';
 
 const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -69,6 +70,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   const [filter, setFilter] = useState<'all' | 'vencido' | 'vigente' | 'otros'>('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
+  const [pagosDrill, setPagosDrill] = useState<{ nroD: string; label: string; totalPagado: number } | null>(null);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -126,6 +128,16 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
 
   return (
+    <>
+    {pagosDrill && (
+      <DocPaymentsModal
+        companyId={companyId}
+        nroD={pagosDrill.nroD}
+        docLabel={pagosDrill.label}
+        totalPagado={pagosDrill.totalPagado}
+        onClose={() => setPagosDrill(null)}
+      />
+    )}
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
       <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
@@ -242,7 +254,18 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                           </span>
                         </td>
                         <td style={{ textAlign: 'right' }}>{fMon(moneda, d.Total ?? 0)}</td>
-                        <td style={{ textAlign: 'right', color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          {(d.Pagado ?? 0) > 0 && d.NroD ? (
+                            <button
+                              onClick={e => { e.stopPropagation(); setPagosDrill({ nroD: String(d.NroD), label: d.Serie ? `${d.Serie}-${d.Numero}` : (d.Numero || String(d.NroD)), totalPagado: d.Pagado }); }}
+                              title="Ver detalle de pagos"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', textDecoration: 'underline', textDecorationStyle: 'dotted', fontSize: '0.78rem', padding: 0 }}>
+                              {fMon(moneda, d.Pagado)}
+                            </button>
+                          ) : (
+                            <span style={{ color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</span>
+                          )}
+                        </td>
                         <td style={{ textAlign: 'right', fontWeight: 600, color: (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
                           {fMon(moneda, d.Saldo ?? 0)}
                         </td>
@@ -273,5 +296,6 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
         )}
       </div>
     </div>
+    </>
   );
 }

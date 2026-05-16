@@ -388,6 +388,15 @@ export class KpiController {
     return this.kpiService.getCajaAsientoLineas(companyId, y, nroAsiento ?? '');
   }
 
+  /** Pagos realizados/recibidos vinculados a un NroD (filtra caja_txn multi-año) */
+  @Get(':companyId/document-payments')
+  getDocumentPayments(
+    @Param('companyId') companyId: string,
+    @Query('nroD') nroD?: string,
+  ) {
+    return this.kpiService.getDocumentPayments(companyId, nroD ?? '');
+  }
+
   /** Tesorería — posición bancaria con saldo inicial, entradas/salidas y saldo final */
   @Get(':companyId/tesoreria')
   getTesoreria(

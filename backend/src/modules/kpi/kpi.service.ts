@@ -1202,6 +1202,25 @@ export class KpiService {
     return { transactions: txns, total: txns.length };
   }
 
+  async getDocumentPayments(companyId: string, nroD: string) {
+    if (!nroD) return { payments: [] };
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: currentYear - 2021 }, (_, i) => 2022 + i);
+    const snapshots = await Promise.all(
+      years.map(y => this.getSnapshot(companyId, 'caja_txn', `${y}`)),
+    );
+    const payments: any[] = [];
+    for (const snap of snapshots) {
+      if (!snap) continue;
+      const matches = (snap.data as any[]).filter(
+        (t: any) => t.NroD && String(t.NroD).toUpperCase() === String(nroD).toUpperCase(),
+      );
+      payments.push(...matches);
+    }
+    payments.sort((a, b) => (a.Fecha > b.Fecha ? 1 : -1));
+    return { payments };
+  }
+
   async getCajaAsientoLineas(companyId: string, year: number, nroAsiento: string) {
     const cached = await this.getSnapshot(companyId, 'caja_asiento_full', `${year}`);
     if (!cached) return { lineas: [] };

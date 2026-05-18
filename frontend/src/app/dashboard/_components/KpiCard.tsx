@@ -9,12 +9,18 @@ export function KpiCard({ label, value, sub, signal, hint, onClick }: {
 
   useLayoutEffect(() => {
     const el = valueRef.current;
-    if (!el) return;
-    el.style.fontSize = '1.4rem';
-    while (el.scrollWidth > el.clientWidth && parseFloat(el.style.fontSize) > 0.5) {
-      el.style.fontSize = `${(parseFloat(el.style.fontSize) - 0.05).toFixed(2)}rem`;
-    }
-  });
+    const card = el?.parentElement;
+    if (!el || !card) return;
+    // Root font size (respects browser zoom)
+    const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    // Card horizontal padding = 1.5rem × 2
+    const available = card.clientWidth - 3 * rootPx;
+    if (available <= 0) return;
+    // IBM Plex Mono character width ≈ 0.60 × em; use 0.63 for a small safety margin
+    const chars = value.length || 1;
+    const idealRem = available / (chars * 0.63 * rootPx);
+    el.style.fontSize = `${Math.min(1.4, Math.max(0.5, idealRem)).toFixed(2)}rem`;
+  }, [value]);
 
   return (
     <div className="kpi-card" title={hint} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>

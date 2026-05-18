@@ -1647,7 +1647,8 @@ export class KpiService {
       V25_pcd_criticas: 'V25 — Cuentas críticas en PlanContableDetalle',
       V26_asientos_sin_glosa: 'V26 — Asientos sin descripción (glosa vacía o genérica)',
       V27_cxp_concentracion: 'V27 — Concentración CxP comercial top 15 (excluye préstamos/anticipos)',
-      V28_nc_sospechosas: 'V28 — Notas de crédito / reversión de ingresos',
+      V28_nc_sospechosas: 'V28 — Notas de crédito sospechosas por año (>3% de facturación)',
+      V28b_nc_detalle: 'V28b — Detalle NC sospechosas (top 50 por monto)',
       V29_fraccionamiento_pagos: 'V29 — Fraccionamiento de pagos (evasión DL 1529, rango 500–1,999)',
       V30_provisiones_sin_reverso: 'V30 — Provisiones diciembre sin reverso en Q1 siguiente (ene-mar)',
     };

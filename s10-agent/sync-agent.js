@@ -1903,7 +1903,8 @@ SELECT TOP 200
   CASE WHEN CodMoneda='01' THEN 'PEN' WHEN CodMoneda='02' THEN 'USD' ELSE 'PEN' END AS Moneda,
   ROUND(ISNULL(Total, 0), 2) AS TotalOriginal,
   ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 2) AS TotalPEN,
-  ISNULL(DescripcionEstado, '') AS Estado
+  ISNULL(DescripcionEstado, '') AS Estado,
+  LEFT(ISNULL(Observacion, ''), 120) AS Observacion
 FROM doc_dedup
 WHERE rn = 1
   AND NOT EXISTS (

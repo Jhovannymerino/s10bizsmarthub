@@ -4023,7 +4023,9 @@ export default function DashboardPage() {
                                                             {detailRows.map((r: any, i: number) => (
                                                               <tr key={i}>{detailKeys.map((k: string) => (
                                                                 <td key={k} style={{ whiteSpace: 'nowrap', textAlign: isMoney(k) ? 'right' : 'left' }}>
-                                                                  {isMoney(k) && typeof r[k] === 'number' ? fmt(r[k]) : String(r[k] ?? '—')}
+                                                                  {isMoney(k) && typeof r[k] === 'number' ? fmt(r[k])
+                                                                    : k === 'Moneda' ? (r[k] === '01' ? 'PEN' : r[k] === '02' ? 'USD' : String(r[k] ?? '—'))
+                                                                    : String(r[k] ?? '—')}
                                                                 </td>
                                                               ))}</tr>
                                                             ))}

@@ -1863,7 +1863,7 @@ SELECT TOP 50
   DescripcionTipoDocumento AS DesTipo,
   DescripcionIdentificador AS Cliente,
   RUC,
-  ISNULL(CodMoneda, '01') AS Moneda,
+  CASE WHEN CodMoneda='01' THEN 'PEN' WHEN CodMoneda='02' THEN 'USD' ELSE 'PEN' END AS Moneda,
   ROUND(ISNULL(Total, 0), 2) AS TotalOriginal,
   ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 2) AS TotalPEN,
   ISNULL(DescripcionEstado, '') AS Estado
@@ -1896,7 +1896,7 @@ SELECT TOP 200
   DescripcionTipoDocumento AS DesTipo,
   DescripcionIdentificador AS Cliente,
   RUC,
-  ISNULL(CodMoneda, '01') AS Moneda,
+  CASE WHEN CodMoneda='01' THEN 'PEN' WHEN CodMoneda='02' THEN 'USD' ELSE 'PEN' END AS Moneda,
   ROUND(ISNULL(Total, 0), 2) AS TotalOriginal,
   ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 2) AS TotalPEN,
   ISNULL(DescripcionEstado, '') AS Estado
@@ -1923,6 +1923,7 @@ WITH doc_dedup AS (
 SELECT
   YEAR(FechaDocumento) AS Anio,
   CodTipoDocumento AS Tipo,
+  MAX(DescripcionTipoDocumento) AS DesTipo,
   COUNT(*) AS NumFacturas,
   ROUND(SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END), 2) AS MontoTotalPEN
 FROM doc_dedup
@@ -2050,7 +2051,7 @@ SELECT
   cb.BankAccount_ID AS BankAccountId,
   cb.NoCuenta,
   LEFT(cb.Descripcion, 60) AS DesBanco,
-  cb.CodMoneda AS Moneda,
+  CASE WHEN cb.CodMoneda='01' THEN 'PEN' WHEN cb.CodMoneda='02' THEN 'USD' ELSE ISNULL(cb.CodMoneda,'PEN') END AS Moneda,
   ROUND(ISNULL(cb.BalanceActual, 0), 2) AS BalanceActual,
   ROUND(ISNULL(cb.BalanceReal, 0), 2)   AS BalanceReal,
   ROUND(ISNULL(cb.BalanceActual, 0) - ISNULL(cb.BalanceReal, 0), 2) AS Diferencia,
@@ -2397,7 +2398,7 @@ const VQ_CONCILIACION_ESTADO = (cod) => `
 SELECT
   cb.NoCuenta,
   LEFT(cb.Descripcion, 50) AS DesBanco,
-  cb.CodMoneda AS Moneda,
+  CASE WHEN cb.CodMoneda='01' THEN 'PEN' WHEN cb.CodMoneda='02' THEN 'USD' ELSE ISNULL(cb.CodMoneda,'PEN') END AS Moneda,
   ROUND(ISNULL(cb.BalanceActual,0), 2) AS BalanceContable,
   ROUND(ISNULL(cb.BalanceReal,0), 2) AS BalanceReal,
   ROUND(ISNULL(cb.BalanceActual,0) - ISNULL(cb.BalanceReal,0), 2) AS DiferenciaCRvsBR,
@@ -2633,7 +2634,7 @@ SELECT TOP 20
   CONVERT(VARCHAR(10), p.FechaTrx, 103) AS Fecha,
   cb.NoCuenta AS CuentaBancaria,
   LEFT(ISNULL(cb.Descripcion,''), 50) AS DesBanco,
-  ISNULL(cb.CodMoneda,'') AS Moneda,
+  CASE WHEN cb.CodMoneda='01' THEN 'PEN' WHEN cb.CodMoneda='02' THEN 'USD' ELSE ISNULL(cb.CodMoneda,'PEN') END AS Moneda,
   COUNT(*) AS NumPagos,
   ROUND(SUM(ISNULL(p.PayAmt, 0)), 2) AS MontoTotal,
   ROUND(MAX(ISNULL(p.PayAmt, 0)), 2) AS MayorPago

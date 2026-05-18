@@ -55,6 +55,22 @@ function parseArgs() {
   return args;
 }
 
+// Tipo de cambio PEN/USD de respaldo cuando S10 no registra TC en el documento.
+// El valor real se consulta a S10 al inicio de cada sync via QUERY_TC_ACTUAL.
+const TC_USD_FALLBACK = 3.80;
+
+// Obtiene el TC PEN/USD más reciente registrado en S10 para esa empresa.
+// Si no hay documentos USD, retorna TC_USD_FALLBACK.
+const QUERY_TC_ACTUAL = (codEmpresa) => `
+SELECT TOP 1 TipoCambio AS TC
+FROM CMO.dbo.vw_12DocumentosPorCobrar
+WHERE CodEmpresa = '${codEmpresa}'
+  AND CodMoneda = '02'
+  AND TipoCambio IS NOT NULL
+  AND TipoCambio > 1
+ORDER BY FechaDocumento DESC
+`;
+
 // ─────────────────────────────────────────────
 // QUERIES — P&L, CxC, CxP, Caja, GAV (existentes)
 // ─────────────────────────────────────────────
@@ -79,7 +95,7 @@ ORDER BY Clase, CodCuenta, Mes
 
 const QUERY_TRANSACTIONS = (claseIngreso, codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   MONTH(ac.FechaAplicacionContable)                        AS Mes,
@@ -102,7 +118,7 @@ ORDER BY ac.FechaAplicacionContable, ac.CodUnico
 
 // Aging CxC por FechaVencimiento del documento (no por fecha contable)
 // Vigente = no vencido; 0-30/30-60/60-90/+90 = días de mora
-const QUERY_CXC = (codEmpresa) => `
+const QUERY_CXC = (codEmpresa, tc = TC_USD_FALLBACK) => `
 -- Saldo por documento: facturas positivo, NCs como negativo (compensan balance del cliente)
 -- NC aplicada (TotalPagado<0): contribuye 0 (ya reflejada en TotalPagado de la factura)
 -- NC flotante (TotalPagado>=0): contribuye negativo (reduce lo que debe el cliente)
@@ -132,7 +148,7 @@ SELECT
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) < DATEADD(DAY,-90,GETDATE())
                   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
            THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_90_mas,
-  MAX(ISNULL(doc.TipoCambio, 3.80))                                        AS TipoCambio
+  MAX(ISNULL(doc.TipoCambio, ${TC_USD_FALLBACK}))                                        AS TipoCambio
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
   AND doc.CodTipoDocumento IN ('131','125','128','134')
@@ -151,12 +167,12 @@ ORDER BY SUM(
     THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
               ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
   ELSE doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)
-  END * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+  END * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,${TC_USD_FALLBACK}) END
 ) DESC
 `;
 
 // CxC split por naturaleza: comercial (facturas/NC) vs otras (préstamos, DSP, transferencias, etc.)
-const QUERY_CXC_SPLIT = (codEmpresa) => `
+const QUERY_CXC_SPLIT = (codEmpresa, tc = TC_USD_FALLBACK) => `
 SELECT
   CASE WHEN doc.CodTipoDocumento IN ('131','125','128','134') THEN 'comercial' ELSE 'otras' END AS Grupo,
   doc.CodTipoDocumento                                                AS Tipo,
@@ -172,7 +188,7 @@ SELECT
               THEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0))
               ELSE 0 END
     END *
-    CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+    CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,${TC_USD_FALLBACK}) END
   ), 0) AS SaldoPendiente
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
@@ -253,7 +269,7 @@ SELECT
   ROUND(ISNULL(MontoDetraccion,0), 2)                                      AS Detraccion,
   ROUND(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0), 2)     AS Saldo,
   ROUND((Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0))
-    * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 0) AS SaldoSoles,
+    * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END, 0) AS SaldoSoles,
   DATEDIFF(DAY, FechaDocumento, GETDATE())                                 AS DiasAntiguedad,
   LEFT(ISNULL(Observacion,''), 150)                                        AS Observacion
 FROM dedup
@@ -263,7 +279,7 @@ ORDER BY SaldoSoles DESC
 
 const QUERY_CXC_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -287,7 +303,7 @@ ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 
 const QUERY_CXP_TRANSACTIONS = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -630,7 +646,7 @@ ORDER BY Clase, SaldoTotal DESC
 // Detalle de transacciones de Otras CxC para drilldown (últimos 2 años)
 const QUERY_OTRAS_CXC_TXN = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -687,7 +703,7 @@ ORDER BY Clase, SaldoTotal DESC
 // Detalle transacciones Otras CxP para drilldown (año de sync)
 const QUERY_OTRAS_CXP_TXN = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -742,7 +758,7 @@ ORDER BY SaldoPorPagar DESC, ProvisionadoAnio DESC
 // Detalle transacciones tributos para drilldown (año de sync)
 const QUERY_TRIBUTOS_TXN = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -813,7 +829,7 @@ ORDER BY pcd.CodCuenta
 // Los activos son históricos acumulados; el filtro de año se aplica en la UI.
 const QUERY_ACTIVO_FIJO_TXN = (codEmpresa) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -936,7 +952,7 @@ ORDER BY Clase, GrupoCuenta, pcd.CodCuenta, Mes
 // Detalle transacciones gastos naturaleza (clases 60-68) para drilldown
 const QUERY_GASTOS_NAT_TXN = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -983,7 +999,7 @@ ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 // Transacciones bancarias detalle para drilldown (año de sync, clase 10)
 const QUERY_CAJA_TXN = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -1010,7 +1026,7 @@ ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 // Permite ver el asiento doble completo (banco + contrapartida) en el modal de Tesorería
 const QUERY_CAJA_ASIENTO_FULL = (codEmpresa, year) => `
 SELECT
-  ac2.CodUnico                                             AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac2.CodAsientoContable)) AS NroAsiento,
   CONVERT(VARCHAR(10), ac2.FechaAplicacionContable, 103)   AS Fecha,
   ac2.NroD                                                 AS NroD,
   LEFT(pcd2.CodCuenta, 2)                                  AS Clase,
@@ -1060,7 +1076,7 @@ ORDER BY SinDocumento DESC
 // Auditoría: detalle de asientos sin NroD (año en curso)
 const QUERY_AUDIT_SIN_DOC_TXN = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT TOP 1000
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   LEFT(pcd.CodCuenta, 2)                                   AS Clase,
   pcd.CodCuenta                                            AS CodCuenta,
@@ -1113,7 +1129,7 @@ ORDER BY Descuadre DESC
 // Auditoría: movimientos atípicos >100K en una línea
 const QUERY_AUDIT_ATIPICOS = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT TOP 200
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   LEFT(pcd.CodCuenta, 2)                                   AS Clase,
@@ -1171,10 +1187,10 @@ LEFT JOIN (
 LEFT JOIN (
   SELECT MONTH(doc.FechaDocumento) AS Mes,
          SUM(CASE WHEN doc.CodTipoDocumento NOT IN ('128','134')
-                  THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+                  THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,${TC_USD_FALLBACK}) END
                   ELSE 0 END) AS FacturasEmitidas,
          SUM(CASE WHEN doc.CodTipoDocumento IN ('128','134')
-                  THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+                  THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,${TC_USD_FALLBACK}) END
                   ELSE 0 END) AS NotasCredito
   FROM (
     SELECT *, ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
@@ -1218,7 +1234,7 @@ ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
 // Patrimonio (clases 50-59): asientos individuales del año para drill-down
 const QUERY_PATRIMONIO_TXN = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -1270,7 +1286,7 @@ ORDER BY Clase, GrupoCuenta, pcd.CodCuenta
 // Detalle transacciones laborales (clase 41) para drilldown
 const QUERY_LABORAL_TXN = (codEmpresa, year) => `
 SELECT
-  ac.CodUnico                                              AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   YEAR(ac.FechaAplicacionContable)                         AS Anio,
@@ -1868,7 +1884,7 @@ SELECT TOP 50
   RUC,
   CASE WHEN CodMoneda='01' THEN 'PEN' WHEN CodMoneda='02' THEN 'USD' ELSE 'PEN' END AS Moneda,
   ROUND(ISNULL(Total, 0), 2) AS TotalOriginal,
-  ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 2) AS TotalPEN,
+  ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END, 2) AS TotalPEN,
   ISNULL(DescripcionEstado, '') AS Estado
 FROM doc_dedup
 WHERE rn = 1
@@ -1903,7 +1919,7 @@ SELECT TOP 200
   RUC,
   CASE WHEN CodMoneda='01' THEN 'PEN' WHEN CodMoneda='02' THEN 'USD' ELSE 'PEN' END AS Moneda,
   ROUND(ISNULL(Total, 0), 2) AS TotalOriginal,
-  ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 2) AS TotalPEN,
+  ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END, 2) AS TotalPEN,
   ISNULL(DescripcionEstado, '') AS Estado,
   LEFT(ISNULL(Observacion, ''), 120) AS Observacion
 FROM doc_dedup
@@ -1933,7 +1949,7 @@ SELECT
   CodTipoDocumento AS Tipo,
   MAX(DescripcionTipoDocumento) AS DesTipo,
   COUNT(*) AS NumFacturas,
-  ROUND(SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END), 2) AS MontoTotalPEN
+  ROUND(SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END), 2) AS MontoTotalPEN
 FROM doc_dedup
 WHERE rn = 1
   AND NOT EXISTS (
@@ -1949,7 +1965,7 @@ ORDER BY Anio DESC, Tipo
 
 const VQ_INGRESOS_SIN_DOC = (cod, year, claseIngreso) => `
 SELECT TOP 200
-  ac.CodUnico AS NroAsiento,
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103) AS Fecha,
   pcd.CodCuenta,
   pcd.Descripcion AS DesCuenta,
@@ -2267,8 +2283,8 @@ LEFT JOIN (
 LEFT JOIN (
   SELECT MONTH(FechaDocumento) AS Mes,
          ROUND(SUM(CASE WHEN CodTipoDocumento NOT IN ('128','134')
-                        THEN ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END
-                        ELSE -ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END
+                        THEN ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END
+                        ELSE -ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END
                    END), 2) AS MontoFacturado
   FROM doc_dedup
   WHERE rn = 1
@@ -2592,7 +2608,7 @@ nc_dedup AS (
 ),
 fact_totals AS (
   SELECT YEAR(FechaDocumento) AS Anio,
-    SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END) AS TotalFacturacion
+    SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END) AS TotalFacturacion
   FROM all_dedup
   WHERE rn = 1 AND CodTipoDocumento IN ('060','125','131')
   GROUP BY YEAR(FechaDocumento)
@@ -2600,13 +2616,13 @@ fact_totals AS (
 SELECT
   YEAR(nc.FechaDocumento) AS Anio,
   COUNT(*) AS NumNC,
-  ROUND(SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END), 2) AS MontoNC,
-  ROUND(100.0 * SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END) / NULLIF(MAX(ft.TotalFacturacion), 0), 2) AS PctSobreFacturacion,
-  ROUND(SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
+  ROUND(SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,${TC_USD_FALLBACK}) END), 2) AS MontoNC,
+  ROUND(100.0 * SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,${TC_USD_FALLBACK}) END) / NULLIF(MAX(ft.TotalFacturacion), 0), 2) AS PctSobreFacturacion,
+  ROUND(SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,${TC_USD_FALLBACK}) END) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
 FROM nc_dedup nc
 LEFT JOIN fact_totals ft ON ft.Anio = YEAR(nc.FechaDocumento)
 GROUP BY YEAR(nc.FechaDocumento)
-HAVING ROUND(100.0 * SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END) / NULLIF(MAX(ft.TotalFacturacion), 0), 2) > 3
+HAVING ROUND(100.0 * SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,${TC_USD_FALLBACK}) END) / NULLIF(MAX(ft.TotalFacturacion), 0), 2) > 3
 ORDER BY Anio DESC
 `;
 
@@ -2834,6 +2850,13 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
   console.log(`\n${tag} Processing: ${company.name}`);
 
   try {
+    // Obtener TC actual de S10 antes de los batches (usado como fallback en queries USD)
+    const tcResult = await pool.request().query(QUERY_TC_ACTUAL(company.codEmpresa));
+    const tcActual = tcResult.recordset[0]?.TC || TC_USD_FALLBACK;
+    if (tcActual !== TC_USD_FALLBACK) {
+      console.log(`${tag} TC USD/PEN actual de S10: ${tcActual}`);
+    }
+
     // Batch 1 — KPIs core (siempre corre)
     console.log(`${tag} → Batch 1: P&L, CxC, CxP, Caja, GAV, documentos...`);
     const [
@@ -2842,8 +2865,8 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
       emitResult, reciResult, honorResult, cxcDocsResult, cxcVinResult, cxpDocsResult,
     ] = await Promise.all([
       pool.request().query(QUERY_PL(company.claseIngreso, company.codEmpresa, fechaInicio, fechaFin)),
-      pool.request().query(QUERY_CXC(company.codEmpresa)),
-      pool.request().query(QUERY_CXC_SPLIT(company.codEmpresa)),
+      pool.request().query(QUERY_CXC(company.codEmpresa, tcActual)),
+      pool.request().query(QUERY_CXC_SPLIT(company.codEmpresa, tcActual)),
       pool.request().query(QUERY_CXP(company.codEmpresa)),
       pool.request().query(QUERY_CAJA(company.codEmpresa, fechaInicio, fechaFin)),
       pool.request().query(QUERY_GAV(company.codEmpresa, fechaInicio, fechaFin)),

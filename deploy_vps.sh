@@ -165,38 +165,24 @@ log ""
 log "── Paso 6: Configurando nginx ──"
 
 ssh $SSH_OPTS "$VPS" "
-  set -e
+  NGINX_CONF='/opt/reverse-proxy/nginx.conf'
+  NGINX_CONTAINER='reverse-proxy'
+  DOMAIN='s10bizsmarthub.bizwareapps.com'
 
-  # Detectar directorio conf.d desde el contenedor nginx
-  NGINX_CONF_D=''
-  for d in \$(docker inspect nginx --format='{{range .Mounts}}{{.Source}}:{{.Destination}} {{end}}' 2>/dev/null); do
-    HOST=\$(echo \$d | cut -d: -f1)
-    CONT=\$(echo \$d | cut -d: -f2)
-    if [ \"\$CONT\" = '/etc/nginx/conf.d' ]; then
-      NGINX_CONF_D=\"\$HOST\"
+  if docker ps --format '{{.Names}}' | grep -q \"^\${NGINX_CONTAINER}\$\"; then
+    if grep -q \"\$DOMAIN\" \"\$NGINX_CONF\" 2>/dev/null; then
+      echo \"✓ Bloque nginx \$DOMAIN ya configurado — recargando\"
+      docker exec \"\$NGINX_CONTAINER\" nginx -t && docker exec \"\$NGINX_CONTAINER\" nginx -s reload
+      echo '✓ nginx recargado'
+    else
+      echo \"Agregando bloque nginx para \$DOMAIN...\"
+      cat $VPS_APP_DIR/nginx-s10block.conf >> \"\$NGINX_CONF\"
+      docker exec \"\$NGINX_CONTAINER\" nginx -t && docker exec \"\$NGINX_CONTAINER\" nginx -s reload
+      echo '✓ nginx configurado y recargado'
     fi
-  done
-
-  # Fallback: buscar manualmente
-  if [ -z \"\$NGINX_CONF_D\" ]; then
-    for path in /opt/apps/nginx/conf.d /opt/nginx/conf.d /etc/nginx/conf.d /data/nginx/conf.d; do
-      [ -d \"\$path\" ] && NGINX_CONF_D=\"\$path\" && break
-    done
-  fi
-
-  if [ -n \"\$NGINX_CONF_D\" ]; then
-    echo \"Encontrado conf.d: \$NGINX_CONF_D\"
-    cp $VPS_APP_DIR/nginx-s10block.conf \$NGINX_CONF_D/s10bizsmarthub.conf
-    docker exec nginx nginx -t && docker exec nginx nginx -s reload
-    echo '✓ nginx configurado y recargado'
   else
-    echo '⚠ conf.d no encontrado automaticamente'
-    echo 'Buscando en el filesystem del VPS...'
-    find /opt /etc /data -name 'conf.d' -type d 2>/dev/null | head -5
-    echo ''
-    echo 'Copia manual necesaria:'
-    echo \"  cp $VPS_APP_DIR/nginx-s10block.conf <ruta-conf.d>/s10bizsmarthub.conf\"
-    echo '  docker exec nginx nginx -s reload'
+    echo \"⚠ Contenedor \$NGINX_CONTAINER no encontrado\"
+    docker ps --format 'table {{.Names}}\t{{.Status}}' | head -10
   fi
 " 2>&1 | tee -a "$LOG_FILE"
 
@@ -205,36 +191,18 @@ log ""
 log "── Paso 7: SSL Certbot ──"
 
 ssh $SSH_OPTS "$VPS" "
-  EMAIL='jhovanny.merino@gmail.com'
   DOMAIN='s10bizsmarthub.bizwareapps.com'
+  CERT_PATH=\"/etc/letsencrypt/live/\$DOMAIN/fullchain.pem\"
 
-  # Verificar que el DNS apunte al VPS antes de lanzar certbot
-  SERVER_IP=\$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print \$1}')
-  DOMAIN_IP=\$(getent hosts \$DOMAIN 2>/dev/null | awk '{print \$1}' || dig +short \$DOMAIN 2>/dev/null | tail -1)
-
-  echo \"VPS IP: \$SERVER_IP\"
-  echo \"DNS \$DOMAIN apunta a: \$DOMAIN_IP\"
-
-  if [ \"\$SERVER_IP\" = \"\$DOMAIN_IP\" ] || [ -z \"\$DOMAIN_IP\" ]; then
-    # Intentar certbot dentro del contenedor nginx
-    if docker exec nginx which certbot > /dev/null 2>&1; then
-      docker exec nginx certbot --nginx -d \$DOMAIN \
-        --non-interactive --agree-tos -m \$EMAIL \
-        --redirect 2>&1 && echo '✓ SSL OK (certbot en contenedor)'
-    elif which certbot > /dev/null 2>&1; then
-      certbot --nginx -d \$DOMAIN \
-        --non-interactive --agree-tos -m \$EMAIL \
-        --redirect 2>&1 && echo '✓ SSL OK (certbot en host)'
-    else
-      echo '⚠ certbot no disponible — SSL pendiente manual'
-      echo 'Instalar: apt install certbot python3-certbot-nginx'
-      echo \"Luego: certbot --nginx -d \$DOMAIN\"
-    fi
+  # Verificar si el cert ya existe y es valido
+  if [ -f \"\$CERT_PATH\" ]; then
+    EXPIRY=\$(openssl x509 -enddate -noout -in \"\$CERT_PATH\" 2>/dev/null | cut -d= -f2)
+    echo \"✓ Certificado SSL existe — expira: \$EXPIRY\"
+    echo '  (renovacion automatica via snap.certbot.renew.timer)'
   else
-    echo '⚠ DNS aun no apunta al VPS — agregar registro A primero:'
-    echo \"  \$DOMAIN → \$SERVER_IP\"
-    echo 'Luego ejecutar manualmente en el VPS:'
-    echo \"  certbot --nginx -d \$DOMAIN --non-interactive --agree-tos -m \$EMAIL\"
+    echo \"⚠ Certificado no encontrado en \$CERT_PATH\"
+    echo 'Emitir manualmente en el VPS:'
+    echo \"  certbot certonly --webroot -w /var/www/html -d \$DOMAIN --non-interactive --agree-tos -m jhovanny.merino@gmail.com\"
   fi
 " 2>&1 | tee -a "$LOG_FILE"
 

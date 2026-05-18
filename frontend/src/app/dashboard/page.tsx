@@ -587,7 +587,7 @@ export default function DashboardPage() {
   }, [gastosNatData]);
 
   const directorioSortedClientes = useMemo(() =>
-    [...(cxc?.clientes ?? [])].sort((a: any, b: any) => (b.saldoTotal || 0) - (a.saldoTotal || 0)),
+    [...(cxc?.clientes ?? [])].sort((a: any, b: any) => (b.saldoTotalSoles || 0) - (a.saldoTotalSoles || 0)),
     [cxc]
   );
 
@@ -4107,7 +4107,7 @@ export default function DashboardPage() {
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias31_60 || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias31_60 || 0)}</td>
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias61_90 || 0) > 0 ? '#F59E0B' : undefined }}>{fmt(c.dias61_90 || 0)}</td>
                                   <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.dias90mas || 0) > 0 ? '#EF4444' : undefined }}>{fmt(c.dias90mas || 0)}</td>
-                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.saldoTotal || 0)}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.saldoTotalSoles || 0)}</td>
                                   <td>
                                     {isEditing
                                       ? <input value={draft.cxcComentarios?.[c.codCliente] || ''}

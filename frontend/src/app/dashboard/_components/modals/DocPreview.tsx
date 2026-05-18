@@ -15,6 +15,23 @@ export function DocPreview({ companyId, nroD, onClose }: { companyId: string; nr
   }, [companyId, nroD]);
 
   const TIPO_LABEL: Record<string, string> = { emitida: 'Factura Emitida', recibida: 'Factura Recibida', honorario: 'Honorario' };
+
+  // Códigos de DescripcionEstado en S10 para documentos por cobrar/pagar y RHE
+  const ESTADO_DOC: Record<string, string> = {
+    '1': 'Pendiente (por cobrar/pagar)',
+    '2': 'Cancelado / Pagado',
+    '3': 'Anulado',
+    '4': 'Pagado parcialmente',
+    '5': 'Pagado con retención aplicada',
+    '6': 'En proceso de anulación',
+  };
+  const fmtEstado = (e: any) => {
+    if (e == null || e === '') return null;
+    const code = String(e);
+    const label = ESTADO_DOC[code];
+    return label ? `${code} — ${label}` : `${code} (código S10)`;
+  };
+
   const found = doc && doc.tipo;
   const d = doc?.doc;
   return (
@@ -39,7 +56,7 @@ export function DocPreview({ companyId, nroD, onClose }: { companyId: string; nr
             ['Total', fmt(d.Total)],
             ['Pagado', fmt(d.TotalPagado)],
             ['Saldo', fmt(d.Saldo ?? d.TotalSaldo)],
-            ['Estado', d.Estado],
+            ['Estado', fmtEstado(d.Estado)],
             ...(d.Observacion ? [['Observación', d.Observacion]] : []),
             ...(d.Categoria ? [['Categoría', d.Categoria]] : []),
           ];

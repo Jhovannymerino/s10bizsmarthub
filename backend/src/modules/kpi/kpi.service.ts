@@ -4,6 +4,10 @@ import { S10Service } from '../s10/s10.service';
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 
+// Tipo de cambio PEN/USD de respaldo cuando S10 no registra TC en el documento.
+// Actualizar si el TC de referencia cambia significativamente (>5%).
+const TC_USD_FALLBACK = 3.80;
+
 @Injectable()
 export class KpiService {
   private readonly logger = new Logger(KpiService.name);
@@ -304,7 +308,7 @@ export class KpiService {
 
     for (const r of rows) {
       const moneda = r.Moneda === '02' ? 'USD' : 'PEN';
-      const tc = parseFloat(r.TipoCambio) || 3.80;
+      const tc = parseFloat(r.TipoCambio) || TC_USD_FALLBACK;
       const toSoles = (v: number) => moneda === 'USD' ? round(v * tc) : v;
       const saldo   = round(parseFloat(r.SaldoTotal)   || 0);
       const vigente = round(parseFloat(r.SaldoVigente) || 0);
@@ -320,7 +324,7 @@ export class KpiService {
           cliente: r.Cliente || r.CodCliente,
           saldoPEN: 0,
           saldoUSD: 0,
-          tipoCambioUSD: 3.80,
+          tipoCambioUSD: TC_USD_FALLBACK,
           saldoTotalSoles: 0,
           saldoVigente: 0,
           dias0_30: 0,

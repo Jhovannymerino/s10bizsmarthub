@@ -46,6 +46,17 @@ h1, h2, h3, h4, h5, h6 {
   transition: border-color 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
+  container-type: inline-size;
+}
+
+/* Valor principal de la KPI card: escala con el ancho del contenedor para
+   que siempre cabe en una sola línea sin importar zoom ni tamaño de pantalla */
+.kpi-value {
+  font-size: clamp(0.75rem, 13cqw, 1.4rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 .kpi-card:hover {
   border-color: rgba(255,255,255,0.12);

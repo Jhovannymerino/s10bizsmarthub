@@ -12,7 +12,7 @@ export function KpiCard({ label, value, sub, signal, hint, onClick }: {
           <span style={{ marginLeft: '0.4rem', fontSize: '0.75rem' }}>{SIGNAL_DOT[signal]}</span>
         )}
       </div>
-      <div style={{ fontSize: '1.4rem', fontWeight: 700, color: signal ? SIGNAL_COLOR[signal] : '#F8FAFC', fontFamily: 'var(--font-mono)' }}>
+      <div className="kpi-value" style={{ fontWeight: 700, color: signal ? SIGNAL_COLOR[signal] : '#F8FAFC', fontFamily: 'var(--font-mono)' }}>
         {value}
       </div>
       {sub && <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginTop: '0.2rem' }}>{sub}</div>}

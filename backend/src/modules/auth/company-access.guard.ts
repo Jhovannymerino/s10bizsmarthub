@@ -11,7 +11,7 @@ export class CompanyAccessGuard implements CanActivate {
     if (user?.role === 'admin') return true;
 
     const allowed: string[] = Array.isArray(user?.allowedCompanies) ? user.allowedCompanies : [];
-    if (!allowed.includes(companyId)) {
+    if (allowed.length > 0 && !allowed.includes(companyId)) {
       throw new ForbiddenException('No tiene acceso a esta empresa');
     }
 

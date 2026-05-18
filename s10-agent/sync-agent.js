@@ -1052,7 +1052,7 @@ JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND LEFT(pcd.CodCuenta, 2) IN ('10','12','13','14','16','17','40','41','42','43','46','70','75','91','94')
+  AND LEFT(pcd.CodCuenta, 2) IN ('10','12','13','14','16','17','40','41','42','43','46','70','71','72','73','74','75')
 GROUP BY LEFT(pcd.CodCuenta, 2)
 ORDER BY SinDocumento DESC
 `;
@@ -1078,7 +1078,7 @@ LEFT JOIN CMO.dbo.Identificador i
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
   AND ac.NroD IS NULL
-  AND LEFT(pcd.CodCuenta, 2) IN ('10','12','13','14','16','17','40','41','42','43','46','70','75','91','94')
+  AND LEFT(pcd.CodCuenta, 2) IN ('10','12','13','14','16','17','40','41','42','43','46','70','71','72','73','74','75')
 ORDER BY ABS(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) DESC
 `;
 
@@ -1164,7 +1164,7 @@ LEFT JOIN (
   JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
   WHERE ac.CodEmpresa = '${codEmpresa}'
     AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-    AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
+    AND LEFT(pcd.CodCuenta, 2) IN ('70','71','72','73','74','75')
     AND ac.NroD IS NOT NULL
   GROUP BY MONTH(ac.FechaAplicacionContable)
 ) ing ON ing.Mes = m.Mes
@@ -1176,10 +1176,15 @@ LEFT JOIN (
          SUM(CASE WHEN doc.CodTipoDocumento IN ('128','134')
                   THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
                   ELSE 0 END) AS NotasCredito
-  FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-  WHERE doc.CodEmpresa = '${codEmpresa}'
-    AND YEAR(doc.FechaDocumento) = ${year}
-    AND doc.CodTipoDocumento IN (${TIPOS_EMITIDAS})
+  FROM (
+    SELECT *, ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+    FROM CMO.dbo.vw_12DocumentosPorCobrar
+    WHERE CodEmpresa = '${codEmpresa}'
+      AND YEAR(FechaDocumento) = ${year}
+      AND CodTipoDocumento IN (${TIPOS_EMITIDAS})
+      AND ISNULL(DescripcionEstado,'') != '5'
+  ) doc
+  WHERE doc.rn = 1
   GROUP BY MONTH(doc.FechaDocumento)
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())

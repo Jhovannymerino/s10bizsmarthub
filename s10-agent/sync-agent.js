@@ -1806,77 +1806,97 @@ WHERE ac.CodEmpresa = '${cod}'
   AND LEFT(pcd.CodCuenta, 2) IN ('50','51','52','57','58','59')
 GROUP BY LEFT(pcd.CodCuenta,2), LEFT(pcd.CodCuenta,4), pcd.CodCuenta, pcd.Descripcion
 HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) < -0.01
+  -- Cta 59 (Resultados Acumulados) puede tener saldo deudor por pérdidas acumuladas — no es anomalía
+  AND LEFT(pcd.CodCuenta, 2) <> '59'
 ORDER BY Clase, pcd.CodCuenta
 `;
 
 const VQ_FACTURAS_SIN_ASIENTO = (cod, year, claseIngreso) => `
+WITH doc_dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND YEAR(FechaDocumento) IN (${year}, ${year - 1})
+    AND CodTipoDocumento IN ('060','125','128','131','134')
+)
 SELECT TOP 50
-  YEAR(doc.FechaDocumento) AS Anio,
-  doc.SerieDocumento AS Serie,
-  doc.NumeroDocumento AS Numero,
-  CONVERT(VARCHAR(10), doc.FechaDocumento, 103) AS Fecha,
-  doc.CodTipoDocumento AS Tipo,
-  doc.DescripcionTipoDocumento AS DesTipo,
-  doc.DescripcionIdentificador AS Cliente,
-  doc.RUC,
-  ROUND(ISNULL(doc.Total, 0), 2) AS Total,
-  ISNULL(doc.DescripcionEstado, '') AS Estado
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${cod}'
-  AND YEAR(doc.FechaDocumento) IN (${year}, ${year - 1})
-  AND doc.CodTipoDocumento IN ('060','125','128','131','134')
+  YEAR(FechaDocumento) AS Anio,
+  SerieDocumento AS Serie,
+  NumeroDocumento AS Numero,
+  CONVERT(VARCHAR(10), FechaDocumento, 103) AS Fecha,
+  CodTipoDocumento AS Tipo,
+  DescripcionTipoDocumento AS DesTipo,
+  DescripcionIdentificador AS Cliente,
+  RUC,
+  ROUND(ISNULL(Total, 0), 2) AS Total,
+  ISNULL(DescripcionEstado, '') AS Estado
+FROM doc_dedup
+WHERE rn = 1
   AND NOT EXISTS (
     SELECT 1 FROM CMO.dbo.AsientoContable ac
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-    WHERE ac.CodEmpresa = doc.CodEmpresa
-      AND ac.NroD = doc.NroD
+    WHERE ac.CodEmpresa = '${cod}'
+      AND ac.NroD = doc_dedup.NroD
       AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
   )
-ORDER BY doc.Total DESC
+ORDER BY Total DESC
 `;
 
 const VQ_FACTURAS_SIN_ASIENTO_HISTORICO = (cod, claseIngreso) => `
+WITH doc_dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND CodTipoDocumento IN ('060','125','128','131','134')
+)
 SELECT TOP 200
-  YEAR(doc.FechaDocumento) AS Anio,
-  doc.CodTipoDocumento AS Tipo,
-  doc.SerieDocumento AS Serie,
-  doc.NumeroDocumento AS Numero,
-  CONVERT(VARCHAR(10), doc.FechaDocumento, 103) AS Fecha,
-  doc.DescripcionTipoDocumento AS DesTipo,
-  doc.DescripcionIdentificador AS Cliente,
-  doc.RUC,
-  ROUND(ISNULL(doc.Total, 0), 2) AS Total,
-  ISNULL(doc.DescripcionEstado, '') AS Estado
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${cod}'
-  AND doc.CodTipoDocumento IN ('060','125','128','131','134')
+  YEAR(FechaDocumento) AS Anio,
+  CodTipoDocumento AS Tipo,
+  SerieDocumento AS Serie,
+  NumeroDocumento AS Numero,
+  CONVERT(VARCHAR(10), FechaDocumento, 103) AS Fecha,
+  DescripcionTipoDocumento AS DesTipo,
+  DescripcionIdentificador AS Cliente,
+  RUC,
+  ROUND(ISNULL(Total, 0), 2) AS Total,
+  ISNULL(DescripcionEstado, '') AS Estado
+FROM doc_dedup
+WHERE rn = 1
   AND NOT EXISTS (
     SELECT 1 FROM CMO.dbo.AsientoContable ac
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-    WHERE ac.CodEmpresa = doc.CodEmpresa
-      AND ac.NroD = doc.NroD
+    WHERE ac.CodEmpresa = '${cod}'
+      AND ac.NroD = doc_dedup.NroD
       AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
   )
-ORDER BY YEAR(doc.FechaDocumento) DESC, doc.Total DESC
+ORDER BY YEAR(FechaDocumento) DESC, Total DESC
 `;
 
 const VQ_FACTURAS_SIN_ASIENTO_RESUMEN = (cod, claseIngreso) => `
+WITH doc_dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND CodTipoDocumento IN ('060','125','128','131','134')
+)
 SELECT
-  YEAR(doc.FechaDocumento) AS Anio,
-  doc.CodTipoDocumento AS Tipo,
+  YEAR(FechaDocumento) AS Anio,
+  CodTipoDocumento AS Tipo,
   COUNT(*) AS NumFacturas,
-  ROUND(SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END), 2) AS MontoTotal
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${cod}'
-  AND doc.CodTipoDocumento IN ('060','125','128','131','134')
+  ROUND(SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END), 2) AS MontoTotal
+FROM doc_dedup
+WHERE rn = 1
   AND NOT EXISTS (
     SELECT 1 FROM CMO.dbo.AsientoContable ac
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-    WHERE ac.CodEmpresa = doc.CodEmpresa
-      AND ac.NroD = doc.NroD
+    WHERE ac.CodEmpresa = '${cod}'
+      AND ac.NroD = doc_dedup.NroD
       AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
   )
-GROUP BY YEAR(doc.FechaDocumento), doc.CodTipoDocumento
+GROUP BY YEAR(FechaDocumento), CodTipoDocumento
 ORDER BY Anio DESC, Tipo
 `;
 
@@ -2010,20 +2030,22 @@ WHERE cb.CodIdentificador = '${cod}'
 ORDER BY ABS(ISNULL(cb.BalanceActual,0) - ISNULL(cb.BalanceReal,0)) DESC
 `;
 
+// Umbrales Ley 28194 actualizados por DL 1529 (vigente desde 2022):
+// PEN > S/ 2,000 (antes S/ 3,500) | USD > US$ 500 (antes US$ 1,000)
 const VQ_BANCARIZACION_FORENSE = (cod, year) => `
 SELECT
   COUNT(*) AS PagosTotalAnio,
-  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000)) THEN 1 ELSE 0 END) AS PagosMateriales,
-  ROUND(SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000)) THEN p.PayAmt ELSE 0 END), 2) AS MontoMaterial,
-  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000)) AND p.MedioDePago IN (1,2,3,5,7) THEN 1 ELSE 0 END) AS PagosBancarizados,
-  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000)) AND (p.MedioDePago IS NULL OR p.MedioDePago=0) THEN 1 ELSE 0 END) AS PagosNoBancarizados,
-  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000)) AND p.MedioDePago=4 THEN 1 ELSE 0 END) AS PagosCompensacionNC,
-  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000)) AND p.MedioDePago=6 THEN 1 ELSE 0 END) AS PagosCanjeLetra
+  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>2000) OR (cb.CodMoneda='02' AND p.PayAmt>500)) THEN 1 ELSE 0 END) AS PagosMateriales,
+  ROUND(SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>2000) OR (cb.CodMoneda='02' AND p.PayAmt>500)) THEN p.PayAmt ELSE 0 END), 2) AS MontoMaterial,
+  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>2000) OR (cb.CodMoneda='02' AND p.PayAmt>500)) AND p.MedioDePago IN (1,2,3,5,7) THEN 1 ELSE 0 END) AS PagosBancarizados,
+  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>2000) OR (cb.CodMoneda='02' AND p.PayAmt>500)) AND (p.MedioDePago IS NULL OR p.MedioDePago=0) THEN 1 ELSE 0 END) AS PagosNoBancarizados,
+  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>2000) OR (cb.CodMoneda='02' AND p.PayAmt>500)) AND p.MedioDePago=4 THEN 1 ELSE 0 END) AS PagosCompensacionNC,
+  SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>2000) OR (cb.CodMoneda='02' AND p.PayAmt>500)) AND p.MedioDePago=6 THEN 1 ELSE 0 END) AS PagosCanjeLetra
 FROM CMO.dbo.OB_Pago p
 LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
 WHERE p.CodIdentificador = '${cod}'
   AND YEAR(p.FechaTrx) = ${year}
-HAVING SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>3500) OR (cb.CodMoneda='02' AND p.PayAmt>1000))
+HAVING SUM(CASE WHEN ((cb.CodMoneda='01' AND p.PayAmt>2000) OR (cb.CodMoneda='02' AND p.PayAmt>500))
                     AND (p.MedioDePago IS NULL OR p.MedioDePago=0) THEN 1 ELSE 0 END) > 0
 `;
 
@@ -2146,6 +2168,14 @@ HAVING COUNT(DISTINCT CASE WHEN da.Pago_ID IS NULL THEN p.Pago_ID END) > 0
 `;
 
 const VQ_RECONCILIACION_INGRESOS = (cod, year, claseIngreso) => `
+WITH doc_dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND YEAR(FechaDocumento) = ${year}
+    AND CodTipoDocumento IN ('060','125','128','131','134')
+)
 SELECT
   m.Mes,
   ISNULL(ing.MontoContable, 0) AS IngresosContables,
@@ -2164,19 +2194,17 @@ LEFT JOIN (
   GROUP BY MONTH(ac.FechaAplicacionContable)
 ) ing ON ing.Mes = m.Mes
 LEFT JOIN (
-  SELECT MONTH(doc.FechaDocumento) AS Mes,
-         ROUND(SUM(CASE WHEN doc.CodTipoDocumento NOT IN ('128','134')
-                        THEN ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
-                        ELSE -ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END
+  SELECT MONTH(FechaDocumento) AS Mes,
+         ROUND(SUM(CASE WHEN CodTipoDocumento NOT IN ('128','134')
+                        THEN ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END
+                        ELSE -ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END
                    END), 2) AS MontoFacturado
-  FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-  WHERE doc.CodEmpresa = '${cod}'
-    AND YEAR(doc.FechaDocumento) = ${year}
-    AND doc.CodTipoDocumento IN ('060','125','128','131','134')
-  GROUP BY MONTH(doc.FechaDocumento)
+  FROM doc_dedup
+  WHERE rn = 1
+  GROUP BY MONTH(FechaDocumento)
 ) fac ON fac.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
-  AND ABS(ISNULL(ing.MontoContable, 0) - ISNULL(fac.MontoFacturado, 0)) > 100
+  AND ABS(ISNULL(ing.MontoContable, 0) - ISNULL(fac.MontoFacturado, 0)) > 500
 ORDER BY m.Mes
 `;
 
@@ -2467,6 +2495,8 @@ WHERE doc.CodEmpresa = '${cod}'
 ORDER BY doc.Total DESC
 `;
 
+// Fraccionamiento elusivo post DL 1529 (2022): umbral S/ 2,000
+// Pagos individuales 500–1,999 PEN sin medio bancario, misma fecha/cuenta, suma > 2,000
 const VQ_FRACCIONAMIENTO_PAGOS = (cod) => `
 SELECT TOP 20
   CONVERT(VARCHAR(10), p.FechaTrx, 103) AS Fecha,
@@ -2479,12 +2509,12 @@ SELECT TOP 20
 FROM CMO.dbo.OB_Pago p
 LEFT JOIN CMO.dbo.OB_CuentaBanco cb ON p.BankAccount_ID = cb.BankAccount_ID
 WHERE p.CodIdentificador = '${cod}'
-  AND YEAR(p.FechaTrx) >= 2023
+  AND YEAR(p.FechaTrx) >= 2022
   AND (p.MedioDePago IS NULL OR p.MedioDePago = 0)
-  AND ISNULL(p.PayAmt, 0) BETWEEN 500 AND 3499
+  AND ISNULL(p.PayAmt, 0) BETWEEN 500 AND 1999
 GROUP BY CONVERT(VARCHAR(10), p.FechaTrx, 103), p.BankAccount_ID, cb.NoCuenta, cb.Descripcion, cb.CodMoneda
 HAVING COUNT(*) >= 3
-  AND SUM(ISNULL(p.PayAmt, 0)) > 3500
+  AND SUM(ISNULL(p.PayAmt, 0)) > 2000
 ORDER BY NumPagos DESC, MontoTotal DESC
 `;
 

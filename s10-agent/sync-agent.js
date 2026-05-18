@@ -2074,24 +2074,48 @@ WHERE rn = 1
 ORDER BY FechaDocumento DESC
 `;
 
+// Aging basado en FechaVencimiento real del documento (no en fecha de asiento contable)
+// Dedup para eliminar filas duplicadas del JOIN interno de la vista
 const VQ_CXC_CONCENTRACION = (cod) => `
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND CodTipoDocumento IN ('131','125','128','134')
+    AND DescripcionEstado = '1'
+    AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
+    AND (Total - ISNULL(TotalPagado,0)) > 1
+)
 SELECT TOP 20
-  ISNULL(i.Descripcion, CAST(ac.CodIdentificador AS VARCHAR)) AS Cliente,
-  ac.CodIdentificador,
-  ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS Saldo,
-  ROUND(SUM(CASE WHEN ac.FechaAplicacionContable < DATEADD(DAY,-90,GETDATE())
-                 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS Vencido90Mas,
-  ROUND(SUM(CASE WHEN ac.FechaAplicacionContable < DATEADD(DAY,-180,GETDATE())
-                 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS Vencido180Mas,
-  CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerMov,
-  CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-LEFT JOIN CMO.dbo.Identificador i ON ac.CodIdentificador = i.CodIdentificador
-WHERE ac.CodEmpresa = '${cod}'
-  AND LEFT(pcd.CodCuenta,2) = '12'
-GROUP BY i.Descripcion, ac.CodIdentificador
-HAVING SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) > 1000
+  ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR)) AS Cliente,
+  ISNULL(CodIdentificador,'') AS CodCliente,
+  COUNT(*) AS NumDocumentos,
+  ROUND(SUM(
+    CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+         THEN -(Total - ISNULL(TotalPagado,0))
+         ELSE Total - ISNULL(TotalPagado,0)
+    END
+  ), 2) AS Saldo,
+  ROUND(SUM(CASE
+    WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+      AND ISNULL(FechaVencimiento, FechaDocumento) < DATEADD(DAY,-90,GETDATE())
+    THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Vencido90Mas,
+  ROUND(SUM(CASE
+    WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
+      AND ISNULL(FechaVencimiento, FechaDocumento) < DATEADD(DAY,-180,GETDATE())
+    THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Vencido180Mas,
+  CONVERT(VARCHAR(10), MIN(FechaDocumento), 103) AS PrimerDoc,
+  CONVERT(VARCHAR(10), MAX(FechaDocumento), 103) AS UltimoDoc
+FROM dedup
+WHERE rn = 1
+GROUP BY DescripcionIdentificador, CodIdentificador
+HAVING SUM(
+  CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+       THEN -(Total - ISNULL(TotalPagado,0))
+       ELSE Total - ISNULL(TotalPagado,0)
+  END
+) > 1000
 ORDER BY Saldo DESC
 `;
 
@@ -2249,12 +2273,14 @@ HAVING
 ORDER BY Clase
 `;
 
+// Excluye últimos 2 días del mes: el cierre contable mensual cae normalmente
+// en sábado/domingo y es práctica estándar en Perú — no es anomalía
 const VQ_FECHAS_ANOMALAS = (cod, year) => `
 SELECT
   CASE
     WHEN ac.FechaAplicacionContable > GETDATE() THEN 'Futura'
-    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 1 THEN 'Domingo'
-    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 7 THEN 'Sábado'
+    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 1 THEN 'Domingo (no cierre mes)'
+    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 7 THEN 'Sábado (no cierre mes)'
   END AS Categoria,
   COUNT(*) AS NumAsientos,
   COUNT(DISTINCT ac.NroD) AS DocsDistintos,
@@ -2264,20 +2290,31 @@ WHERE ac.CodEmpresa = '${cod}'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
   AND (
     ac.FechaAplicacionContable > GETDATE()
-    OR DATEPART(WEEKDAY, ac.FechaAplicacionContable) IN (1, 7)
+    OR (
+      DATEPART(WEEKDAY, ac.FechaAplicacionContable) IN (1, 7)
+      -- Excluir últimos 2 días del mes (cierre mensual esperado)
+      AND DATEDIFF(DAY, ac.FechaAplicacionContable, EOMONTH(ac.FechaAplicacionContable)) > 1
+    )
   )
 GROUP BY CASE
     WHEN ac.FechaAplicacionContable > GETDATE() THEN 'Futura'
-    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 1 THEN 'Domingo'
-    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 7 THEN 'Sábado'
+    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 1 THEN 'Domingo (no cierre mes)'
+    WHEN DATEPART(WEEKDAY, ac.FechaAplicacionContable) = 7 THEN 'Sábado (no cierre mes)'
   END
 ORDER BY 1
 `;
 
+// Normaliza nombre (sin espacios, sin puntos, UPPER) antes de comparar
+// para evitar falsos positivos por variantes de formato de la misma razón social.
+// Umbral > 2 nombres normalizados distintos para filtrar cambios legítimos de razón social
+// (un solo cambio de nombre = > 1 nombre, que es común y normal)
 const VQ_IDENTIFICADORES_DUPLICADOS = (cod) => `
 SELECT TOP 20
   ac.CodIdentificador,
-  COUNT(DISTINCT i.Descripcion) AS NombresDistintos,
+  COUNT(DISTINCT
+    UPPER(REPLACE(REPLACE(REPLACE(ISNULL(i.Descripcion,''), ' ', ''), '.', ''), ',', ''))
+  ) AS NombresNormDistintos,
+  COUNT(DISTINCT i.Descripcion) AS NombresRawDistintos,
   MIN(LEFT(ISNULL(i.Descripcion,''),60)) AS NombreEjemplo1,
   MAX(LEFT(ISNULL(i.Descripcion,''),60)) AS NombreEjemplo2
 FROM CMO.dbo.AsientoContable ac
@@ -2285,8 +2322,10 @@ LEFT JOIN CMO.dbo.Identificador i ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${cod}'
   AND ac.CodIdentificador IS NOT NULL
 GROUP BY ac.CodIdentificador
-HAVING COUNT(DISTINCT i.Descripcion) > 1
-ORDER BY COUNT(DISTINCT i.Descripcion) DESC
+HAVING COUNT(DISTINCT
+  UPPER(REPLACE(REPLACE(REPLACE(ISNULL(i.Descripcion,''), ' ', ''), '.', ''), ',', ''))
+) > 2
+ORDER BY NombresNormDistintos DESC
 `;
 
 const VQ_CONCILIACION_ESTADO = (cod) => `
@@ -2367,7 +2406,13 @@ LEFT JOIN (
   GROUP BY MONTH(ac.FechaAplicacionContable)
 ) con ON con.Mes = m.Mes
 WHERE m.Mes <= MONTH(GETDATE())
-  AND ABS(ISNULL(ob.MontoOBPago, 0) - ISNULL(con.MontoContable, 0)) > 100
+  -- Umbral absoluto S/1,000 Y relativo >5% del volumen mensual para filtrar diferencias de timing
+  AND ABS(ISNULL(ob.MontoOBPago, 0) - ISNULL(con.MontoContable, 0)) > 1000
+  AND (
+    ISNULL(ob.MontoOBPago, 0) = 0
+    OR ABS(ISNULL(ob.MontoOBPago, 0) - ISNULL(con.MontoContable, 0))
+       / NULLIF(ISNULL(ob.MontoOBPago, 0), 0) > 0.05
+  )
 ORDER BY m.Mes
 `;
 

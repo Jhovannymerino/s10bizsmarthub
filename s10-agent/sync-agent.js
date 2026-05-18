@@ -1845,7 +1845,7 @@ HAVING SUM(ISNULL(ac.Credito,0)) - SUM(ISNULL(ac.Debito,0)) < -0.01
 ORDER BY Clase, pcd.CodCuenta
 `;
 
-const VQ_FACTURAS_SIN_ASIENTO = (cod, year, claseIngreso) => `
+const VQ_FACTURAS_SIN_ASIENTO = (cod, year) => `
 WITH doc_dedup AS (
   SELECT *,
     ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
@@ -1874,12 +1874,12 @@ WHERE rn = 1
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
     WHERE ac.CodEmpresa = '${cod}'
       AND ac.NroD = doc_dedup.NroD
-      AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
+      AND LEFT(pcd.CodCuenta, 2) IN ('70','71','72','73','74','75')
   )
 ORDER BY TotalPEN DESC
 `;
 
-const VQ_FACTURAS_SIN_ASIENTO_HISTORICO = (cod, claseIngreso) => `
+const VQ_FACTURAS_SIN_ASIENTO_HISTORICO = (cod) => `
 WITH doc_dedup AS (
   SELECT *,
     ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
@@ -1907,12 +1907,12 @@ WHERE rn = 1
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
     WHERE ac.CodEmpresa = '${cod}'
       AND ac.NroD = doc_dedup.NroD
-      AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
+      AND LEFT(pcd.CodCuenta, 2) IN ('70','71','72','73','74','75')
   )
 ORDER BY YEAR(FechaDocumento) DESC, TotalPEN DESC
 `;
 
-const VQ_FACTURAS_SIN_ASIENTO_RESUMEN = (cod, claseIngreso) => `
+const VQ_FACTURAS_SIN_ASIENTO_RESUMEN = (cod) => `
 WITH doc_dedup AS (
   SELECT *,
     ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
@@ -1933,7 +1933,7 @@ WHERE rn = 1
     JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
     WHERE ac.CodEmpresa = '${cod}'
       AND ac.NroD = doc_dedup.NroD
-      AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
+      AND LEFT(pcd.CodCuenta, 2) IN ('70','71','72','73','74','75')
   )
 GROUP BY YEAR(FechaDocumento), CodTipoDocumento
 ORDER BY Anio DESC, Tipo
@@ -2706,9 +2706,9 @@ async function runBatch4Validation(pool, company, year) {
     runQ(VQ_PARTIDA_DOBLE(cod, year)),
     runQ(VQ_APERTURA(cod, year)),
     runQ(VQ_PATRIMONIO_DETALLE(cod)),
-    runQ(VQ_FACTURAS_SIN_ASIENTO(cod, year, ci)),
-    runQ(VQ_FACTURAS_SIN_ASIENTO_RESUMEN(cod, ci)),
-    runQ(VQ_FACTURAS_SIN_ASIENTO_HISTORICO(cod, ci)),
+    runQ(VQ_FACTURAS_SIN_ASIENTO(cod, year)),
+    runQ(VQ_FACTURAS_SIN_ASIENTO_RESUMEN(cod)),
+    runQ(VQ_FACTURAS_SIN_ASIENTO_HISTORICO(cod)),
     runQ(VQ_INGRESOS_SIN_DOC(cod, year, ci)),
     runQ(VQ_SUELDOS_AGING(cod, year)),
     runQ(VQ_CTS_DEPOSITOS_HISTORICO(cod, year)),

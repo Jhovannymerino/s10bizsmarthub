@@ -1319,11 +1319,15 @@ export class KpiService {
   // ─────────────────────────────────────────────
 
   // Glosas que por naturaleza no tienen documento fuente y se controlan por otra vía
-  private static readonly GLOSAS_SIN_DOC_EXCLUIR = ['Asiento de Apertura', 'Diferencia de cambio'];
+  private static readonly GLOSAS_SIN_DOC_EXCLUIR = [
+    'asiento de apertura',
+    'asiento de cierre',
+    'diferencia de cambio',
+  ];
 
   private filterSinDoc(txns: any[]): any[] {
     return txns.filter((t: any) => {
-      const glosa = String(t.Glosa || '').trim();
+      const glosa = String(t.Glosa || '').trim().toLowerCase();
       return !KpiService.GLOSAS_SIN_DOC_EXCLUIR.some(exc => glosa.startsWith(exc));
     });
   }

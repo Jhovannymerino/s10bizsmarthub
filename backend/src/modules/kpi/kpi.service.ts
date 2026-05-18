@@ -1329,6 +1329,12 @@ export class KpiService {
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (clase) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(clase));
+    // Exclude entries that legitimately have no source document and are controlled elsewhere
+    const GLOSAS_EXCLUIR = ['Asiento de Apertura', 'Diferencia de cambio'];
+    txns = txns.filter((t: any) => {
+      const glosa = String(t.Glosa || '').trim();
+      return !GLOSAS_EXCLUIR.some(exc => glosa.startsWith(exc));
+    });
     return { transactions: txns, total: txns.length };
   }
 

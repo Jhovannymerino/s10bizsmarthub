@@ -72,7 +72,7 @@ export function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: 
                 {filtered.map((t: any, i: number) => (
                   <tr key={i}>
                     <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{String(t.NroAsiento).slice(0, 8)}…</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{t.NroAsiento ?? '—'}</td>
                     <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{t.CodCuenta}</td>
                     <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
                     <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.Tercero || '—'}</td>

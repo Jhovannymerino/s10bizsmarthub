@@ -1649,7 +1649,7 @@ export class KpiService {
       V27_cxp_concentracion: 'V27 — Concentración CxP comercial top 15 (excluye préstamos/anticipos)',
       V28_nc_sospechosas: 'V28 — Notas de crédito / reversión de ingresos',
       V29_fraccionamiento_pagos: 'V29 — Fraccionamiento de pagos (evasión DL 1529, rango 500–1,999)',
-      V30_provisiones_sin_reverso: 'V30 — Provisiones diciembre sin reverso en enero',
+      V30_provisiones_sin_reverso: 'V30 — Provisiones diciembre sin reverso en Q1 siguiente (ene-mar)',
     };
 
     const summary = Object.entries(LABELS).map(([id, label]) => {

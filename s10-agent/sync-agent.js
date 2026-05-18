@@ -1777,7 +1777,8 @@ SELECT
   COUNT(DISTINCT LEFT(pcd.CodCuenta,2)) AS NumClases,
   ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
   ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
-  ROUND(ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))), 2) AS Descuadre
+  ROUND(ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))), 2) AS Descuadre,
+  'DESBALANCEADO' AS TipoHallazgo
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
@@ -1786,6 +1787,25 @@ WHERE ac.CodEmpresa = '${cod}'
   AND MONTH(ac.FechaAplicacionContable) <= 2
 GROUP BY YEAR(ac.FechaAplicacionContable)
 HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
+
+UNION ALL
+
+SELECT
+  ${year} AS Anio,
+  NULL AS PrimerAsiento,
+  0 AS NumAsientos,
+  0 AS NumClases,
+  0 AS SumDebito,
+  0 AS SumCredito,
+  0 AS Descuadre,
+  'SIN ASIENTO APERTURA' AS TipoHallazgo
+WHERE NOT EXISTS (
+  SELECT 1 FROM CMO.dbo.AsientoContable ac2
+  WHERE ac2.CodEmpresa = '${cod}'
+    AND YEAR(ac2.FechaAplicacionContable) = ${year}
+    AND (ac2.Glosa LIKE '%APERTURA%' OR ac2.Glosa LIKE '%INICIO%' OR ac2.Glosa LIKE '%ASIENTO INICIAL%')
+    AND MONTH(ac2.FechaAplicacionContable) <= 2
+)
 `;
 
 const VQ_PATRIMONIO_DETALLE = (cod) => `
@@ -1901,7 +1921,7 @@ ORDER BY Anio DESC, Tipo
 `;
 
 const VQ_INGRESOS_SIN_DOC = (cod, year, claseIngreso) => `
-SELECT
+SELECT TOP 200
   ac.CodUnico AS NroAsiento,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103) AS Fecha,
   pcd.CodCuenta,
@@ -1984,7 +2004,7 @@ HAVING ROUND(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0)), 2) > 100
 ORDER BY pcd.CodCuenta, Anio DESC
 `;
 
-const VQ_BANCOS_DETALLE = (cod) => `
+const VQ_BANCOS_DETALLE = (cod, year) => `
 SELECT
   pcd.CodCuenta,
   pcd.Descripcion AS DesBanco,
@@ -1992,10 +2012,10 @@ SELECT
   ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
   ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
   ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS SaldoNeto,
-  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= 2022 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin2022,
-  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= 2023 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin2023,
-  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= 2024 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin2024,
-  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= 2025 THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin2025,
+  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= ${year-3} THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin${year-3},
+  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= ${year-2} THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin${year-2},
+  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= ${year-1} THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin${year-1},
+  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) <= ${year} THEN ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0) ELSE 0 END), 2) AS SaldoFin${year},
   CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerMov,
   CONVERT(VARCHAR(10), MAX(ac.FechaAplicacionContable), 103) AS UltimoMov
 FROM CMO.dbo.AsientoContable ac
@@ -2521,50 +2541,59 @@ ORDER BY SaldoCxP DESC
 `;
 
 const VQ_NC_SOSPECHOSAS = (cod) => `
+WITH all_dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND YEAR(FechaDocumento) >= 2022
+),
+nc_dedup AS (
+  SELECT * FROM all_dedup WHERE rn = 1 AND CodTipoDocumento IN ('128', '134')
+),
+fact_totals AS (
+  SELECT YEAR(FechaDocumento) AS Anio,
+    SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END) AS TotalFacturacion
+  FROM all_dedup
+  WHERE rn = 1 AND CodTipoDocumento IN ('060','125','131')
+  GROUP BY YEAR(FechaDocumento)
+)
 SELECT
-  YEAR(doc.FechaDocumento) AS Anio,
+  YEAR(nc.FechaDocumento) AS Anio,
   COUNT(*) AS NumNC,
-  ROUND(SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END), 2) AS MontoNC,
-  ROUND(100.0 * SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) / NULLIF((
-    SELECT SUM(ISNULL(d2.Total,0) * CASE WHEN d2.CodMoneda='01' THEN 1.0 ELSE ISNULL(d2.TipoCambio,3.80) END)
-    FROM CMO.dbo.vw_12DocumentosPorCobrar d2
-    WHERE d2.CodEmpresa = '${cod}'
-      AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
-      AND d2.CodTipoDocumento IN ('060','125','131')
-  ), 0), 2) AS PctSobreFacturacion,
-  ROUND(SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${cod}'
-  AND doc.CodTipoDocumento IN ('128', '134')
-  AND YEAR(doc.FechaDocumento) >= 2022
-GROUP BY YEAR(doc.FechaDocumento)
-HAVING ROUND(100.0 * SUM(ISNULL(doc.Total,0) * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,3.80) END) / NULLIF((
-    SELECT SUM(ISNULL(d2.Total,0) * CASE WHEN d2.CodMoneda='01' THEN 1.0 ELSE ISNULL(d2.TipoCambio,3.80) END)
-    FROM CMO.dbo.vw_12DocumentosPorCobrar d2
-    WHERE d2.CodEmpresa = '${cod}'
-      AND YEAR(d2.FechaDocumento) = YEAR(doc.FechaDocumento)
-      AND d2.CodTipoDocumento IN ('060','125','131')
-  ), 0), 2) > 3
+  ROUND(SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END), 2) AS MontoNC,
+  ROUND(100.0 * SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END) / NULLIF(MAX(ft.TotalFacturacion), 0), 2) AS PctSobreFacturacion,
+  ROUND(SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END) / NULLIF(COUNT(*), 0), 2) AS PromedioNC
+FROM nc_dedup nc
+LEFT JOIN fact_totals ft ON ft.Anio = YEAR(nc.FechaDocumento)
+GROUP BY YEAR(nc.FechaDocumento)
+HAVING ROUND(100.0 * SUM(ISNULL(nc.Total,0) * CASE WHEN nc.CodMoneda='01' THEN 1.0 ELSE ISNULL(nc.TipoCambio,3.80) END) / NULLIF(MAX(ft.TotalFacturacion), 0), 2) > 3
 ORDER BY Anio DESC
 `;
 
 const VQ_NC_DETALLE = (cod) => `
+WITH dedup AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
+  FROM CMO.dbo.vw_12DocumentosPorCobrar
+  WHERE CodEmpresa = '${cod}'
+    AND CodTipoDocumento IN ('128', '134')
+    AND YEAR(FechaDocumento) >= 2022
+)
 SELECT TOP 50
-  YEAR(doc.FechaDocumento) AS Anio,
-  doc.SerieDocumento AS Serie,
-  doc.NumeroDocumento AS Numero,
-  CONVERT(VARCHAR(10), doc.FechaDocumento, 103) AS Fecha,
-  doc.CodTipoDocumento AS Tipo,
-  doc.DescripcionTipoDocumento AS DesTipo,
-  doc.DescripcionIdentificador AS Cliente,
-  doc.RUC,
-  ROUND(ISNULL(doc.Total, 0), 2) AS Total,
-  ISNULL(doc.DescripcionEstado, '') AS Estado
-FROM CMO.dbo.vw_12DocumentosPorCobrar doc
-WHERE doc.CodEmpresa = '${cod}'
-  AND doc.CodTipoDocumento IN ('128', '134')
-  AND YEAR(doc.FechaDocumento) >= 2022
-ORDER BY doc.Total DESC
+  YEAR(FechaDocumento) AS Anio,
+  SerieDocumento AS Serie,
+  NumeroDocumento AS Numero,
+  CONVERT(VARCHAR(10), FechaDocumento, 103) AS Fecha,
+  CodTipoDocumento AS Tipo,
+  DescripcionTipoDocumento AS DesTipo,
+  DescripcionIdentificador AS Cliente,
+  RUC,
+  ROUND(ISNULL(Total, 0), 2) AS Total,
+  ISNULL(DescripcionEstado, '') AS Estado
+FROM dedup
+WHERE rn = 1
+ORDER BY Total DESC
 `;
 
 // Fraccionamiento elusivo post DL 1529 (2022): umbral S/ 2,000
@@ -2611,7 +2640,7 @@ WHERE ac.CodEmpresa = '${cod}'
     SELECT 1 FROM CMO.dbo.AsientoContable ac2
     WHERE ac2.CodEmpresa = ac.CodEmpresa
       AND ac2.NroPlanContableDetalle = ac.NroPlanContableDetalle
-      AND MONTH(ac2.FechaAplicacionContable) = 1
+      AND MONTH(ac2.FechaAplicacionContable) IN (1, 2, 3)
       AND YEAR(ac2.FechaAplicacionContable) = YEAR(ac.FechaAplicacionContable) + 1
       AND UPPER(ac2.Glosa) LIKE '%REVER%'
   )
@@ -2648,7 +2677,7 @@ async function runBatch4Validation(pool, company, year) {
     runQ(VQ_SUELDOS_AGING(cod, year)),
     runQ(VQ_CTS_DEPOSITOS_HISTORICO(cod, year)),
     runQ(VQ_PARTICIPACIONES(cod, year)),
-    runQ(VQ_BANCOS_DETALLE(cod)),
+    runQ(VQ_BANCOS_DETALLE(cod, year)),
     runQ(VQ_OB_CUENTAS_BANCO(cod)),
     runQ(VQ_BANCARIZACION_FORENSE(cod, year)),
     runQ(VQ_PERGOLA_AGING(cod)),

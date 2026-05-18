@@ -2251,26 +2251,53 @@ HAVING ABS(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0))) > 0.5
 ORDER BY ABS(SUM(ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0))) DESC
 `;
 
+// CTE separadas para evitar mezcla de acumulado histórico con actividad del año:
+// - anual:    sólo movimientos del año seleccionado → NumAsientos, SumDebito/Credito, SaldoAnio
+// - historico: acumulado hasta fin del año → SaldoHistorico para detectar inversiones en cuentas de balance
+// HAVING aplica lógica correcta: balance (1-5) usa saldo histórico; P&L (6-9) usa saldo del año
 const VQ_BALANCE_RESUMEN = (cod, year) => `
+WITH anual AS (
+  SELECT
+    LEFT(pcd.CodCuenta, 1) AS GrupoMayor,
+    LEFT(pcd.CodCuenta, 2) AS Clase,
+    COUNT(*) AS NumAsientos,
+    ROUND(SUM(ISNULL(ac.Debito,0)), 2)   AS SumDebito,
+    ROUND(SUM(ISNULL(ac.Credito,0)), 2)  AS SumCredito,
+    ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS SaldoAnio
+  FROM CMO.dbo.AsientoContable ac
+  JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+  WHERE ac.CodEmpresa = '${cod}'
+    AND YEAR(ac.FechaAplicacionContable) = ${year}
+  GROUP BY LEFT(pcd.CodCuenta, 1), LEFT(pcd.CodCuenta, 2)
+),
+historico AS (
+  SELECT
+    LEFT(pcd.CodCuenta, 2) AS Clase,
+    ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS SaldoHistorico
+  FROM CMO.dbo.AsientoContable ac
+  JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+  WHERE ac.CodEmpresa = '${cod}'
+    AND YEAR(ac.FechaAplicacionContable) <= ${year}
+  GROUP BY LEFT(pcd.CodCuenta, 2)
+)
 SELECT
-  LEFT(pcd.CodCuenta, 1) AS GrupoMayor,
-  LEFT(pcd.CodCuenta, 2) AS Clase,
-  COUNT(*) AS NumAsientos,
-  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
-  ROUND(SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)), 2) AS SaldoNeto,
-  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN ISNULL(ac.Debito,0) ELSE 0 END), 2) AS DebitoAnio,
-  ROUND(SUM(CASE WHEN YEAR(ac.FechaAplicacionContable) = ${year} THEN ISNULL(ac.Credito,0) ELSE 0 END), 2) AS CreditoAnio
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-WHERE ac.CodEmpresa = '${cod}'
-GROUP BY LEFT(pcd.CodCuenta, 1), LEFT(pcd.CodCuenta, 2)
-HAVING
-  (LEFT(pcd.CodCuenta,1) IN ('1','2','3','6','9')
-    AND SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) < -1000)
-  OR (LEFT(pcd.CodCuenta,1) IN ('4','5','7')
-    AND SUM(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) > 1000)
-ORDER BY Clase
+  a.GrupoMayor,
+  a.Clase,
+  a.NumAsientos,
+  a.SumDebito,
+  a.SumCredito,
+  a.SaldoAnio,
+  ISNULL(h.SaldoHistorico, 0) AS SaldoHistorico
+FROM anual a
+LEFT JOIN historico h ON a.Clase = h.Clase
+WHERE
+  -- Balance (1-5): anomalía = saldo histórico en dirección contraria a su naturaleza
+  (a.GrupoMayor IN ('1','2','3') AND ISNULL(h.SaldoHistorico,0) < -1000)
+  OR (a.GrupoMayor IN ('4','5')  AND ISNULL(h.SaldoHistorico,0) > 1000)
+  -- P&L (6-9): anomalía = saldo del año en dirección contraria a su naturaleza
+  OR (a.GrupoMayor IN ('6','9')  AND a.SaldoAnio < -1000)
+  OR (a.GrupoMayor = '7'         AND a.SaldoAnio > 1000)
+ORDER BY a.Clase
 `;
 
 // Excluye últimos 2 días del mes: el cierre contable mensual cae normalmente

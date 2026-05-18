@@ -1638,7 +1638,7 @@ export class KpiService {
       V16_trazabilidad_pago: 'V16 — Trazabilidad OB_Pago ↔ DetalleAsignación',
       V17_reconciliacion_ingr: 'V17 — Reconciliación ingresos contables vs facturas (tolerancia S/500)',
       V18_tributos: 'V18 — Tributos por pagar (clase 40)',
-      V19_balance_resumen: 'V19 — Balance resumen por clase',
+      V19_balance_resumen: 'V19 — Balance resumen por clase (NumAsientos y montos filtrados al año seleccionado)',
       V20_fechas_anomalas: 'V20 — Asientos con fechas anómalas (excluye cierres de fin de mes)',
       V21_identificadores_dup: 'V21 — Identificadores con 3+ nombres distintos (excluye cambios de razón social)',
       V22_conciliacion_estado: 'V22 — Estado de conciliación bancaria OB',

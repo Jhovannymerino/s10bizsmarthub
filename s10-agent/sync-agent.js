@@ -1769,57 +1769,53 @@ WHERE CodEmpresa = '${cod}'
 HAVING ABS(SUM(ISNULL(Debito, 0)) - SUM(ISNULL(Credito, 0))) > 0.01
 `;
 
-const VQ_APERTURA = (cod, year) => `
-SELECT
-  YEAR(ac.FechaAplicacionContable) AS Anio,
-  CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerAsiento,
-  COUNT(*) AS NumAsientos,
-  COUNT(DISTINCT LEFT(pcd.CodCuenta,2)) AS NumClases,
-  ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
-  ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
-  ROUND(ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))), 2) AS Descuadre,
-  'DESBALANCEADO' AS TipoHallazgo
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-WHERE ac.CodEmpresa = '${cod}'
-  AND YEAR(ac.FechaAplicacionContable) = ${year}
-  AND (
-    UPPER(ac.Glosa) LIKE '%APERTURA%'
-    OR UPPER(ac.Glosa) LIKE '%INICIO%'
-    OR UPPER(ac.Glosa) LIKE '%ASIENTO INICIAL%'
-    OR UPPER(ac.Glosa) LIKE '%SALDO INICIAL%'
-    OR UPPER(ac.Glosa) LIKE '%BALANCE INICIAL%'
-    OR UPPER(ac.Glosa) LIKE '%TRASPASO SALDO%'
-  )
-  AND MONTH(ac.FechaAplicacionContable) <= 2
-GROUP BY YEAR(ac.FechaAplicacionContable)
-HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
-
-UNION ALL
-
-SELECT
-  ${year} AS Anio,
-  NULL AS PrimerAsiento,
-  0 AS NumAsientos,
-  0 AS NumClases,
-  0 AS SumDebito,
-  0 AS SumCredito,
-  0 AS Descuadre,
-  'SIN ASIENTO APERTURA' AS TipoHallazgo
-WHERE NOT EXISTS (
-  SELECT 1 FROM CMO.dbo.AsientoContable ac2
-  WHERE ac2.CodEmpresa = '${cod}'
-    AND YEAR(ac2.FechaAplicacionContable) = ${year}
+const VQ_APERTURA = (cod) => `
+WITH años_activos AS (
+  SELECT DISTINCT YEAR(ac.FechaAplicacionContable) AS Anio
+  FROM CMO.dbo.AsientoContable ac
+  WHERE ac.CodEmpresa = '${cod}'
+    AND YEAR(ac.FechaAplicacionContable) >= 2022
+    AND YEAR(ac.FechaAplicacionContable) <= YEAR(GETDATE())
+),
+apertura_por_año AS (
+  SELECT
+    YEAR(ac.FechaAplicacionContable) AS Anio,
+    CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS PrimerAsiento,
+    COUNT(*) AS NumAsientos,
+    COUNT(DISTINCT LEFT(pcd.CodCuenta,2)) AS NumClases,
+    ROUND(SUM(ISNULL(ac.Debito,0)), 2)  AS SumDebito,
+    ROUND(SUM(ISNULL(ac.Credito,0)), 2) AS SumCredito,
+    ROUND(ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))), 2) AS Descuadre
+  FROM CMO.dbo.AsientoContable ac
+  JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+  WHERE ac.CodEmpresa = '${cod}'
+    AND MONTH(ac.FechaAplicacionContable) <= 3
+    AND YEAR(ac.FechaAplicacionContable) >= 2022
     AND (
-      UPPER(ac2.Glosa) LIKE '%APERTURA%'
-      OR UPPER(ac2.Glosa) LIKE '%INICIO%'
-      OR UPPER(ac2.Glosa) LIKE '%ASIENTO INICIAL%'
-      OR UPPER(ac2.Glosa) LIKE '%SALDO INICIAL%'
-      OR UPPER(ac2.Glosa) LIKE '%BALANCE INICIAL%'
-      OR UPPER(ac2.Glosa) LIKE '%TRASPASO SALDO%'
+      UPPER(ac.Glosa) LIKE '%APERTURA%'
+      OR UPPER(ac.Glosa) LIKE '%ASIENTO INICIAL%'
+      OR UPPER(ac.Glosa) LIKE '%SALDO INICIAL%'
+      OR UPPER(ac.Glosa) LIKE '%BALANCE INICIAL%'
+      OR UPPER(ac.Glosa) LIKE '%TRASPASO SALDO%'
     )
-    AND MONTH(ac2.FechaAplicacionContable) <= 2
+  GROUP BY YEAR(ac.FechaAplicacionContable)
 )
+SELECT
+  y.Anio,
+  ISNULL(a.PrimerAsiento, '—') AS PrimerAsiento,
+  ISNULL(a.NumAsientos, 0) AS NumAsientos,
+  ISNULL(a.NumClases, 0) AS NumClases,
+  ISNULL(a.SumDebito, 0) AS SumDebito,
+  ISNULL(a.SumCredito, 0) AS SumCredito,
+  ISNULL(a.Descuadre, 0) AS Descuadre,
+  CASE
+    WHEN a.Anio IS NULL THEN 'SIN ASIENTO APERTURA'
+    WHEN a.Descuadre > 0.01 THEN 'DESBALANCEADO'
+  END AS TipoHallazgo
+FROM años_activos y
+LEFT JOIN apertura_por_año a ON a.Anio = y.Anio
+WHERE a.Anio IS NULL OR a.Descuadre > 0.01
+ORDER BY y.Anio
 `;
 
 const VQ_PATRIMONIO_DETALLE = (cod) => `
@@ -2711,7 +2707,7 @@ async function runBatch4Validation(pool, company, year) {
     v22, v23, v24, v25, v26, v27, v28, v28b, v29, v30,
   ] = await Promise.all([
     runQ(VQ_PARTIDA_DOBLE(cod, year)),
-    runQ(VQ_APERTURA(cod, year)),
+    runQ(VQ_APERTURA(cod)),
     runQ(VQ_PATRIMONIO_DETALLE(cod)),
     runQ(VQ_FACTURAS_SIN_ASIENTO(cod, year)),
     runQ(VQ_FACTURAS_SIN_ASIENTO_RESUMEN(cod)),

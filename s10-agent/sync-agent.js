@@ -1059,7 +1059,7 @@ ORDER BY SinDocumento DESC
 
 // Auditoría: detalle de asientos sin NroD (año en curso)
 const QUERY_AUDIT_SIN_DOC_TXN = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT
+SELECT TOP 1000
   ac.CodUnico                                              AS NroAsiento,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
   LEFT(pcd.CodCuenta, 2)                                   AS Clase,
@@ -1087,7 +1087,7 @@ ORDER BY ABS(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) DESC
 // donde la suma de débitos ≠ suma de créditos en todos sus asientos, lo que
 // indica una contabilización incompleta o con error de monto.
 const QUERY_AUDIT_DESCUADRES = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT
+SELECT TOP 200
   ac.NroD,
   MIN(CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)) AS Fecha,
   COUNT(*)                                                  AS Lineas,
@@ -1112,7 +1112,7 @@ ORDER BY Descuadre DESC
 
 // Auditoría: movimientos atípicos >100K en una línea
 const QUERY_AUDIT_ATIPICOS = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT
+SELECT TOP 200
   ac.CodUnico                                              AS NroAsiento,
   ac.NroD                                                  AS NroD,
   CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
@@ -3078,7 +3078,7 @@ async function main() {
   }
 
   const mode = fast ? 'FAST (Batches 1+2 only)' : forensics ? 'FULL + FORENSICS' : 'FULL (Batches 1+2+3)';
-  const concurrency = fast ? 4 : 2;
+  const concurrency = fast ? 4 : forensics ? 1 : 2;
   console.log(`\nS10 Sync Agent — ${new Date().toISOString()}`);
   console.log(`Year: ${year} | Mode: ${mode} | Concurrency: ${concurrency} | Companies: ${companies.map((c) => c.name).join(', ')}\n`);
 

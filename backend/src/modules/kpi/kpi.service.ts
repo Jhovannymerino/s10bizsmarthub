@@ -659,15 +659,17 @@ export class KpiService {
       { key: 'facturas_recibidas', tipo: 'recibida' },
       { key: 'honorarios_recibidos', tipo: 'honorario' },
     ];
-    for (const year of years) {
-      for (const { key, tipo } of snapTypes) {
-        const snap = await this.getSnapshot(companyId, key, `${year}`);
-        if (!snap) continue;
-        const doc = (snap.data as any[]).find(
-          (d: any) => d.NroD && String(d.NroD).toUpperCase() === nroDUpper,
-        );
-        if (doc) return { tipo, year, doc };
-      }
+    const candidates = await Promise.all(
+      years.flatMap(year => snapTypes.map(({ key, tipo }) =>
+        this.getSnapshot(companyId, key, `${year}`).then(snap => ({ snap, tipo, year }))
+      ))
+    );
+    for (const { snap, tipo, year } of candidates) {
+      if (!snap) continue;
+      const doc = (snap.data as any[]).find(
+        (d: any) => d.NroD && String(d.NroD).toUpperCase() === nroDUpper,
+      );
+      if (doc) return { tipo, year, doc };
     }
     return null;
   }

@@ -25,10 +25,10 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
               <thead><tr>
                 <th>Clase</th>
                 <th style={{ minWidth: 160 }}>Descripción</th>
-                <th title="Cantidad de líneas contables sin documento fuente (NroD = NULL) — son las que requieren atención">Sin Doc</th>
-                <th title="Total de líneas contables registradas en esta clase durante el año — denominador del porcentaje">Líneas totales</th>
-                <th title="Porcentaje de líneas sin documento sobre el total de la clase (Sin Doc ÷ Líneas totales × 100)">% Sin Doc</th>
-                <th title="Suma de montos de las líneas sin documento fuente">Monto Sin Doc</th>
+                <th title="Asientos que no tienen documento de respaldo (NroD = NULL) — requieren revisión">Sin Doc</th>
+                <th title="Total de asientos contabilizados en la clase, con documento Y sin documento">Total</th>
+                <th title="De cada 100 asientos de la clase, cuántos carecen de documento (Sin Doc ÷ Total × 100)">% Sin Doc</th>
+                <th title="Suma de los montos de los asientos sin documento">Monto Sin Doc</th>
               </tr></thead>
               <tbody>
                 {auditData.sinDoc.resumen.map((r: any, i: number) => {

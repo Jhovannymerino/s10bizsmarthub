@@ -1854,6 +1854,7 @@ WITH doc_dedup AS (
     AND YEAR(FechaDocumento) IN (${year}, ${year - 1})
     AND CodTipoDocumento IN ('060','125','131')
     AND ISNULL(DescripcionEstado,'') != '5'
+    AND ISNULL(Total,0) > 0
 )
 SELECT TOP 50
   YEAR(FechaDocumento) AS Anio,
@@ -1888,6 +1889,7 @@ WITH doc_dedup AS (
   WHERE CodEmpresa = '${cod}'
     AND CodTipoDocumento IN ('060','125','131')
     AND ISNULL(DescripcionEstado,'') != '5'
+    AND ISNULL(Total,0) > 0
 )
 SELECT TOP 200
   YEAR(FechaDocumento) AS Anio,
@@ -1922,6 +1924,7 @@ WITH doc_dedup AS (
   WHERE CodEmpresa = '${cod}'
     AND CodTipoDocumento IN ('060','125','131')
     AND ISNULL(DescripcionEstado,'') != '5'
+    AND ISNULL(Total,0) > 0
 )
 SELECT
   YEAR(FechaDocumento) AS Anio,

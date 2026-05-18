@@ -3987,7 +3987,7 @@ export default function DashboardPage() {
                                                         : isV04bResumen && k === 'Tipo'
                                                           ? <>{String(val)}<span style={{ color: '#8B97A8', fontWeight: 400, marginLeft: '0.4rem', fontSize: '0.65rem' }}>{TIPO_DOC_LABEL[String(val)] ?? String(row.DesTipo ?? '')}</span></>
                                                         : k === 'Estado' && String(val) === '5' ? <span style={{ color: '#6B7280', fontSize: '0.62rem' }}>Anulado</span>
-                                                        : k === 'Estado' && String(val) === '6' ? <span title="Documento vinculado a otro (anticipo, NC, intercompañía). Verificar si el ingreso fue reconocido contablemente por otro mecanismo." style={{ color: '#F59E0B', fontWeight: 600, cursor: 'help', borderBottom: '1px dotted #F59E0B' }}>Vinculada ⚠</span>
+                                                        : k === 'Estado' && String(val) === '6' ? <span title="PENDIENTE DE REVISIÓN: documento vinculado/netteado contra otro (anticipo, NC, intercompañía). Confirmar en S10 si el ingreso fue reconocido por un mecanismo alternativo." style={{ color: '#F59E0B', fontWeight: 600 }}>⚠ Vinculada</span>
                                                         : k === 'Estado' && String(val) === '1' ? <span style={{ color: '#10B981' }}>Pendiente</span>
                                                         : money ? fmt(val) : String(val)
                                                     }
@@ -4036,7 +4036,7 @@ export default function DashboardPage() {
                                                                   {isMoney(k) && typeof r[k] === 'number' ? fmt(r[k])
                                                                     : k === 'Moneda' ? (r[k] === '01' ? 'PEN' : r[k] === '02' ? 'USD' : String(r[k] ?? '—'))
                                                                     : k === 'Estado' && String(r[k]) === '5' ? <span style={{ color: '#6B7280', fontSize: '0.62rem' }}>Anulado</span>
-                                                                    : k === 'Estado' && String(r[k]) === '6' ? <span title="Documento vinculado a otro (anticipo, NC, intercompañía). Verificar si el ingreso fue reconocido contablemente por otro mecanismo." style={{ color: '#F59E0B', fontWeight: 600, cursor: 'help', borderBottom: '1px dotted #F59E0B' }}>Vinculada ⚠</span>
+                                                                    : k === 'Estado' && String(r[k]) === '6' ? <span title="PENDIENTE DE REVISIÓN: documento vinculado/netteado contra otro (anticipo, NC, intercompañía). Confirmar en S10 si el ingreso fue reconocido por un mecanismo alternativo." style={{ color: '#F59E0B', fontWeight: 600 }}>⚠ Vinculada</span>
                                                                     : k === 'Estado' && String(r[k]) === '1' ? <span style={{ color: '#10B981' }}>Pendiente</span>
                                                                     : String(r[k] ?? '—')}
                                                                 </td>

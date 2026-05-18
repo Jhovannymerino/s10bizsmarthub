@@ -1852,7 +1852,7 @@ WITH doc_dedup AS (
   FROM CMO.dbo.vw_12DocumentosPorCobrar
   WHERE CodEmpresa = '${cod}'
     AND YEAR(FechaDocumento) IN (${year}, ${year - 1})
-    AND CodTipoDocumento IN ('060','125','128','131','134')
+    AND CodTipoDocumento IN ('060','125','131')
 )
 SELECT TOP 50
   YEAR(FechaDocumento) AS Anio,
@@ -1863,7 +1863,9 @@ SELECT TOP 50
   DescripcionTipoDocumento AS DesTipo,
   DescripcionIdentificador AS Cliente,
   RUC,
-  ROUND(ISNULL(Total, 0), 2) AS Total,
+  ISNULL(CodMoneda, '01') AS Moneda,
+  ROUND(ISNULL(Total, 0), 2) AS TotalOriginal,
+  ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 2) AS TotalPEN,
   ISNULL(DescripcionEstado, '') AS Estado
 FROM doc_dedup
 WHERE rn = 1
@@ -1874,7 +1876,7 @@ WHERE rn = 1
       AND ac.NroD = doc_dedup.NroD
       AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
   )
-ORDER BY Total DESC
+ORDER BY TotalPEN DESC
 `;
 
 const VQ_FACTURAS_SIN_ASIENTO_HISTORICO = (cod, claseIngreso) => `
@@ -1883,7 +1885,7 @@ WITH doc_dedup AS (
     ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
   FROM CMO.dbo.vw_12DocumentosPorCobrar
   WHERE CodEmpresa = '${cod}'
-    AND CodTipoDocumento IN ('060','125','128','131','134')
+    AND CodTipoDocumento IN ('060','125','131')
 )
 SELECT TOP 200
   YEAR(FechaDocumento) AS Anio,
@@ -1914,13 +1916,13 @@ WITH doc_dedup AS (
     ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
   FROM CMO.dbo.vw_12DocumentosPorCobrar
   WHERE CodEmpresa = '${cod}'
-    AND CodTipoDocumento IN ('060','125','128','131','134')
+    AND CodTipoDocumento IN ('060','125','131')
 )
 SELECT
   YEAR(FechaDocumento) AS Anio,
   CodTipoDocumento AS Tipo,
   COUNT(*) AS NumFacturas,
-  ROUND(SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END), 2) AS MontoTotal
+  ROUND(SUM(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END), 2) AS MontoTotalPEN
 FROM doc_dedup
 WHERE rn = 1
   AND NOT EXISTS (

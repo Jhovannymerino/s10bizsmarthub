@@ -202,6 +202,43 @@ h1, h2, h3, h4, h5, h6 {
 .table-s10 th[data-sortable] { cursor: pointer; user-select: none; }
 .table-s10 th[data-sortable]:hover { background: rgba(255,255,255,0.09); color: #F8FAFC; }
 
+/* ── Column header hint icon ── */
+.th-hint-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 700;
+  cursor: help;
+  position: relative;
+  color: #A8B5C5;
+}
+.th-hint-icon:hover { background: rgba(43,180,187,0.4); color: #2BB4BB; }
+.th-hint-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0D1A2D;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.7rem;
+  color: #F8FAFC;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  z-index: 100;
+  pointer-events: none;
+}
+.th-hint-icon:hover .th-hint-tooltip { display: block; }
+
 .table-s10 td {
   padding: 0.6rem 0.875rem;
   text-align: right;

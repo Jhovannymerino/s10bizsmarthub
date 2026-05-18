@@ -3,6 +3,17 @@ import React from 'react';
 import { CLASE_NAMES, MESES } from '../_lib/constants';
 import { fmt } from '../_lib/formatters';
 
+function ThHint({ label, hint }: { label: string; hint: string }) {
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', cursor: 'default' }}>
+      {label}
+      <span className="th-hint-icon">?
+        <span className="th-hint-tooltip">{hint}</span>
+      </span>
+    </span>
+  );
+}
+
 interface Props {
   auditData: any;
   selectedYear: number | string;
@@ -25,10 +36,10 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
               <thead><tr>
                 <th>Clase</th>
                 <th style={{ minWidth: 160 }}>Descripción</th>
-                <th title="Asientos que no tienen documento de respaldo (NroD = NULL) — requieren revisión">Sin Doc</th>
-                <th title="Total de asientos contabilizados en la clase, con documento Y sin documento">Total</th>
-                <th title="De cada 100 asientos de la clase, cuántos carecen de documento (Sin Doc ÷ Total × 100)">% Sin Doc</th>
-                <th title="Suma de los montos de los asientos sin documento">Monto Sin Doc</th>
+                <th><ThHint label="Sin Doc" hint="Asientos sin documento de respaldo (NroD = NULL)" /></th>
+                <th><ThHint label="Total líneas" hint="Total de asientos contabilizados en la clase, con documento y sin documento" /></th>
+                <th><ThHint label="% Sin Doc" hint="De cada 100 asientos de la clase, cuántos carecen de documento (Sin Doc ÷ Total × 100)" /></th>
+                <th><ThHint label="Monto Sin Doc" hint="Suma de los montos de los asientos sin documento" /></th>
               </tr></thead>
               <tbody>
                 {auditData.sinDoc.resumen.map((r: any, i: number) => {

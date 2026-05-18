@@ -1783,7 +1783,14 @@ FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${cod}'
   AND YEAR(ac.FechaAplicacionContable) = ${year}
-  AND (ac.Glosa LIKE '%APERTURA%' OR ac.Glosa LIKE '%INICIO%' OR ac.Glosa LIKE '%ASIENTO INICIAL%')
+  AND (
+    UPPER(ac.Glosa) LIKE '%APERTURA%'
+    OR UPPER(ac.Glosa) LIKE '%INICIO%'
+    OR UPPER(ac.Glosa) LIKE '%ASIENTO INICIAL%'
+    OR UPPER(ac.Glosa) LIKE '%SALDO INICIAL%'
+    OR UPPER(ac.Glosa) LIKE '%BALANCE INICIAL%'
+    OR UPPER(ac.Glosa) LIKE '%TRASPASO SALDO%'
+  )
   AND MONTH(ac.FechaAplicacionContable) <= 2
 GROUP BY YEAR(ac.FechaAplicacionContable)
 HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 0.01
@@ -1803,7 +1810,14 @@ WHERE NOT EXISTS (
   SELECT 1 FROM CMO.dbo.AsientoContable ac2
   WHERE ac2.CodEmpresa = '${cod}'
     AND YEAR(ac2.FechaAplicacionContable) = ${year}
-    AND (ac2.Glosa LIKE '%APERTURA%' OR ac2.Glosa LIKE '%INICIO%' OR ac2.Glosa LIKE '%ASIENTO INICIAL%')
+    AND (
+      UPPER(ac2.Glosa) LIKE '%APERTURA%'
+      OR UPPER(ac2.Glosa) LIKE '%INICIO%'
+      OR UPPER(ac2.Glosa) LIKE '%ASIENTO INICIAL%'
+      OR UPPER(ac2.Glosa) LIKE '%SALDO INICIAL%'
+      OR UPPER(ac2.Glosa) LIKE '%BALANCE INICIAL%'
+      OR UPPER(ac2.Glosa) LIKE '%TRASPASO SALDO%'
+    )
     AND MONTH(ac2.FechaAplicacionContable) <= 2
 )
 `;
@@ -2486,17 +2500,29 @@ SELECT
   YEAR(ac.FechaAplicacionContable) AS Anio,
   COUNT(*) AS TotalAsientos,
   SUM(CASE WHEN ac.Glosa IS NULL OR LTRIM(RTRIM(ac.Glosa)) = ''
-           OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D')
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D','VARIO','ASIENTOS','OTRO','N.A.','N/D','SD','SIN DATO','SIN GLOSA','XXX','0')
+           OR LEN(LTRIM(RTRIM(ISNULL(ac.Glosa,'')))) <= 2
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'VARIO%'
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'ASIENTO%'
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'S/D%'
            THEN 1 ELSE 0 END) AS SinGlosa,
   ROUND(100.0 * SUM(CASE WHEN ac.Glosa IS NULL OR LTRIM(RTRIM(ac.Glosa)) = ''
-           OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D')
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D','VARIO','ASIENTOS','OTRO','N.A.','N/D','SD','SIN DATO','SIN GLOSA','XXX','0')
+           OR LEN(LTRIM(RTRIM(ISNULL(ac.Glosa,'')))) <= 2
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'VARIO%'
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'ASIENTO%'
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'S/D%'
            THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) AS PctSinGlosa
 FROM CMO.dbo.AsientoContable ac
 WHERE ac.CodEmpresa = '${cod}'
   AND YEAR(ac.FechaAplicacionContable) >= 2022
 GROUP BY YEAR(ac.FechaAplicacionContable)
 HAVING ROUND(100.0 * SUM(CASE WHEN ac.Glosa IS NULL OR LTRIM(RTRIM(ac.Glosa)) = ''
-         OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D')
+         OR UPPER(LTRIM(RTRIM(ac.Glosa))) IN ('VARIOS','ASIENTO','OTROS','NA','N/A','-','.','X','XX','S/D','VARIO','ASIENTOS','OTRO','N.A.','N/D','SD','SIN DATO','SIN GLOSA','XXX','0')
+           OR LEN(LTRIM(RTRIM(ISNULL(ac.Glosa,'')))) <= 2
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'VARIO%'
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'ASIENTO%'
+           OR UPPER(LTRIM(RTRIM(ac.Glosa))) LIKE 'S/D%'
          THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) > 5
 ORDER BY Anio DESC
 `;
@@ -2642,7 +2668,12 @@ WHERE ac.CodEmpresa = '${cod}'
       AND ac2.NroPlanContableDetalle = ac.NroPlanContableDetalle
       AND MONTH(ac2.FechaAplicacionContable) IN (1, 2, 3)
       AND YEAR(ac2.FechaAplicacionContable) = YEAR(ac.FechaAplicacionContable) + 1
-      AND UPPER(ac2.Glosa) LIKE '%REVER%'
+      AND (
+        UPPER(ac2.Glosa) LIKE '%REVER%'
+        OR UPPER(ac2.Glosa) LIKE '%EXTORN%'
+        OR UPPER(ac2.Glosa) LIKE '%CONTRAS%'
+        OR UPPER(ac2.Glosa) LIKE '%ANULAC%'
+      )
   )
 GROUP BY YEAR(ac.FechaAplicacionContable), LEFT(pcd.CodCuenta, 2), pcd.CodCuenta, pcd.Descripcion
 HAVING ABS(SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))) > 100

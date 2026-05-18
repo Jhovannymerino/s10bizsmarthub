@@ -4,7 +4,8 @@
 set -e
 
 YEAR=${1:-$(date +%Y)}
-FAST_FLAG=${2:-}   # "fast" → pasa --fast al agente; vacío → sync completo
+FAST_FLAG=${2:-}       # "fast" → pasa --fast al agente; vacío → sync completo
+FORENSICS_FLAG=${3:-}  # "forensics" → pasa --forensics al agente (Batch 4)
 LOG=/var/log/s10-sync.log
 PIDFILE=/tmp/openfortivpn.pid
 
@@ -79,6 +80,7 @@ fi
 cd /opt/apps/s10bizsmarthub/s10-agent
 EXTRA_FLAGS=""
 [ "$FAST_FLAG" = "fast" ] && EXTRA_FLAGS="--fast"
+[ "$FORENSICS_FLAG" = "forensics" ] && EXTRA_FLAGS="$EXTRA_FLAGS --forensics"
 log "Corriendo sync --year=$YEAR $EXTRA_FLAGS"
 node sync-agent.js --year=$YEAR $EXTRA_FLAGS >> "$LOG" 2>&1
 STATUS=${PIPESTATUS[0]}

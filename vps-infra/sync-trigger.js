@@ -117,6 +117,7 @@ const server = http.createServer((req, res) => {
       ? url.searchParams.get('years').split(',').filter(Boolean)
       : defaultYears();
     const fast = url.searchParams.get('fast') === '1' || url.searchParams.get('fast') === 'true';
+    const forensics = url.searchParams.get('forensics') === '1' || url.searchParams.get('forensics') === 'true';
 
     resetProgress();
     progress.running = true;
@@ -125,7 +126,7 @@ const server = http.createServer((req, res) => {
     progress.startedAt = Date.now();
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'started', years, fast }));
+    res.end(JSON.stringify({ status: 'started', years, fast, forensics }));
 
     // Corre los años secuencialmente en background
     (async () => {
@@ -137,7 +138,9 @@ const server = http.createServer((req, res) => {
         progress.currentBatch = null;
         progress.companiesDone = [];
 
-        const scriptArgs = fast ? [year, 'fast'] : [year];
+        const scriptArgs = [year];
+        if (fast) scriptArgs.push('fast');
+        if (forensics) scriptArgs.push('forensics');
         await new Promise((resolve) => {
           const child = spawn(SCRIPT, scriptArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
 

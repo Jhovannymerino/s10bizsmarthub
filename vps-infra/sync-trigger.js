@@ -138,9 +138,8 @@ const server = http.createServer((req, res) => {
         progress.currentBatch = null;
         progress.companiesDone = [];
 
-        const scriptArgs = [year];
-        if (fast) scriptArgs.push('fast');
-        if (forensics) scriptArgs.push('forensics');
+        // Posiciones fijas en sync-vpn.sh: $1=year, $2=fast|'', $3=forensics|''
+        const scriptArgs = [year, fast ? 'fast' : '', forensics ? 'forensics' : ''];
         await new Promise((resolve) => {
           const child = spawn(SCRIPT, scriptArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
 

@@ -3908,7 +3908,8 @@ export default function DashboardPage() {
                                 </tr>
                               )}
                               {isExpanded && rawRows.length > 0 && (() => {
-                                const colKeys = Object.keys(rawRows[0]);
+                                const isV04bResumen = v.id === 'V04b_facturas_sin_asiento_resumen';
+                                const colKeys = Object.keys(rawRows[0]).filter(k => isV04bResumen && k === 'DesTipo' ? false : true);
                                 const isMoney = (k: string) => /monto|importe|totalpen|totalmonto|totalsaldo|totalimporte|totaldebe|totalhaber|saldo|diferencia|debito|credito|neto|valor|debe|haber|descuadre|brecha|gap|pagado|provisionado|saldopagar|saldodepositar|saldomensual/i.test(k);
                                 const isCount = (k: string) => /^(n|cant|count|num|nro_asientos?|qty|docs)/i.test(k);
                                 const isV17 = v.id === 'V17_reconciliacion_ingr';
@@ -3979,6 +3980,8 @@ export default function DashboardPage() {
                                                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
                                                             {val} ▶
                                                           </button>
+                                                        : isV04bResumen && k === 'Tipo' && row.DesTipo
+                                                          ? <>{String(val)}<span style={{ color: '#8B97A8', fontWeight: 400, marginLeft: '0.4rem', fontSize: '0.65rem' }}>{String(row.DesTipo)}</span></>
                                                         : money ? fmt(val) : String(val)
                                                     }
                                                   </td>
@@ -4006,7 +4009,7 @@ export default function DashboardPage() {
                                               const totalCount = isV28 ? row.NumNC : row.NumFacturas;
                                               const titulo = isV28
                                                 ? `Notas de crédito — ${row.Anio}`
-                                                : `Facturas sin asiento — ${row.Anio} · Tipo ${row.Tipo}`;
+                                                : `Facturas sin asiento — ${row.Anio} · Tipo ${row.Tipo}${row.DesTipo ? ` — ${row.DesTipo}` : ''}`;
                                               return (
                                                 <tr>
                                                   <td colSpan={colKeys.length} style={{ padding: 0, background: 'rgba(226,92,26,0.06)', borderLeft: '3px solid #E25C1A' }}>

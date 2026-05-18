@@ -1896,7 +1896,9 @@ SELECT TOP 200
   DescripcionTipoDocumento AS DesTipo,
   DescripcionIdentificador AS Cliente,
   RUC,
-  ROUND(ISNULL(Total, 0), 2) AS Total,
+  ISNULL(CodMoneda, '01') AS Moneda,
+  ROUND(ISNULL(Total, 0), 2) AS TotalOriginal,
+  ROUND(ISNULL(Total,0) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,3.80) END, 2) AS TotalPEN,
   ISNULL(DescripcionEstado, '') AS Estado
 FROM doc_dedup
 WHERE rn = 1
@@ -1907,7 +1909,7 @@ WHERE rn = 1
       AND ac.NroD = doc_dedup.NroD
       AND LEFT(pcd.CodCuenta, 2) = '${claseIngreso}'
   )
-ORDER BY YEAR(FechaDocumento) DESC, Total DESC
+ORDER BY YEAR(FechaDocumento) DESC, TotalPEN DESC
 `;
 
 const VQ_FACTURAS_SIN_ASIENTO_RESUMEN = (cod, claseIngreso) => `

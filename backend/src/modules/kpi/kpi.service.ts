@@ -1318,23 +1318,47 @@ export class KpiService {
   // Auditoría — sin documento, descuadres, atípicos, conciliación
   // ─────────────────────────────────────────────
 
+  // Glosas que por naturaleza no tienen documento fuente y se controlan por otra vía
+  private static readonly GLOSAS_SIN_DOC_EXCLUIR = ['Asiento de Apertura', 'Diferencia de cambio'];
+
+  private filterSinDoc(txns: any[]): any[] {
+    return txns.filter((t: any) => {
+      const glosa = String(t.Glosa || '').trim();
+      return !KpiService.GLOSAS_SIN_DOC_EXCLUIR.some(exc => glosa.startsWith(exc));
+    });
+  }
+
   async getAuditSinDoc(companyId: string, year: number) {
-    const cached = await this.getSnapshot(companyId, 'audit_sin_doc', `${year}`);
+    const [cached, txnCached] = await Promise.all([
+      this.getSnapshot(companyId, 'audit_sin_doc', `${year}`),
+      this.getSnapshot(companyId, 'audit_sin_doc_txn', `${year}`),
+    ]);
     if (!cached) return { resumen: [], year };
+
+    if (txnCached) {
+      // Recompute SinDocumento counts and amounts from filtered transaction data
+      const filtered = this.filterSinDoc(txnCached.data as any[]);
+      const countPerClase: Record<string, number> = {};
+      const montoPerClase: Record<string, number> = {};
+      for (const t of filtered) {
+        const clase = String(t.CodCuenta || '').slice(0, 2);
+        countPerClase[clase] = (countPerClase[clase] || 0) + 1;
+        montoPerClase[clase] = (montoPerClase[clase] || 0) + (t.Monto || 0);
+      }
+      const resumen = (cached.data as any[])
+        .map((r: any) => ({ ...r, SinDocumento: countPerClase[r.Clase] ?? 0, MontoSinDoc: montoPerClase[r.Clase] ?? 0 }))
+        .filter((r: any) => r.SinDocumento > 0 || r.TotalAsientos > 0);
+      return { resumen, year, syncedAt: cached.syncedAt };
+    }
+
     return { resumen: cached.data as any[], year, syncedAt: cached.syncedAt };
   }
 
   async getAuditSinDocTxn(companyId: string, year: number, clase?: string) {
     const cached = await this.getSnapshot(companyId, 'audit_sin_doc_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
-    let txns = cached.data as any[];
+    let txns = this.filterSinDoc(cached.data as any[]);
     if (clase) txns = txns.filter((t: any) => String(t.CodCuenta).startsWith(clase));
-    // Exclude entries that legitimately have no source document and are controlled elsewhere
-    const GLOSAS_EXCLUIR = ['Asiento de Apertura', 'Diferencia de cambio'];
-    txns = txns.filter((t: any) => {
-      const glosa = String(t.Glosa || '').trim();
-      return !GLOSAS_EXCLUIR.some(exc => glosa.startsWith(exc));
-    });
     return { transactions: txns, total: txns.length };
   }
 

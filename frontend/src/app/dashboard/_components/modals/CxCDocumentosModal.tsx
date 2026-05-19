@@ -22,7 +22,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
 }) {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'vencido' | 'vigente'>('all');
+  const [filter, setFilter] = useState<'all' | 'vencido' | 'vigente' | 'pagado'>('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [pagosDrill, setPagosDrill] = useState<{ nroD: string; label: string; totalPagado: number } | null>(null);
@@ -38,11 +38,16 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
       .catch(() => setLoading(false));
   }, [companyId, codCliente]);
 
-  const baseFiltered = docs.filter(d => {
-    if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0;
-    if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0;
-    return true;
-  });
+  const pendientes = docs.filter(d => (d.Saldo ?? 0) > 0);
+  const pagados = docs.filter(d => (d.Saldo ?? 0) <= 0);
+
+  const baseFiltered = filter === 'pagado'
+    ? pagados
+    : pendientes.filter(d => {
+        if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0;
+        if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0;
+        return true;
+      });
 
   const filtered = useMemo(
     () => sortRows(searchRows(baseFiltered, search), sort.col, sort.dir),
@@ -60,11 +65,17 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
     return '#EF4444';
   };
 
-  const btnStyle = (active: boolean) => ({
+  const btnStyle = (active: boolean, accent: 'teal' | 'green' = 'teal') => ({
     padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
-    border: active ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)',
-    background: active ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)',
-    color: active ? '#2BB4BB' : '#8B97A8',
+    border: active
+      ? accent === 'green' ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(32,126,131,0.5)'
+      : '1px solid rgba(255,255,255,0.1)',
+    background: active
+      ? accent === 'green' ? 'rgba(16,185,129,0.15)' : 'rgba(32,126,131,0.2)'
+      : 'rgba(255,255,255,0.04)',
+    color: active
+      ? accent === 'green' ? '#10B981' : '#2BB4BB'
+      : '#8B97A8',
   });
 
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
@@ -88,20 +99,25 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cliente}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
-              Documentos pendientes · {filtered.length} documentos
+              {filter === 'pagado' ? 'Documentos pagados' : 'Documentos pendientes'} · {filtered.length} documentos
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button style={btnStyle(filter === 'all')} onClick={() => setFilter('all')}>Todos ({docs.length})</button>
+          <button style={btnStyle(filter === 'all')} onClick={() => setFilter('all')}>Todos ({pendientes.length})</button>
           <button style={btnStyle(filter === 'vencido')} onClick={() => setFilter('vencido')}>
-            Vencidos ({docs.filter(d => (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0).length})
+            Vencidos ({pendientes.filter(d => (d.DiasVencido ?? 0) > 0).length})
           </button>
           <button style={btnStyle(filter === 'vigente')} onClick={() => setFilter('vigente')}>
-            Vigentes ({docs.filter(d => (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0).length})
+            Vigentes ({pendientes.filter(d => (d.DiasVencido ?? 0) <= 0).length})
           </button>
+          {pagados.length > 0 && (
+            <button style={btnStyle(filter === 'pagado', 'green')} onClick={() => setFilter('pagado')}>
+              Pagados ({pagados.length})
+            </button>
+          )}
           <input
             type="text" placeholder="Buscar..." value={search}
             onChange={e => setSearch(e.target.value)}
@@ -112,7 +128,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Sin documentos pendientes.</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>{filter === 'pagado' ? 'Sin documentos pagados.' : 'Sin documentos pendientes.'}</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
@@ -181,7 +197,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
               </tbody>
               <tfoot>
                 <tr className="total-row">
-                  <td colSpan={9} style={{ textAlign: 'right' }}>SALDO PENDIENTE</td>
+                  <td colSpan={9} style={{ textAlign: 'right' }}>{filter === 'pagado' ? 'TOTAL COBRADO' : 'SALDO PENDIENTE'}</td>
                   <td style={{ textAlign: 'right' }}>
                     {hasMixed ? (
                       <>

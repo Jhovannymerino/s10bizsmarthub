@@ -1782,16 +1782,26 @@ export class KpiService {
 
     // ── Tesorería (saldo de caja) ─────────────────────────────
     const tesoRows: any[] = (tesoSnap?.data as any[]) ?? [];
-    const saldoCaja      = sumF(tesoRows, 'SaldoFinal');
-    const salidasAnio    = sumF(tesoRows, 'SalidasAnio');
-    const cashBurnMensual = salidasAnio > 0 ? round2(salidasAnio / 12) : 0;
+    // Exclude clearing/transit accounts — they double-count internal transfers
+    const TRANSIT_RE = /transito|transferencia/i;
+    const realTesoRows = tesoRows.filter((r: any) => !TRANSIT_RE.test(r.DesBanco ?? ''));
+    const saldoCaja      = sumF(realTesoRows, 'SaldoFinal');
+    const salidasAnio    = sumF(realTesoRows, 'SalidasAnio');
+    // Divide by months elapsed in year (not 12) to get actual monthly burn rate
+    const mesesTranscurridos = currentMonth;
+    const cashBurnMensual = salidasAnio > 0 ? round2(salidasAnio / mesesTranscurridos) : 0;
     const cashRunway     = cashBurnMensual > 0 ? round2(saldoCaja / cashBurnMensual) : null;
 
     // ── Balance — ratios de liquidez ─────────────────────────
     const balRows: any[] = (balSnap?.data as any[]) ?? [];
+    // balance snapshot stores TotalDebe/TotalHaber; compute net balance
+    const balSaldo = (r: any): number =>
+      r.SaldoFinal !== undefined
+        ? (Number(r.SaldoFinal) || 0)
+        : (Number(r.TotalDebe) || 0) - (Number(r.TotalHaber) || 0);
     const balSum = (clases: string[]) =>
       balRows.filter((r: any) => clases.includes(String(r.Clase)))
-             .reduce((s: number, r: any) => s + (Number(r.SaldoFinal) || 0), 0);
+             .reduce((s: number, r: any) => s + balSaldo(r), 0);
     const activoCorr   = balSum(['10','12','20']);   // caja + cxc + inventario
     const pasivoCorr   = Math.abs(balSum(['40','42'])); // tributos + cxp (saldo acreedor)
     const currentRatio = pasivoCorr > 0 ? round2(activoCorr / pasivoCorr) : null;
@@ -1799,7 +1809,7 @@ export class KpiService {
     const cashRatioV   = pasivoCorr > 0 ? round2(Math.abs(balSum(['10'])) / pasivoCorr) : null;
     const totalActivos = balRows
       .filter((r: any) => { const c = Number(r.Clase); return c >= 10 && c <= 39; })
-      .reduce((s: number, r: any) => s + (Number(r.SaldoFinal) || 0), 0);
+      .reduce((s: number, r: any) => s + balSaldo(r), 0);
 
     // ── Patrimonio ───────────────────────────────────────────
     const patriRows: any[] = (patriSnap?.data as any[]) ?? [];

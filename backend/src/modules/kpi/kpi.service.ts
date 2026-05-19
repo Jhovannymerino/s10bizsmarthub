@@ -1696,8 +1696,8 @@ export class KpiService {
     ]);
 
     // ── helpers ──────────────────────────────────────────────
-    const sumF = (arr: any[], f: string) =>
-      (arr || []).reduce((s: number, r: any) => s + (Number(r[f]) || 0), 0);
+    const sumF = (arr: any, f: string) =>
+      (Array.isArray(arr) ? arr : []).reduce((s: number, r: any) => s + (Number(r[f]) || 0), 0);
     const pct = (n: number, d: number) => (d !== 0 ? Math.round((n / d) * 1000) / 10 : null);
     const round2 = (v: number) => Math.round(v * 100) / 100;
 
@@ -1736,37 +1736,41 @@ export class KpiService {
       }));
 
     // ── CxC ──────────────────────────────────────────────────
-    const cxcRows: any[] = (cxcSnap?.data as any[]) ?? [];
-    const totalCxC       = sumF(cxcRows, 'SaldoTotal');
-    const cxcVig         = sumF(cxcRows, 'SaldoVigente');
-    const cxcD30         = sumF(cxcRows, 'Dias0_30');
-    const cxcD60         = sumF(cxcRows, 'Dias31_60');
-    const cxcD90         = sumF(cxcRows, 'Dias61_90');
-    const cxcD90mas      = sumF(cxcRows, 'Dias90mas');
-    const pctVencidoCxC  = pct(cxcD90 + cxcD90mas, totalCxC);
+    // cxcSnap.data is the buildCxC() processed object, not a flat array
+    const cxcObj: any    = (cxcSnap?.data && typeof cxcSnap.data === 'object' && !Array.isArray(cxcSnap.data))
+      ? cxcSnap.data : {};
+    const cxcClientes: any[] = Array.isArray(cxcObj.clientes) ? cxcObj.clientes : [];
+    const totalCxC       = Number(cxcObj.totalSaldo ?? 0);
+    const cxcVig         = Number(cxcObj.totalVigente ?? 0);
+    const cxcD30         = cxcClientes.reduce((s: number, r: any) => s + (Number(r.dias0_30)  || 0), 0);
+    const cxcD60         = cxcClientes.reduce((s: number, r: any) => s + (Number(r.dias31_60) || 0), 0);
+    const cxcD90         = cxcClientes.reduce((s: number, r: any) => s + (Number(r.dias61_90) || 0), 0);
+    const cxcD90mas      = Number(cxcObj.total90mas ?? 0);
+    const pctVencidoCxC  = totalCxC > 0 ? round2((cxcD90mas / totalCxC) * 100) : null;
     // DSO = (CxC / ingresos YTD) * días transcurridos en el año
     const diasAnio       = currentMonth === 12 ? 365 : currentMonth * 30;
     const ingresosAnnual = diasAnio < 365 && ingresos > 0 ? ingresos / diasAnio * 365 : ingresos;
     const dso            = ingresosAnnual > 0 ? round2(totalCxC / ingresosAnnual * 365) : null;
     // Concentración top 3 clientes
-    const sortedCxC = [...cxcRows].sort((a, b) => b.SaldoTotal - a.SaldoTotal);
-    const top3CxC   = sumF(sortedCxC.slice(0, 3), 'SaldoTotal');
-    const concTop3CxC = pct(top3CxC, totalCxC);
+    const sortedCxC = [...cxcClientes].sort((a, b) => (b.saldoTotalSoles ?? 0) - (a.saldoTotalSoles ?? 0));
+    const top3CxC   = sortedCxC.slice(0, 3).reduce((s: number, r: any) => s + (Number(r.saldoTotalSoles) || 0), 0);
+    const concTop3CxC = totalCxC > 0 ? round2((top3CxC / totalCxC) * 100) : null;
 
     // ── CxP ──────────────────────────────────────────────────
-    const cxpRows: any[] = (cxpSnap?.data as any[]) ?? [];
+    // cxpSnap.data is raw SQL rows with underscore field names (Dias_0_30, etc.)
+    const cxpRows: any[] = Array.isArray(cxpSnap?.data) ? (cxpSnap!.data as any[]) : [];
     const totalCxP       = sumF(cxpRows, 'SaldoTotal');
     const cxpVig         = sumF(cxpRows, 'SaldoVigente');
-    const cxpD30         = sumF(cxpRows, 'Dias0_30');
-    const cxpD60         = sumF(cxpRows, 'Dias31_60');
-    const cxpD90         = sumF(cxpRows, 'Dias61_90');
-    const cxpD90mas      = sumF(cxpRows, 'Dias90mas');
-    const pctVencidoCxP  = pct(cxpD90 + cxpD90mas, totalCxP);
+    const cxpD30         = sumF(cxpRows, 'Dias_0_30');
+    const cxpD60         = sumF(cxpRows, 'Dias_31_60');
+    const cxpD90         = sumF(cxpRows, 'Dias_61_90');
+    const cxpD90mas      = sumF(cxpRows, 'Dias_90_mas');
+    const pctVencidoCxP  = totalCxP > 0 ? round2(((cxpD90 + cxpD90mas) / totalCxP) * 100) : null;
     const costoAnual     = diasAnio < 365 && costoDirecto > 0 ? costoDirecto / diasAnio * 365 : costoDirecto;
     const dpo            = costoAnual > 0 ? round2(totalCxP / costoAnual * 365) : null;
-    const sortedCxP = [...cxpRows].sort((a, b) => b.SaldoTotal - a.SaldoTotal);
+    const sortedCxP = [...cxpRows].sort((a, b) => (b.SaldoTotal ?? 0) - (a.SaldoTotal ?? 0));
     const top3CxP   = sumF(sortedCxP.slice(0, 3), 'SaldoTotal');
-    const concTop3CxP = pct(top3CxP, totalCxP);
+    const concTop3CxP = totalCxP > 0 ? round2((top3CxP / totalCxP) * 100) : null;
 
     // Cash Conversion Cycle = DSO − DPO (positivo = financiamos a clientes)
     const ccc = dso != null && dpo != null ? round2(dso - dpo) : null;
@@ -1893,10 +1897,10 @@ export class KpiService {
         totalCxC, dso,
         vigente: cxcVig, dias30: cxcD30, dias60: cxcD60, dias90: cxcD90, dias90mas: cxcD90mas,
         pctVencido: pctVencidoCxC, concTop3: concTop3CxC,
-        numClientes: cxcRows.length,
+        numClientes: cxcObj.numClientes ?? cxcClientes.length,
         topClientes: sortedCxC.slice(0, 5).map(r => ({
-          nombre: r.RazonSocial ?? r.Proveedor ?? r.cliente ?? '—',
-          saldo: Number(r.SaldoTotal ?? 0),
+          nombre: r.cliente ?? r.RazonSocial ?? '—',
+          saldo: Number(r.saldoTotalSoles ?? 0),
         })),
       },
       pagos: {

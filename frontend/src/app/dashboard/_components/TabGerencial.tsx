@@ -539,17 +539,24 @@ export function TabGerencial({ gerencialData, selectedYear, newTabLoading, onNav
           <div style={{ fontSize: '0.68rem', color: '#6B7A8D', marginBottom: '0.5rem' }}>
             Distribución de obligaciones con proveedores por antigüedad
           </div>
-          {(pagos?.totalCxP ?? 0) > 0 && <AgingChart data={cxpAgingData} label="CxP" />}
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.4rem', marginBottom: '0.5rem', fontSize: '0.62rem' }}>
-            {[['#10B981','Vigente'],['#6EE7B7','0–30d'],['#F59E0B','31–60d'],['#F97316','61–90d'],['#EF4444','+90d']].map(([c,l]) => (
-              <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#6B7A8D' }}>
-                <span style={{ width: 8, height: 8, background: c, borderRadius: 2, display: 'inline-block' }} />{l}
-              </span>
-            ))}
-          </div>
+          {pagos?.agingAvailable && <AgingChart data={cxpAgingData} label="CxP" />}
+          {!pagos?.agingAvailable && (pagos?.totalCxP ?? 0) > 0 && (
+            <div style={{ fontSize: '0.68rem', color: '#8B97A8', padding: '0.35rem 0.5rem', background: 'rgba(255,255,255,0.04)', borderRadius: 4, marginBottom: '0.4rem' }}>
+              Detalle de aging disponible tras el próximo sync
+            </div>
+          )}
+          {pagos?.agingAvailable && (
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.4rem', marginBottom: '0.5rem', fontSize: '0.62rem' }}>
+              {[['#10B981','Vigente'],['#6EE7B7','0–30d'],['#F59E0B','31–60d'],['#F97316','61–90d'],['#EF4444','+90d']].map(([c,l]) => (
+                <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#6B7A8D' }}>
+                  <span style={{ width: 8, height: 8, background: c, borderRadius: 2, display: 'inline-block' }} />{l}
+                </span>
+              ))}
+            </div>
+          )}
           <KRow label="Total CxP"          value={fmtM(pagos?.totalCxP ?? 0)} />
-          <KRow label="Vigente"            value={fmtM(pagos?.vigente ?? 0)} desc="Obligaciones aún no vencidas." />
-          <KRow label="Vencida +90d"       value={fmtM(pagos?.dias90mas ?? 0)} color="#EF4444"
+          <KRow label="Vigente"            value={pagos?.agingAvailable ? fmtM(pagos.vigente) : '—'} desc="Obligaciones aún no vencidas." />
+          <KRow label="Vencida +90d"       value={pagos?.agingAvailable ? fmtM(pagos.dias90mas) : '—'} color={pagos?.agingAvailable && pagos.dias90mas > 0 ? '#EF4444' : undefined}
             desc="Deuda muy vencida. Riesgo de relación con proveedores y penalidades." />
           <KRow label="% CxP vencida"      value={pagos?.pctVencido != null ? `${pagos.pctVencido.toFixed(1)}%` : '—'}
             color={pagos?.pctVencido != null ? pagos.pctVencido > 20 ? '#EF4444' : pagos.pctVencido > 10 ? '#F59E0B' : '#10B981' : undefined}

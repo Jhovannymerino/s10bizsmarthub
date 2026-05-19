@@ -1768,7 +1768,9 @@ export class KpiService {
     const cxpD60         = sumF(cxpRows, 'Dias_31_60');
     const cxpD90         = sumF(cxpRows, 'Dias_61_90');
     const cxpD90mas      = sumF(cxpRows, 'Dias_90_mas');
-    const pctVencidoCxP  = totalCxP > 0 ? round2(((cxpD90 + cxpD90mas) / totalCxP) * 100) : null;
+    // true once the new QUERY_CXP (with aging columns) has been synced
+    const cxpAgingAvailable = totalCxP > 0 && (cxpVig + cxpD30 + cxpD60 + cxpD90 + cxpD90mas) > 0;
+    const pctVencidoCxP  = cxpAgingAvailable && totalCxP > 0 ? round2(((cxpD90 + cxpD90mas) / totalCxP) * 100) : null;
     const costoAnual     = diasAnio < 365 && costoDirecto > 0 ? costoDirecto / diasAnio * 365 : costoDirecto;
     const dpo            = costoAnual > 0 ? round2(totalCxP / costoAnual * 365) : null;
     const sortedCxP = [...cxpRows].sort((a, b) => (b.SaldoTotal ?? 0) - (a.SaldoTotal ?? 0));
@@ -1795,7 +1797,9 @@ export class KpiService {
     const currentRatio = pasivoCorr > 0 ? round2(activoCorr / pasivoCorr) : null;
     const quickRatio   = pasivoCorr > 0 ? round2((activoCorr - Math.abs(balSum(['20']))) / pasivoCorr) : null;
     const cashRatioV   = pasivoCorr > 0 ? round2(Math.abs(balSum(['10'])) / pasivoCorr) : null;
-    const totalActivos = Math.abs(balSum(['10','12','20','30','34','36','39','40','42','46','48']));
+    const totalActivos = balRows
+      .filter((r: any) => { const c = Number(r.Clase); return c >= 10 && c <= 39; })
+      .reduce((s: number, r: any) => s + (Number(r.SaldoFinal) || 0), 0);
 
     // ── Patrimonio ───────────────────────────────────────────
     const patriRows: any[] = (patriSnap?.data as any[]) ?? [];
@@ -1909,7 +1913,7 @@ export class KpiService {
       pagos: {
         totalCxP, dpo,
         vigente: cxpVig, dias30: cxpD30, dias60: cxpD60, dias90: cxpD90, dias90mas: cxpD90mas,
-        pctVencido: pctVencidoCxP, concTop3: concTop3CxP,
+        pctVencido: pctVencidoCxP, concTop3: concTop3CxP, agingAvailable: cxpAgingAvailable,
         numProveedores: cxpRows.length,
         topProveedores: sortedCxP.slice(0, 5).map(r => ({
           nombre: r.RazonSocial ?? r.Proveedor ?? r.proveedor ?? '—',

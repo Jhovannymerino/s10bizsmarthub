@@ -124,7 +124,17 @@ export const QUERY_CXP = `
 SELECT
   i.NomIdentificador                                                        AS Proveedor,
   ac.CodIdentificador                                                       AS CodProveedor,
-  SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))                  AS SaldoTotal
+  SUM(ISNULL(ac.Credito, 0)) - SUM(ISNULL(ac.Debito, 0))                  AS SaldoTotal,
+  SUM(CASE WHEN ac.FechaAplicacionContable >= DATEADD(DAY, -30, GETDATE())
+           THEN ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0) ELSE 0 END)    AS [SaldoVigente],
+  SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
+           THEN ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0) ELSE 0 END)    AS [Dias_0_30],
+  SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
+           THEN ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0) ELSE 0 END)    AS [Dias_31_60],
+  SUM(CASE WHEN ac.FechaAplicacionContable BETWEEN DATEADD(DAY,-120,GETDATE()) AND DATEADD(DAY,-91,GETDATE())
+           THEN ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0) ELSE 0 END)    AS [Dias_61_90],
+  SUM(CASE WHEN ac.FechaAplicacionContable < DATEADD(DAY, -120, GETDATE())
+           THEN ISNULL(ac.Credito,0) - ISNULL(ac.Debito,0) ELSE 0 END)    AS [Dias_90_mas]
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle

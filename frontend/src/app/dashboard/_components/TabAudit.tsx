@@ -37,7 +37,7 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
                 <th>Clase</th>
                 <th style={{ minWidth: 160 }}>Descripción</th>
                 <th><ThHint label="Sin Doc" hint="Asientos sin documento de respaldo (NroD = NULL)" /></th>
-                <th><ThHint label="Total líneas" hint="Total de asientos contabilizados en la clase, con documento y sin documento" /></th>
+                <th><ThHint label="Total líneas" hint="Total de asientos en la clase (con y sin documento), incluyendo apertura/cierre que se excluyen del conteo Sin Doc. El % se calcula sobre este total." /></th>
                 <th><ThHint label="% Sin Doc" hint="De cada 100 asientos de la clase, cuántos carecen de documento (Sin Doc ÷ Total × 100)" /></th>
                 <th><ThHint label="Monto Sin Doc" hint="Suma de los montos de los asientos sin documento" /></th>
               </tr></thead>
@@ -108,12 +108,17 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
       {/* Atípicos */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
-          🔶 Asientos atípicos (montos &gt; S/100,000) · {selectedYear}
+          🔶 Asientos atípicos (Débito o Crédito &gt; 100,000 en moneda original) · {selectedYear}
         </div>
         {!auditData?.atipicos?.rows?.length ? (
           <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Sin asientos atípicos en este período.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
+            {auditData.atipicos.rows.length >= 200 && (
+              <div style={{ fontSize: '0.75rem', color: '#F59E0B', marginBottom: '0.5rem' }}>
+                ⚠ Mostrando los 200 de mayor monto. Puede haber más — revise en S10 directamente.
+              </div>
+            )}
             <table className="table-s10" style={{ fontSize: '0.8rem' }}>
               <thead><tr><th>Fecha</th><th>NroD</th><th>Cuenta</th><th style={{ minWidth: 160 }}>Desc. Cuenta</th><th style={{ minWidth: 160 }}>Glosa</th><th>Débito</th><th>Crédito</th><th style={{ minWidth: 140 }}>Tercero</th></tr></thead>
               <tbody>
@@ -139,6 +144,10 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
       <div className="kpi-card">
         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
           📊 Conciliación Ingresos vs Documentos Emitidos · {selectedYear}
+        </div>
+        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+          Ingresos contables medidos por fecha de aplicación contable (clases 70–75, NroD ≠ NULL). Facturas medidas por fecha de emisión del documento. Diferencias de timing entre ambas fechas pueden generar discrepancias entre meses que no representan errores reales.
+          {' '}Facturas en USD sin tipo de cambio registrado usan TC referencial S/3.80.
         </div>
         {!auditData?.conciliacion?.rows?.length ? (
           <div style={{ color: '#8B97A8', fontSize: '0.85rem' }}>Sin datos de conciliación.</div>

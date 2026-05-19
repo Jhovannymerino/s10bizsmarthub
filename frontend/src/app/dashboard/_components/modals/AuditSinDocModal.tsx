@@ -42,6 +42,11 @@ export function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: 
 
         {!loading && txns.length > 0 && (
           <div style={{ marginBottom: '1rem' }}>
+            {txns.length >= 1000 && (
+              <div style={{ fontSize: '0.75rem', color: '#F59E0B', marginBottom: '0.5rem' }}>
+                ⚠ Mostrando los 1,000 asientos de mayor monto. Puede haber más — el total en el resumen refleja solo estos 1,000.
+              </div>
+            )}
             <input
               type="text" placeholder="Buscar..." value={search}
               onChange={e => setSearch(e.target.value)}

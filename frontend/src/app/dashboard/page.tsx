@@ -3678,6 +3678,7 @@ export default function DashboardPage() {
             gerencialData={gerencialData}
             selectedYear={selectedYear}
             newTabLoading={newTabLoading}
+            onNavigate={handleTabChange}
           />
         )}
 

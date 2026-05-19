@@ -4,7 +4,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
 } from 'recharts';
-import { fmt, pct } from '../_lib/formatters';
+import { fmt } from '../_lib/formatters';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -112,8 +112,9 @@ function AgingBar({ v30, v60, v90, v90p, total }: { v30: number; v60: number; v9
   const bar = (val: number, color: string, label: string) => {
     const w = Math.round((val / total) * 100);
     if (w < 1) return null;
+    const sharePct = ((val / total) * 100).toFixed(1);
     return (
-      <div key={label} style={{ width: `${w}%`, height: 8, background: color, position: 'relative' }} title={`${label}: ${pct(val, total, 1)}%`} />
+      <div style={{ width: `${w}%`, height: 8, background: color, position: 'relative' }} title={`${label}: ${sharePct}%`} />
     );
   };
   return (

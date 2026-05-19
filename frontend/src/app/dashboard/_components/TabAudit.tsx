@@ -105,6 +105,55 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
         )}
       </div>
 
+      {/* Apertura y Cierre */}
+      {(() => {
+        const ac = auditData?.descuadres?.aperturaCierre;
+        if (!ac || (!ac.apertura && !ac.cierre)) return null;
+        const Card = ({ label, data }: { label: string; data: any }) => (
+          <div style={{ flex: 1, minWidth: 260, background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem', padding: '1rem', border: `1px solid ${data?.cuadrado === false ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
+            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>{label}</div>
+            {!data ? (
+              <div style={{ color: '#8B97A8', fontSize: '0.78rem' }}>No encontrado en el período.</div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
+                  <span style={{ color: '#8B97A8' }}>Fecha</span><span>{data.fecha || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
+                  <span style={{ color: '#8B97A8' }}>Líneas (NroD)</span><span style={{ color: '#8B97A8' }}>{data.nroDs}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
+                  <span style={{ color: '#8B97A8' }}>Total Débito</span><span style={{ color: '#10B981' }}>{fmt(data.totalDebito)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#8B97A8' }}>Total Crédito</span><span style={{ color: '#EF4444' }}>{fmt(data.totalCredito)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.5rem', fontWeight: 600 }}>
+                  <span style={{ color: '#8B97A8' }}>Balance</span>
+                  <span style={{ color: data.cuadrado ? '#10B981' : '#EF4444' }}>
+                    {data.cuadrado ? '✓ Cuadrado' : `⚠ Descuadre ${fmt(data.descuadre)}`}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        );
+        return (
+          <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+              🔑 Verificación Apertura y Cierre · {selectedYear}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>
+              S10 registra cada cuenta como una línea separada (un NroD por cuenta). El balance se verifica sobre el total consolidado de todas las líneas.
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <Card label="Asiento de Apertura" data={ac.apertura} />
+              <Card label="Asiento de Cierre"   data={ac.cierre} />
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Atípicos */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>

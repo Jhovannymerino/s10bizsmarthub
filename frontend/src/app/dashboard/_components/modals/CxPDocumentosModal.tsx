@@ -69,7 +69,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
 }) {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'vencido' | 'vigente' | 'otros'>('all');
+  const [filter, setFilter] = useState<'all' | 'vencido' | 'vigente' | 'otros' | 'pagado'>('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [pagosDrill, setPagosDrill] = useState<{ nroD: string; label: string; totalPagado: number } | null>(null);
@@ -87,12 +87,16 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
 
   const facturas = docs.filter(d => !isOtro(d));
   const otros = docs.filter(d => isOtro(d));
+  const pendientes = facturas.filter(d => (d.Saldo ?? 0) > 0);
+  const pagados = facturas.filter(d => (d.Saldo ?? 0) <= 0);
 
   const baseFiltered = filter === 'otros'
     ? otros
-    : facturas.filter(d => {
-        if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0;
-        if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0;
+    : filter === 'pagado'
+    ? pagados
+    : pendientes.filter(d => {
+        if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0;
+        if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0;
         return true;
       });
 
@@ -118,12 +122,12 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   const btnStyle = (active: boolean, accent?: string) => ({
     padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
     border: active
-      ? `1px solid ${accent ? 'rgba(245,158,11,0.5)' : 'rgba(32,126,131,0.5)'}`
+      ? `1px solid ${accent === 'amber' ? 'rgba(245,158,11,0.5)' : accent === 'green' ? 'rgba(16,185,129,0.5)' : 'rgba(32,126,131,0.5)'}`
       : '1px solid rgba(255,255,255,0.1)',
     background: active
-      ? (accent ? 'rgba(245,158,11,0.15)' : 'rgba(32,126,131,0.2)')
+      ? (accent === 'amber' ? 'rgba(245,158,11,0.15)' : accent === 'green' ? 'rgba(16,185,129,0.15)' : 'rgba(32,126,131,0.2)')
       : 'rgba(255,255,255,0.04)',
-    color: active ? (accent ? '#F59E0B' : '#2BB4BB') : '#8B97A8',
+    color: active ? (accent === 'amber' ? '#F59E0B' : accent === 'green' ? '#10B981' : '#2BB4BB') : '#8B97A8',
   });
 
   const showingOtros = filter === 'otros';
@@ -151,7 +155,9 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               {showingOtros
                 ? `Anticipos y otros · ${filtered.length} registros`
-                : `Documentos a pagar · ${filtered.length} de ${facturas.length} (facturas, recibos, boletas, letras, etc.)`}
+                : filter === 'pagado'
+                ? `Documentos pagados · ${filtered.length} registros`
+                : `Documentos a pagar · ${filtered.length} de ${pendientes.length} (facturas, recibos, boletas, letras, etc.)`}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
@@ -159,14 +165,19 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button style={btnStyle(filter === 'all')} onClick={() => setFilter('all')}>
-            Todos ({facturas.length})
+            Todos ({pendientes.length})
           </button>
           <button style={btnStyle(filter === 'vencido')} onClick={() => setFilter('vencido')}>
-            Vencidos ({facturas.filter(d => (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0).length})
+            Vencidos ({pendientes.filter(d => (d.DiasVencido ?? 0) > 0).length})
           </button>
           <button style={btnStyle(filter === 'vigente')} onClick={() => setFilter('vigente')}>
-            Vigentes ({facturas.filter(d => (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0).length})
+            Vigentes ({pendientes.filter(d => (d.DiasVencido ?? 0) <= 0).length})
           </button>
+          {pagados.length > 0 && (
+            <button style={btnStyle(filter === 'pagado', 'green')} onClick={() => setFilter('pagado')}>
+              Pagados ({pagados.length})
+            </button>
+          )}
           {otros.length > 0 && (
             <button style={btnStyle(filter === 'otros', 'amber')} onClick={() => setFilter('otros')}>
               Anticipos y Otros ({otros.length})

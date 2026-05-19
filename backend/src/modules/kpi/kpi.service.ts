@@ -1368,12 +1368,29 @@ export class KpiService {
 
   async getAuditDescuadres(companyId: string, year: number) {
     const cached = await this.getSnapshot(companyId, 'audit_descuadres', `${year}`);
-    if (!cached) return { rows: [], year };
-    const rows = (cached.data as any[]).filter((r: any) => {
-      const glosa = String(r.Glosa || '').trim().toLowerCase();
-      return !['asiento de apertura', 'asiento de cierre'].some(exc => glosa.startsWith(exc));
-    });
-    return { rows, count: rows.length, year, syncedAt: cached.syncedAt };
+    if (!cached) return { rows: [], aperturaCierre: null, year };
+
+    const all = cached.data as any[];
+    const glosaOf = (r: any) => String(r.Glosa || '').trim().toLowerCase();
+    const isApertura = (r: any) => glosaOf(r).startsWith('asiento de apertura');
+    const isCierre   = (r: any) => glosaOf(r).startsWith('asiento de cierre');
+
+    const rows = all.filter(r => !isApertura(r) && !isCierre(r));
+
+    const summarize = (entries: any[]) => {
+      if (!entries.length) return null;
+      const totalDebito  = entries.reduce((s, r) => s + (r.TotalDebito  || 0), 0);
+      const totalCredito = entries.reduce((s, r) => s + (r.TotalCredito || 0), 0);
+      const descuadre    = Math.abs(totalDebito - totalCredito);
+      return { nroDs: entries.length, totalDebito, totalCredito, descuadre, cuadrado: descuadre < 1, fecha: entries[0]?.Fecha ?? null };
+    };
+
+    const aperturaCierre = {
+      apertura: summarize(all.filter(isApertura)),
+      cierre:   summarize(all.filter(isCierre)),
+    };
+
+    return { rows, count: rows.length, aperturaCierre, year, syncedAt: cached.syncedAt };
   }
 
   async getAuditAtipicos(companyId: string, year: number) {

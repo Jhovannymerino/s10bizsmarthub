@@ -1111,7 +1111,12 @@ export default function DashboardPage() {
             {userRole === 'admin' && (
               <button
                 className={`context-pill${isGrupo ? ' active' : ''}`}
-                onClick={() => { setSelectedCompany(GRUPO); setActiveTab('inicio'); }}
+                onClick={() => {
+                  setSelectedCompany(GRUPO);
+                  const grupoTabs = new Set(['inicio','pl','cxc','cxp','caja','gav','docs','admin']);
+                  if (!grupoTabs.has(activeTab)) setActiveTab('inicio');
+                  loadedRef.current = {};
+                }}
               >
                 🏢 GRUPO
               </button>
@@ -1120,7 +1125,7 @@ export default function DashboardPage() {
               <button
                 key={co.codEmpresa}
                 className={`context-pill${!isGrupo && selectedCompany.codEmpresa === co.codEmpresa ? ' active' : ''}`}
-                onClick={() => { setSelectedCompany(co); setActiveTab('inicio'); setSidebarOpen(false); }}
+                onClick={() => { setSelectedCompany(co); loadedRef.current = {}; setSidebarOpen(false); }}
               >
                 {co.shortName}
               </button>

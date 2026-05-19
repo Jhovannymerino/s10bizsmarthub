@@ -1673,6 +1673,248 @@ export class KpiService {
   }
 
   // ─────────────────────────────────────────────
+  // Dashboard Gerencial — KPIs ejecutivos integrados
+  // ─────────────────────────────────────────────
+
+  async getGerencial(companyId: string, year: number) {
+    const prevYear = year - 1;
+
+    const [
+      dashSnap, prevDashSnap,
+      cxcSnap, cxpSnap,
+      tesoSnap, balSnap, patriSnap,
+      cajaSnap,
+    ] = await Promise.all([
+      this.getSnapshot(companyId, 'pl_completo', `${year}`),
+      this.getSnapshot(companyId, 'pl_completo', `${prevYear}`),
+      this.getSnapshot(companyId, 'cxc', 'current'),
+      this.getSnapshot(companyId, 'cxp', 'current'),
+      this.getSnapshot(companyId, 'tesoreria', `${year}`),
+      this.getSnapshot(companyId, 'balance', `${year}`),
+      this.getSnapshot(companyId, 'patrimonio', 'current'),
+      this.getSnapshot(companyId, 'caja_asiento_full', `${year}`),
+    ]);
+
+    // ── helpers ──────────────────────────────────────────────
+    const sumF = (arr: any[], f: string) =>
+      (arr || []).reduce((s: number, r: any) => s + (Number(r[f]) || 0), 0);
+    const pct = (n: number, d: number) => (d !== 0 ? Math.round((n / d) * 1000) / 10 : null);
+    const round2 = (v: number) => Math.round(v * 100) / 100;
+
+    // ── P&L actual ───────────────────────────────────────────
+    const plRows: any[] = (dashSnap?.data as any[]) ?? [];
+    const monthRows = plRows.filter((r: any) => r.mes && r.mes !== 'YTD' && Number(r.mes) > 0);
+    const ytdRow   = plRows.find((r: any) => r.mes === 'YTD') || {};
+    const ingresos       = Number(ytdRow.ingresos ?? 0);
+    const costoDirecto   = Number(ytdRow.costoDirecto ?? 0);
+    const margenBruto    = Number(ytdRow.margenBruto ?? 0);
+    const gav            = Number(ytdRow.gav ?? 0);
+    const ebitda         = Number(ytdRow.ebitda ?? 0);
+    const gastosFinanc   = Number(ytdRow.gastosFinancieros ?? 0);
+    const utilidadNeta   = Number(ytdRow.utilidadNeta ?? 0);
+
+    // ── P&L año anterior ─────────────────────────────────────
+    const plPrev: any[] = (prevDashSnap?.data as any[]) ?? [];
+    const prevYTD = plPrev.find((r: any) => r.mes === 'YTD') || {};
+    const prevIngresos     = Number(prevYTD.ingresos ?? 0);
+    const prevUtilidad     = Number(prevYTD.utilidadNeta ?? 0);
+    const yoyIngresosGrowth = prevIngresos > 0 ? round2((ingresos - prevIngresos) / prevIngresos * 100) : null;
+    const yoyUtilidadGrowth = prevUtilidad !== 0 ? round2((utilidadNeta - prevUtilidad) / Math.abs(prevUtilidad) * 100) : null;
+
+    // ── Trend mensual (últimos meses con datos) ───────────────
+    const currentMonth = new Date().getFullYear() === year ? new Date().getMonth() + 1 : 12;
+    const trend = monthRows
+      .filter((r: any) => Number(r.mes) <= currentMonth && Number(r.ingresos) !== 0)
+      .map((r: any) => ({
+        mes: Number(r.mes),
+        ingresos:     Number(r.ingresos    ?? 0),
+        margenBruto:  Number(r.margenBruto ?? 0),
+        ebitda:       Number(r.ebitda      ?? 0),
+        utilidadNeta: Number(r.utilidadNeta ?? 0),
+        margenBrutoPct: Number(r.margenBrutoPct ?? 0),
+        ebitdaPct:      Number(r.ebitdaPct      ?? 0),
+      }));
+
+    // ── CxC ──────────────────────────────────────────────────
+    const cxcRows: any[] = (cxcSnap?.data as any[]) ?? [];
+    const totalCxC       = sumF(cxcRows, 'SaldoTotal');
+    const cxcVig         = sumF(cxcRows, 'SaldoVigente');
+    const cxcD30         = sumF(cxcRows, 'Dias0_30');
+    const cxcD60         = sumF(cxcRows, 'Dias31_60');
+    const cxcD90         = sumF(cxcRows, 'Dias61_90');
+    const cxcD90mas      = sumF(cxcRows, 'Dias90mas');
+    const pctVencidoCxC  = pct(cxcD90 + cxcD90mas, totalCxC);
+    // DSO = (CxC / ingresos YTD) * días transcurridos en el año
+    const diasAnio       = currentMonth === 12 ? 365 : currentMonth * 30;
+    const ingresosAnnual = diasAnio < 365 && ingresos > 0 ? ingresos / diasAnio * 365 : ingresos;
+    const dso            = ingresosAnnual > 0 ? round2(totalCxC / ingresosAnnual * 365) : null;
+    // Concentración top 3 clientes
+    const sortedCxC = [...cxcRows].sort((a, b) => b.SaldoTotal - a.SaldoTotal);
+    const top3CxC   = sumF(sortedCxC.slice(0, 3), 'SaldoTotal');
+    const concTop3CxC = pct(top3CxC, totalCxC);
+
+    // ── CxP ──────────────────────────────────────────────────
+    const cxpRows: any[] = (cxpSnap?.data as any[]) ?? [];
+    const totalCxP       = sumF(cxpRows, 'SaldoTotal');
+    const cxpVig         = sumF(cxpRows, 'SaldoVigente');
+    const cxpD30         = sumF(cxpRows, 'Dias0_30');
+    const cxpD60         = sumF(cxpRows, 'Dias31_60');
+    const cxpD90         = sumF(cxpRows, 'Dias61_90');
+    const cxpD90mas      = sumF(cxpRows, 'Dias90mas');
+    const pctVencidoCxP  = pct(cxpD90 + cxpD90mas, totalCxP);
+    const costoAnual     = diasAnio < 365 && costoDirecto > 0 ? costoDirecto / diasAnio * 365 : costoDirecto;
+    const dpo            = costoAnual > 0 ? round2(totalCxP / costoAnual * 365) : null;
+    const sortedCxP = [...cxpRows].sort((a, b) => b.SaldoTotal - a.SaldoTotal);
+    const top3CxP   = sumF(sortedCxP.slice(0, 3), 'SaldoTotal');
+    const concTop3CxP = pct(top3CxP, totalCxP);
+
+    // Cash Conversion Cycle = DSO − DPO (positivo = financiamos a clientes)
+    const ccc = dso != null && dpo != null ? round2(dso - dpo) : null;
+
+    // ── Tesorería (saldo de caja) ─────────────────────────────
+    const tesoRows: any[] = (tesoSnap?.data as any[]) ?? [];
+    const saldoCaja      = sumF(tesoRows, 'SaldoFinal');
+    const salidasAnio    = sumF(tesoRows, 'SalidasAnio');
+    const cashBurnMensual = salidasAnio > 0 ? round2(salidasAnio / 12) : 0;
+    const cashRunway     = cashBurnMensual > 0 ? round2(saldoCaja / cashBurnMensual) : null;
+
+    // ── Balance — ratios de liquidez ─────────────────────────
+    const balRows: any[] = (balSnap?.data as any[]) ?? [];
+    const balSum = (clases: string[]) =>
+      balRows.filter((r: any) => clases.includes(String(r.Clase)))
+             .reduce((s: number, r: any) => s + (Number(r.SaldoFinal) || 0), 0);
+    const activoCorr   = balSum(['10','12','20']);   // caja + cxc + inventario
+    const pasivoCorr   = Math.abs(balSum(['40','42'])); // tributos + cxp (saldo acreedor)
+    const currentRatio = pasivoCorr > 0 ? round2(activoCorr / pasivoCorr) : null;
+    const quickRatio   = pasivoCorr > 0 ? round2((activoCorr - Math.abs(balSum(['20']))) / pasivoCorr) : null;
+    const cashRatioV   = pasivoCorr > 0 ? round2(Math.abs(balSum(['10'])) / pasivoCorr) : null;
+    const totalActivos = Math.abs(balSum(['10','12','20','30','34','36','39','40','42','46','48']));
+
+    // ── Patrimonio ───────────────────────────────────────────
+    const patriRows: any[] = (patriSnap?.data as any[]) ?? [];
+    const totalPatrimonio = Math.abs(sumF(patriRows, 'SaldoNeto'));
+    const roe = totalPatrimonio > 0 ? round2(utilidadNeta / totalPatrimonio * 100) : null;
+    const roa = totalActivos > 0 ? round2(utilidadNeta / totalActivos * 100) : null;
+    const deudaPatrimonio = totalPatrimonio > 0 ? round2((pasivoCorr) / totalPatrimonio) : null;
+
+    // ── Semáforo (thresholds orientativos para servicios/construcción) ──
+    const semaforo = [
+      { id: 'margenBruto',  label: 'Margen Bruto',      value: pct(margenBruto, ingresos),  unit: '%',   bench: '>25%',  r: [0,15],   y: [15,25]  },
+      { id: 'ebitda',       label: 'EBITDA',             value: pct(ebitda, ingresos),       unit: '%',   bench: '>10%',  r: [null,5], y: [5,10]   },
+      { id: 'margenNeto',   label: 'Margen Neto',        value: pct(utilidadNeta, ingresos), unit: '%',   bench: '>5%',   r: [null,2], y: [2,5]    },
+      { id: 'dso',          label: 'DSO (días cobro)',   value: dso,                         unit: 'días',bench: '<45d',  r: [60,null],y: [45,60]  },
+      { id: 'dpo',          label: 'DPO (días pago)',    value: dpo,                         unit: 'días',bench: '>30d',  r: [null,15],y: [15,30]  },
+      { id: 'currentRatio', label: 'Ratio Corriente',    value: currentRatio,                unit: 'x',   bench: '>1.2', r: [null,1], y: [1,1.2]  },
+      { id: 'cashRunway',   label: 'Runway de Caja',     value: cashRunway,                  unit: 'mes', bench: '>3m',  r: [null,1], y: [1,3]    },
+      { id: 'vencidoCxC',   label: 'CxC Vencida >90d',  value: pctVencidoCxC,               unit: '%',   bench: '<10%', r: [20,null],y: [10,20]  },
+    ].map(s => {
+      const v = s.value;
+      let status: 'green' | 'yellow' | 'red' | 'gray' = 'gray';
+      if (v != null) {
+        const isHighBad = ['dso', 'vencidoCxC'].includes(s.id);
+        const isLowBad  = !isHighBad;
+        if (isHighBad) {
+          status = s.r[0] != null && v >= s.r[0] ? 'red' : s.y[1] != null && v >= s.y[0] ? 'yellow' : 'green';
+        } else {
+          status = s.r[1] != null && v < s.r[1] ? 'red' : s.y[0] != null && v < s.y[1] ? 'yellow' : 'green';
+        }
+        if (s.id === 'dpo') {
+          status = v < s.r[1] ? 'red' : v < s.y[1] ? 'yellow' : 'green';
+        }
+      }
+      return { id: s.id, label: s.label, value: v, unit: s.unit, benchmark: s.bench, status };
+    });
+
+    // ── Alertas ejecutivas ────────────────────────────────────
+    const alertas: { tipo: 'danger' | 'warning' | 'info'; mensaje: string; valor: string }[] = [];
+    const fmtM = (n: number) => `S/ ${(n / 1000).toFixed(0)}k`;
+    if (pctVencidoCxC != null && pctVencidoCxC > 15)
+      alertas.push({ tipo: 'danger',  mensaje: 'CxC vencida >90 días excede umbral crítico', valor: `${pctVencidoCxC}% de la cartera` });
+    if (pctVencidoCxP != null && pctVencidoCxP > 20)
+      alertas.push({ tipo: 'danger',  mensaje: 'CxP vencida >90 días — riesgo de proveedores', valor: `${pctVencidoCxP}% de deuda vencida` });
+    if (cashRunway != null && cashRunway < 2)
+      alertas.push({ tipo: 'danger',  mensaje: 'Caja crítica — menos de 2 meses de runway', valor: `${cashRunway.toFixed(1)} meses` });
+    if (ebitda < 0)
+      alertas.push({ tipo: 'danger',  mensaje: 'EBITDA negativo — pérdida operativa', valor: fmtM(ebitda) });
+    if (currentRatio != null && currentRatio < 1)
+      alertas.push({ tipo: 'danger',  mensaje: 'Ratio corriente < 1 — pasivo supera activo corriente', valor: `${currentRatio}x` });
+    if (concTop3CxC != null && concTop3CxC > 60)
+      alertas.push({ tipo: 'warning', mensaje: 'Alta concentración de cartera — top 3 clientes', valor: `${concTop3CxC}% del total CxC` });
+    if (ccc != null && ccc > 60)
+      alertas.push({ tipo: 'warning', mensaje: 'Ciclo de conversión alto — financiando a clientes', valor: `${ccc} días` });
+    if (yoyIngresosGrowth != null && yoyIngresosGrowth < -10)
+      alertas.push({ tipo: 'warning', mensaje: 'Caída de ingresos vs año anterior', valor: `${yoyIngresosGrowth}% YoY` });
+    if (gastosFinanc > 0 && ebitda > 0 && ebitda / gastosFinanc < 1.5)
+      alertas.push({ tipo: 'warning', mensaje: 'Cobertura de intereses ajustada', valor: `${round2(ebitda / gastosFinanc)}x (mín 1.5x recomendado)` });
+    if (cashRunway != null && cashRunway >= 2 && cashRunway < 3)
+      alertas.push({ tipo: 'warning', mensaje: 'Caja con menos de 3 meses de runway', valor: `${cashRunway.toFixed(1)} meses` });
+
+    // ── Insights no obvios ────────────────────────────────────
+    const insights: { titulo: string; descripcion: string; tipo: 'opportunity' | 'risk' | 'info' }[] = [];
+    if (ccc != null) {
+      if (ccc < 0) insights.push({ tipo: 'opportunity', titulo: 'Proveedores financian tu operación', descripcion: `El ciclo de conversión es ${Math.abs(ccc)} días negativo — cobras antes de pagar, lo que libera capital de trabajo sin costo financiero.` });
+      else if (ccc > 30) insights.push({ tipo: 'risk', titulo: 'Capital atrapado en el ciclo operativo', descripcion: `${ccc} días de capital financiando a clientes antes de recuperar. Reducir DSO o ampliar DPO liberaría liquidez.` });
+    }
+    if (gastosFinanc > 0 && ingresos > 0) {
+      const gastFinPct = pct(gastosFinanc, ingresos);
+      if (gastFinPct != null && gastFinPct > 5) insights.push({ tipo: 'risk', titulo: 'Carga financiera elevada', descripcion: `Los gastos financieros representan ${gastFinPct}% de los ingresos. Refinanciar deuda o reducir apalancamiento mejoraría el margen neto.` });
+    }
+    if (dso != null && dpo != null && dso > dpo * 1.5) insights.push({ tipo: 'risk', titulo: 'Asimetría cobro-pago', descripcion: `Cobras en promedio ${dso} días pero pagas en ${dpo} días. Negociar plazos de cobro más cortos o plazos de pago más largos reduciría el requerimiento de capital.` });
+    if (concTop3CxC != null && concTop3CxC < 30 && totalCxC > 0) insights.push({ tipo: 'opportunity', titulo: 'Cartera diversificada', descripcion: `Los top 3 clientes representan solo ${concTop3CxC}% de la cartera — bajo riesgo de concentración, base de clientes saludable.` });
+    if (roe != null && roe > 20) insights.push({ tipo: 'opportunity', titulo: 'ROE superior al mercado', descripcion: `El retorno sobre patrimonio es ${roe}%, por encima del costo de capital típico. El negocio genera valor para los socios.` });
+    if (yoyIngresosGrowth != null && yoyIngresosGrowth > 15) insights.push({ tipo: 'opportunity', titulo: 'Crecimiento acelerado de ingresos', descripcion: `Ingresos creciendo ${yoyIngresosGrowth}% vs el año anterior. Revisar si la estructura de costos acompaña el crecimiento.` });
+    const gavPctV = pct(gav, ingresos);
+    if (gavPctV != null && gavPctV < 15 && ingresos > 0) insights.push({ tipo: 'opportunity', titulo: 'Estructura de costos fijos eficiente', descripcion: `GAV representa solo ${gavPctV}% de ingresos — buena palanca operativa para crecer sin proporcional aumento de costos fijos.` });
+
+    const syncedAt = dashSnap?.syncedAt ?? cxcSnap?.syncedAt ?? tesoSnap?.syncedAt ?? null;
+
+    return {
+      year, syncedAt,
+      semaforo,
+      rentabilidad: {
+        ingresos, costoDirecto, margenBruto, gav, ebitda, gastosFinanc, utilidadNeta,
+        margenBrutoPct: pct(margenBruto, ingresos),
+        ebitdaPct:      pct(ebitda, ingresos),
+        margenNetoPct:  pct(utilidadNeta, ingresos),
+        gavPct:         pct(gav, ingresos),
+        yoyIngresosGrowth, yoyUtilidadGrowth,
+        prevIngresos, prevUtilidad,
+        cobIntereses:   gastosFinanc > 0 ? round2(ebitda / gastosFinanc) : null,
+        trend,
+      },
+      liquidez: {
+        currentRatio, quickRatio, cashRatio: cashRatioV,
+        workingCapital: round2(totalCxC - totalCxP),
+        saldoCaja, cashBurnMensual, cashRunway,
+        totalActivos, totalPatrimonio,
+        roe, roa, deudaPatrimonio,
+      },
+      cobros: {
+        totalCxC, dso,
+        vigente: cxcVig, dias30: cxcD30, dias60: cxcD60, dias90: cxcD90, dias90mas: cxcD90mas,
+        pctVencido: pctVencidoCxC, concTop3: concTop3CxC,
+        numClientes: cxcRows.length,
+        topClientes: sortedCxC.slice(0, 5).map(r => ({
+          nombre: r.RazonSocial ?? r.Proveedor ?? r.cliente ?? '—',
+          saldo: Number(r.SaldoTotal ?? 0),
+        })),
+      },
+      pagos: {
+        totalCxP, dpo,
+        vigente: cxpVig, dias30: cxpD30, dias60: cxpD60, dias90: cxpD90, dias90mas: cxpD90mas,
+        pctVencido: pctVencidoCxP, concTop3: concTop3CxP,
+        numProveedores: cxpRows.length,
+        topProveedores: sortedCxP.slice(0, 5).map(r => ({
+          nombre: r.RazonSocial ?? r.Proveedor ?? r.proveedor ?? '—',
+          saldo: Number(r.SaldoTotal ?? 0),
+        })),
+      },
+      eficiencia: { ccc, dso, dpo },
+      alertas, insights,
+    };
+  }
+
+  // ─────────────────────────────────────────────
   // Validación Forense — 25 validaciones por empresa
   // ─────────────────────────────────────────────
 

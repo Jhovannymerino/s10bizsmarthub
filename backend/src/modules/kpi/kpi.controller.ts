@@ -543,6 +543,15 @@ export class KpiController {
     return this.kpiService.getValidacionForense(companyId, y);
   }
 
+  /** Dashboard Gerencial — KPIs ejecutivos integrados */
+  @Get(':companyId/gerencial')
+  getGerencial(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    return this.kpiService.getGerencial(companyId, parseYear(year));
+  }
+
   /** Reporte Directorio — datos manuales (Ppto, HH, Backlog, Pipeline, Flags, Must Win) */
   @Get(':companyId/directorio')
   getDirectorio(

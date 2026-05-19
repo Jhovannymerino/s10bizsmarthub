@@ -18,6 +18,7 @@ import { AuditSinDocModal } from './_components/modals/AuditSinDocModal';
 import { AuditClasificacionModal } from './_components/modals/AuditClasificacionModal';
 import { TabAudit } from './_components/TabAudit';
 import { TabValidacionForense } from './_components/TabValidacionForense';
+import { TabGerencial } from './_components/TabGerencial';
 import { API, COMPANIES, GRUPO, CURRENT_YEAR, MIN_YEAR, MESES, COLORS_PIE, COLORS_EMPRESA, CLASE_NAMES } from './_lib/constants';
 import { fmt, pct, fmtDays, fmtX, yoyPct } from './_lib/formatters';
 import { exportCSV } from './_lib/csv';
@@ -163,7 +164,7 @@ export default function DashboardPage() {
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
   const [cajaPosicion, setCajaPosicion] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio'>('inicio');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial'>('inicio');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
     if (typeof window === 'undefined') return 'viewer';
@@ -218,6 +219,7 @@ export default function DashboardPage() {
   const [cajaSaldosData, setCajaSaldosData] = useState<any>(null);
   const [auditData, setAuditData] = useState<any>(null);
   const [validacionForenseData, setValidacionForenseData] = useState<any>(null);
+  const [gerencialData, setGerencialData] = useState<any>(null);
   const [directorioData, setDirectorioData] = useState<any>(null);
   const [directorioEditing, setDirectorioEditing] = useState<boolean>(false);
   const [directorioSaving, setDirectorioSaving] = useState<boolean>(false);
@@ -424,14 +426,14 @@ export default function DashboardPage() {
 
   // ── Lazy load nuevos módulos ──────────────────
   useEffect(() => {
-    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','gastos_nat','caja_saldos','conciliacion','audit','validation_forense'];
+    const NEW_TABS = ['balance','otras_cxc','otras_cxp','prestamos','tributos','laboral','activo_fijo','tesoreria','patrimonio','inventarios','gastos_nat','caja_saldos','conciliacion','audit','validation_forense','gerencial'];
     if (!NEW_TABS.includes(activeTab) || isGrupo) return;
     const token = localStorage.getItem('token');
     if (!token) return;
     const id = selectedCompany.codEmpresa;
 
     // Year-dependent tabs: cache key includes year; static tabs: cache key is company only
-    const yearDependent = new Set(['gastos_nat','audit','tesoreria','inventarios','tributos','validation_forense']);
+    const yearDependent = new Set(['gastos_nat','audit','tesoreria','inventarios','tributos','validation_forense','gerencial']);
     const cacheKey = yearDependent.has(activeTab) ? `${id}:${selectedYear}` : id;
     if (loadedRef.current[activeTab] === cacheKey) return;
 
@@ -504,6 +506,10 @@ export default function DashboardPage() {
       fetchApi(`/kpi/${id}/validation-forense?year=${selectedYear}`, token)
         .then(d => done(() => setValidacionForenseData(d)))
         .catch(() => done(() => setValidacionForenseData(null)));
+    } else if (activeTab === 'gerencial') {
+      fetchApi(`/kpi/${id}/gerencial?year=${selectedYear}`, token)
+        .then(d => done(() => setGerencialData(d)))
+        .catch(() => done(() => setGerencialData(null)));
     }
   }, [activeTab, selectedCompany, selectedYear, isGrupo]);
 
@@ -920,6 +926,15 @@ export default function DashboardPage() {
             🏠  Inicio
           </button>
 
+          {/* Dashboard Gerencial */}
+          {!isGrupo && (
+            <button onClick={() => handleTabChange('gerencial')}
+              className={`sidebar-link ${activeTab === 'gerencial' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+              📈  Gerencial
+            </button>
+          )}
+
           {/* Directorio — ítem suelto, sin label de sección */}
           {!isGrupo && (
             <button onClick={() => handleTabChange('directorio')}
@@ -1190,6 +1205,7 @@ export default function DashboardPage() {
               {activeTab === 'audit' && 'Auditoría'}
               {activeTab === 'validation_forense' && 'Validación Forense'}
               {activeTab === 'directorio' && 'Reporte Directorio'}
+              {activeTab === 'gerencial' && 'Dashboard Gerencial'}
             </span>
             {lastSync && (
               <>
@@ -1229,6 +1245,7 @@ export default function DashboardPage() {
               {activeTab === 'audit'             && 'Control Interno'}
               {activeTab === 'validation_forense' && 'Control Interno'}
               {activeTab === 'directorio'       && 'Reporte Directorio'}
+              {activeTab === 'gerencial'         && 'Inteligencia Gerencial'}
             </div>
             <h1 className="page-title">
               {activeTab === 'inicio' && (isGrupo ? 'Dashboard Ejecutivo' : selectedCompany.shortName)}
@@ -1255,6 +1272,7 @@ export default function DashboardPage() {
               {activeTab === 'audit'             && 'Módulo de Auditoría'}
               {activeTab === 'validation_forense' && 'Validación Forense S10'}
               {activeTab === 'directorio' && `Reporte Directorio · ${selectedQuarter} ${selectedYear}`}
+              {activeTab === 'gerencial' && `Dashboard Gerencial · ${selectedYear}`}
             </h1>
             <div style={{ color: '#8B97A8', fontSize: '0.8rem', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span>{selectedCompany.fullName}</span>
@@ -3646,6 +3664,15 @@ export default function DashboardPage() {
             forenseFacturasDrillKey={forenseFacturasDrillKey}
             setForenseFacturasDrillKey={setForenseFacturasDrillKey}
             setAccountTxDrill={setAccountTxDrill}
+          />
+        )}
+
+        {/* ═══ Dashboard Gerencial ═══ */}
+        {activeTab === 'gerencial' && !isGrupo && (
+          <TabGerencial
+            gerencialData={gerencialData}
+            selectedYear={selectedYear}
+            newTabLoading={newTabLoading}
           />
         )}
 

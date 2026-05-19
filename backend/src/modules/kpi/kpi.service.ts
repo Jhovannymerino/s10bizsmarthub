@@ -1367,7 +1367,10 @@ export class KpiService {
   }
 
   async getAuditDescuadres(companyId: string, year: number) {
-    const cached = await this.getSnapshot(companyId, 'audit_descuadres', `${year}`);
+    const [cached, acCached] = await Promise.all([
+      this.getSnapshot(companyId, 'audit_descuadres', `${year}`),
+      this.getSnapshot(companyId, 'audit_apertura_cierre', `${year}`),
+    ]);
     if (!cached) return { rows: [], aperturaCierre: null, year };
 
     const all = cached.data as any[];
@@ -1385,9 +1388,12 @@ export class KpiService {
       return { nroDs: entries.length, totalDebito, totalCredito, descuadre, cuadrado: descuadre < 1, fecha: entries[0]?.Fecha ?? null };
     };
 
+    // Prefer dedicated snapshot (captures balanced apertura entries too).
+    // Fall back to searching within descuadres if snapshot not yet synced.
+    const acSource = acCached ? (acCached.data as any[]) : all;
     const aperturaCierre = {
-      apertura: summarize(all.filter(isApertura)),
-      cierre:   summarize(all.filter(isCierre)),
+      apertura: summarize(acSource.filter(isApertura)),
+      cierre:   summarize(acSource.filter(isCierre)),
     };
 
     return { rows, count: rows.length, aperturaCierre, year, syncedAt: cached.syncedAt };

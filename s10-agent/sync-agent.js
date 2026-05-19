@@ -1239,6 +1239,25 @@ WHERE m.Mes <= MONTH(GETDATE())
 ORDER BY m.Mes
 `;
 
+const QUERY_AUDIT_APERTURA_CIERRE = (codEmpresa, fechaInicio, fechaFin) => `
+SELECT
+  ac.NroD,
+  CONVERT(VARCHAR(10), MIN(ac.FechaAplicacionContable), 103) AS Fecha,
+  COUNT(*)                                                   AS Lineas,
+  SUM(ISNULL(ac.Debito,0))                                  AS TotalDebito,
+  SUM(ISNULL(ac.Credito,0))                                 AS TotalCredito,
+  ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) AS Descuadre,
+  LEFT(MAX(ISNULL(ac.Glosa,'')), 60)                        AS Glosa
+FROM CMO.dbo.AsientoContable ac
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
+  AND ac.NroD IS NOT NULL
+GROUP BY ac.NroD
+HAVING LOWER(LTRIM(LEFT(MAX(ISNULL(ac.Glosa,'')), 25))) LIKE 'asiento de apertura%'
+    OR LOWER(LTRIM(LEFT(MAX(ISNULL(ac.Glosa,'')), 25))) LIKE 'asiento de cierre%'
+ORDER BY Glosa, Fecha
+`;
+
 // ─────────────────────────────────────────────
 // QUERIES NUEVAS — Patrimonio, Inventarios, Laboral TXN, Tesorería
 // ─────────────────────────────────────────────
@@ -2959,7 +2978,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
         gastosNatResult, gastosNatTxnResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
-        auditConciliacionResult,
+        auditConciliacionResult, auditAperturaCierreResult,
       ] = await Promise.all([
         pool.request().query(QUERY_PRESTAMOS_OTORGADOS(company.codEmpresa)),
         pool.request().query(QUERY_PRESTAMOS_RECIBIDOS(company.codEmpresa)),
@@ -2990,6 +3009,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
         pool.request().query(QUERY_AUDIT_DESCUADRES(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_ATIPICOS(company.codEmpresa, fechaInicio, fechaFin)),
         pool.request().query(QUERY_AUDIT_CONCILIACION(company.codEmpresa, company.claseIngreso, fechaInicio, fechaFin, year)),
+        pool.request().query(QUERY_AUDIT_APERTURA_CIERRE(company.codEmpresa, fechaInicio, fechaFin)),
       ]);
       b3 = {
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
@@ -3003,7 +3023,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
         gastosNatResult, gastosNatTxnResult,
         auditSinDocResult, auditSinDocTxnResult,
         auditDescuadresResult, auditAtipicosResult,
-        auditConciliacionResult,
+        auditConciliacionResult, auditAperturaCierreResult,
       };
     } else {
       console.log(`${tag} → Batch 3: OMITIDO (modo --fast)`);
@@ -3088,6 +3108,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
           audit_descuadres:          b3.auditDescuadresResult.recordset,
           audit_atipicos:            b3.auditAtipicosResult.recordset,
           audit_conciliacion:        b3.auditConciliacionResult.recordset,
+          audit_apertura_cierre:     b3.auditAperturaCierreResult.recordset,
         }),
         ...(validationForense && { validation_forense: validationForense }),
       },

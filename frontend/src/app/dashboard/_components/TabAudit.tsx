@@ -73,19 +73,24 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
       {/* Descuadres */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
-          ⚠️ Asientos descuadrados (Débito ≠ Crédito) · {selectedYear}
+          ⚠️ Asientos descuadrados (Débito ≠ Crédito, diferencia &gt; S/1.00) · {selectedYear}
         </div>
         {!auditData?.descuadres?.rows?.length ? (
           <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Todos los asientos están cuadrados. Sin hallazgos.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
+            {auditData.descuadres.rows.length >= 200 && (
+              <div style={{ fontSize: '0.75rem', color: '#F59E0B', marginBottom: '0.5rem' }}>
+                ⚠ Mostrando los 200 mayores descuadres. Puede haber más — revise en S10 directamente.
+              </div>
+            )}
             <table className="table-s10" style={{ fontSize: '0.8rem' }}>
               <thead><tr><th>Fecha</th><th>NroD (doc)</th><th>Líneas</th><th style={{ minWidth: 160 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Descuadre</th><th style={{ minWidth: 180 }}>Glosa</th></tr></thead>
               <tbody>
                 {auditData.descuadres.rows.map((r: any, i: number) => (
                   <tr key={i}>
                     <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#2BB4BB' }} title={r.NroD}>{r.NroD ? String(r.NroD).slice(0, 8) + '…' : '—'}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#2BB4BB' }}>{r.NroD || '—'}</td>
                     <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.Lineas}</td>
                     <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
                     <td style={{ color: r.TotalDebito > 0 ? '#10B981' : '#8B97A8' }}>{r.TotalDebito > 0 ? fmt(r.TotalDebito) : '—'}</td>
@@ -115,7 +120,7 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
                 {auditData.atipicos.rows.map((r: any, i: number) => (
                   <tr key={i}>
                     <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#8B97A8' }} title={r.NroD}>{r.NroD ? String(r.NroD).slice(0, 8) + '…' : '—'}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#8B97A8' }}>{r.NroD || '—'}</td>
                     <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{r.CodCuenta}</td>
                     <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
                     <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>

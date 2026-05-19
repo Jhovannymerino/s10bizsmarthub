@@ -91,8 +91,8 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   const baseFiltered = filter === 'otros'
     ? otros
     : facturas.filter(d => {
-        if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0;
-        if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0;
+        if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0;
+        if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0;
         return true;
       });
 
@@ -162,10 +162,10 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
             Todos ({facturas.length})
           </button>
           <button style={btnStyle(filter === 'vencido')} onClick={() => setFilter('vencido')}>
-            Vencidos ({facturas.filter(d => (d.DiasVencido ?? 0) > 0).length})
+            Vencidos ({facturas.filter(d => (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0).length})
           </button>
           <button style={btnStyle(filter === 'vigente')} onClick={() => setFilter('vigente')}>
-            Vigentes ({facturas.filter(d => (d.DiasVencido ?? 0) <= 0).length})
+            Vigentes ({facturas.filter(d => (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0).length})
           </button>
           {otros.length > 0 && (
             <button style={btnStyle(filter === 'otros', 'amber')} onClick={() => setFilter('otros')}>

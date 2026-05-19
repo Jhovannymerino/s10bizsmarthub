@@ -39,8 +39,8 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
   }, [companyId, codCliente]);
 
   const baseFiltered = docs.filter(d => {
-    if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0;
-    if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0;
+    if (filter === 'vencido') return (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0;
+    if (filter === 'vigente') return (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0;
     return true;
   });
 
@@ -97,10 +97,10 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button style={btnStyle(filter === 'all')} onClick={() => setFilter('all')}>Todos ({docs.length})</button>
           <button style={btnStyle(filter === 'vencido')} onClick={() => setFilter('vencido')}>
-            Vencidos ({docs.filter(d => (d.DiasVencido ?? 0) > 0).length})
+            Vencidos ({docs.filter(d => (d.DiasVencido ?? 0) > 0 && (d.Saldo ?? 0) > 0).length})
           </button>
           <button style={btnStyle(filter === 'vigente')} onClick={() => setFilter('vigente')}>
-            Vigentes ({docs.filter(d => (d.DiasVencido ?? 0) <= 0).length})
+            Vigentes ({docs.filter(d => (d.DiasVencido ?? 0) <= 0 && (d.Saldo ?? 0) > 0).length})
           </button>
           <input
             type="text" placeholder="Buscar..." value={search}

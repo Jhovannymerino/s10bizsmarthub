@@ -153,6 +153,24 @@ export class KpiController {
     return this.kpiService.getHonorariosRecibidos(companyId, y);
   }
 
+  /** Ranking de clientes por facturación total (incluye pagados) */
+  @Get(':companyId/ranking-clientes')
+  getRankingClientes(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    return this.kpiService.getRankingClientes(companyId, parseYear(year));
+  }
+
+  /** Ranking de proveedores por facturación total (incluye pagados) */
+  @Get(':companyId/ranking-proveedores')
+  getRankingProveedores(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+  ) {
+    return this.kpiService.getRankingProveedores(companyId, parseYear(year));
+  }
+
   /** Posición de caja trimestral */
   @Get(':companyId/caja-posicion')
   getCajaPosicion(

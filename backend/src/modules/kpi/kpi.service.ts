@@ -719,6 +719,42 @@ export class KpiService {
     return { facturas, total: facturas.length, year };
   }
 
+  async getRankingClientes(companyId: string, year: number) {
+    const cached = await this.getSnapshot(companyId, 'facturas_emitidas', `${year}`);
+    if (!cached) return { clientes: [], total: 0, year };
+    const facturas = cached.data as any[];
+    const map = new Map<string, { nombre: string; ruc: string; totalFacturado: number }>();
+    for (const f of facturas) {
+      const key = ((f.RucCliente as string) || (f.Cliente as string) || '').trim();
+      if (!map.has(key)) map.set(key, { nombre: f.Cliente ?? '', ruc: f.RucCliente ?? '', totalFacturado: 0 });
+      const entry = map.get(key)!;
+      entry.totalFacturado += f.EsNotaCredito ? -Number(f.Total || 0) : Number(f.Total || 0);
+    }
+    const clientes = [...map.values()].filter(c => c.totalFacturado > 0).sort((a, b) => b.totalFacturado - a.totalFacturado);
+    const total = clientes.reduce((s, c) => s + c.totalFacturado, 0);
+    return { clientes, total, year };
+  }
+
+  async getRankingProveedores(companyId: string, year: number) {
+    const [factSnap, honSnap] = await Promise.all([
+      this.getSnapshot(companyId, 'facturas_recibidas', `${year}`),
+      this.getSnapshot(companyId, 'honorarios_recibidos', `${year}`),
+    ]);
+    const facturas: any[] = [...(factSnap?.data ?? []), ...(honSnap?.data ?? [])];
+    const map = new Map<string, { nombre: string; ruc: string; totalFacturado: number }>();
+    for (const f of facturas) {
+      const nombre = (f.Proveedor as string) ?? '';
+      const ruc = (f.RucProveedor as string) ?? '';
+      const key = (ruc || nombre).trim();
+      if (!map.has(key)) map.set(key, { nombre, ruc, totalFacturado: 0 });
+      const entry = map.get(key)!;
+      entry.totalFacturado += f.EsNotaCredito ? -Number(f.Total || 0) : Number(f.Total || 0);
+    }
+    const proveedores = [...map.values()].filter(p => p.totalFacturado > 0).sort((a, b) => b.totalFacturado - a.totalFacturado);
+    const total = proveedores.reduce((s, p) => s + p.totalFacturado, 0);
+    return { proveedores, total, year };
+  }
+
   // ─────────────────────────────────────────────
   // CxP — aging por proveedor (clase 42)
   // ─────────────────────────────────────────────

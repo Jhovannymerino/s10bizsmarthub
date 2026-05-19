@@ -164,7 +164,7 @@ export default function DashboardPage() {
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
   const [cajaPosicion, setCajaPosicion] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial'>('inicio');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
     if (typeof window === 'undefined') return 'viewer';
@@ -179,11 +179,21 @@ export default function DashboardPage() {
     try { return JSON.parse(localStorage.getItem('userInfo') || '{}').allowedTabs ?? []; } catch { return []; }
   });
   const [userEmail, setUserEmail] = useState<string>('');
+  const [userUsername, setUserUsername] = useState<string>('');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileEmailError, setProfileEmailError] = useState('');
+  const [profileEmailSuccess, setProfileEmailSuccess] = useState('');
+  const [profileEmailLoading, setProfileEmailLoading] = useState(false);
+  const [profilePwd, setProfilePwd] = useState({ current: '', next: '', confirm: '' });
+  const [profilePwdError, setProfilePwdError] = useState('');
+  const [profilePwdSuccess, setProfilePwdSuccess] = useState('');
+  const [profilePwdLoading, setProfilePwdLoading] = useState(false);
   // ── Admin: gestión de usuarios ──
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminModal, setAdminModal] = useState<{ mode: 'create' | 'edit'; user?: any } | null>(null);
-  const [adminForm, setAdminForm] = useState({ email: '', password: '', role: 'viewer', allowedCompanies: [] as string[], allowedTabs: [] as string[], active: true });
+  const [adminForm, setAdminForm] = useState({ email: '', username: '', password: '', role: 'viewer', allowedCompanies: [] as string[], allowedTabs: [] as string[], active: true });
   const [adminError, setAdminError] = useState('');
   const [adminSuccess, setAdminSuccess] = useState('');
   const [cxp, setCxP] = useState<any>(null);
@@ -224,6 +234,12 @@ export default function DashboardPage() {
   const [auditData, setAuditData] = useState<any>(null);
   const [validacionForenseData, setValidacionForenseData] = useState<any>(null);
   const [gerencialData, setGerencialData] = useState<any>(null);
+  const [narrativeCache, setNarrativeCache] = useState<Record<string, { text: string; generatedAt: number }>>({});
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
+  const [narrativeError, setNarrativeError] = useState('');
+  const [rankingClientesData, setRankingClientesData] = useState<any>(null);
+  const [rankingProveedoresData, setRankingProveedoresData] = useState<any>(null);
+
   const [directorioData, setDirectorioData] = useState<any>(null);
   const [directorioEditing, setDirectorioEditing] = useState<boolean>(false);
   const [directorioSaving, setDirectorioSaving] = useState<boolean>(false);
@@ -244,7 +260,7 @@ export default function DashboardPage() {
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
   const canViewTab = (tab: string) =>
     userRole === 'admin' || userAllowedTabs.length === 0 || userAllowedTabs.includes(tab);
-  const visibleCompanies = userRole === 'admin'
+  const visibleCompanies = userRole === 'admin' || userAllowedCompanies.length === 0
     ? COMPANIES
     : COMPANIES.filter(c => userAllowedCompanies.includes(c.codEmpresa));
 
@@ -257,6 +273,7 @@ export default function DashboardPage() {
         setUserAllowedCompanies(parsed.allowedCompanies ?? []);
         setUserAllowedTabs(parsed.allowedTabs ?? []);
         setUserEmail(parsed.email ?? '');
+        setUserUsername(parsed.username ?? '');
       } catch { /* ignore */ }
     }
   }, []);
@@ -335,6 +352,7 @@ export default function DashboardPage() {
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
     setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null); setConciliacionData(null);
+    setRankingClientesData(null); setRankingProveedoresData(null);
 
     // Cancel any in-flight requests from previous company/year selection
     const ctrl = new AbortController();
@@ -430,6 +448,24 @@ export default function DashboardPage() {
       })
       .catch(() => {});
   }, [activeTab, selectedCompany, selectedYear, isGrupo]);
+
+  // ── Lazy load ranking por facturación ──────────────────
+  useEffect(() => {
+    if (!['cxc_ranking', 'cxp_ranking'].includes(activeTab) || isGrupo) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    if (activeTab === 'cxc_ranking' && !rankingClientesData) {
+      fetchApi(`/kpi/${id}/ranking-clientes?year=${selectedYear}`, token)
+        .then(data => setRankingClientesData(data))
+        .catch(() => {});
+    }
+    if (activeTab === 'cxp_ranking' && !rankingProveedoresData) {
+      fetchApi(`/kpi/${id}/ranking-proveedores?year=${selectedYear}`, token)
+        .then(data => setRankingProveedoresData(data))
+        .catch(() => {});
+    }
+  }, [activeTab, selectedCompany, selectedYear, isGrupo, rankingClientesData, rankingProveedoresData]);
 
   // ── Lazy load nuevos módulos ──────────────────
   useEffect(() => {
@@ -952,19 +988,21 @@ export default function DashboardPage() {
           )}
 
           {/* Resultados — siempre visible, sin colapso */}
-          {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).some(canViewTab) && (
+          {(['pl', 'cxc', 'cxc_ranking', 'cxp', 'cxp_ranking', 'caja', 'gav', 'docs'] as const).some(canViewTab) && (
             <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Resultados</div>
           )}
-          {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).filter(canViewTab).map((tab) => (
+          {(['pl', 'cxc', 'cxc_ranking', 'cxp', 'cxp_ranking', 'caja', 'gav', 'docs'] as const).filter(canViewTab).map((tab) => (
             <button key={tab} onClick={() => handleTabChange(tab)}
               className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-              {tab === 'pl'   && '📊  P&L'}
-              {tab === 'cxc'  && '💰  CxC Aging'}
-              {tab === 'cxp'  && '🏪  CxP Aging'}
-              {tab === 'caja' && '💵  Posición Caja'}
-              {tab === 'gav'  && '📋  GAV Detalle'}
-              {tab === 'docs' && '🧾  Documentos'}
+              {tab === 'pl'          && '📊  P&L'}
+              {tab === 'cxc'         && '💰  CxC Aging'}
+              {tab === 'cxc_ranking' && '👥  Tamaño de Cliente'}
+              {tab === 'cxp'         && '🏪  CxP Aging'}
+              {tab === 'cxp_ranking' && '🏭  Tamaño de Proveedor'}
+              {tab === 'caja'        && '💵  Posición Caja'}
+              {tab === 'gav'         && '📋  GAV Detalle'}
+              {tab === 'docs'        && '🧾  Documentos'}
             </button>
           ))}
 
@@ -1089,15 +1127,42 @@ export default function DashboardPage() {
 
         {/* User + logout */}
         <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.6rem', padding: '0 0.25rem' }}>
+          <button onClick={async () => {
+              setProfileOpen(true);
+              setProfilePwd({ current: '', next: '', confirm: '' });
+              setProfilePwdError(''); setProfilePwdSuccess('');
+              setProfileEmailError(''); setProfileEmailSuccess('');
+              // Refrescar datos desde el servidor
+              const token = localStorage.getItem('token');
+              if (!token) return;
+              try {
+                const fresh = await fetch(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+                if (fresh.ok) {
+                  const data = await fresh.json();
+                  setUserEmail(data.email ?? '');
+                  setUserUsername(data.username ?? '');
+                  setUserRole(data.role ?? 'viewer');
+                  setProfileEmail(data.email ?? '');
+                  // Actualizar localStorage para que sea consistente
+                  const stored = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                  localStorage.setItem('userInfo', JSON.stringify({ ...stored, email: data.email, username: data.username ?? null, role: data.role }));
+                }
+              } catch { /* silenciar — mostrar datos en caché */ }
+            }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.5rem', padding: '0.4rem 0.5rem', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '0.5rem', transition: 'background 0.15s', textAlign: 'left' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB, #4F46E5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: '#fff', flexShrink: 0, boxShadow: '0 0 10px rgba(79,70,229,0.4)' }}>
               {userEmail ? userEmail[0].toUpperCase() : 'U'}
             </div>
-            <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Inter', sans-serif" }}>{userEmail || 'Usuario'}</div>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Inter', sans-serif" }}>
+                {userUsername || userEmail || 'Usuario'}
+              </div>
               <div style={{ fontSize: '0.6rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{userRole}</div>
             </div>
-          </div>
+            <span style={{ fontSize: '0.65rem', color: '#4B5563' }}>⚙</span>
+          </button>
           <button
             onClick={() => { localStorage.removeItem('token'); router.push('/login'); }}
             style={{ width: '100%', padding: '0.45rem 0.75rem', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#EF4444', borderRadius: '0.625rem', cursor: 'pointer', fontSize: '0.73rem', fontWeight: 600, letterSpacing: '0.04em', fontFamily: "'Inter', sans-serif" }}
@@ -1108,6 +1173,134 @@ export default function DashboardPage() {
 
         </div>{/* end sidebar-inner */}
       </div>
+
+      {/* ── Modal Perfil ── */}
+      {profileOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => setProfileOpen(false)}>
+          <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: 420, boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Avatar + datos */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.75rem' }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB, #4F46E5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 16px rgba(79,70,229,0.5)' }}>
+                {userEmail ? userEmail[0].toUpperCase() : 'U'}
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{userUsername || userEmail || 'Usuario'}</div>
+                {userUsername && <div style={{ fontSize: '0.78rem', color: '#6B7A8D', marginTop: 2 }}>{userEmail}</div>}
+                <div style={{ marginTop: 4, display: 'inline-block', padding: '0.15rem 0.6rem', background: userRole === 'admin' ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.06)', borderRadius: 999, fontSize: '0.65rem', fontWeight: 700, color: userRole === 'admin' ? '#2BB4BB' : '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {userRole}
+                </div>
+              </div>
+            </div>
+
+            {/* Editar email */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Correo electrónico
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input type="email" value={profileEmail} onChange={e => { setProfileEmail(e.target.value); setProfileEmailError(''); setProfileEmailSuccess(''); }}
+                  placeholder="correo@empresa.com"
+                  style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box' as const, background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                <button disabled={profileEmailLoading || !profileEmail || profileEmail === userEmail}
+                  onClick={async () => {
+                    if (!profileEmail.includes('@')) { setProfileEmailError('Ingresa un correo válido'); return; }
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+                    setProfileEmailLoading(true); setProfileEmailError(''); setProfileEmailSuccess('');
+                    try {
+                      const res = await fetch(`${API}/auth/profile`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ email: profileEmail }),
+                      });
+                      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message || 'Error al actualizar'); }
+                      setUserEmail(profileEmail);
+                      const stored = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                      localStorage.setItem('userInfo', JSON.stringify({ ...stored, email: profileEmail }));
+                      setProfileEmailSuccess('Correo actualizado');
+                    } catch (e: any) { setProfileEmailError(e.message); }
+                    finally { setProfileEmailLoading(false); }
+                  }}
+                  style={{ padding: '0.5rem 0.9rem', border: 'none', borderRadius: '0.375rem', background: profileEmailLoading || !profileEmail || profileEmail === userEmail ? '#374151' : 'linear-gradient(135deg, #207E83, #2BB4BB)', color: profileEmailLoading || !profileEmail || profileEmail === userEmail ? '#6B7A8D' : '#fff', cursor: profileEmailLoading || !profileEmail || profileEmail === userEmail ? 'not-allowed' : 'pointer', fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap' as const }}>
+                  {profileEmailLoading ? '...' : 'Guardar'}
+                </button>
+              </div>
+              {profileEmailError && <div style={{ marginTop: '0.4rem', color: '#EF4444', fontSize: '0.78rem' }}>{profileEmailError}</div>}
+              {profileEmailSuccess && <div style={{ marginTop: '0.4rem', color: '#10B981', fontSize: '0.78rem' }}>✓ {profileEmailSuccess}</div>}
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.5rem' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Cambiar contraseña
+              </div>
+
+              <div style={{ marginBottom: '0.875rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Contraseña actual</label>
+                <input type="password" value={profilePwd.current} onChange={e => setProfilePwd(p => ({ ...p, current: e.target.value }))}
+                  placeholder="••••••••"
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+              </div>
+
+              <div style={{ marginBottom: '0.875rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Nueva contraseña</label>
+                <input type="password" value={profilePwd.next} onChange={e => setProfilePwd(p => ({ ...p, next: e.target.value }))}
+                  placeholder="Mínimo 8 caracteres"
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Confirmar nueva contraseña</label>
+                <input type="password" value={profilePwd.confirm} onChange={e => setProfilePwd(p => ({ ...p, confirm: e.target.value }))}
+                  placeholder="••••••••"
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${profilePwd.confirm && profilePwd.confirm !== profilePwd.next ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+              </div>
+
+              {profilePwdError && (
+                <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.375rem', color: '#EF4444', fontSize: '0.8rem', marginBottom: '0.875rem' }}>
+                  {profilePwdError}
+                </div>
+              )}
+              {profilePwdSuccess && (
+                <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '0.375rem', color: '#10B981', fontSize: '0.8rem', marginBottom: '0.875rem' }}>
+                  {profilePwdSuccess}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button onClick={() => setProfileOpen(false)}
+                  style={{ padding: '0.5rem 1.25rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.06)', color: '#8B97A8', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  Cerrar
+                </button>
+                <button disabled={profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm}
+                  onClick={async () => {
+                    if (profilePwd.next !== profilePwd.confirm) { setProfilePwdError('Las contraseñas no coinciden'); return; }
+                    if (profilePwd.next.length < 8) { setProfilePwdError('Mínimo 8 caracteres'); return; }
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+                    setProfilePwdLoading(true); setProfilePwdError(''); setProfilePwdSuccess('');
+                    try {
+                      const res = await fetch(`${API}/auth/change-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ currentPassword: profilePwd.current, newPassword: profilePwd.next }),
+                      });
+                      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message || 'Error al cambiar la contraseña'); }
+                      setProfilePwdSuccess('Contraseña actualizada correctamente');
+                      setProfilePwd({ current: '', next: '', confirm: '' });
+                    } catch (e: any) { setProfilePwdError(e.message); }
+                    finally { setProfilePwdLoading(false); }
+                  }}
+                  style={{ padding: '0.5rem 1.25rem', border: 'none', borderRadius: '0.375rem', background: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? '#374151' : 'linear-gradient(135deg, #207E83, #2BB4BB)', color: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? '#6B7A8D' : '#fff', cursor: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                  {profilePwdLoading ? 'Guardando...' : 'Cambiar contraseña'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Main content ── */}
       <div className="main-content" style={{ width: 'calc(100% - 272px)', position: 'relative', flex: 1 }}>
@@ -1121,7 +1314,7 @@ export default function DashboardPage() {
         {/* ── Empresa + Año (top bar) ── */}
         <div className="context-topbar">
           <div className="context-topbar-companies">
-            {userRole === 'admin' && (
+            {(userRole === 'admin' || userAllowedCompanies.includes('GRUPO')) && (
               <button
                 className={`context-pill${isGrupo ? ' active' : ''}`}
                 onClick={() => {
@@ -1202,7 +1395,9 @@ export default function DashboardPage() {
             <span className="breadcrumb-current">
               {activeTab === 'pl' && 'P&L'}
               {activeTab === 'cxc' && 'CxC Aging'}
+              {activeTab === 'cxc_ranking' && 'Tamaño de Cliente'}
               {activeTab === 'cxp' && 'CxP Aging'}
+              {activeTab === 'cxp_ranking' && 'Tamaño de Proveedor'}
               {activeTab === 'caja' && 'Posición Caja'}
               {activeTab === 'gav' && 'GAV Detalle'}
               {activeTab === 'docs' && 'Documentos'}
@@ -1604,6 +1799,76 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
+
+            {/* ── Análisis Ejecutivo IA (GRUPO) ── */}
+            {isGrupo && (() => {
+              const narKey = `GRUPO|${selectedYear}`;
+              const narEntry = narrativeCache[narKey];
+              const fetchNarrative = async (force = false) => {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                setNarrativeLoading(true); setNarrativeError('');
+                try {
+                  const res = await fetch(`${API}/kpi/GRUPO/narrative?year=${selectedYear}${force ? '&force=1' : ''}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!res.ok) throw new Error('Error al generar el análisis');
+                  const data = await res.json();
+                  setNarrativeCache(prev => ({ ...prev, [narKey]: { text: data.text ?? '', generatedAt: data.generatedAt ?? Date.now() } }));
+                } catch (e: any) { setNarrativeError(e.message); }
+                finally { setNarrativeLoading(false); }
+              };
+              return (
+                <div style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(79,70,229,0.04) 100%)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: narEntry ? '1.25rem' : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>✦</div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#F8FAFC', fontFamily: "'Outfit', sans-serif" }}>Análisis Ejecutivo IA — Grupo Consolidado</div>
+                        {narEntry && !narrativeLoading && (
+                          <div style={{ fontSize: '0.68rem', color: '#4B5563' }}>
+                            Generado {new Date(narEntry.generatedAt).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {narEntry && !narrativeLoading && (
+                        <button onClick={() => fetchNarrative(true)}
+                          style={{ padding: '0.35rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.04)', color: '#6B7A8D', cursor: 'pointer', fontSize: '0.75rem' }}>
+                          ↻ Regenerar
+                        </button>
+                      )}
+                      <button onClick={() => fetchNarrative(false)} disabled={narrativeLoading}
+                        style={{ padding: '0.35rem 1rem', border: 'none', borderRadius: '0.375rem', background: narrativeLoading ? '#374151' : 'linear-gradient(135deg, #2563EB, #7C3AED)', color: narrativeLoading ? '#6B7A8D' : '#fff', cursor: narrativeLoading ? 'not-allowed' : 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+                        {narrativeLoading ? '✦ Analizando...' : narEntry ? '✓ Listo' : '✦ Generar análisis'}
+                      </button>
+                    </div>
+                  </div>
+                  {narrativeLoading && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 0', color: '#6B7A8D', fontSize: '0.85rem' }}>
+                      <div style={{ width: 16, height: 16, border: '2px solid #2563EB', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                      Analizando consolidado del grupo...
+                    </div>
+                  )}
+                  {narrativeError && !narrativeLoading && (
+                    <div style={{ marginTop: '0.75rem', color: '#EF4444', fontSize: '0.82rem' }}>{narrativeError}</div>
+                  )}
+                  {narEntry && !narrativeLoading && (
+                    <div style={{ fontSize: '0.88rem', lineHeight: 1.75, color: '#CBD5E1', fontFamily: "'Inter', sans-serif" }}>
+                      {narEntry.text.split('\n\n').filter(Boolean).map((para, i) => (
+                        <p key={i} style={{ margin: i === 0 ? 0 : '1rem 0 0 0' }}>{para}</p>
+                      ))}
+                    </div>
+                  )}
+                  {!narEntry && !narrativeLoading && !narrativeError && (
+                    <div style={{ marginTop: '1rem', color: '#374151', fontSize: '0.82rem', fontStyle: 'italic' }}>
+                      Genera un análisis estratégico consolidado de todas las empresas del grupo.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Waterfall chart */}
             <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
@@ -2091,6 +2356,134 @@ export default function DashboardPage() {
                   </table>
                 </div>
               </div>
+            </>
+          );
+        })()}
+
+        {/* ═══ Tamaño de Cliente ═══ */}
+        {activeTab === 'cxc_ranking' && !rankingClientesData && <SkeletonLoader />}
+        {activeTab === 'cxc_ranking' && rankingClientesData && (() => {
+          const clientes: any[] = rankingClientesData.clientes ?? [];
+          const total = rankingClientesData.total || 1;
+          let acum = 0;
+          const top3sum = clientes.slice(0, 3).reduce((s: number, c: any) => s + c.totalFacturado, 0);
+          const concTop3 = total > 0 ? (top3sum / total) * 100 : 0;
+          return (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <KpiCard label={`Total Facturado ${selectedYear} S/`} value={fmt(rankingClientesData.total)} signal="neutral" sub="Facturación neta (excl. notas de crédito)" hint="" />
+                <KpiCard label="N° Clientes" value={String(clientes.length)} signal="neutral" sub="Con facturación en el período" hint="" />
+                <KpiCard label="Concentración Top 3" value={pct(concTop3)} signal={semaforo('concentracion', concTop3)} sub="% facturación en top 3 clientes" hint="Alta concentración = dependencia de pocos clientes" />
+              </div>
+
+              <div className="kpi-card">
+                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.5rem' }}>Ranking por Facturación Total</div>
+                <div style={{ fontSize: '0.72rem', color: '#6B7A8D', marginBottom: '1rem' }}>Incluye todas las facturas del año {selectedYear} (pagadas y pendientes), neto de notas de crédito</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {clientes.map((c: any, i: number) => {
+                    const pctTotal = total > 0 ? (c.totalFacturado / total) * 100 : 0;
+                    acum += pctTotal;
+                    return (
+                      <div key={c.ruc || c.nombre || i} style={{ display: 'grid', gridTemplateColumns: '1.4rem 1fr auto auto auto', gap: '0.5rem', alignItems: 'center', padding: '0.4rem 0.5rem', borderRadius: '0.375rem', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <span style={{ fontSize: '0.7rem', color: '#4B5563', textAlign: 'right' }}>#{i + 1}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.82rem', color: '#F8FAFC', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3 }}>
+                            {c.nombre}
+                          </div>
+                          <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', width: `${Math.max(pctTotal * 2.5, 2)}%`, minWidth: 4 }}>
+                            <div style={{ height: '100%', width: '100%', background: '#207E83' }} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: '#2BB4BB', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(c.totalFacturado)}</span>
+                        <span style={{ fontSize: '0.72rem', color: '#8B97A8', whiteSpace: 'nowrap' }}>{pctTotal.toFixed(1)}%</span>
+                        <span style={{ fontSize: '0.68rem', color: acum <= 80 ? '#10B981' : '#6B7A8D', whiteSpace: 'nowrap', minWidth: '3.5rem', textAlign: 'right' }}>acum {acum.toFixed(0)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {clientes.length === 0 && (
+                  <div style={{ color: '#4B5563', textAlign: 'center', padding: '2rem' }}>Sin facturas emitidas para el año {selectedYear}</div>
+                )}
+              </div>
+
+              {/* Pareto summary */}
+              {clientes.length > 0 && (() => {
+                let cum = 0; let n80 = 0;
+                for (const c of clientes) { cum += (c.totalFacturado / total) * 100; n80++; if (cum >= 80) break; }
+                return (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(32,126,131,0.08)', border: '1px solid rgba(32,126,131,0.2)', borderRadius: '0.5rem', fontSize: '0.82rem', color: '#8B97A8' }}>
+                    <span style={{ color: '#2BB4BB', fontWeight: 600 }}>Regla 80/20: </span>
+                    Los <strong style={{ color: '#F8FAFC' }}>{n80}</strong> cliente{n80 !== 1 ? 's' : ''} más grande{n80 !== 1 ? 's' : ''} concentran el 80% de la facturación
+                    {n80 <= 3 && <span style={{ color: '#F59E0B' }}> — alta concentración, monitorear de cerca</span>}
+                  </div>
+                );
+              })()}
+            </>
+          );
+        })()}
+
+        {/* ═══ Tamaño de Proveedor ═══ */}
+        {activeTab === 'cxp_ranking' && !rankingProveedoresData && <SkeletonLoader />}
+        {activeTab === 'cxp_ranking' && rankingProveedoresData && (() => {
+          const proveedores: any[] = rankingProveedoresData.proveedores ?? [];
+          const total = rankingProveedoresData.total || 1;
+          let acum = 0;
+          const top3sum = proveedores.slice(0, 3).reduce((s: number, p: any) => s + p.totalFacturado, 0);
+          const concTop3 = total > 0 ? (top3sum / total) * 100 : 0;
+          return (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <KpiCard label={`Total Compras ${selectedYear} S/`} value={fmt(rankingProveedoresData.total)} signal="neutral" sub="Facturas recibidas neto de notas de crédito" hint="" />
+                <KpiCard label="N° Proveedores" value={String(proveedores.length)} signal="neutral" sub="Con facturación en el período" hint="" />
+                <KpiCard label="Concentración Top 3" value={pct(concTop3)} signal={semaforo('concentracion', concTop3)} sub="% compras en top 3 proveedores" hint="Alta concentración = mayor dependencia de pocos proveedores" />
+              </div>
+
+              <div className="kpi-card">
+                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.5rem' }}>Ranking por Facturación Total Recibida</div>
+                <div style={{ fontSize: '0.72rem', color: '#6B7A8D', marginBottom: '1rem' }}>Incluye facturas y honorarios recibidos en {selectedYear} (pagados y pendientes), neto de notas de crédito</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {proveedores.map((p: any, i: number) => {
+                    const pctTotal = total > 0 ? (p.totalFacturado / total) * 100 : 0;
+                    acum += pctTotal;
+                    return (
+                      <div key={p.ruc || p.nombre || i} style={{ display: 'grid', gridTemplateColumns: '1.4rem 1fr auto auto auto', gap: '0.5rem', alignItems: 'center', padding: '0.4rem 0.5rem', borderRadius: '0.375rem', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <span style={{ fontSize: '0.7rem', color: '#4B5563', textAlign: 'right' }}>#{i + 1}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.82rem', color: '#F8FAFC', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3 }}>
+                            {p.nombre}
+                          </div>
+                          <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', width: `${Math.max(pctTotal * 2.5, 2)}%`, minWidth: 4 }}>
+                            <div style={{ height: '100%', width: '100%', background: '#E25C1A' }} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: '#F97316', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(p.totalFacturado)}</span>
+                        <span style={{ fontSize: '0.72rem', color: '#8B97A8', whiteSpace: 'nowrap' }}>{pctTotal.toFixed(1)}%</span>
+                        <span style={{ fontSize: '0.68rem', color: acum <= 80 ? '#10B981' : '#6B7A8D', whiteSpace: 'nowrap', minWidth: '3.5rem', textAlign: 'right' }}>acum {acum.toFixed(0)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {proveedores.length === 0 && (
+                  <div style={{ color: '#4B5563', textAlign: 'center', padding: '2rem' }}>Sin facturas recibidas para el año {selectedYear}</div>
+                )}
+              </div>
+
+              {/* Pareto summary */}
+              {proveedores.length > 0 && (() => {
+                let cum = 0; let n80 = 0;
+                for (const p of proveedores) { cum += (p.totalFacturado / total) * 100; n80++; if (cum >= 80) break; }
+                return (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(32,126,131,0.08)', border: '1px solid rgba(32,126,131,0.2)', borderRadius: '0.5rem', fontSize: '0.82rem', color: '#8B97A8' }}>
+                    <span style={{ color: '#2BB4BB', fontWeight: 600 }}>Regla 80/20: </span>
+                    Los <strong style={{ color: '#F8FAFC' }}>{n80}</strong> proveedor{n80 !== 1 ? 'es' : ''} más grande{n80 !== 1 ? 's' : ''} concentran el 80% de las compras
+                    {n80 <= 3 && <span style={{ color: '#F59E0B' }}> — alta dependencia, considerar diversificar</span>}
+                  </div>
+                );
+              })()}
             </>
           );
         })()}
@@ -2706,13 +3099,13 @@ export default function DashboardPage() {
           };
 
           const openCreate = () => {
-            setAdminForm({ email: '', password: '', role: 'viewer', allowedCompanies: [], allowedTabs: [], active: true });
+            setAdminForm({ email: '', username: '', password: '', role: 'viewer', allowedCompanies: [], allowedTabs: [], active: true });
             setAdminError(''); setAdminSuccess('');
             setAdminModal({ mode: 'create' });
           };
 
           const openEdit = (u: any) => {
-            setAdminForm({ email: u.email, password: '', role: u.role, allowedCompanies: u.allowedCompanies ?? [], allowedTabs: u.allowedTabs ?? [], active: u.active });
+            setAdminForm({ email: u.email, username: u.username ?? '', password: '', role: u.role, allowedCompanies: u.allowedCompanies ?? [], allowedTabs: u.allowedTabs ?? [], active: u.active });
             setAdminError(''); setAdminSuccess('');
             setAdminModal({ mode: 'edit', user: u });
           };
@@ -2724,9 +3117,12 @@ export default function DashboardPage() {
             try {
               const isEdit = adminModal?.mode === 'edit';
               const url = isEdit ? `${API}/users/${adminModal!.user.id}` : `${API}/users`;
-              const body: any = { role: adminForm.role, allowedCompanies: adminForm.allowedCompanies, allowedTabs: adminForm.allowedTabs, active: adminForm.active };
+              const body: any = { role: adminForm.role, allowedCompanies: adminForm.allowedCompanies, allowedTabs: adminForm.allowedTabs, active: adminForm.active, username: adminForm.username || undefined };
               if (!isEdit) { body.email = adminForm.email; body.password = adminForm.password; }
-              else if (adminForm.password) { body.password = adminForm.password; }
+              else {
+                if (adminForm.email) body.email = adminForm.email;
+                if (adminForm.password) body.password = adminForm.password;
+              }
               const res = await fetch(url, { method: isEdit ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
               if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Error'); }
               setAdminSuccess(isEdit ? 'Usuario actualizado.' : 'Usuario creado.');
@@ -2742,17 +3138,22 @@ export default function DashboardPage() {
             reloadUsers();
           };
 
-          const COMPANY_OPTIONS = COMPANIES.map(c => ({ value: c.codEmpresa, label: c.shortName }));
+          const COMPANY_OPTIONS = [
+            { value: 'GRUPO', label: '🏢 Grupo Consolidado' },
+            ...COMPANIES.map(c => ({ value: c.codEmpresa, label: c.shortName })),
+          ];
 
           const TAB_GROUPS = [
             { group: 'Principales', tabs: [
-              { key: 'gerencial', label: '📈 Gerencial' },
-              { key: 'pl',        label: '📊 P&L' },
-              { key: 'cxc',       label: '💰 CxC Aging' },
-              { key: 'cxp',       label: '🏪 CxP Aging' },
-              { key: 'caja',      label: '💵 Posición Caja' },
-              { key: 'gav',       label: '📋 GAV Detalle' },
-              { key: 'docs',      label: '🧾 Documentos' },
+              { key: 'gerencial',    label: '📈 Gerencial' },
+              { key: 'pl',           label: '📊 P&L' },
+              { key: 'cxc',          label: '💰 CxC Aging' },
+              { key: 'cxc_ranking',  label: '👥 Tamaño de Cliente' },
+              { key: 'cxp',          label: '🏪 CxP Aging' },
+              { key: 'cxp_ranking',  label: '🏭 Tamaño de Proveedor' },
+              { key: 'caja',         label: '💵 Posición Caja' },
+              { key: 'gav',          label: '📋 GAV Detalle' },
+              { key: 'docs',         label: '🧾 Documentos' },
             ]},
             { group: 'Balance & Patrimonio', tabs: [
               { key: 'balance',    label: '⚖️ Balance General' },
@@ -2789,13 +3190,20 @@ export default function DashboardPage() {
                       {adminModal.mode === 'create' ? 'Nuevo usuario' : `Editar: ${adminModal.user?.email}`}
                     </div>
 
-                    {adminModal.mode === 'create' && (
-                      <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Email</label>
-                        <input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))}
-                          style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
-                      </div>
-                    )}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Email</label>
+                      <input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} required={adminModal.mode === 'create'}
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
+                        Nombre de usuario <span style={{ fontWeight: 400, color: '#4B5563', fontSize: '0.75rem' }}>(opcional — para ingresar sin email)</span>
+                      </label>
+                      <input type="text" value={adminForm.username} onChange={e => setAdminForm(f => ({ ...f, username: e.target.value }))}
+                        placeholder="ej: jmerino"
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                    </div>
 
                     <div style={{ marginBottom: '1rem' }}>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
@@ -3751,14 +4159,90 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ Dashboard Gerencial ═══ */}
-        {activeTab === 'gerencial' && !isGrupo && (
-          <TabGerencial
-            gerencialData={gerencialData}
-            selectedYear={selectedYear}
-            newTabLoading={newTabLoading}
-            onNavigate={handleTabChange}
-          />
-        )}
+        {activeTab === 'gerencial' && !isGrupo && (() => {
+          const narKey = `${selectedCompany.codEmpresa}|${selectedYear}`;
+          const narEntry = narrativeCache[narKey];
+
+          const fetchNarrative = async (force = false) => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            setNarrativeLoading(true); setNarrativeError('');
+            try {
+              const res = await fetch(`${API}/kpi/${selectedCompany.codEmpresa}/narrative?year=${selectedYear}${force ? '&force=1' : ''}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) throw new Error('Error al generar el análisis');
+              const data = await res.json();
+              setNarrativeCache(prev => ({ ...prev, [narKey]: { text: data.text ?? '', generatedAt: data.generatedAt ?? Date.now() } }));
+            } catch (e: any) { setNarrativeError(e.message); }
+            finally { setNarrativeLoading(false); }
+          };
+
+          return (
+            <>
+              {/* ── Análisis Ejecutivo IA ── */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(79,70,229,0.04) 100%)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: narEntry ? '1.25rem' : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>✦</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#F8FAFC', fontFamily: "'Outfit', sans-serif" }}>Análisis Ejecutivo IA</div>
+                      {narEntry && !narrativeLoading && (
+                        <div style={{ fontSize: '0.68rem', color: '#4B5563' }}>
+                          Generado {new Date(narEntry.generatedAt).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {narEntry && !narrativeLoading && (
+                      <button onClick={() => fetchNarrative(true)}
+                        style={{ padding: '0.35rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.04)', color: '#6B7A8D', cursor: 'pointer', fontSize: '0.75rem' }}>
+                        ↻ Regenerar
+                      </button>
+                    )}
+                    <button onClick={() => fetchNarrative(false)} disabled={narrativeLoading}
+                      style={{ padding: '0.35rem 1rem', border: 'none', borderRadius: '0.375rem', background: narrativeLoading ? '#374151' : 'linear-gradient(135deg, #2563EB, #7C3AED)', color: narrativeLoading ? '#6B7A8D' : '#fff', cursor: narrativeLoading ? 'not-allowed' : 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+                      {narrativeLoading ? '✦ Analizando...' : narEntry ? '✓ Listo' : '✦ Generar análisis'}
+                    </button>
+                  </div>
+                </div>
+
+                {narrativeLoading && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 0', color: '#6B7A8D', fontSize: '0.85rem' }}>
+                    <div style={{ width: 16, height: 16, border: '2px solid #2563EB', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                    Analizando P&L, CxC, CxP y posición de caja...
+                  </div>
+                )}
+
+                {narrativeError && !narrativeLoading && (
+                  <div style={{ marginTop: '0.75rem', color: '#EF4444', fontSize: '0.82rem' }}>{narrativeError}</div>
+                )}
+
+                {narEntry && !narrativeLoading && (
+                  <div style={{ fontSize: '0.88rem', lineHeight: 1.75, color: '#CBD5E1', fontFamily: "'Inter', sans-serif" }}>
+                    {narEntry.text.split('\n\n').filter(Boolean).map((para, i) => (
+                      <p key={i} style={{ margin: i === 0 ? 0 : '1rem 0 0 0' }}>{para}</p>
+                    ))}
+                  </div>
+                )}
+
+                {!narEntry && !narrativeLoading && !narrativeError && (
+                  <div style={{ marginTop: '1rem', color: '#374151', fontSize: '0.82rem', fontStyle: 'italic' }}>
+                    Genera un análisis ejecutivo de los KPIs actuales usando Claude Haiku.
+                  </div>
+                )}
+              </div>
+
+              <TabGerencial
+                gerencialData={gerencialData}
+                selectedYear={selectedYear}
+                newTabLoading={newTabLoading}
+                onNavigate={handleTabChange}
+              />
+            </>
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════
             REPORTE DIRECTORIO — Plantilla v2 (Fase 1)

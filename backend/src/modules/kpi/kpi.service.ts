@@ -1685,8 +1685,8 @@ export class KpiService {
       tesoSnap, balSnap, patriSnap,
       cajaSnap,
     ] = await Promise.all([
-      this.getSnapshot(companyId, 'pl_completo', `${year}`),
-      this.getSnapshot(companyId, 'pl_completo', `${prevYear}`),
+      this.getSnapshot(companyId, 'pl', `${year}`),
+      this.getSnapshot(companyId, 'pl', `${prevYear}`),
       this.getSnapshot(companyId, 'cxc', 'current'),
       this.getSnapshot(companyId, 'cxp', 'current'),
       this.getSnapshot(companyId, 'tesoreria', `${year}`),
@@ -1702,9 +1702,11 @@ export class KpiService {
     const round2 = (v: number) => Math.round(v * 100) / 100;
 
     // ── P&L actual ───────────────────────────────────────────
-    const plRows: any[] = (dashSnap?.data as any[]) ?? [];
-    const monthRows = plRows.filter((r: any) => r.mes && r.mes !== 'YTD' && Number(r.mes) > 0);
-    const ytdRow   = plRows.find((r: any) => r.mes === 'YTD') || {};
+    // pl snapshot data = { plMonthly: [...], ytd: {...}, detalle: {...} }
+    const plData: any = (dashSnap?.data && typeof dashSnap.data === 'object' && !Array.isArray(dashSnap.data))
+      ? dashSnap.data : {};
+    const plMonthly: any[] = Array.isArray(plData.plMonthly) ? plData.plMonthly : [];
+    const ytdRow   = plData.ytd ?? {};
     const ingresos       = Number(ytdRow.ingresos ?? 0);
     const costoDirecto   = Number(ytdRow.costoDirecto ?? 0);
     const margenBruto    = Number(ytdRow.margenBruto ?? 0);
@@ -1714,8 +1716,9 @@ export class KpiService {
     const utilidadNeta   = Number(ytdRow.utilidadNeta ?? 0);
 
     // ── P&L año anterior ─────────────────────────────────────
-    const plPrev: any[] = (prevDashSnap?.data as any[]) ?? [];
-    const prevYTD = plPrev.find((r: any) => r.mes === 'YTD') || {};
+    const plPrevData: any = (prevDashSnap?.data && typeof prevDashSnap.data === 'object' && !Array.isArray(prevDashSnap.data))
+      ? prevDashSnap.data : {};
+    const prevYTD = plPrevData.ytd ?? {};
     const prevIngresos     = Number(prevYTD.ingresos ?? 0);
     const prevUtilidad     = Number(prevYTD.utilidadNeta ?? 0);
     const yoyIngresosGrowth = prevIngresos > 0 ? round2((ingresos - prevIngresos) / prevIngresos * 100) : null;
@@ -1723,7 +1726,7 @@ export class KpiService {
 
     // ── Trend mensual (últimos meses con datos) ───────────────
     const currentMonth = new Date().getFullYear() === year ? new Date().getMonth() + 1 : 12;
-    const trend = monthRows
+    const trend = plMonthly
       .filter((r: any) => Number(r.mes) <= currentMonth && Number(r.ingresos) !== 0)
       .map((r: any) => ({
         mes: Number(r.mes),

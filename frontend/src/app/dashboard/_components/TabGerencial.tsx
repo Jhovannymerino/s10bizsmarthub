@@ -256,10 +256,13 @@ export function TabGerencial({ gerencialData, selectedYear, newTabLoading }: Tab
                 <Line yAxisId="right" type="monotone" dataKey="margenPct"  name="margenPct"  stroke="#F59E0B" strokeWidth={2} dot={false} />
                 <Line yAxisId="right" type="monotone" dataKey="ebitdaPct"  name="ebitdaPct"  stroke="#E25C1A" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                 <Legend
-                  formatter={(v) => ({
-                    ingresos: 'Ingresos', margenBruto: 'Margen Bruto',
-                    margenPct: 'Margen %', ebitdaPct: 'EBITDA %',
-                  }[v] ?? v)}
+                  formatter={(v: string) => {
+                    const labels: Record<string, string> = {
+                      ingresos: 'Ingresos', margenBruto: 'Margen Bruto',
+                      margenPct: 'Margen %', ebitdaPct: 'EBITDA %',
+                    };
+                    return labels[v] ?? v;
+                  }}
                   iconSize={8}
                   wrapperStyle={{ fontSize: 10, paddingTop: 4 }}
                 />

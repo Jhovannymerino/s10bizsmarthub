@@ -530,7 +530,7 @@ export function TabGerencial({ gerencialData, selectedYear, newTabLoading, onNav
               desc="% de la cartera en los 3 mayores clientes. >60% implica riesgo de concentración." />
           )}
           <div style={{ marginTop: '0.75rem' }}>
-            <div style={{ fontSize: '0.68rem', color: '#8B97A8', marginBottom: '0.4rem' }}>Top 5 clientes por saldo</div>
+            <div style={{ fontSize: '0.68rem', color: '#8B97A8', marginBottom: '0.4rem' }}>Top 5 clientes por facturación</div>
             <TopList items={cobros?.topClientes ?? []} nameKey="nombre" valueKey="saldo" />
           </div>
         </Section>
@@ -569,7 +569,7 @@ export function TabGerencial({ gerencialData, selectedYear, newTabLoading, onNav
               desc="% de la deuda en los 3 mayores proveedores. Riesgo si son proveedores críticos." />
           )}
           <div style={{ marginTop: '0.75rem' }}>
-            <div style={{ fontSize: '0.68rem', color: '#8B97A8', marginBottom: '0.4rem' }}>Top 5 proveedores por saldo</div>
+            <div style={{ fontSize: '0.68rem', color: '#8B97A8', marginBottom: '0.4rem' }}>Top 5 proveedores por facturación</div>
             <TopList items={pagos?.topProveedores ?? []} nameKey="nombre" valueKey="saldo" />
           </div>
         </Section>

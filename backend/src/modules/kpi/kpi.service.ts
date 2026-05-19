@@ -1720,6 +1720,7 @@ export class KpiService {
       cxcSnap, cxpSnap,
       tesoSnap, balSnap, patriSnap,
       cajaSnap,
+      facturasEmitSnap, facturasRecibSnap, honorariosSnap,
     ] = await Promise.all([
       this.getSnapshot(companyId, 'pl', `${year}`),
       this.getSnapshot(companyId, 'pl', `${prevYear}`),
@@ -1729,6 +1730,9 @@ export class KpiService {
       this.getSnapshot(companyId, 'balance', `${year}`),
       this.getSnapshot(companyId, 'patrimonio', 'current'),
       this.getSnapshot(companyId, 'caja_asiento_full', `${year}`),
+      this.getSnapshot(companyId, 'facturas_emitidas', `${year}`),
+      this.getSnapshot(companyId, 'facturas_recibidas', `${year}`),
+      this.getSnapshot(companyId, 'honorarios_recibidos', `${year}`),
     ]);
 
     // ── helpers ──────────────────────────────────────────────
@@ -1951,20 +1955,32 @@ export class KpiService {
         vigente: cxcVig, dias30: cxcD30, dias60: cxcD60, dias90: cxcD90, dias90mas: cxcD90mas,
         pctVencido: pctVencidoCxC, concTop3: concTop3CxC,
         numClientes: cxcObj.numClientes ?? cxcClientes.length,
-        topClientes: sortedCxC.slice(0, 5).map(r => ({
-          nombre: r.cliente ?? r.RazonSocial ?? '—',
-          saldo: Number(r.saldoTotalSoles ?? 0),
-        })),
+        topClientes: (() => {
+          const rows: any[] = facturasEmitSnap?.data ?? [];
+          const map = new Map<string, { nombre: string; saldo: number }>();
+          for (const f of rows) {
+            const key = ((f.RucCliente as string) || (f.Cliente as string) || '').trim();
+            if (!map.has(key)) map.set(key, { nombre: f.Cliente ?? '—', saldo: 0 });
+            map.get(key)!.saldo += f.EsNotaCredito ? -Number(f.Total || 0) : Number(f.Total || 0);
+          }
+          return [...map.values()].filter(c => c.saldo > 0).sort((a, b) => b.saldo - a.saldo).slice(0, 5);
+        })(),
       },
       pagos: {
         totalCxP, dpo,
         vigente: cxpVig, dias30: cxpD30, dias60: cxpD60, dias90: cxpD90, dias90mas: cxpD90mas,
         pctVencido: pctVencidoCxP, concTop3: concTop3CxP, agingAvailable: cxpAgingAvailable,
         numProveedores: cxpRows.length,
-        topProveedores: sortedCxP.slice(0, 5).map(r => ({
-          nombre: r.RazonSocial ?? r.Proveedor ?? r.proveedor ?? '—',
-          saldo: Number(r.SaldoTotal ?? 0),
-        })),
+        topProveedores: (() => {
+          const rows: any[] = [...(facturasRecibSnap?.data ?? []), ...(honorariosSnap?.data ?? [])];
+          const map = new Map<string, { nombre: string; saldo: number }>();
+          for (const f of rows) {
+            const key = ((f.RucProveedor as string) || (f.Proveedor as string) || '').trim();
+            if (!map.has(key)) map.set(key, { nombre: f.Proveedor ?? '—', saldo: 0 });
+            map.get(key)!.saldo += f.EsNotaCredito ? -Number(f.Total || 0) : Number(f.Total || 0);
+          }
+          return [...map.values()].filter(p => p.saldo > 0).sort((a, b) => b.saldo - a.saldo).slice(0, 5);
+        })(),
       },
       eficiencia: { ccc, dso, dpo },
       alertas, insights,

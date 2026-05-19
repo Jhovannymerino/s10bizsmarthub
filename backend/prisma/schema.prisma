@@ -82,6 +82,7 @@ model User {
   passwordHash     String
   role             String    @default("viewer") // 'admin' | 'viewer'
   allowedCompanies String[] // [] = todas las empresas
+  allowedTabs      String[] // [] = todos los tabs
   active           Boolean   @default(true)
   lastLoginAt      DateTime?
   createdAt        DateTime  @default(now())

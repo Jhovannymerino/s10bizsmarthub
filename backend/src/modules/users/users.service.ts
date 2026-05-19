@@ -26,6 +26,7 @@ export class UsersService {
     password: string;
     role?: string;
     allowedCompanies?: string[];
+    allowedTabs?: string[];
   }) {
     const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
     if (existing) throw new ConflictException('El email ya está registrado');
@@ -37,6 +38,7 @@ export class UsersService {
         passwordHash,
         role: data.role ?? 'viewer',
         allowedCompanies: data.allowedCompanies ?? [],
+        allowedTabs: data.allowedTabs ?? [],
       },
     });
     return this.sanitize(user);
@@ -49,6 +51,7 @@ export class UsersService {
       password?: string;
       role?: string;
       allowedCompanies?: string[];
+      allowedTabs?: string[];
       active?: boolean;
     },
   ) {
@@ -58,6 +61,7 @@ export class UsersService {
     if (data.email !== undefined)            update.email            = data.email;
     if (data.role !== undefined)             update.role             = data.role;
     if (data.allowedCompanies !== undefined) update.allowedCompanies = data.allowedCompanies;
+    if (data.allowedTabs !== undefined)      update.allowedTabs      = data.allowedTabs;
     if (data.active !== undefined)           update.active           = data.active;
     if (data.password)                       update.passwordHash     = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
 

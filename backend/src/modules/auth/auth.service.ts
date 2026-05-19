@@ -49,10 +49,11 @@ export class AuthService {
       email: user.email,
       role: user.role,
       allowedCompanies: user.allowedCompanies,
+      allowedTabs: (user as any).allowedTabs ?? [],
     };
     return {
       access_token: this.jwtService.sign(payload),
-      user: { email: user.email, role: user.role, allowedCompanies: user.allowedCompanies },
+      user: { email: user.email, role: user.role, allowedCompanies: user.allowedCompanies, allowedTabs: (user as any).allowedTabs ?? [] },
     };
   }
 

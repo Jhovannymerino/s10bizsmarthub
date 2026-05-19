@@ -174,12 +174,16 @@ export default function DashboardPage() {
     if (typeof window === 'undefined') return [];
     try { return JSON.parse(localStorage.getItem('userInfo') || '{}').allowedCompanies ?? []; } catch { return []; }
   });
+  const [userAllowedTabs, setUserAllowedTabs] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem('userInfo') || '{}').allowedTabs ?? []; } catch { return []; }
+  });
   const [userEmail, setUserEmail] = useState<string>('');
   // ── Admin: gestión de usuarios ──
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminModal, setAdminModal] = useState<{ mode: 'create' | 'edit'; user?: any } | null>(null);
-  const [adminForm, setAdminForm] = useState({ email: '', password: '', role: 'viewer', allowedCompanies: [] as string[], active: true });
+  const [adminForm, setAdminForm] = useState({ email: '', password: '', role: 'viewer', allowedCompanies: [] as string[], allowedTabs: [] as string[], active: true });
   const [adminError, setAdminError] = useState('');
   const [adminSuccess, setAdminSuccess] = useState('');
   const [cxp, setCxP] = useState<any>(null);
@@ -238,6 +242,8 @@ export default function DashboardPage() {
   const loadedRef = useRef<Record<string, string>>({});
 
   const isGrupo = selectedCompany.codEmpresa === 'GRUPO';
+  const canViewTab = (tab: string) =>
+    userRole === 'admin' || userAllowedTabs.length === 0 || userAllowedTabs.includes(tab);
   const visibleCompanies = userRole === 'admin'
     ? COMPANIES
     : COMPANIES.filter(c => userAllowedCompanies.includes(c.codEmpresa));
@@ -249,6 +255,7 @@ export default function DashboardPage() {
         const parsed = JSON.parse(info);
         setUserRole(parsed.role ?? 'viewer');
         setUserAllowedCompanies(parsed.allowedCompanies ?? []);
+        setUserAllowedTabs(parsed.allowedTabs ?? []);
         setUserEmail(parsed.email ?? '');
       } catch { /* ignore */ }
     }
@@ -927,7 +934,7 @@ export default function DashboardPage() {
           </button>
 
           {/* Dashboard Gerencial */}
-          {!isGrupo && (
+          {!isGrupo && canViewTab('gerencial') && (
             <button onClick={() => handleTabChange('gerencial')}
               className={`sidebar-link ${activeTab === 'gerencial' ? 'active' : ''}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -945,8 +952,10 @@ export default function DashboardPage() {
           )}
 
           {/* Resultados — siempre visible, sin colapso */}
-          <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Resultados</div>
-          {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).map((tab) => (
+          {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).some(canViewTab) && (
+            <div className="sidebar-section-label" style={{ marginTop: '0.75rem' }}>Resultados</div>
+          )}
+          {(['pl', 'cxc', 'cxp', 'caja', 'gav', 'docs'] as const).filter(canViewTab).map((tab) => (
             <button key={tab} onClick={() => handleTabChange(tab)}
               className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -970,7 +979,7 @@ export default function DashboardPage() {
               </div>
               {!navCollapsed.balance && (
                 <div className="nav-section-items">
-                  {(['balance','otras_cxc','otras_cxp','prestamos','patrimonio','inventarios'] as const).map((tab) => (
+                  {(['balance','otras_cxc','otras_cxp','prestamos','patrimonio','inventarios'] as const).filter(canViewTab).map((tab) => (
                     <button key={tab} onClick={() => handleTabChange(tab)}
                       className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -994,7 +1003,7 @@ export default function DashboardPage() {
               </div>
               {!navCollapsed.tesoreria && (
                 <div className="nav-section-items">
-                  {(['tesoreria','caja_saldos','conciliacion','gastos_nat'] as const).map((tab) => (
+                  {(['tesoreria','caja_saldos','conciliacion','gastos_nat'] as const).filter(canViewTab).map((tab) => (
                     <button key={tab} onClick={() => handleTabChange(tab)}
                       className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -1016,7 +1025,7 @@ export default function DashboardPage() {
               </div>
               {!navCollapsed.obligaciones && (
                 <div className="nav-section-items">
-                  {(['tributos','laboral','activo_fijo'] as const).map((tab) => (
+                  {(['tributos','laboral','activo_fijo'] as const).filter(canViewTab).map((tab) => (
                     <button key={tab} onClick={() => handleTabChange(tab)}
                       className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
@@ -1037,16 +1046,20 @@ export default function DashboardPage() {
               </div>
               {!navCollapsed.auditoria && (
                 <div className="nav-section-items">
-                  <button onClick={() => handleTabChange('audit')}
-                    className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                    🔍  Módulo Auditoría
-                  </button>
-                  <button onClick={() => handleTabChange('validation_forense')}
-                    className={`sidebar-link ${activeTab === 'validation_forense' ? 'active' : ''}`}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                    🧪  Validación Forense S10
-                  </button>
+                  {canViewTab('audit') && (
+                    <button onClick={() => handleTabChange('audit')}
+                      className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      🔍  Módulo Auditoría
+                    </button>
+                  )}
+                  {canViewTab('validation_forense') && (
+                    <button onClick={() => handleTabChange('validation_forense')}
+                      className={`sidebar-link ${activeTab === 'validation_forense' ? 'active' : ''}`}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      🧪  Validación Forense S10
+                    </button>
+                  )}
                 </div>
               )}
             </>
@@ -2693,13 +2706,13 @@ export default function DashboardPage() {
           };
 
           const openCreate = () => {
-            setAdminForm({ email: '', password: '', role: 'viewer', allowedCompanies: [], active: true });
+            setAdminForm({ email: '', password: '', role: 'viewer', allowedCompanies: [], allowedTabs: [], active: true });
             setAdminError(''); setAdminSuccess('');
             setAdminModal({ mode: 'create' });
           };
 
           const openEdit = (u: any) => {
-            setAdminForm({ email: u.email, password: '', role: u.role, allowedCompanies: u.allowedCompanies ?? [], active: u.active });
+            setAdminForm({ email: u.email, password: '', role: u.role, allowedCompanies: u.allowedCompanies ?? [], allowedTabs: u.allowedTabs ?? [], active: u.active });
             setAdminError(''); setAdminSuccess('');
             setAdminModal({ mode: 'edit', user: u });
           };
@@ -2711,7 +2724,7 @@ export default function DashboardPage() {
             try {
               const isEdit = adminModal?.mode === 'edit';
               const url = isEdit ? `${API}/users/${adminModal!.user.id}` : `${API}/users`;
-              const body: any = { role: adminForm.role, allowedCompanies: adminForm.allowedCompanies, active: adminForm.active };
+              const body: any = { role: adminForm.role, allowedCompanies: adminForm.allowedCompanies, allowedTabs: adminForm.allowedTabs, active: adminForm.active };
               if (!isEdit) { body.email = adminForm.email; body.password = adminForm.password; }
               else if (adminForm.password) { body.password = adminForm.password; }
               const res = await fetch(url, { method: isEdit ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
@@ -2730,6 +2743,41 @@ export default function DashboardPage() {
           };
 
           const COMPANY_OPTIONS = COMPANIES.map(c => ({ value: c.codEmpresa, label: c.shortName }));
+
+          const TAB_GROUPS = [
+            { group: 'Principales', tabs: [
+              { key: 'gerencial', label: '📈 Gerencial' },
+              { key: 'pl',        label: '📊 P&L' },
+              { key: 'cxc',       label: '💰 CxC Aging' },
+              { key: 'cxp',       label: '🏪 CxP Aging' },
+              { key: 'caja',      label: '💵 Posición Caja' },
+              { key: 'gav',       label: '📋 GAV Detalle' },
+              { key: 'docs',      label: '🧾 Documentos' },
+            ]},
+            { group: 'Balance & Patrimonio', tabs: [
+              { key: 'balance',    label: '⚖️ Balance General' },
+              { key: 'otras_cxc',  label: '📌 Otras CxC' },
+              { key: 'otras_cxp',  label: '🗃️ Otras CxP' },
+              { key: 'prestamos',  label: '💳 Préstamos' },
+              { key: 'patrimonio', label: '🏛️ Patrimonio' },
+              { key: 'inventarios',label: '📦 Inventarios' },
+            ]},
+            { group: 'Tesorería & Bancos', tabs: [
+              { key: 'tesoreria',   label: '💹 Tesorería' },
+              { key: 'caja_saldos', label: '🏦 Saldos Banco' },
+              { key: 'conciliacion',label: '🔄 Conciliación' },
+              { key: 'gastos_nat',  label: '📈 Gastos Naturaleza' },
+            ]},
+            { group: 'Obligaciones', tabs: [
+              { key: 'tributos',    label: '📜 Tributos' },
+              { key: 'laboral',     label: '👷 Laboral' },
+              { key: 'activo_fijo', label: '🏗️ Activo Fijo' },
+            ]},
+            { group: 'Auditoría', tabs: [
+              { key: 'audit',              label: '🔍 Módulo Auditoría' },
+              { key: 'validation_forense', label: '🧪 Validación Forense' },
+            ]},
+          ];
 
           return (
             <div>
@@ -2760,9 +2808,9 @@ export default function DashboardPage() {
                     <div style={{ marginBottom: '1rem' }}>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Rol</label>
                       <select value={adminForm.role} onChange={e => setAdminForm(f => ({ ...f, role: e.target.value }))}
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }}>
-                        <option value="viewer">Viewer — solo lectura</option>
-                        <option value="admin">Admin — acceso total</option>
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', background: '#0D1A2D', color: '#F8FAFC', outline: 'none' }}>
+                        <option value="viewer" style={{ background: '#0D1A2D', color: '#F8FAFC' }}>Viewer — solo lectura</option>
+                        <option value="admin" style={{ background: '#0D1A2D', color: '#F8FAFC' }}>Admin — acceso total</option>
                       </select>
                     </div>
 
@@ -2788,6 +2836,36 @@ export default function DashboardPage() {
                         })}
                       </div>
                     </div>
+
+                    {/* Tabs permitidos — solo relevante para viewers */}
+                    {adminForm.role === 'viewer' && (
+                      <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
+                          Menú permitido <span style={{ fontWeight: 400, color: '#4B5563' }}>(vacío = todos)</span>
+                        </label>
+                        {TAB_GROUPS.map(grp => (
+                          <div key={grp.group} style={{ marginBottom: '0.5rem' }}>
+                            <div style={{ fontSize: '0.68rem', color: '#4B5563', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{grp.group}</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                              {grp.tabs.map(t => {
+                                const checked = adminForm.allowedTabs.includes(t.key);
+                                return (
+                                  <label key={t.key} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.5rem', border: `1px solid ${checked ? 'rgba(32,126,131,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '0.375rem', background: checked ? 'rgba(32,126,131,0.15)' : 'rgba(255,255,255,0.03)', cursor: 'pointer', fontSize: '0.75rem', color: checked ? '#2BB4BB' : '#6B7A8D' }}>
+                                    <input type="checkbox" checked={checked} onChange={() => setAdminForm(f => ({
+                                      ...f,
+                                      allowedTabs: checked
+                                        ? f.allowedTabs.filter(x => x !== t.key)
+                                        : [...f.allowedTabs, t.key],
+                                    }))} style={{ margin: 0 }} />
+                                    {t.label}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {adminModal.mode === 'edit' && (
                       <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

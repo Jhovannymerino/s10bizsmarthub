@@ -229,6 +229,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                     <th style={{ textAlign: 'center' }}>Moneda</th>
                     <SortTh col="Total" label="Total" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
                     <SortTh col="Pagado" label="Pagado" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
+                    <SortTh col="Detraccion" label="Detracción" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
                     <SortTh col="Saldo" label="Saldo" sort={sort} onSort={onSort} style={{ textAlign: 'right' }} />
                     <th>Estado</th>
                   </tr>
@@ -279,6 +280,9 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                             <span style={{ color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</span>
                           )}
                         </td>
+                        <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? '#F59E0B' : '#8B97A8' }}>
+                          {(d.Detraccion ?? 0) > 0 ? fMon(moneda, d.Detraccion) : '—'}
+                        </td>
                         <td style={{ textAlign: 'right', fontWeight: 600, color: (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
                           {fMon(moneda, d.Saldo ?? 0)}
                         </td>
@@ -290,7 +294,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                 {!showingOtros && (
                   <tfoot>
                     <tr className="total-row">
-                      <td colSpan={8} style={{ textAlign: 'right' }}>SALDO PENDIENTE</td>
+                      <td colSpan={9} style={{ textAlign: 'right' }}>SALDO PENDIENTE</td>
                       <td style={{ textAlign: 'right' }}>
                         {hasMixed ? (
                           <>

@@ -25,8 +25,11 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
     <>
       {/* Sin documento */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
-          🔴 Asientos sin documento fuente (NroD = NULL) · {selectedYear}
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+          🔴 Asientos sin documento fuente · {selectedYear}
+        </div>
+        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+          En S10, cada asiento contable debería estar vinculado a un documento fuente (factura, recibo, voucher). Un asiento con <strong style={{ color: '#F8FAFC' }}>NroD = NULL</strong> significa que fue ingresado manualmente sin respaldo documental registrado en el sistema. Se analizan las clases de mayor riesgo: caja (10), cuentas por cobrar (12–17), tributos y obligaciones (40–46) e ingresos (70–75).
         </div>
         {!auditData?.sinDoc?.resumen?.length ? (
           <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Sin hallazgos en este período.</div>
@@ -72,8 +75,11 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
 
       {/* Descuadres */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
-          ⚠️ Asientos descuadrados (Débito ≠ Crédito, diferencia &gt; S/1.00, excluye apertura y cierre) · {selectedYear}
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+          ⚠️ Asientos descuadrados · {selectedYear}
+        </div>
+        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+          Todo documento contable debe cuadrar: Débito total = Crédito total. Un descuadre indica una contabilización incompleta o con error de monto que distorsiona los estados financieros. Se muestran documentos con diferencia <strong style={{ color: '#F8FAFC' }}>&gt; S/1.00</strong>, agrupados por documento fuente (NroD). Excluye asientos de apertura y cierre, que se verifican por separado. La columna <strong style={{ color: '#F8FAFC' }}>Doc.</strong> muestra el número de documento en S10 cuando es una factura o recibo identificable; de lo contrario muestra el ID interno (NroD).
         </div>
         {!auditData?.descuadres?.rows?.length ? (
           <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Todos los asientos están cuadrados. Sin hallazgos.</div>
@@ -85,20 +91,26 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
               </div>
             )}
             <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-              <thead><tr><th>Fecha</th><th>NroD (doc)</th><th>Líneas</th><th style={{ minWidth: 160 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Descuadre</th><th style={{ minWidth: 180 }}>Glosa</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Doc. / NroD</th><th>Líneas</th><th style={{ minWidth: 160 }}>Tercero</th><th>Débito</th><th>Crédito</th><th>Descuadre</th><th style={{ minWidth: 180 }}>Glosa</th></tr></thead>
               <tbody>
-                {auditData.descuadres.rows.map((r: any, i: number) => (
-                  <tr key={i}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#2BB4BB' }}>{r.NroD || '—'}</td>
-                    <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.Lineas}</td>
-                    <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
-                    <td style={{ color: r.TotalDebito > 0 ? '#10B981' : '#8B97A8' }}>{r.TotalDebito > 0 ? fmt(r.TotalDebito) : '—'}</td>
-                    <td style={{ color: r.TotalCredito > 0 ? '#EF4444' : '#8B97A8' }}>{r.TotalCredito > 0 ? fmt(r.TotalCredito) : '—'}</td>
-                    <td style={{ fontWeight: 700, color: '#EF4444' }}>{fmt(r.Descuadre)}</td>
-                    <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
-                  </tr>
-                ))}
+                {auditData.descuadres.rows.map((r: any, i: number) => {
+                  const docLabel = r.NumeroDocumento
+                    ? (r.Serie ? `${r.Serie}-${r.NumeroDocumento}` : r.NumeroDocumento)
+                    : (r.NroD || '—');
+                  const isExternal = !!r.NumeroDocumento;
+                  return (
+                    <tr key={i}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: isExternal ? '#2BB4BB' : '#8B97A8' }}>{docLabel}</td>
+                      <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.Lineas}</td>
+                      <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
+                      <td style={{ color: r.TotalDebito > 0 ? '#10B981' : '#8B97A8' }}>{r.TotalDebito > 0 ? fmt(r.TotalDebito) : '—'}</td>
+                      <td style={{ color: r.TotalCredito > 0 ? '#EF4444' : '#8B97A8' }}>{r.TotalCredito > 0 ? fmt(r.TotalCredito) : '—'}</td>
+                      <td style={{ fontWeight: 700, color: '#EF4444' }}>{fmt(r.Descuadre)}</td>
+                      <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -156,8 +168,11 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
 
       {/* Atípicos */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
-          🔶 Asientos atípicos (Débito o Crédito &gt; 100,000 en moneda original) · {selectedYear}
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+          🔶 Asientos atípicos · {selectedYear}
+        </div>
+        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+          Líneas de asiento contable con <strong style={{ color: '#F8FAFC' }}>Débito o Crédito superior a 100,000</strong> en moneda original. Montos de esta magnitud son inusuales en operaciones rutinarias y requieren verificación documental. No indica error por sí solo — un pago o cobro grande puede ser legítimo — pero debe tener respaldo. Excluye apertura y cierre. Se muestra el número de documento en S10 cuando corresponde a una factura o recibo identificable.
         </div>
         {!auditData?.atipicos?.rows?.length ? (
           <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Sin asientos atípicos en este período.</div>
@@ -169,20 +184,26 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
               </div>
             )}
             <table className="table-s10" style={{ fontSize: '0.8rem' }}>
-              <thead><tr><th>Fecha</th><th>NroD</th><th>Cuenta</th><th style={{ minWidth: 160 }}>Desc. Cuenta</th><th style={{ minWidth: 160 }}>Glosa</th><th>Débito</th><th>Crédito</th><th style={{ minWidth: 140 }}>Tercero</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Doc. / NroD</th><th>Cuenta</th><th style={{ minWidth: 160 }}>Desc. Cuenta</th><th style={{ minWidth: 160 }}>Glosa</th><th>Débito</th><th>Crédito</th><th style={{ minWidth: 140 }}>Tercero</th></tr></thead>
               <tbody>
-                {auditData.atipicos.rows.map((r: any, i: number) => (
-                  <tr key={i}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#8B97A8' }}>{r.NroD || '—'}</td>
-                    <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{r.CodCuenta}</td>
-                    <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
-                    <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
-                    <td style={{ color: r.Debito > 0 ? '#10B981' : '#8B97A8' }}>{r.Debito > 0 ? fmt(r.Debito) : '—'}</td>
-                    <td style={{ color: r.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{r.Credito > 0 ? fmt(r.Credito) : '—'}</td>
-                    <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Tercero || '—'}</td>
-                  </tr>
-                ))}
+                {auditData.atipicos.rows.map((r: any, i: number) => {
+                  const docLabel = r.NumeroDocumento
+                    ? (r.Serie ? `${r.Serie}-${r.NumeroDocumento}` : r.NumeroDocumento)
+                    : (r.NroD || '—');
+                  const isExternal = !!r.NumeroDocumento;
+                  return (
+                    <tr key={i}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: isExternal ? '#2BB4BB' : '#8B97A8' }}>{docLabel}</td>
+                      <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{r.CodCuenta}</td>
+                      <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
+                      <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
+                      <td style={{ color: r.Debito > 0 ? '#10B981' : '#8B97A8' }}>{r.Debito > 0 ? fmt(r.Debito) : '—'}</td>
+                      <td style={{ color: r.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{r.Credito > 0 ? fmt(r.Credito) : '—'}</td>
+                      <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Tercero || '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

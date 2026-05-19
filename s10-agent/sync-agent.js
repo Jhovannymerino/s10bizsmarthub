@@ -1102,60 +1102,92 @@ ORDER BY ABS(ISNULL(ac.Debito,0) - ISNULL(ac.Credito,0)) DESC
 // Agrupa por NroD (documento fuente), no por UUID de línea. Detecta documentos
 // donde la suma de débitos ≠ suma de créditos en todos sus asientos, lo que
 // indica una contabilización incompleta o con error de monto.
+// NumeroDocumento se obtiene via LEFT JOIN a las vistas de documentos (CxC y CxP).
+// Para asientos manuales o de caja que no están en esas vistas, queda vacío.
 const QUERY_AUDIT_DESCUADRES = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT TOP 200
-  ac.NroD,
-  MIN(CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)) AS Fecha,
-  COUNT(*)                                                  AS Lineas,
-  COUNT(DISTINCT LEFT(pcd.CodCuenta,2))                    AS Clases,
-  SUM(ISNULL(ac.Debito,0))                                 AS TotalDebito,
-  SUM(ISNULL(ac.Credito,0))                                AS TotalCredito,
-  ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) AS Descuadre,
-  LEFT(MAX(ISNULL(ac.Glosa,'')), 60)                       AS Glosa,
-  MAX(ISNULL(i.Descripcion,''))                            AS Tercero
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle pcd
-  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-LEFT JOIN CMO.dbo.Identificador i
-  ON ac.CodIdentificador = i.CodIdentificador
-WHERE ac.CodEmpresa = '${codEmpresa}'
-  AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND ac.NroD IS NOT NULL
-GROUP BY ac.NroD
-HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 1
-ORDER BY Descuadre DESC
+WITH base AS (
+  SELECT TOP 200
+    ac.NroD,
+    MIN(CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)) AS Fecha,
+    COUNT(*)                                                  AS Lineas,
+    COUNT(DISTINCT LEFT(pcd.CodCuenta,2))                    AS Clases,
+    SUM(ISNULL(ac.Debito,0))                                 AS TotalDebito,
+    SUM(ISNULL(ac.Credito,0))                                AS TotalCredito,
+    ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) AS Descuadre,
+    LEFT(MAX(ISNULL(ac.Glosa,'')), 60)                       AS Glosa,
+    MAX(ISNULL(i.Descripcion,''))                            AS Tercero
+  FROM CMO.dbo.AsientoContable ac
+  JOIN CMO.dbo.PlanContableDetalle pcd
+    ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+  LEFT JOIN CMO.dbo.Identificador i
+    ON ac.CodIdentificador = i.CodIdentificador
+  WHERE ac.CodEmpresa = '${codEmpresa}'
+    AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
+    AND ac.NroD IS NOT NULL
+  GROUP BY ac.NroD
+  HAVING ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) > 1
+  ORDER BY Descuadre DESC
+)
+SELECT b.*,
+  ISNULL(ISNULL(dc.SerieDocumento, dp.SerieDocumento), '')   AS Serie,
+  ISNULL(ISNULL(dc.NumeroDocumento, dp.NumeroDocumento), '') AS NumeroDocumento
+FROM base b
+LEFT JOIN (
+  SELECT DISTINCT NroD, SerieDocumento, NumeroDocumento
+  FROM CMO.dbo.vw_12DocumentosPorCobrar WHERE CodEmpresa = '${codEmpresa}'
+) dc ON dc.NroD = b.NroD
+LEFT JOIN (
+  SELECT DISTINCT NroD, SerieDocumento, NumeroDocumento
+  FROM CMO.dbo.vw_12DocumentosPorPagar WHERE CodEmpresa = '${codEmpresa}'
+) dp ON dp.NroD = b.NroD
+ORDER BY b.Descuadre DESC
 `;
 
 // Auditoría: movimientos atípicos >100K en una línea
 const QUERY_AUDIT_ATIPICOS = (codEmpresa, fechaInicio, fechaFin) => `
-SELECT TOP 200
-  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
-  ac.NroD                                                  AS NroD,
-  CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
-  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
-  pcd.CodCuenta                                            AS CodCuenta,
-  pcd.Descripcion                                          AS DesCuenta,
-  ISNULL(ac.Glosa, '')                                     AS Glosa,
-  ISNULL(ac.Debito, 0)                                     AS Debito,
-  ISNULL(ac.Credito, 0)                                    AS Credito,
-  CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
-       THEN ISNULL(ac.Debito,0)
-       ELSE ISNULL(ac.Credito,0)
-  END                                                      AS Monto,
-  ISNULL(i.Descripcion, '')                                AS Tercero,
-  CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END              AS SinDocumento
-FROM CMO.dbo.AsientoContable ac
-JOIN CMO.dbo.PlanContableDetalle pcd
-  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
-LEFT JOIN CMO.dbo.Identificador i
-  ON ac.CodIdentificador = i.CodIdentificador
-WHERE ac.CodEmpresa = '${codEmpresa}'
-  AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND (ISNULL(ac.Debito,0) > 100000 OR ISNULL(ac.Credito,0) > 100000)
-  AND ISNULL(ac.Glosa,'') NOT LIKE '%Apertura%'
-  AND ISNULL(ac.Glosa,'') NOT LIKE '%Cierre%'
-ORDER BY CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
-              THEN ISNULL(ac.Debito,0) ELSE ISNULL(ac.Credito,0) END DESC
+WITH base AS (
+  SELECT TOP 200
+    CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
+    ac.NroD                                                  AS NroD,
+    CONVERT(VARCHAR(10), ac.FechaAplicacionContable, 103)    AS Fecha,
+    LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+    pcd.CodCuenta                                            AS CodCuenta,
+    pcd.Descripcion                                          AS DesCuenta,
+    ISNULL(ac.Glosa, '')                                     AS Glosa,
+    ISNULL(ac.Debito, 0)                                     AS Debito,
+    ISNULL(ac.Credito, 0)                                    AS Credito,
+    CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
+         THEN ISNULL(ac.Debito,0)
+         ELSE ISNULL(ac.Credito,0)
+    END                                                      AS Monto,
+    ISNULL(i.Descripcion, '')                                AS Tercero,
+    CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END              AS SinDocumento
+  FROM CMO.dbo.AsientoContable ac
+  JOIN CMO.dbo.PlanContableDetalle pcd
+    ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+  LEFT JOIN CMO.dbo.Identificador i
+    ON ac.CodIdentificador = i.CodIdentificador
+  WHERE ac.CodEmpresa = '${codEmpresa}'
+    AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
+    AND (ISNULL(ac.Debito,0) > 100000 OR ISNULL(ac.Credito,0) > 100000)
+    AND ISNULL(ac.Glosa,'') NOT LIKE '%Apertura%'
+    AND ISNULL(ac.Glosa,'') NOT LIKE '%Cierre%'
+  ORDER BY CASE WHEN ISNULL(ac.Debito,0) >= ISNULL(ac.Credito,0)
+                THEN ISNULL(ac.Debito,0) ELSE ISNULL(ac.Credito,0) END DESC
+)
+SELECT b.*,
+  ISNULL(ISNULL(dc.SerieDocumento, dp.SerieDocumento), '')   AS Serie,
+  ISNULL(ISNULL(dc.NumeroDocumento, dp.NumeroDocumento), '') AS NumeroDocumento
+FROM base b
+LEFT JOIN (
+  SELECT DISTINCT NroD, SerieDocumento, NumeroDocumento
+  FROM CMO.dbo.vw_12DocumentosPorCobrar WHERE CodEmpresa = '${codEmpresa}'
+) dc ON dc.NroD = b.NroD
+LEFT JOIN (
+  SELECT DISTINCT NroD, SerieDocumento, NumeroDocumento
+  FROM CMO.dbo.vw_12DocumentosPorPagar WHERE CodEmpresa = '${codEmpresa}'
+) dp ON dp.NroD = b.NroD
+ORDER BY b.Monto DESC
 `;
 
 // Auditoría: conciliación ingresos contables vs documentos emitidos por mes

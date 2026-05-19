@@ -1369,7 +1369,11 @@ export class KpiService {
   async getAuditDescuadres(companyId: string, year: number) {
     const cached = await this.getSnapshot(companyId, 'audit_descuadres', `${year}`);
     if (!cached) return { rows: [], year };
-    return { rows: cached.data as any[], count: (cached.data as any[]).length, year, syncedAt: cached.syncedAt };
+    const rows = (cached.data as any[]).filter((r: any) => {
+      const glosa = String(r.Glosa || '').trim().toLowerCase();
+      return !['asiento de apertura', 'asiento de cierre'].some(exc => glosa.startsWith(exc));
+    });
+    return { rows, count: rows.length, year, syncedAt: cached.syncedAt };
   }
 
   async getAuditAtipicos(companyId: string, year: number) {

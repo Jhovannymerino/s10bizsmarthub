@@ -73,7 +73,7 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
       {/* Descuadres */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
-          ⚠️ Asientos descuadrados (Débito ≠ Crédito, diferencia &gt; S/1.00) · {selectedYear}
+          ⚠️ Asientos descuadrados (Débito ≠ Crédito, diferencia &gt; S/1.00, excluye apertura y cierre) · {selectedYear}
         </div>
         {!auditData?.descuadres?.rows?.length ? (
           <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Todos los asientos están cuadrados. Sin hallazgos.</div>

@@ -19,3 +19,7 @@ s10-agent/validation-analysis.txt
 
 # Directorio vpn-sync duplicado (usar s10-agent/sync-agent.js)
 s10-agent/vpn-sync/
+
+# Copias de runtime en VPS root (fuente: vps-infra/)
+/sync-vpn.sh
+/sync-trigger.js

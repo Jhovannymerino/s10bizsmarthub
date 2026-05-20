@@ -24,6 +24,7 @@ export class UsersService {
   async create(data: {
     email: string;
     password: string;
+    username?: string;
     role?: string;
     allowedCompanies?: string[];
     allowedTabs?: string[];
@@ -31,10 +32,16 @@ export class UsersService {
     const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
     if (existing) throw new ConflictException('El email ya está registrado');
 
+    if (data.username) {
+      const existingUsername = await this.prisma.user.findUnique({ where: { username: data.username } });
+      if (existingUsername) throw new ConflictException('El nombre de usuario ya está en uso');
+    }
+
     const passwordHash = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     const user = await this.prisma.user.create({
       data: {
         email: data.email,
+        username: data.username || null,
         passwordHash,
         role: data.role ?? 'viewer',
         allowedCompanies: data.allowedCompanies ?? [],
@@ -48,6 +55,7 @@ export class UsersService {
     id: number,
     data: {
       email?: string;
+      username?: string;
       password?: string;
       role?: string;
       allowedCompanies?: string[];
@@ -59,6 +67,7 @@ export class UsersService {
 
     const update: any = {};
     if (data.email !== undefined)            update.email            = data.email;
+    if (data.username !== undefined)         update.username         = data.username || null;
     if (data.role !== undefined)             update.role             = data.role;
     if (data.allowedCompanies !== undefined) update.allowedCompanies = data.allowedCompanies;
     if (data.allowedTabs !== undefined)      update.allowedTabs      = data.allowedTabs;

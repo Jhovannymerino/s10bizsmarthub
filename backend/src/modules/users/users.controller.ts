@@ -21,8 +21,10 @@ export class UsersController {
     @Body() body: {
       email: string;
       password: string;
+      username?: string;
       role?: string;
       allowedCompanies?: string[];
+      allowedTabs?: string[];
     },
   ) {
     return this.usersService.create(body);
@@ -33,9 +35,11 @@ export class UsersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: {
       email?: string;
+      username?: string;
       password?: string;
       role?: string;
       allowedCompanies?: string[];
+      allowedTabs?: string[];
       active?: boolean;
     },
   ) {

@@ -115,6 +115,12 @@ S10_DATABASE=CMO
 S10_SYNC_MODE=push
 SYNC_API_KEY=1fe0bf01e872d7f586e4828abcdc1ba0a5283f5625570128
 CORS_ORIGINS=https://s10bizsmarthub.bizwareapps.com
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=admin@bizwareapps.com
+SMTP_PASS=3x1t05BA@@@
+SMTP_FROM_EMAIL=admin@bizwareapps.com
 ENVEOF
 
 log "  ✓ .env configurado"

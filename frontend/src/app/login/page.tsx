@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail]       = useState('');
+  const [login, setLogin]       = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd]   = useState(false);
   const [error, setError]       = useState('');
@@ -20,7 +21,7 @@ export default function LoginPage() {
       const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ login, password }),
       });
       if (!res.ok) throw new Error('Credenciales inválidas');
       const data = await res.json();
@@ -92,13 +93,13 @@ export default function LoginPage() {
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
-                Email
+                Email o usuario
               </label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>✉</span>
                 <input
-                  type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                  placeholder="nombre@empresa.com"
+                  type="text" value={login} onChange={e => setLogin(e.target.value)} required
+                  placeholder="usuario o nombre@empresa.com"
                   style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: '1.5px solid #E5E7EB', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
                   onFocus={e => (e.target.style.borderColor = '#207E83')}
                   onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
@@ -107,9 +108,14 @@ export default function LoginPage() {
             </div>
 
             <div style={{ marginBottom: '1.75rem' }}>
-              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
-                Contraseña
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>
+                  Contraseña
+                </label>
+                <Link href="/login/forgot-password" style={{ fontSize: '0.72rem', color: '#207E83', textDecoration: 'none', fontFamily: "'Inter', sans-serif" }}>
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>🔒</span>
                 <input

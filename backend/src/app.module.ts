@@ -8,6 +8,7 @@ import { SyncModule } from './modules/sync/sync.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompanyModule } from './modules/company/company.module';
 import { UsersModule } from './modules/users/users.module';
+import { NarrativeModule } from './modules/narrative/narrative.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     CompanyModule,
     UsersModule,
+    NarrativeModule,
   ],
 })
 export class AppModule {}

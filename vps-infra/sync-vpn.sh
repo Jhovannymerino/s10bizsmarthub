@@ -1,19 +1,38 @@
 #!/bin/bash
 # Conecta VPN FortiGate → corre sync → desconecta (solo si no había VPN previa)
-# FIX: restaura ruta default eth0 después de conectar VPN para evitar bloquear SSH
-set -e
+# IMPORTANT: No usar set -e. Usar trap cleanup EXIT para garantizar desconexión del VPN
+# incluso si el sync falla, para evitar dejar iptables/rutas en estado inválido.
 
 YEAR=${1:-$(date +%Y)}
-FAST_FLAG=${2:-}       # "fast" → pasa --fast al agente; vacío → sync completo
-FORENSICS_FLAG=${3:-}  # "forensics" → pasa --forensics al agente (Batch 4)
+FAST_FLAG=${2:-}
+FORENSICS_FLAG=${3:-}
 LOG=/var/log/s10-sync.log
 PIDFILE=/tmp/openfortivpn.pid
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG"; }
 
-log "Iniciando sync year=$YEAR"
-
+# Variables globales para el cleanup
 VPN_PREEXISTENTE=false
+ETH_GW=""
+ETH_DEV=""
+
+cleanup() {
+  local exit_code=$?
+  if [ "$VPN_PREEXISTENTE" = "false" ] && [ -f "$PIDFILE" ]; then
+    ip route del 192.168.1.0/24 dev ppp0 2>/dev/null || true
+    kill "$(cat "$PIDFILE")" 2>/dev/null || true
+    rm -f "$PIDFILE"
+    # Restaurar ruta default por si openfortivpn la cambió de nuevo
+    if [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
+      ip route replace default via "$ETH_GW" dev "$ETH_DEV" 2>/dev/null || true
+      log "Ruta default restaurada en cleanup → $ETH_DEV (via $ETH_GW)"
+    fi
+    log "VPN desconectada (cleanup, exit_code=$exit_code)"
+  fi
+}
+trap cleanup EXIT
+
+log "Iniciando sync year=$YEAR"
 
 # Si ya hay una interfaz ppp activa, reutilizarla
 if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
@@ -22,7 +41,7 @@ if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
 else
   # Matar VPN previa si existe (PIDFILE stale)
   if [ -f "$PIDFILE" ]; then
-    kill $(cat "$PIDFILE") 2>/dev/null || true
+    kill "$(cat "$PIDFILE")" 2>/dev/null || true
     rm -f "$PIDFILE"
     sleep 3
   fi
@@ -38,10 +57,12 @@ else
   echo $VPN_PID > "$PIDFILE"
 
   # Esperar interfaz ppp (max 60s)
+  VPN_LEVANTO=false
   for i in $(seq 1 60); do
     sleep 1
     if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
       log "ppp0 levantado tras ${i}s"
+      VPN_LEVANTO=true
 
       # Restaurar ruta default eth0 — el VPN no debe secuestrar el gateway
       if [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
@@ -53,7 +74,7 @@ else
       ip route add 192.168.1.0/24 dev ppp0 2>/dev/null || true
       log "Ruta VPN específica: 192.168.1.0/24 → ppp0"
 
-      # Espera adicional hasta que el SQL Server responda (max 30s)
+      # Espera hasta que el SQL Server responda (max 30s)
       SQL_OK=false
       for j in $(seq 1 30); do
         if timeout 2 bash -c '</dev/tcp/192.168.1.51/1433' 2>/dev/null; then
@@ -65,15 +86,16 @@ else
       done
       if [ "$SQL_OK" = "false" ]; then
         log "ERROR: SQL Server 192.168.1.51:1433 no accesible tras 30s — abortando"
-        kill $VPN_PID 2>/dev/null; rm -f "$PIDFILE"; exit 1
+        exit 1
       fi
       break
     fi
-    if [ $i -eq 60 ]; then
-      log "ERROR: VPN no levantó en 60s"
-      kill $VPN_PID 2>/dev/null; rm -f "$PIDFILE"; exit 1
-    fi
   done
+
+  if [ "$VPN_LEVANTO" = "false" ]; then
+    log "ERROR: VPN no levantó en 60s"
+    exit 1
+  fi
 fi
 
 # Sync
@@ -82,15 +104,14 @@ EXTRA_FLAGS=""
 [ "$FAST_FLAG" = "fast" ] && EXTRA_FLAGS="--fast"
 [ "$FORENSICS_FLAG" = "forensics" ] && EXTRA_FLAGS="$EXTRA_FLAGS --forensics"
 log "Corriendo sync --year=$YEAR $EXTRA_FLAGS"
-node sync-agent.js --year=$YEAR $EXTRA_FLAGS >> "$LOG" 2>&1
-STATUS=${PIPESTATUS[0]}
 
-# Solo desconectar si nosotros conectamos
-if [ "$VPN_PREEXISTENTE" = "false" ] && [ -f "$PIDFILE" ]; then
-  # Limpiar ruta VPN específica antes de desconectar
-  ip route del 192.168.1.0/24 dev ppp0 2>/dev/null || true
-  kill $(cat "$PIDFILE") 2>/dev/null || true
-  rm -f "$PIDFILE"
+node sync-agent.js --year=$YEAR $EXTRA_FLAGS >> "$LOG" 2>&1
+SYNC_STATUS=$?
+
+if [ $SYNC_STATUS -ne 0 ]; then
+  log "ERROR: sync-agent.js salió con código $SYNC_STATUS"
+else
+  log "Sync completado year=$YEAR exitosamente"
 fi
 
-log "Sync completado year=$YEAR (status=$STATUS)"
+exit $SYNC_STATUS

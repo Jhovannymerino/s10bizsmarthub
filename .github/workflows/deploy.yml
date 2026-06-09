@@ -35,7 +35,7 @@ jobs:
 
       - name: Sync code to VPS
         run: |
-          rsync -az --delete \
+          rsync -az \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='.next' \

@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set deploy target
+        id: target
+        run: |
+          if [[ "${{ github.ref_name }}" == "develop" ]]; then
+            echo "host=76.13.99.90" >> $GITHUB_OUTPUT
+            echo "dir=/opt/apps/s10bizsmarthub" >> $GITHUB_OUTPUT
+            echo "compose=docker-compose.dev.yml" >> $GITHUB_OUTPUT
+            echo "env=DEV" >> $GITHUB_OUTPUT
+          else
+            echo "host=72.62.16.28" >> $GITHUB_OUTPUT
+            echo "dir=/opt/apps/s10bizsmarthub" >> $GITHUB_OUTPUT
+            echo "compose=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+            echo "env=PROD" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ steps.target.outputs.host }} >> ~/.ssh/known_hosts
+
+      - name: Sync code to VPS
+        run: |
+          rsync -az --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='dist' \
+            --exclude='build' \
+            --exclude='*.log' \
+            --exclude='.env' \
+            --exclude='s10-agent/node_modules' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            ./ root@${{ steps.target.outputs.host }}:${{ steps.target.outputs.dir }}/
+
+      - name: Build and restart containers
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            root@${{ steps.target.outputs.host }} \
+            "cd ${{ steps.target.outputs.dir }} && \
+             docker compose -f ${{ steps.target.outputs.compose }} build s10biz-frontend s10biz-backend && \
+             docker compose -f ${{ steps.target.outputs.compose }} up -d && \
+             echo '[${{ steps.target.outputs.env }}] Deploy OK' && \
+             docker compose -f ${{ steps.target.outputs.compose }} ps"

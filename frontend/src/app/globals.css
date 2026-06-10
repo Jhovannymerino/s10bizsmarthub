@@ -60,63 +60,101 @@
   --input-dir-opt:    #0E1A2E;
 }
 
-/* ── LIGHT MODE — Premium cool-white palette ── */
+/* ── LIGHT MODE — Premium cool blue-corporate ── */
 .light {
-  --bg-base:          #eef2f7;
-  --bg-main:          #e4eaf2;
-  --bg-sidebar:       #ffffff;
-  --bg-card:          rgba(255,255,255,0.92);
-  --border-card:      rgba(0,0,0,0.07);
-  --primary:          #1a7279;
-  --primary-light:    #207E83;
-  --primary-muted:    rgba(32,126,131,0.10);
-  --primary-border:   rgba(32,126,131,0.22);
-  --text-primary:     #0a2540;
-  --text-muted:       #4e6380;
-  --green:            #059669;
-  --red:              #dc2626;
-  --yellow:           #d97706;
-  --border:           rgba(0,0,0,0.08);
-  --nav-active-from:  #2563EB;
-  --nav-active-to:    #4F46E5;
+  /* Backgrounds — 3-level elevation system */
+  --bg-base:          #EAF0F8;     /* page canvas — cool blue tint */
+  --bg-main:          #E0EAF4;     /* content area — clearly darker than base */
+  --bg-sidebar:       #FFFFFF;     /* sidebar floats as white panel */
+  --bg-card:          #FFFFFF;     /* pure white cards */
+  --border-card:      #C8D8EA;     /* visible slate-blue border */
 
-  /* Surface tokens */
-  --surface-hover:    rgba(0,0,0,0.04);
-  --surface-hover-2:  rgba(0,0,0,0.07);
-  --surface-active:   rgba(0,0,0,0.05);
-  --th-bg:            rgba(0,0,0,0.04);
-  --th-color:         #4e6380;
-  --th-border-b:      rgba(0,0,0,0.10);
-  --th-border-t:      rgba(0,0,0,0.06);
-  --td-border:        rgba(0,0,0,0.05);
-  --row-alt:          rgba(0,0,0,0.02);
-  --row-hover-teal:   rgba(32,126,131,0.07);
-  --row-hover-teal-2: rgba(32,126,131,0.11);
-  --total-row-bg:     rgba(32,126,131,0.08);
-  --sidebar-inner-border: rgba(0,0,0,0.07);
-  --sidebar-item-border:  rgba(0,0,0,0.06);
-  --nav-section-line: rgba(0,0,0,0.06);
-  --topbar-border:    rgba(0,0,0,0.08);
-  --hint-bg:          rgba(0,0,0,0.08);
-  --hint-bg-hover:    rgba(32,126,131,0.18);
-  --hint-tooltip-bg:  #0a2540;
-  --hint-tooltip-border: rgba(0,0,0,0.18);
-  --tooltip-bg:       #0a2540;
-  --scrollbar-thumb:  rgba(0,0,0,0.12);
-  --scrollbar-hover:  rgba(0,0,0,0.20);
-  --pill-bg:          rgba(255,255,255,0.70);
-  --pill-border:      rgba(0,0,0,0.10);
-  --blur-indigo:      rgba(79,70,229,0.04);
-  --hamburger-bg:     rgba(0,0,0,0.05);
-  --sidebar-shadow:   rgba(0,0,0,0.12);
-  --sidebar-open-shadow: rgba(0,0,0,0.25);
-  --overlay-bg:       rgba(0,0,0,0.45);
-  --user-hover-bg:    rgba(0,0,0,0.04);
-  --input-dir-bg:     rgba(32,126,131,0.05);
-  --input-dir-border: rgba(32,126,131,0.25);
-  --input-dir-color:  #0a2540;
-  --input-dir-opt:    #ffffff;
+  /* Brand */
+  --primary:          #155E64;     /* teal deepened for light bg contrast */
+  --primary-light:    #1A7279;
+  --primary-muted:    rgba(21,94,100,0.08);
+  --primary-border:   rgba(21,94,100,0.22);
+
+  /* Typography — explicit values, no opacity tricks */
+  --text-primary:     #0B1C32;     /* deep navy, 14:1+ on white */
+  --text-muted:       #4A6070;     /* blue-gray, 5.2:1 on white */
+
+  /* Semantic */
+  --green:            #047857;
+  --red:              #B91C1C;
+  --yellow:           #B45309;
+  --border:           #C8D8EA;
+  --nav-active-from:  #1D4ED8;
+  --nav-active-to:    #4338CA;
+
+  /* Surfaces */
+  --surface-hover:    #EEF4FB;
+  --surface-hover-2:  #E0EAF4;
+  --surface-active:   #D5E4F0;
+
+  /* Tables */
+  --th-bg:            #EEF4FB;
+  --th-color:         #4A6070;
+  --th-border-b:      #B8CCE0;
+  --th-border-t:      #D4E2EF;
+  --td-border:        #E8EFF7;
+  --row-alt:          #F7FAFD;
+  --row-hover-teal:   rgba(21,94,100,0.06);
+  --row-hover-teal-2: rgba(21,94,100,0.10);
+  --total-row-bg:     rgba(21,94,100,0.07);
+
+  /* Sidebar */
+  --sidebar-inner-border: #E0EAF4;
+  --sidebar-item-border:  #E8EFF7;
+  --nav-section-line: #D4E2EF;
+  --topbar-border:    #D0DCE9;
+
+  /* Hints & Tooltips */
+  --hint-bg:          #E8EFF7;
+  --hint-bg-hover:    rgba(21,94,100,0.14);
+  --hint-tooltip-bg:  #0B1C32;
+  --hint-tooltip-border: #B8CCE0;
+  --tooltip-bg:       #0B1C32;
+
+  /* Scrollbar */
+  --scrollbar-thumb:  #B8CCE0;
+  --scrollbar-hover:  #97AEBE;
+
+  /* Pills */
+  --pill-bg:          #FFFFFF;
+  --pill-border:      #C8D8EA;
+
+  /* Misc */
+  --blur-indigo:      rgba(79,70,229,0.03);
+  --hamburger-bg:     #EEF4FB;
+  --sidebar-shadow:   rgba(11,28,50,0.08);
+  --sidebar-open-shadow: rgba(11,28,50,0.20);
+  --overlay-bg:       rgba(11,28,50,0.45);
+  --user-hover-bg:    #EEF4FB;
+  --input-dir-bg:     rgba(21,94,100,0.05);
+  --input-dir-border: rgba(21,94,100,0.25);
+  --input-dir-color:  #0B1C32;
+  --input-dir-opt:    #FFFFFF;
 }
+
+/* ── Light mode elevation & contrast overrides ── */
+.light .kpi-card {
+  box-shadow: 0 1px 3px rgba(11,28,50,0.08), 0 4px 16px rgba(11,28,50,0.05);
+}
+.light .sidebar-inner {
+  box-shadow: 0 4px 24px rgba(11,28,50,0.10), 0 1px 3px rgba(11,28,50,0.06);
+}
+.light .home-company-card {
+  box-shadow: 0 1px 3px rgba(11,28,50,0.08), 0 4px 16px rgba(11,28,50,0.04);
+}
+.light .kpi-label {
+  opacity: 1;
+}
+/* Nav section accent label colors adjusted for light bg */
+.light .nav-group-header.accent-blue   .sidebar-section-label-text { color: #1D4ED8; }
+.light .nav-group-header.accent-green  .sidebar-section-label-text { color: #047857; }
+.light .nav-group-header.accent-amber  .sidebar-section-label-text { color: #92400E; }
+.light .nav-group-header.accent-purple .sidebar-section-label-text { color: #5B21B6; }
 
 /* ── Base ── */
 body {

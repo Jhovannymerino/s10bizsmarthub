@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, ComposedChart, ReferenceLine,
@@ -139,6 +140,9 @@ function DirSelectInput({ path, value, options, onChange }: { path: string; valu
 // ═══════════════════════════════════════════════
 export default function DashboardPage() {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<typeof COMPANIES[0] | typeof GRUPO>(() => {
@@ -686,6 +690,11 @@ export default function DashboardPage() {
         </div>
         <div className="mobile-topbar-actions">
           <div className={`mobile-sync-dot${syncStatus === 'running' ? ' running' : syncStatus === 'error' ? ' error' : ''}`} title={syncStatus} />
+          <button className="theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Cambiar tema">
+            {mounted && theme === 'dark'
+              ? <span style={{ fontSize: '1rem' }}>☀️</span>
+              : <span style={{ fontSize: '1rem' }}>🌙</span>}
+          </button>
           <button className="hamburger-btn" onClick={() => setSidebarOpen(o => !o)} aria-label="Abrir menú">
             {sidebarOpen ? '✕' : '☰'}
           </button>
@@ -1162,6 +1171,14 @@ export default function DashboardPage() {
               <div style={{ fontSize: '0.6rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{userRole}</div>
             </div>
             <span style={{ fontSize: '0.65rem', color: '#4B5563' }}>⚙</span>
+          </button>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            style={{ width: '100%', marginBottom: '0.4rem', padding: '0.45rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'var(--hamburger-bg)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '0.625rem', cursor: 'pointer', fontSize: '0.73rem', fontWeight: 500, letterSpacing: '0.04em', fontFamily: "'Inter', sans-serif", transition: 'all 0.15s' }}
+            onMouseEnter={e => { (e.currentTarget.style.background = 'var(--primary-muted)'); (e.currentTarget.style.color = 'var(--primary-light)'); }}
+            onMouseLeave={e => { (e.currentTarget.style.background = 'var(--hamburger-bg)'); (e.currentTarget.style.color = 'var(--text-muted)'); }}
+          >
+            {mounted && theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
           </button>
           <button
             onClick={() => { localStorage.removeItem('token'); router.push('/login'); }}

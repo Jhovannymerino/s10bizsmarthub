@@ -59,9 +59,12 @@ else
       sleep 3
     fi
 
-    # --no-routes: openfortivpn NO toca la tabla de rutas (mantiene SSH vivo).
-    # La ruta a la red S10 se agrega a mano más abajo.
-    openfortivpn -c /etc/openfortivpn/s10.conf --no-routes 2>>"$LOG" &
+    # NOTA: openfortivpn maneja las rutas (NO usar --no-routes). Se probó
+    # --no-routes para mantener SSH vivo, pero rompe el acceso a SQL: ppp0
+    # levanta pero la red S10 queda inalcanzable (la ruta manual no basta).
+    # El SSH cae durante el sync (openfortivpn pone default via ppp0); es
+    # molestia aceptable — lo que importa es que SQL sea alcanzable.
+    openfortivpn -c /etc/openfortivpn/s10.conf 2>>"$LOG" &
     VPN_PID=$!
     echo $VPN_PID > "$PIDFILE"
 

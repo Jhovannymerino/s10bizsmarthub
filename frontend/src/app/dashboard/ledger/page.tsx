@@ -37,6 +37,9 @@ function fmt(n: number | undefined | null): string {
   return n < 0 ? `-${abs}` : abs;
 }
 
+// Fecha en UTC: evita el corrimiento de un día en hora Perú (UTC-5).
+const fmtFecha = (d: string) => (d ? new Date(d).toLocaleDateString('es-PE', { timeZone: 'UTC' }) : '');
+
 function apiFetch(path: string, token: string) {
   return fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => {
     if (!r.ok) throw new Error(`${r.status}`);
@@ -72,7 +75,7 @@ function LedgerPageInner() {
   const [error, setError] = useState('');
   const [expandedClases, setExpandedClases] = useState<Set<string>>(new Set());
   const [expandedGrupos, setExpandedGrupos] = useState<Set<string>>(new Set());
-  const [asientoDrill, setAsientoDrill] = useState<string | null>(null);
+  const [asientoDrill, setAsientoDrill] = useState<{ nroAsiento: string; fecha: string; codUnico?: string } | null>(null);
 
   useEffect(() => {
     const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -123,7 +126,7 @@ function LedgerPageInner() {
     if (!ledger?.rows?.length) return;
     const head = ['Fecha', 'Asiento', 'NroD', 'Cuenta', 'Descripcion', 'Glosa', 'Tercero', 'Debito', 'Credito', 'Saldo'];
     const lines = ledger.rows.map((r: any) => [
-      new Date(r.fecha).toLocaleDateString('es-PE'), r.nroAsiento, r.nroD ?? '', r.codCuenta,
+      fmtFecha(r.fecha), r.nroAsiento, r.nroD ?? '', r.codCuenta,
       `"${(r.desCuenta ?? '').replace(/"/g, '""')}"`, `"${(r.glosa ?? '').replace(/"/g, '""')}"`,
       `"${(r.tercero ?? '').replace(/"/g, '""')}"`, r.debito, r.credito, r.saldoAcumulado,
     ].join(','));
@@ -140,7 +143,7 @@ function LedgerPageInner() {
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', background: '#0A1626', minHeight: '100vh' }}>
       {asientoDrill && (
-        <AsientoModal company={company} nroAsiento={asientoDrill} token={token} onClose={() => setAsientoDrill(null)} />
+        <AsientoModal company={company} nroAsiento={asientoDrill.nroAsiento} fecha={asientoDrill.fecha} codUnico={asientoDrill.codUnico} token={token} onClose={() => setAsientoDrill(null)} />
       )}
 
       {/* Header */}
@@ -268,9 +271,9 @@ function LedgerPageInner() {
                 <tbody>
                   {ledger.rows.map((r: any) => (
                     <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={tdL}>{new Date(r.fecha).toLocaleDateString('es-PE')}</td>
+                      <td style={tdL}>{fmtFecha(r.fecha)}</td>
                       <td style={tdL}>
-                        <button onClick={() => setAsientoDrill(r.nroAsiento)}
+                        <button onClick={() => setAsientoDrill({ nroAsiento: r.nroAsiento, fecha: r.fecha, codUnico: r.codUnico })}
                           style={{ background: 'none', border: 'none', color: '#2BB4BB', cursor: 'pointer', fontFamily: 'monospace', textDecoration: 'underline', textDecorationStyle: 'dotted', padding: 0, fontSize: 12.5 }}>
                           {r.nroAsiento}
                         </button>
@@ -318,11 +321,14 @@ function LedgerPageInner() {
 }
 
 // ── Modal: partida doble completa de un asiento ──
-function AsientoModal({ company, nroAsiento, token, onClose }: { company: string; nroAsiento: string; token: string; onClose: () => void }) {
+function AsientoModal({ company, nroAsiento, fecha, codUnico, token, onClose }: { company: string; nroAsiento: string; fecha?: string; codUnico?: string; token: string; onClose: () => void }) {
   const [data, setData] = useState<any>(null);
   useEffect(() => {
-    apiFetch(`/kpi/${company}/ledger/asiento/${nroAsiento}`, token).then(setData).catch(() => setData(null));
-  }, [company, nroAsiento, token]);
+    const p = new URLSearchParams();
+    if (codUnico) p.set('codUnico', codUnico);
+    if (fecha) p.set('fecha', fecha);
+    apiFetch(`/kpi/${company}/ledger/asiento/${nroAsiento}?${p}`, token).then(setData).catch(() => setData(null));
+  }, [company, nroAsiento, fecha, codUnico, token]);
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -332,7 +338,7 @@ function AsientoModal({ company, nroAsiento, token, onClose }: { company: string
             <div style={{ fontWeight: 700, fontSize: 16, color: '#F8FAFC' }}>Asiento {nroAsiento}</div>
             {data && (
               <div style={{ fontSize: 13, color: '#8B97A8' }}>
-                {data.fecha ? new Date(data.fecha).toLocaleDateString('es-PE') : ''} · {data.glosa || 'Sin glosa'}
+                {fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}
               </div>
             )}
           </div>

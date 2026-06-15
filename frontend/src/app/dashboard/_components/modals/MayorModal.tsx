@@ -4,6 +4,10 @@ import { X, ArrowLeft } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 
+// La fecha viene como UTC medianoche (p.ej. 2026-01-01T00:00:00Z). Formatear en
+// UTC evita que en hora Perú (UTC-5) se muestre el día anterior (31/12/2025).
+const fmtFecha = (d: string) => (d ? new Date(d).toLocaleDateString('es-PE', { timeZone: 'UTC' }) : '');
+
 // Filtro de entrada: cualquier número del dashboard abre el mayor acotado a sus líneas.
 export interface MayorFiltro {
   cuenta?: string;
@@ -26,7 +30,7 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [asiento, setAsiento] = useState<string | null>(null);
+  const [asiento, setAsiento] = useState<{ nroAsiento: string; fecha: string; codUnico?: string } | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => { modalRef.current?.focus(); }, []);
 
@@ -53,7 +57,7 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
   return (
     <>
       {asiento && (
-        <AsientoMayorModal companyId={companyId} nroAsiento={asiento} onClose={() => setAsiento(null)} />
+        <AsientoMayorModal companyId={companyId} nroAsiento={asiento.nroAsiento} fecha={asiento.fecha} codUnico={asiento.codUnico} onClose={() => setAsiento(null)} />
       )}
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
         onClick={onClose}>
@@ -99,9 +103,9 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
                   <tbody>
                     {data.rows.map((r: any) => (
                       <tr key={r.id}>
-                        <td style={{ whiteSpace: 'nowrap' }}>{new Date(r.fecha).toLocaleDateString('es-PE')}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{fmtFecha(r.fecha)}</td>
                         <td>
-                          <button onClick={() => setAsiento(r.nroAsiento)} title="Ver partida doble"
+                          <button onClick={() => setAsiento({ nroAsiento: r.nroAsiento, fecha: r.fecha, codUnico: r.codUnico })} title="Ver partida doble del comprobante"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', textDecoration: 'underline', textDecorationStyle: 'dotted', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0 }}>
                             {r.nroAsiento}
                           </button>
@@ -141,14 +145,17 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
   );
 }
 
-// Partida doble completa de un asiento — mismo lenguaje oscuro
-function AsientoMayorModal({ companyId, nroAsiento, onClose }: { companyId: string; nroAsiento: string; onClose: () => void }) {
+// Partida doble del comprobante — mismo lenguaje oscuro
+function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: { companyId: string; nroAsiento: string; fecha?: string; codUnico?: string; onClose: () => void }) {
   const [data, setData] = useState<any>(null);
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    fetch(`${API}/kpi/${companyId}/ledger/asiento/${nroAsiento}`, { headers: { Authorization: `Bearer ${token}` } })
+    const p = new URLSearchParams();
+    if (codUnico) p.set('codUnico', codUnico);
+    if (fecha) p.set('fecha', fecha);
+    fetch(`${API}/kpi/${companyId}/ledger/asiento/${nroAsiento}?${p}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(setData).catch(() => setData(null));
-  }, [companyId, nroAsiento]);
+  }, [companyId, nroAsiento, fecha, codUnico]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
@@ -162,7 +169,7 @@ function AsientoMayorModal({ companyId, nroAsiento, onClose }: { companyId: stri
               <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><ArrowLeft size={16} /></button>
               <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Asiento {nroAsiento}</span>
             </div>
-            {data && <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{data.fecha ? new Date(data.fecha).toLocaleDateString('es-PE') : ''} · {data.glosa || 'Sin glosa'}</div>}
+            {data && <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}</div>}
           </div>
           <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} /></button>
         </div>

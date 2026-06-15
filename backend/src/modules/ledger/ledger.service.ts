@@ -112,7 +112,7 @@ export class LedgerService {
 
     // Página con saldo acumulado relativo al inicio del conjunto filtrado
     const rows = await this.prisma.$queryRawUnsafe<any[]>(
-      `SELECT "id"::text AS id, "fecha", "nroAsiento", "nroD",
+      `SELECT "id"::text AS id, "fecha", "nroAsiento", "codUnico", "nroD",
               "codCuenta", "desCuenta", "glosa", "tercero", "codTercero",
               "debito"::float8 AS debito, "credito"::float8 AS credito,
               ($${p} + SUM("debito" - "credito") OVER (ORDER BY "fecha", "nroAsiento", "id"
@@ -136,18 +136,34 @@ export class LedgerService {
   }
 
   // ─────────────────────────────────────────────
-  // Partida doble completa de un asiento (todas sus líneas)
+  // Partida doble de un comprobante.
+  // OJO: en S10 el CodAsientoContable (nroAsiento) NO es único por comprobante
+  // — se repite por periodo (p.ej. "asiento 1" existe en cada mes). El identificador
+  // real del comprobante es CodUnico cuando está presente; cuando viene vacío,
+  // acotamos por (nroAsiento + fecha) para no mezclar comprobantes de otros días.
   // ─────────────────────────────────────────────
-  async getAsiento(companyId: string, nroAsiento: string) {
+  async getAsiento(companyId: string, nroAsiento: string, fecha?: string, codUnico?: string) {
+    let where: string;
+    const params: any[] = [companyId];
+    if (codUnico) {
+      where = '"companyId" = $1 AND "codUnico" = $2';
+      params.push(codUnico);
+    } else if (fecha) {
+      where = '"companyId" = $1 AND "nroAsiento" = $2 AND "fecha"::date = $3::date';
+      params.push(nroAsiento, fecha);
+    } else {
+      where = '"companyId" = $1 AND "nroAsiento" = $2';
+      params.push(nroAsiento);
+    }
+
     const lineas = await this.prisma.$queryRawUnsafe<any[]>(
-      `SELECT "id"::text AS id, "fecha", "nroAsiento", "nroD",
+      `SELECT "id"::text AS id, "fecha", "nroAsiento", "codUnico", "nroD",
               "codCuenta", "desCuenta", "clase", "glosa", "tercero", "codTercero",
               "debito"::float8 AS debito, "credito"::float8 AS credito
          FROM "LedgerEntry"
-        WHERE "companyId" = $1 AND "nroAsiento" = $2
-        ORDER BY "codUnico", "id"`,
-      companyId,
-      nroAsiento,
+        WHERE ${where}
+        ORDER BY "codCuenta", "id"`,
+      ...params,
     );
 
     const totalDebito = lineas.reduce((s, l) => s + l.debito, 0);
@@ -155,10 +171,11 @@ export class LedgerService {
 
     return {
       nroAsiento,
+      codUnico: codUnico ?? lineas[0]?.codUnico ?? null,
       lineas,
       totalDebito,
       totalCredito,
-      // Diferencia ~0 confirma que el asiento cuadra (partida doble)
+      // Diferencia ~0 confirma que el comprobante cuadra (partida doble)
       cuadra: Math.abs(totalDebito - totalCredito) < 0.01,
       fecha: lineas[0]?.fecha ?? null,
       glosa: lineas[0]?.glosa ?? '',

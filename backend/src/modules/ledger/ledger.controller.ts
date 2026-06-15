@@ -21,13 +21,15 @@ export class LedgerController {
     return this.ledger.getCuentas(companyId, parseYear(year));
   }
 
-  /** Partida doble completa de un asiento */
+  /** Partida doble de un comprobante (por codUnico si existe, si no por asiento+fecha) */
   @Get(':companyId/ledger/asiento/:nroAsiento')
   getAsiento(
     @Param('companyId') companyId: string,
     @Param('nroAsiento') nroAsiento: string,
+    @Query('fecha') fecha?: string,
+    @Query('codUnico') codUnico?: string,
   ) {
-    return this.ledger.getAsiento(companyId, nroAsiento);
+    return this.ledger.getAsiento(companyId, nroAsiento, fecha || undefined, codUnico || undefined);
   }
 
   /** Mayor filtrado + paginado, con saldo acumulado */

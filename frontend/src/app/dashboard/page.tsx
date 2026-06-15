@@ -2953,7 +2953,7 @@ export default function DashboardPage() {
                             <td style={{ color: '#8B97A8' }}>{fmt(d.TotalImpuesto)}</td>
                             <td style={{ fontWeight: 600, color: esNC ? '#EF4444' : undefined }}>{esNC ? '-' : ''}{fmt(d.Total)}</td>
                             <td style={{ color: '#10B981' }}>{fmt(d.TotalPagado)}</td>
-                            <td className={(d.Saldo || 0) > 0 ? 'negative' : ''}>{fmt(d.Saldo)}</td>
+                            <td style={{ color: esNC ? '#EF4444' : undefined }} className={!esNC && (d.Saldo || 0) > 0 ? 'negative' : ''}>{esNC ? '-' : ''}{fmt(d.Saldo)}</td>
                           </tr>
                           );
                         })}

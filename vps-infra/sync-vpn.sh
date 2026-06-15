@@ -15,10 +15,17 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG"; }
 VPN_PREEXISTENTE=false
 ETH_GW=""
 ETH_DEV=""
+ETH_IP=""
+SSH_TABLE=100   # tabla de policy routing dedicada para el tráfico de gestión
 
 cleanup() {
   local exit_code=$?
   if [ "$VPN_PREEXISTENTE" = "false" ] && [ -f "$PIDFILE" ]; then
+    # Quitar policy routing de gestión
+    if [ -n "$ETH_IP" ]; then
+      ip rule del from "$ETH_IP" table "$SSH_TABLE" 2>/dev/null || true
+      ip route flush table "$SSH_TABLE" 2>/dev/null || true
+    fi
     ip route del 192.168.1.0/24 dev ppp0 2>/dev/null || true
     kill "$(cat "$PIDFILE")" 2>/dev/null || true
     rm -f "$PIDFILE"
@@ -42,7 +49,8 @@ else
   # Guardar ruta default actual (eth0) ANTES de conectar VPN
   ETH_GW=$(ip route show default | awk '/default via/ {print $3; exit}')
   ETH_DEV=$(ip route show default | awk '/default via/ {print $5; exit}')
-  log "Ruta default previa: via ${ETH_GW:-?} dev ${ETH_DEV:-?}"
+  ETH_IP=$(ip -4 -o addr show "$ETH_DEV" 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+  log "Ruta default previa: via ${ETH_GW:-?} dev ${ETH_DEV:-?} (IP ${ETH_IP:-?})"
 
   # Conectar el VPN con reintentos. El FortiGate a veces rechaza la reconexión
   # ("Peer refused to agree to our IP address") porque aún retiene la IP de la
@@ -75,12 +83,21 @@ else
       if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
         log "ppp0 levantado tras ${i}s (intento $intento)"
         VPN_LEVANTO=true
-        # Seguro extra: la ruta default debe quedar en eth0, no en el túnel
-        if [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
-          ip route replace default via "$ETH_GW" dev "$ETH_DEV" 2>/dev/null || true
+        # POLICY ROUTING — mantiene vivo el acceso de gestión (SSH) sin perder
+        # la ruta a SQL. openfortivpn maneja sus rutas normalmente (la red S10
+        # queda alcanzable por ppp0), pero secuestra y renegocia la ruta default
+        # → ppp0, lo que mataría el SSH. En vez de pelear por la tabla principal
+        # (carrera que se pierde), creamos una tabla aparte: TODO el tráfico cuyo
+        # ORIGEN sea la IP pública del VPS sale por eth0, pase lo que pase con el
+        # túnel. openfortivpn no toca esta regla → SSH estable todo el sync.
+        if [ -n "$ETH_IP" ] && [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
+          ip route replace default via "$ETH_GW" dev "$ETH_DEV" table "$SSH_TABLE" 2>/dev/null || true
+          ip rule del from "$ETH_IP" table "$SSH_TABLE" 2>/dev/null || true   # evitar duplicado
+          ip rule add from "$ETH_IP" table "$SSH_TABLE" priority 100 2>/dev/null || true
+          log "Policy routing: origen $ETH_IP → tabla $SSH_TABLE (eth0) — SSH vivo durante el sync"
         fi
         ip route add 192.168.1.0/24 dev ppp0 2>/dev/null || true
-        log "Ruta S10 192.168.1.0/24 → ppp0; default intacto en eth0 (SSH vivo)"
+        log "Ruta S10 192.168.1.0/24 → ppp0"
         break
       fi
     done

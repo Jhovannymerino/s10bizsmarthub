@@ -1,6 +1,7 @@
 'use client';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Check } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 
@@ -42,11 +43,11 @@ const VALIDATION_INFO: Record<string, { categoria: string; riesgo: string; norma
   V25_pcd_criticas:                { categoria: 'Calidad de Datos',    riesgo: 'MEDIO',   norma: 'PCGR Perú' },
 };
 
-const RIESGO_COLOR: Record<string, string> = {
-  CRÍTICO: 'bg-red-100 text-red-800 border border-red-300',
-  ALTO:    'bg-orange-100 text-orange-800 border border-orange-300',
-  MEDIO:   'bg-yellow-100 text-yellow-800 border border-yellow-300',
-  BAJO:    'bg-green-100 text-green-800 border border-green-300',
+const RIESGO_STYLE: Record<string, React.CSSProperties> = {
+  CRÍTICO: { background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5' },
+  ALTO:    { background: '#FFEDD5', color: '#9A3412', border: '1px solid #FDBA74' },
+  MEDIO:   { background: '#FEF9C3', color: '#854D0E', border: '1px solid #FDE047' },
+  BAJO:    { background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC' },
 };
 
 function apiFetch(path: string, token: string) {
@@ -227,8 +228,7 @@ export default function AuditPage() {
                           </td>
                           <td style={{ padding: '10px 16px', color: '#4B5563' }}>{info.categoria}</td>
                           <td style={{ padding: '10px 16px', textAlign: 'center' }}>
-                            <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700 }}
-                              className={RIESGO_COLOR[info.riesgo]}>
+                            <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, ...RIESGO_STYLE[info.riesgo] }}>
                               {info.riesgo}
                             </span>
                           </td>
@@ -240,7 +240,7 @@ export default function AuditPage() {
                             {v.error ? (
                               <span style={{ color: '#DC2626', fontWeight: 700, fontSize: 12 }}>ERROR</span>
                             ) : (
-                              <span style={{ color: '#15803D', fontWeight: 700, fontSize: 18 }}>✓</span>
+                              <Check size={16} color="#15803D" aria-hidden="true" />
                             )}
                           </td>
                         </tr>

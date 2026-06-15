@@ -6,15 +6,26 @@ import { Mail } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 
+function validateLogin(value: string): string {
+  if (!value.trim()) return 'Ingresa tu email o usuario';
+  if (value.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Email inválido';
+  return '';
+}
+
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const [login, setLogin] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [sent, setSent] = useState(false);
+  const [login, setLogin]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const [loginErr, setLoginErr] = useState('');
+  const [sent, setSent]         = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const le = validateLogin(login);
+    setLoginErr(le);
+    if (le) return;
+
     setLoading(true);
     setError('');
     try {
@@ -34,6 +45,11 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }
   }
+
+  const fieldErr: React.CSSProperties = {
+    fontSize: '0.75rem', color: '#EF4444', marginTop: '0.25rem',
+    fontFamily: "'Inter', sans-serif",
+  };
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#050a12' } as React.CSSProperties}>
@@ -60,27 +76,30 @@ export default function ForgotPasswordPage() {
           </p>
 
           {sent ? (
-            <div style={{ padding: '1rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '0.75rem', color: '#059669', fontSize: '0.85rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
+            <div role="status" style={{ padding: '1rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '0.75rem', color: '#059669', fontSize: '0.85rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
               Código enviado. Redirigiendo...
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Email o usuario</label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+                  <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: loginErr ? '#EF4444' : '#9CA3AF' }} />
                   <input
                     type="text" value={login} onChange={e => setLogin(e.target.value)} required
                     placeholder="usuario o nombre@empresa.com"
-                    style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: '1.5px solid #E5E7EB', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter',sans-serif" }}
-                    onFocus={e => (e.target.style.borderColor = '#207E83')}
-                    onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                    aria-invalid={!!loginErr}
+                    aria-describedby={loginErr ? 'login-err' : undefined}
+                    style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: `1.5px solid ${loginErr ? '#EF4444' : '#E5E7EB'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter',sans-serif" }}
+                    onFocus={e => (e.target.style.borderColor = loginErr ? '#EF4444' : '#207E83')}
+                    onBlur={e => { const err = validateLogin(e.target.value); setLoginErr(err); e.target.style.borderColor = err ? '#EF4444' : '#E5E7EB'; }}
                   />
                 </div>
+                {loginErr && <p id="login-err" style={fieldErr}>{loginErr}</p>}
               </div>
 
               {error && (
-                <div style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
+                <div role="alert" style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
                   {error}
                 </div>
               )}

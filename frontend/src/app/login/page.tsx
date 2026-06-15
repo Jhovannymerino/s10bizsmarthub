@@ -6,16 +6,36 @@ import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 
+function validateEmail(value: string): string {
+  if (!value.trim()) return 'Ingresa tu email o usuario';
+  if (value.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Email inválido';
+  return '';
+}
+
+function validatePassword(value: string): string {
+  if (!value) return 'Ingresa tu contraseña';
+  if (value.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
+  return '';
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const [login, setLogin]       = useState('');
-  const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd]   = useState(false);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [login, setLogin]           = useState('');
+  const [password, setPassword]     = useState('');
+  const [showPwd, setShowPwd]       = useState(false);
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(false);
+  const [loginErr, setLoginErr]     = useState('');
+  const [passwordErr, setPasswordErr] = useState('');
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    const le = validateEmail(login);
+    const pe = validatePassword(password);
+    setLoginErr(le);
+    setPasswordErr(pe);
+    if (le || pe) return;
+
     setLoading(true);
     setError('');
     try {
@@ -36,6 +56,11 @@ export default function LoginPage() {
     }
   }
 
+  const fieldErr: React.CSSProperties = {
+    fontSize: '0.75rem', color: '#EF4444', marginTop: '0.25rem',
+    fontFamily: "'Inter', sans-serif",
+  };
+
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: '#050a12' } as React.CSSProperties}>
 
@@ -47,11 +72,9 @@ export default function LoginPage() {
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Decorative blur */}
         <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 500, height: 300, background: 'radial-gradient(circle, rgba(32,126,131,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
             <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 900, color: '#fff', boxShadow: '0 0 0 3px rgba(255,255,255,0.08), 0 8px 24px rgba(32,126,131,0.4)' }}>
               S
@@ -77,7 +100,6 @@ export default function LoginPage() {
           maxWidth: 440,
           boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
         }}>
-          {/* Lock icon */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
             <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(32,126,131,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#207E83' }}>
               <Lock size={22} aria-hidden="true" />
@@ -91,21 +113,24 @@ export default function LoginPage() {
             Ingresa tus credenciales para acceder
           </p>
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} noValidate>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
                 Email o usuario
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+                <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: loginErr ? '#EF4444' : '#9CA3AF' }} />
                 <input
                   type="text" value={login} onChange={e => setLogin(e.target.value)} required
                   placeholder="usuario o nombre@empresa.com"
-                  style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: '1.5px solid #E5E7EB', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
-                  onFocus={e => (e.target.style.borderColor = '#207E83')}
-                  onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                  aria-invalid={!!loginErr}
+                  aria-describedby={loginErr ? 'login-err' : undefined}
+                  style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: `1.5px solid ${loginErr ? '#EF4444' : '#E5E7EB'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
+                  onFocus={e => (e.target.style.borderColor = loginErr ? '#EF4444' : '#207E83')}
+                  onBlur={e => { const err = validateEmail(e.target.value); setLoginErr(err); e.target.style.borderColor = err ? '#EF4444' : '#E5E7EB'; }}
                 />
               </div>
+              {loginErr && <p id="login-err" style={fieldErr}>{loginErr}</p>}
             </div>
 
             <div style={{ marginBottom: '1.75rem' }}>
@@ -118,23 +143,26 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div style={{ position: 'relative' }}>
-                <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+                <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: passwordErr ? '#EF4444' : '#9CA3AF' }} />
                 <input
                   type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
                   placeholder="••••••••"
-                  style={{ width: '100%', padding: '0.75rem 2.75rem 0.75rem 2.5rem', border: '1.5px solid #E5E7EB', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
-                  onFocus={e => (e.target.style.borderColor = '#207E83')}
-                  onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
+                  aria-invalid={!!passwordErr}
+                  aria-describedby={passwordErr ? 'pwd-err' : undefined}
+                  style={{ width: '100%', padding: '0.75rem 2.75rem 0.75rem 2.5rem', border: `1.5px solid ${passwordErr ? '#EF4444' : '#E5E7EB'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
+                  onFocus={e => (e.target.style.borderColor = passwordErr ? '#EF4444' : '#207E83')}
+                  onBlur={e => { const err = validatePassword(e.target.value); setPasswordErr(err); e.target.style.borderColor = err ? '#EF4444' : '#E5E7EB'; }}
                 />
                 <button type="button" onClick={() => setShowPwd(!showPwd)} aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 0, display: 'flex' }}>
                   {showPwd ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                 </button>
               </div>
+              {passwordErr && <p id="pwd-err" style={fieldErr}>{passwordErr}</p>}
             </div>
 
             {error && (
-              <div style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>
+              <div role="alert" style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>
                 {error}
               </div>
             )}

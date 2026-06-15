@@ -53,8 +53,8 @@ else
     if [ -f "$PIDFILE" ]; then kill "$(cat "$PIDFILE")" 2>/dev/null || true; rm -f "$PIDFILE"; fi
     pkill -f 'openfortivpn -c /etc/openfortivpn/s10.conf' 2>/dev/null || true
     if [ "$intento" -gt 1 ]; then
-      log "Reintento VPN #$intento — esperando 15s a que el FortiGate libere la IP"
-      sleep 15
+      log "Reintento VPN #$intento — esperando 60s a que el FortiGate libere la IP"
+      sleep 60
     else
       sleep 3
     fi

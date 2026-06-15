@@ -1004,6 +1004,38 @@ WHERE ac.CodEmpresa = '${codEmpresa}'
 ORDER BY ac.FechaAplicacionContable DESC, ac.CodUnico
 `;
 
+// ─────────────────────────────────────────────
+// EL MAYOR — libro mayor completo, TODAS las clases, sin filtro.
+// Fuente única de la verdad contable. Cada línea de asiento se
+// espeja a Postgres (tabla LedgerEntry) para trazabilidad universal.
+// ─────────────────────────────────────────────
+const QUERY_LIBRO_MAYOR = (codEmpresa, year) => `
+SELECT
+  CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
+  CONVERT(varchar(40), ac.CodUnico)                        AS CodUnico,
+  ac.NroD                                                  AS NroD,
+  ac.FechaAplicacionContable                               AS Fecha,
+  YEAR(ac.FechaAplicacionContable)                         AS Anio,
+  MONTH(ac.FechaAplicacionContable)                        AS Mes,
+  pcd.CodCuenta                                            AS CodCuenta,
+  LEFT(pcd.CodCuenta, 2)                                   AS Clase,
+  LEFT(pcd.CodCuenta, 4)                                   AS GrupoCuenta,
+  pcd.Descripcion                                          AS DesCuenta,
+  ISNULL(ac.Glosa, '')                                     AS Glosa,
+  ISNULL(ac.CodIdentificador, '')                          AS CodTercero,
+  ISNULL(i.Descripcion, '')                                AS Tercero,
+  ISNULL(ac.Debito, 0)                                     AS Debito,
+  ISNULL(ac.Credito, 0)                                    AS Credito
+FROM CMO.dbo.AsientoContable ac
+JOIN CMO.dbo.PlanContableDetalle pcd
+  ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
+LEFT JOIN CMO.dbo.Identificador i
+  ON ac.CodIdentificador = i.CodIdentificador
+WHERE ac.CodEmpresa = '${codEmpresa}'
+  AND YEAR(ac.FechaAplicacionContable) = ${year}
+ORDER BY ac.FechaAplicacionContable, ac.CodAsientoContable, ac.CodUnico
+`;
+
 // Saldos bancarios acumulados (clase 10) — histórico por subcuenta
 const QUERY_CAJA_SALDOS = (codEmpresa) => `
 SELECT
@@ -3172,8 +3204,53 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
     const result = await response.json();
     console.log(`${tag} ✓ Pushed — ${result.processed?.length || 0} KPI types saved`);
 
+    // ── EL MAYOR — espejo del libro mayor completo (omitido en --fast) ──
+    if (!fast) {
+      await pushLibroMayor(company, pool, year, tag);
+    }
+
   } catch (err) {
     console.error(`  ✗ Error syncing ${company.name}: ${err.message}`);
+  }
+}
+
+// Espeja el libro mayor completo del año a Postgres en chunks.
+// La primera tanda reemplaza (companyId, anio); las siguientes hacen append.
+async function pushLibroMayor(company, pool, year, tag) {
+  const CHUNK = 5000;
+  try {
+    const mayorResult = await pool.request().query(QUERY_LIBRO_MAYOR(company.codEmpresa, year));
+    const rows = mayorResult.recordset;
+    if (!rows.length) {
+      console.log(`${tag} → Mayor: sin asientos para ${year}`);
+      return;
+    }
+
+    const totalChunks = Math.ceil(rows.length / CHUNK);
+    for (let i = 0; i < totalChunks; i++) {
+      const chunk = rows.slice(i * CHUNK, (i + 1) * CHUNK);
+      const res = await fetch(`${CONFIG.VPS_URL}/api/sync/ledger`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-sync-key': CONFIG.SYNC_API_KEY,
+        },
+        body: JSON.stringify({
+          companyId: company.codEmpresa,
+          year,
+          isFirst: i === 0,     // dispara el reemplazo por (companyId, anio)
+          isLast: i === totalChunks - 1,
+          rows: chunk,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`ledger chunk ${i + 1}/${totalChunks} → ${res.status}: ${text}`);
+      }
+    }
+    console.log(`${tag} ✓ Mayor: ${rows.length.toLocaleString()} líneas espejadas (${totalChunks} chunks)`);
+  } catch (err) {
+    console.error(`${tag} ✗ Error espejando mayor: ${err.message}`);
   }
 }
 

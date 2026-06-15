@@ -1118,6 +1118,11 @@ export default function DashboardPage() {
                       <FlaskConical size={14} aria-hidden="true" /> Validación Forense S10
                     </button>
                   )}
+                  <button onClick={() => router.push(`/dashboard/ledger?company=${selectedCompany.codEmpresa === 'GRUPO' ? COMPANIES[0].codEmpresa : selectedCompany.codEmpresa}&year=${selectedYear}`)}
+                    className="sidebar-link"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ScrollText size={14} aria-hidden="true" /> El Mayor (Libro Mayor)
+                  </button>
                 </div>
               )}
             </>

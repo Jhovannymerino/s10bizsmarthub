@@ -33,6 +33,40 @@ model KpiSnapshot {
   @@index([year, kpiType, companyId]) // queries de consolidado / scorecard
 }
 
+// ============================================================
+// EL MAYOR — espejo relacional de AsientoContable (S10)
+// Columna vertebral de trazabilidad: toda cifra contable es
+// derivable de aquí y todo asiento es navegable. Se reemplaza
+// por (companyId, anio) en cada sync. Capas de documentos
+// (vw_12...) y tesorería (OB_*) se enlazan por nroD / nroAsiento.
+// ============================================================
+model LedgerEntry {
+  id          BigInt   @id @default(autoincrement())
+  companyId   String // CodEmpresa
+  nroAsiento  String // CodAsientoContable — número de asiento (partida doble)
+  codUnico    String? // CodUnico — orden estable dentro del asiento
+  nroD        String? // documento relacionado → enlace a capa de documentos
+  fecha       DateTime // FechaAplicacionContable
+  anio        Int
+  mes         Int
+  codCuenta   String // cuenta contable completa
+  clase       String // LEFT(codCuenta,2) — 10,12,40,60,70...
+  grupoCuenta String // LEFT(codCuenta,4)
+  desCuenta   String
+  glosa       String   @default("")
+  codTercero  String?
+  tercero     String   @default("")
+  debito      Decimal  @default(0) @db.Decimal(18, 2)
+  credito     Decimal  @default(0) @db.Decimal(18, 2)
+  syncedAt    DateTime @default(now())
+
+  @@index([companyId, anio, codCuenta]) // navegación cuenta + año + saldo
+  @@index([companyId, anio, clase]) // árbol por clase
+  @@index([companyId, nroAsiento]) // drill: partida doble completa de un asiento
+  @@index([companyId, nroD]) // enlace a documentos (CxC/CxP)
+  @@index([companyId, anio, mes]) // filtro por periodo
+}
+
 // Empresas configuradas
 model Company {
   id           Int      @id @default(autoincrement())

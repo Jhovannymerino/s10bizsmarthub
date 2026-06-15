@@ -436,6 +436,71 @@ export class SyncService {
   }
 
   // ─────────────────────────────────────────────
+  // EL MAYOR — espejo del libro mayor en chunks
+  // isFirst reemplaza (companyId, anio); el resto hace append.
+  // ─────────────────────────────────────────────
+
+  async processLedgerChunk(payload: {
+    companyId: string;
+    year: number;
+    isFirst: boolean;
+    isLast: boolean;
+    rows: any[];
+  }) {
+    const { companyId, year, isFirst, isLast, rows } = payload;
+
+    if (!companyId || !year || !Array.isArray(rows)) {
+      throw new Error('payload de mayor inválido: requiere companyId, year, rows[]');
+    }
+
+    // La primera tanda reemplaza el año completo (consistencia con S10)
+    if (isFirst) {
+      const deleted = await this.prisma.ledgerEntry.deleteMany({
+        where: { companyId, anio: year },
+      });
+      this.logger.log(`Mayor ${companyId}/${year}: ${deleted.count} líneas previas eliminadas`);
+    }
+
+    const data = rows.map((r) => ({
+      companyId,
+      nroAsiento: String(r.NroAsiento ?? ''),
+      codUnico: r.CodUnico != null ? String(r.CodUnico) : null,
+      nroD: r.NroD != null ? String(r.NroD) : null,
+      fecha: new Date(r.Fecha),
+      anio: Number(r.Anio) || year,
+      mes: Number(r.Mes) || 0,
+      codCuenta: String(r.CodCuenta ?? ''),
+      clase: String(r.Clase ?? ''),
+      grupoCuenta: String(r.GrupoCuenta ?? ''),
+      desCuenta: String(r.DesCuenta ?? ''),
+      glosa: String(r.Glosa ?? ''),
+      codTercero: r.CodTercero ? String(r.CodTercero) : null,
+      tercero: String(r.Tercero ?? ''),
+      debito: r.Debito ?? 0,
+      credito: r.Credito ?? 0,
+    }));
+
+    await this.prisma.ledgerEntry.createMany({ data });
+
+    if (isLast) {
+      const total = await this.prisma.ledgerEntry.count({ where: { companyId, anio: year } });
+      this.logger.log(`Mayor ${companyId}/${year}: espejo completo — ${total} líneas`);
+      await this.prisma.syncLog.create({
+        data: {
+          companyId,
+          kpiType: 'libro_mayor',
+          status: 'success',
+          mode: 'push',
+          rowsProcessed: total,
+          triggeredBy: 'agent',
+        },
+      });
+    }
+
+    return { success: true, inserted: data.length, isFirst, isLast };
+  }
+
+  // ─────────────────────────────────────────────
   // VPN script trigger — llama al servicio trigger en el host VPS
   // El servicio corre en host:3299 y ejecuta sync-vpn.sh fuera de Docker
   // ─────────────────────────────────────────────

@@ -32,6 +32,23 @@ export class SyncController {
   }
 
   /**
+   * POST /sync/ledger
+   * Recibe chunks del libro mayor desde el agente — autenticado con x-sync-key.
+   * isFirst dispara el reemplazo por (companyId, anio); el resto hace append.
+   */
+  @Post('ledger')
+  async ledger(
+    @Headers('x-sync-key') syncKey: string,
+    @Body() payload: any,
+  ) {
+    const expectedKey = process.env.SYNC_API_KEY;
+    if (!expectedKey || syncKey !== expectedKey) {
+      throw new UnauthorizedException('Invalid sync key');
+    }
+    return this.syncService.processLedgerChunk(payload);
+  }
+
+  /**
    * POST /sync/trigger
    * Trigger manual via VPN script — requiere JWT
    */

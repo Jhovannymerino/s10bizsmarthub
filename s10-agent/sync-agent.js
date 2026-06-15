@@ -213,6 +213,7 @@ WITH dedup AS (
     AND DescripcionEstado = '1'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
     AND (Total - ISNULL(TotalPagado,0)) > 0.01
+    AND NOT (UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%' AND ISNULL(TotalPagado,0) < 0)
 )
 SELECT
   ISNULL(CodIdentificador,'')                                        AS CodCliente,
@@ -525,6 +526,7 @@ WITH dedup AS (
     AND DescripcionEstado = '1'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
     AND (Total - ISNULL(TotalPagado,0)) > 0.01
+    AND NOT (UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%' AND ISNULL(TotalPagado,0) < 0)
 )
 SELECT
   ISNULL(CodIdentificador,'')                                        AS CodProveedor,

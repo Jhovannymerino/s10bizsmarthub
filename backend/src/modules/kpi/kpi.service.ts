@@ -269,7 +269,7 @@ export class KpiService {
         gav: acc.gav + m.gav,
         ebitda: acc.ebitda + m.ebitda,
         gastosFinancieros: acc.gastosFinancieros + m.gastosFinancieros,
-        diferenciaCambio: acc.diferenciaCambio + m.diferenciaCambio,
+        diferenciaCambio: acc.diferenciaCambio + (m.diferenciaCambio ?? 0),
         utilidadNeta: acc.utilidadNeta + m.utilidadNeta,
       }),
       { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 },
@@ -281,7 +281,7 @@ export class KpiService {
     ytd['utilidadNetaPct'] = ytd['margenNetoPct']; // alias para compatibilidad con PL_ROWS del frontend
     ytd['gavPct'] = ytd.ingresos > 0 ? round((ytd.gav / ytd.ingresos) * 100) : 0;
     ytd['costoPct'] = ytd.ingresos > 0 ? round((ytd.costoDirecto / ytd.ingresos) * 100) : 0;
-    ytd['covIntereses'] = ytd.gastosFinancieros > 0 ? round(ytd.ebitda / ytd.gastosFinancieros) : null;
+    ytd['covIntereses'] = (ytd.gastosFinancieros + ytd.diferenciaCambio) > 0 ? round(ytd.ebitda / (ytd.gastosFinancieros + ytd.diferenciaCambio)) : null;
 
     const detalle = {
       ingresos: Object.values(detalleMap.ingresos).sort((a: any, b: any) => b.ytd - a.ytd),
@@ -1588,7 +1588,7 @@ export class KpiService {
 
     const zeroYtd = () => ({
       ingresos: 0, costoDirecto: 0, margenBruto: 0,
-      gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0,
+      gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0,
     });
 
     const ytdTotal = zeroYtd();
@@ -1597,7 +1597,7 @@ export class KpiService {
     // Monthly consolidado (12 meses)
     const monthlyTotal: Record<number, any> = {};
     for (let m = 1; m <= 12; m++) {
-      monthlyTotal[m] = { mes: m, mesLabel: MONTHS[m - 1], ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 };
+      monthlyTotal[m] = { mes: m, mesLabel: MONTHS[m - 1], ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 };
     }
 
     for (const { company, data } of snapshots) {
@@ -1611,6 +1611,7 @@ export class KpiService {
       ytdTotal.gav += y.gav || 0;
       ytdTotal.ebitda += y.ebitda || 0;
       ytdTotal.gastosFinancieros += y.gastosFinancieros || 0;
+      ytdTotal.diferenciaCambio += y.diferenciaCambio || 0;
       ytdTotal.utilidadNeta += y.utilidadNeta || 0;
 
       empresas.push({
@@ -1629,6 +1630,7 @@ export class KpiService {
           monthlyTotal[m.mes].gav += m.gav || 0;
           monthlyTotal[m.mes].ebitda += m.ebitda || 0;
           monthlyTotal[m.mes].gastosFinancieros += m.gastosFinancieros || 0;
+          monthlyTotal[m.mes].diferenciaCambio += m.diferenciaCambio || 0;
           monthlyTotal[m.mes].utilidadNeta += m.utilidadNeta || 0;
         }
       }
@@ -1647,7 +1649,7 @@ export class KpiService {
     ytd.ebitdaPct = ytd.ingresos > 0 ? round((ytd.ebitda / ytd.ingresos) * 100) : 0;
     ytd.margenNetoPct = ytd.ingresos > 0 ? round((ytd.utilidadNeta / ytd.ingresos) * 100) : 0;
     ytd.gavPct = ytd.ingresos > 0 ? round((ytd.gav / ytd.ingresos) * 100) : 0;
-    ytd.covIntereses = ytd.gastosFinancieros > 0 ? round(ytd.ebitda / ytd.gastosFinancieros) : null;
+    ytd.covIntereses = (ytd.gastosFinancieros + ytd.diferenciaCambio) > 0 ? round(ytd.ebitda / (ytd.gastosFinancieros + ytd.diferenciaCambio)) : null;
 
     const plMonthly = Object.values(monthlyTotal).map((m: any) => ({
       ...m,
@@ -1659,6 +1661,7 @@ export class KpiService {
       ebitda: round(m.ebitda),
       ebitdaPct: m.ingresos > 0 ? round((m.ebitda / m.ingresos) * 100) : 0,
       gastosFinancieros: round(m.gastosFinancieros),
+      diferenciaCambio: round(m.diferenciaCambio),
       utilidadNeta: round(m.utilidadNeta),
     }));
 

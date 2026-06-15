@@ -2662,13 +2662,25 @@ SELECT TOP 15
   ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR)) AS Proveedor,
   ISNULL(CodIdentificador,'') AS CodProveedor,
   COUNT(*) AS NumDocumentos,
-  ROUND(SUM(Total - ISNULL(TotalPagado,0)), 2) AS SaldoCxP,
+  ROUND(SUM(
+    CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+      THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0
+                ELSE -(Total - ISNULL(TotalPagado,0)) END
+    ELSE Total - ISNULL(TotalPagado,0)
+    END
+  ), 2) AS SaldoCxP,
   CONVERT(VARCHAR(10), MIN(FechaDocumento), 103) AS PrimerDoc,
   CONVERT(VARCHAR(10), MAX(FechaDocumento), 103) AS UltimoDoc
 FROM dedup
 WHERE rn = 1
 GROUP BY DescripcionIdentificador, CodIdentificador
-HAVING SUM(Total - ISNULL(TotalPagado,0)) > 1000
+HAVING SUM(
+  CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
+    THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0
+              ELSE -(Total - ISNULL(TotalPagado,0)) END
+  ELSE Total - ISNULL(TotalPagado,0)
+  END
+) > 1000
 ORDER BY SaldoCxP DESC
 `;
 

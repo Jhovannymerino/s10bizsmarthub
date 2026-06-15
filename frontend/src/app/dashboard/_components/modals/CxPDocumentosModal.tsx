@@ -293,7 +293,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                         <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? '#F59E0B' : '#8B97A8' }}>
                           {(d.Detraccion ?? 0) > 0 ? fMon(moneda, d.Detraccion) : '—'}
                         </td>
-                        <td style={{ textAlign: 'right', fontWeight: 600, color: (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: esNC ? '#EF4444' : (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
                           {fMon(moneda, d.Saldo ?? 0)}
                         </td>
                         <td style={{ fontSize: '0.70rem', color: '#8B97A8' }}>{d.Estado || '—'}</td>

@@ -1,8 +1,7 @@
 export function fmt(n: number | undefined | null): string {
   if (n === undefined || n === null || isNaN(n)) return '—';
-  const rounded = Math.round(n);
-  const abs = Math.abs(rounded).toLocaleString('en-US');
-  return rounded < 0 ? `-S/ ${abs}` : `S/ ${abs}`;
+  const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n < 0 ? `-S/ ${abs}` : `S/ ${abs}`;
 }
 
 export function pct(n: number | undefined | null): string {

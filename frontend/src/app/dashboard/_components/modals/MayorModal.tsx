@@ -1,8 +1,9 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { X, ArrowLeft } from 'lucide-react';
+import { X, ArrowLeft, Link2 } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
+import { DocPreview } from './DocPreview';
 
 // La fecha viene como UTC medianoche (p.ej. 2026-01-01T00:00:00Z). Formatear en
 // UTC evita que en hora Perú (UTC-5) se muestre el día anterior (31/12/2025).
@@ -91,7 +92,6 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
                     <tr>
                       <th style={{ textAlign: 'left' }}>Fecha</th>
                       <th style={{ textAlign: 'left' }}>Asiento</th>
-                      <th style={{ textAlign: 'left' }}>Doc.</th>
                       {!soloUnaCuenta && <th style={{ textAlign: 'left' }}>Cuenta</th>}
                       <th style={{ textAlign: 'left' }}>Glosa</th>
                       <th style={{ textAlign: 'left' }}>Tercero</th>
@@ -110,7 +110,6 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
                             {r.nroAsiento}
                           </button>
                         </td>
-                        <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#8B97A8', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nroD || ''}>{r.nroD || '—'}</td>
                         {!soloUnaCuenta && <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }} title={r.desCuenta}>{r.codCuenta}</td>}
                         <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8' }} title={r.glosa}>{r.glosa || '—'}</td>
                         <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem' }} title={r.tercero}>{r.tercero || '—'}</td>
@@ -122,7 +121,7 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
                   </tbody>
                   <tfoot>
                     <tr className="total-row">
-                      <td colSpan={soloUnaCuenta ? 5 : 6}>TOTAL FILTRADO ({data.total.toLocaleString()} líneas)</td>
+                      <td colSpan={soloUnaCuenta ? 4 : 5}>TOTAL FILTRADO ({data.total.toLocaleString()} líneas)</td>
                       <td>{fmt(data.totalDebito)}</td>
                       <td>{fmt(data.totalCredito)}</td>
                       <td>{fmt(data.saldoNeto)}</td>
@@ -148,6 +147,7 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
 // Partida doble del comprobante — mismo lenguaje oscuro
 function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: { companyId: string; nroAsiento: string; fecha?: string; codUnico?: string; onClose: () => void }) {
   const [data, setData] = useState<any>(null);
+  const [docPreview, setDocPreview] = useState<string | null>(null);
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const p = new URLSearchParams();
@@ -169,7 +169,7 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
               <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><ArrowLeft size={16} /></button>
               <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Asiento {nroAsiento}</span>
             </div>
-            {data && <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}</div>}
+            {data && <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}{data.codUnico ? <> · <span style={{ color: '#6B7280' }}>Operación S10: <span style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{data.codUnico}</span></span></> : ''}</div>}
           </div>
           <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} /></button>
         </div>
@@ -181,6 +181,7 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
               <table className="table-s10" style={{ fontSize: '0.76rem' }}>
                 <thead>
                   <tr>
+                    <th style={{ width: 28 }}></th>
                     <th style={{ textAlign: 'left' }}>Cuenta</th>
                     <th style={{ textAlign: 'left' }}>Descripción</th>
                     <th style={{ textAlign: 'left' }}>Tercero</th>
@@ -191,6 +192,12 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
                 <tbody>
                   {data.lineas.map((l: any) => (
                     <tr key={l.id}>
+                      <td style={{ textAlign: 'center', padding: '0 0.25rem' }}>
+                        {l.nroD
+                          ? <button onClick={() => setDocPreview(String(l.nroD))} title="Ver documento origen" aria-label="Ver documento origen"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', padding: 0, display: 'flex' }}><Link2 size={13} aria-hidden="true" /></button>
+                          : <span style={{ color: '#4B5563', fontSize: '0.7rem' }}>—</span>}
+                      </td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{l.codCuenta}</td>
                       <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.desCuenta}>{l.desCuenta}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem', color: '#8B97A8' }} title={l.tercero}>{l.tercero || '—'}</td>
@@ -201,7 +208,7 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
                 </tbody>
                 <tfoot>
                   <tr className="total-row">
-                    <td colSpan={3}>TOTALES</td>
+                    <td colSpan={4}>TOTALES</td>
                     <td>{fmt(data.totalDebito)}</td>
                     <td>{fmt(data.totalCredito)}</td>
                   </tr>
@@ -215,6 +222,7 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
           </>
         )}
       </div>
+      {docPreview && <DocPreview companyId={companyId} nroD={docPreview} onClose={() => setDocPreview(null)} />}
     </div>
   );
 }

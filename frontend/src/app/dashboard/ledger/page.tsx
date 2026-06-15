@@ -259,7 +259,6 @@ function LedgerPageInner() {
                   <tr style={{ background: 'rgba(255,255,255,0.04)', position: 'sticky', top: 0 }}>
                     <th style={thL}>Fecha</th>
                     <th style={thL}>Asiento</th>
-                    <th style={thL}>Doc.</th>
                     {!cuenta && <th style={thL}>Cuenta</th>}
                     <th style={thL}>Glosa</th>
                     <th style={thL}>Tercero</th>
@@ -277,14 +276,6 @@ function LedgerPageInner() {
                           style={{ background: 'none', border: 'none', color: '#2BB4BB', cursor: 'pointer', fontFamily: 'monospace', textDecoration: 'underline', textDecorationStyle: 'dotted', padding: 0, fontSize: 12.5 }}>
                           {r.nroAsiento}
                         </button>
-                      </td>
-                      <td style={{ ...tdL, fontFamily: 'monospace', color: '#8B97A8' }}>
-                        {r.nroD ? (
-                          <button onClick={() => setNroD(String(r.nroD))} title="Filtrar por este documento"
-                            style={{ background: 'none', border: 'none', color: '#2BB4BB', cursor: 'pointer', fontFamily: 'monospace', padding: 0, fontSize: 12.5 }}>
-                            {r.nroD}
-                          </button>
-                        ) : '—'}
                       </td>
                       {!cuenta && (
                         <td style={tdL}>
@@ -339,6 +330,7 @@ function AsientoModal({ company, nroAsiento, fecha, codUnico, token, onClose }: 
             {data && (
               <div style={{ fontSize: 13, color: '#8B97A8' }}>
                 {fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}
+                {data.codUnico ? <> · <span style={{ color: '#6B7280' }}>Operación S10: <span style={{ fontFamily: 'monospace' }}>{data.codUnico}</span></span></> : ''}
               </div>
             )}
           </div>

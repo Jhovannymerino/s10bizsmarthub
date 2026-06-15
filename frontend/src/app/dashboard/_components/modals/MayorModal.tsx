@@ -169,7 +169,7 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
               <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><ArrowLeft size={16} /></button>
               <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Asiento {nroAsiento}</span>
             </div>
-            {data && <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}{data.codUnico ? <> · <span style={{ color: '#6B7280' }}>Operación S10: <span style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{data.codUnico}</span></span></> : ''}</div>}
+            {data && <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}{data.operaciones?.length ? <> · <span style={{ color: '#6B7280' }}>{data.operaciones.length === 1 ? 'Operación' : 'Operaciones'} S10: <span style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{data.operaciones.join(', ')}</span></span></> : ''}</div>}
           </div>
           <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} /></button>
         </div>

@@ -330,7 +330,7 @@ function AsientoModal({ company, nroAsiento, fecha, codUnico, token, onClose }: 
             {data && (
               <div style={{ fontSize: 13, color: '#8B97A8' }}>
                 {fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}
-                {data.codUnico ? <> · <span style={{ color: '#6B7280' }}>Operación S10: <span style={{ fontFamily: 'monospace' }}>{data.codUnico}</span></span></> : ''}
+                {data.operaciones?.length ? <> · <span style={{ color: '#6B7280' }}>{data.operaciones.length === 1 ? 'Operación' : 'Operaciones'} S10: <span style={{ fontFamily: 'monospace' }}>{data.operaciones.join(', ')}</span></span></> : ''}
               </div>
             )}
           </div>

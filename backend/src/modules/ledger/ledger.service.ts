@@ -142,13 +142,14 @@ export class LedgerService {
   // real del comprobante es CodUnico cuando está presente; cuando viene vacío,
   // acotamos por (nroAsiento + fecha) para no mezclar comprobantes de otros días.
   // ─────────────────────────────────────────────
-  async getAsiento(companyId: string, nroAsiento: string, fecha?: string, codUnico?: string) {
+  async getAsiento(companyId: string, nroAsiento: string, fecha?: string, _codUnico?: string) {
+    // Agrupación UNIFORME por (nroAsiento + fecha) = el comprobante contable tal
+    // como S10 lo numeró ese día. Trata igual a las líneas con y sin CodUnico
+    // (CodUnico viene vacío en ~40%, así que no sirve como clave universal).
+    // Cada grupo (asiento+fecha) cuadra. Sin fecha, cae a solo nroAsiento (legacy).
     let where: string;
     const params: any[] = [companyId];
-    if (codUnico) {
-      where = '"companyId" = $1 AND "codUnico" = $2';
-      params.push(codUnico);
-    } else if (fecha) {
+    if (fecha) {
       where = '"companyId" = $1 AND "nroAsiento" = $2 AND "fecha"::date = $3::date';
       params.push(nroAsiento, fecha);
     } else {
@@ -168,10 +169,14 @@ export class LedgerService {
 
     const totalDebito = lineas.reduce((s, l) => s + l.debito, 0);
     const totalCredito = lineas.reduce((s, l) => s + l.credito, 0);
+    // Operaciones S10 (CodUnico) presentes en el comprobante — metadato, no clave.
+    const operaciones = Array.from(
+      new Set(lineas.map((l) => l.codUnico).filter((c) => c != null && c !== '')),
+    );
 
     return {
       nroAsiento,
-      codUnico: codUnico ?? lineas[0]?.codUnico ?? null,
+      operaciones,
       lineas,
       totalDebito,
       totalCredito,

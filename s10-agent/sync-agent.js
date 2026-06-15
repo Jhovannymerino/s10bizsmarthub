@@ -129,25 +129,25 @@ SELECT
   ROUND(SUM(
     CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
       THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
-                ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
-    ELSE doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)
+                ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+    ELSE doc.Total - ISNULL(doc.TotalPagado,0)
     END
   ), 2)                                                                     AS SaldoTotal,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) >= GETDATE()
                   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)     AS SaldoVigente,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)     AS SaldoVigente,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
                   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_0_30,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_0_30,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
                   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_31_60,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_31_60,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
                   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_61_90,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_61_90,
   ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) < DATEADD(DAY,-90,GETDATE())
                   AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0) ELSE 0 END), 2)    AS Dias_90_mas,
+           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_90_mas,
   MAX(ISNULL(doc.TipoCambio, ${TC_USD_FALLBACK}))                                        AS TipoCambio
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
@@ -158,15 +158,15 @@ GROUP BY doc.DescripcionIdentificador, doc.CodIdentificador, doc.CodMoneda
 HAVING SUM(
   CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
     THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
-              ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
-  ELSE doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)
+              ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+  ELSE doc.Total - ISNULL(doc.TotalPagado,0)
   END
 ) > 0.01
 ORDER BY SUM(
   CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
     THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
-              ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
-  ELSE doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)
+              ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+  ELSE doc.Total - ISNULL(doc.TotalPagado,0)
   END * CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,${TC_USD_FALLBACK}) END
 ) DESC
 `;
@@ -179,13 +179,13 @@ SELECT
   LEFT(MAX(doc.DescripcionTipoDocumento), 40)                         AS DesTipo,
   COUNT(*)                                                            AS NDocs,
   COUNT(CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
-              AND (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
+              AND (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01 THEN 1 END) AS NDocsPendientes,
   ROUND(SUM(
     CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA DE CR%'
       THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0
-                ELSE -(doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) END
-    ELSE CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0)) > 0.01
-              THEN (doc.Total - ISNULL(doc.TotalPagado,0) - ISNULL(doc.MontoDetraccion,0))
+                ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+    ELSE CASE WHEN (doc.Total - ISNULL(doc.TotalPagado,0)) > 0.01
+              THEN (doc.Total - ISNULL(doc.TotalPagado,0))
               ELSE 0 END
     END *
     CASE WHEN doc.CodMoneda='01' THEN 1.0 ELSE ISNULL(doc.TipoCambio,${TC_USD_FALLBACK}) END
@@ -213,7 +213,7 @@ WITH dedup AS (
     AND DescripcionEstado = '1'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-    AND (Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
+    AND (Total - ISNULL(TotalPagado,0)) > 0.01
 )
 SELECT
   ISNULL(CodIdentificador,'')                                        AS CodCliente,
@@ -229,7 +229,7 @@ SELECT
   ROUND(Total, 2)                                                    AS Total,
   ROUND(ISNULL(TotalPagado,0), 2)                                    AS Pagado,
   ROUND(ISNULL(MontoDetraccion,0), 2)                                AS Detraccion,
-  ROUND(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0), 2) AS Saldo,
+  ROUND(Total - ISNULL(TotalPagado,0), 2) AS Saldo,
   DATEDIFF(DAY, ISNULL(FechaVencimiento, FechaDocumento), GETDATE()) AS DiasVencido,
   ISNULL(DescripcionEstado,'')                                       AS Estado
 FROM dedup
@@ -253,7 +253,7 @@ WITH dedup AS (
       DescripcionEstado = '6'
       OR UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%VINCULADA%'
     )
-    AND (Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
+    AND (Total - ISNULL(TotalPagado,0)) > 0.01
 )
 SELECT
   ISNULL(CodIdentificador,'')                                              AS CodCliente,
@@ -267,8 +267,8 @@ SELECT
   ROUND(Total, 2)                                                          AS Total,
   ROUND(ISNULL(TotalPagado,0), 2)                                          AS Pagado,
   ROUND(ISNULL(MontoDetraccion,0), 2)                                      AS Detraccion,
-  ROUND(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0), 2)     AS Saldo,
-  ROUND((Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0))
+  ROUND(Total - ISNULL(TotalPagado,0), 2)     AS Saldo,
+  ROUND((Total - ISNULL(TotalPagado,0))
     * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio,${TC_USD_FALLBACK}) END, 0) AS SaldoSoles,
   DATEDIFF(DAY, FechaDocumento, GETDATE())                                 AS DiasAntiguedad,
   LEFT(ISNULL(Observacion,''), 150)                                        AS Observacion
@@ -351,7 +351,7 @@ SELECT
   ISNULL(doc.Total, 0)                                       AS Total,
   ISNULL(doc.TotalPagado, 0)                                 AS TotalPagado,
   ISNULL(doc.MontoDetraccion, 0)                             AS Detraccion,
-  doc.Total - ISNULL(doc.TotalPagado, 0) - ISNULL(doc.MontoDetraccion, 0) AS Saldo,
+  doc.Total - ISNULL(doc.TotalPagado, 0) AS Saldo,
   ISNULL(doc.DescripcionEstado, '')                          AS Estado,
   ISNULL(doc.Observacion, '')                                AS Observacion,
   ISNULL(doc.CodMoneda, '01')                                AS Moneda,
@@ -474,21 +474,21 @@ WITH dedup AS (
 SELECT
   ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR))  AS Proveedor,
   ISNULL(CodIdentificador,'')                                          AS CodProveedor,
-  ROUND(SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)), 2) AS SaldoTotal,
+  ROUND(SUM(Total - ISNULL(TotalPagado,0)), 2) AS SaldoTotal,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) >= GETDATE()
-            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS SaldoVigente,
+            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS SaldoVigente,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
-            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_0_30,
+            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_0_30,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
-            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_31_60,
+            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_31_60,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
-            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_61_90,
+            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_61_90,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) < DATEADD(DAY,-90,GETDATE())
-            THEN Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0) ELSE 0 END), 2) AS Dias_90_mas
+            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_90_mas
 FROM dedup
 WHERE rn = 1
 GROUP BY DescripcionIdentificador, CodIdentificador
-HAVING SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
+HAVING SUM(Total - ISNULL(TotalPagado,0)) > 0.01
 ORDER BY SaldoTotal DESC
 `;
 
@@ -503,7 +503,7 @@ WITH dedup AS (
     AND DescripcionEstado = '1'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA DE CR%'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-    AND (Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 0.01
+    AND (Total - ISNULL(TotalPagado,0)) > 0.01
 )
 SELECT
   ISNULL(CodIdentificador,'')                                        AS CodProveedor,
@@ -519,7 +519,7 @@ SELECT
   ROUND(Total, 2)                                                    AS Total,
   ROUND(ISNULL(TotalPagado,0), 2)                                    AS Pagado,
   ROUND(ISNULL(MontoDetraccion,0), 2)                                AS Detraccion,
-  ROUND(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0), 2) AS Saldo,
+  ROUND(Total - ISNULL(TotalPagado,0), 2) AS Saldo,
   DATEDIFF(DAY, ISNULL(FechaVencimiento, FechaDocumento), GETDATE()) AS DiasVencido,
   ISNULL(DescripcionEstado,'')                                       AS Estado
 FROM dedup
@@ -2636,13 +2636,13 @@ SELECT TOP 15
   ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR)) AS Proveedor,
   ISNULL(CodIdentificador,'') AS CodProveedor,
   COUNT(*) AS NumDocumentos,
-  ROUND(SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)), 2) AS SaldoCxP,
+  ROUND(SUM(Total - ISNULL(TotalPagado,0)), 2) AS SaldoCxP,
   CONVERT(VARCHAR(10), MIN(FechaDocumento), 103) AS PrimerDoc,
   CONVERT(VARCHAR(10), MAX(FechaDocumento), 103) AS UltimoDoc
 FROM dedup
 WHERE rn = 1
 GROUP BY DescripcionIdentificador, CodIdentificador
-HAVING SUM(Total - ISNULL(TotalPagado,0) - ISNULL(MontoDetraccion,0)) > 1000
+HAVING SUM(Total - ISNULL(TotalPagado,0)) > 1000
 ORDER BY SaldoCxP DESC
 `;
 

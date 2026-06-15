@@ -1,11 +1,12 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Link2, RotateCcw } from 'lucide-react';
+import { X, Link2, RotateCcw, ScrollText } from 'lucide-react';
 import { API, MESES } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
 import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 import { DocPreview } from './DocPreview';
+import { MayorModal, MayorFiltro } from './MayorModal';
 
 export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpoint, codTercero, yearOverride, mesPreset, onClose }: {
   companyId: string; year: number; codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; yearOverride?: number; mesPreset?: number; onClose: () => void;
@@ -20,7 +21,20 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [docPreview, setDocPreview] = useState<string | null>(null);
+  const [showMayor, setShowMayor] = useState(false);
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+
+  // codCuenta puede ser clase (2), grupo (4) o cuenta completa — mapear al filtro correcto del mayor.
+  const mayorFiltro: MayorFiltro = (() => {
+    const f: MayorFiltro = {};
+    const cc = String(codCuenta || '');
+    if (cc.length <= 2) f.clase = cc;
+    else if (cc.length <= 4) f.grupo = cc;
+    else f.cuenta = cc;
+    if (codTercero) f.tercero = codTercero;
+    if (mesFilter) f.mes = mesFilter;
+    return f;
+  })();
   const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => { modalRef.current?.focus(); }, []);
 
@@ -75,7 +89,14 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
             <div id="account-txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {fetchYear} · {filtered.length} movimientos · <Link2 size={11} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle' }} /> = doc. origen</div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <button onClick={() => setShowMayor(true)}
+              title="Ver estas líneas en el libro mayor"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: '#2BB4BB' }}>
+              <ScrollText size={13} aria-hidden="true" /> Ver en el Mayor
+            </button>
+            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          </div>
         </div>
         {isActivoFijo && aniosPresentes.length > 0 && (
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -157,6 +178,15 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
       </div>
     </div>
     {docPreview && <DocPreview companyId={companyId} nroD={docPreview} onClose={() => setDocPreview(null)} />}
+    {showMayor && (
+      <MayorModal
+        companyId={companyId}
+        year={fetchYear}
+        filtro={mayorFiltro}
+        titulo={`${codCuenta} — ${descripcion}`}
+        onClose={() => setShowMayor(false)}
+      />
+    )}
   </>
   );
 }

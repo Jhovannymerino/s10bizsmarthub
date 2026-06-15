@@ -10,6 +10,7 @@ export interface MayorFiltro {
   clase?: string;
   grupo?: string;
   nroD?: string;
+  tercero?: string;
   search?: string;
   mes?: number;
 }
@@ -37,6 +38,7 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
     if (filtro?.clase) p.set('clase', filtro.clase);
     if (filtro?.grupo) p.set('grupo', filtro.grupo);
     if (filtro?.nroD) p.set('nroD', filtro.nroD);
+    if (filtro?.tercero) p.set('tercero', filtro.tercero);
     if (filtro?.search) p.set('search', filtro.search);
     if (filtro?.mes) p.set('mes', String(filtro.mes));
     fetch(`${API}/kpi/${companyId}/ledger?${p}`, { headers: { Authorization: `Bearer ${token}` } })

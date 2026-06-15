@@ -4,7 +4,9 @@
 # Ejecutar con Git Bash desde Windows
 # ============================================================
 
-set -e
+# set -e: aborta ante error. pipefail: que `ssh ... | tee` devuelva el fallo
+# del ssh y no el éxito del tee (si no, un build roto pasa desapercibido).
+set -eo pipefail
 
 VPS="root@72.62.16.28"
 SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=30 -o BatchMode=no"
@@ -217,18 +219,38 @@ log ""
 log "── Paso 8: Levantando contenedores ──"
 
 ssh $SSH_OPTS "$VPS" "
+  set -e   # un build/recreate que falle aborta el bloque remoto (y con pipefail, el deploy)
   cd $VPS_APP_DIR
 
-  # El VPS no tiene git history (extrae tarball), siempre rebuilding para garantizar cambios
-  echo 'Rebuilding todos los servicios...'
+  # Imagen plana que SÍ se carga como :latest en el image store de docker.
+  # Sin esto, buildx puede producir manifest-lists/attestations que dejan :latest
+  # apuntando a la imagen vieja y el contenedor nunca estrena el código nuevo.
+  export BUILDX_NO_DEFAULT_ATTESTATIONS=1
 
+  echo 'Rebuilding todos los servicios...'
   docker compose -f docker-compose.prod.yml up -d s10biz-db
-  docker compose -f docker-compose.prod.yml up -d --build s10biz-backend
-  docker compose -f docker-compose.prod.yml up -d --build s10biz-frontend
+
+  # Build explícito y separado: si tsc/prisma/next fallan, set -e aborta AQUÍ.
+  docker compose -f docker-compose.prod.yml build s10biz-backend
+  docker compose -f docker-compose.prod.yml build s10biz-frontend
+
+  # --force-recreate garantiza que el contenedor estrene la imagen recién construida.
+  docker compose -f docker-compose.prod.yml up -d --force-recreate s10biz-backend s10biz-frontend
 
   echo ''
   echo 'Estado de contenedores s10biz:'
   docker ps --filter 'name=s10biz' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+  # Asegurar que ambos contenedores quedaron efectivamente corriendo (no Exited/Restarting)
+  for c in s10biz-api s10biz-web; do
+    st=\$(docker inspect -f '{{.State.Status}}' \$c 2>/dev/null || echo missing)
+    if [ \"\$st\" != 'running' ]; then
+      echo \"ERROR: contenedor \$c en estado '\$st' tras el deploy\"
+      docker logs \$c --tail 30 2>&1 || true
+      exit 1
+    fi
+  done
+  echo '✓ Contenedores corriendo la imagen nueva'
 " 2>&1 | tee -a "$LOG_FILE"
 
 # ── 10. Health check ──────────────────────────────────────
@@ -237,14 +259,25 @@ log "── Paso 9: Health check ──"
 sleep 15
 
 ssh $SSH_OPTS "$VPS" "
-  echo 'Verificando API...'
-  curl -sf http://localhost:3202/kpi/80688541/dashboard?year=2026 \
-    -H 'Authorization: Bearer test' \
-    -o /dev/null -w 'API status: %{http_code}\n' 2>/dev/null || echo 'API: no responde aun (normal en primer arranque)'
-
+  set -e
+  echo 'Verificando API (hasta 6 intentos)...'
+  ok=false
+  for i in \$(seq 1 6); do
+    code=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3202/kpi/80688541/dashboard?year=2026 -H 'Authorization: Bearer test' || echo 000)
+    # Cualquier HTTP real (incl. 401/403) = la app responde. 000 = conexión rechazada/arrancando.
+    if [ \"\$code\" != '000' ]; then
+      echo \"✓ API responde (HTTP \$code)\"
+      ok=true; break
+    fi
+    echo \"  intento \$i: sin respuesta aun...\"; sleep 5
+  done
   echo ''
   echo 'Logs backend (ultimas 20 lineas):'
   docker logs s10biz-api --tail 20 2>&1
+  if [ \"\$ok\" != 'true' ]; then
+    echo 'ERROR: la API no respondió tras el deploy — abortando'
+    exit 1
+  fi
 " 2>&1 | tee -a "$LOG_FILE"
 
 log ""

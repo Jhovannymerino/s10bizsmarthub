@@ -11,7 +11,9 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-RUN npm run build && ./node_modules/.bin/prisma generate
+# Generar el cliente Prisma ANTES de compilar — tsc necesita los tipos de
+# los modelos (p.ej. LedgerEntry) o la compilación falla.
+RUN ./node_modules/.bin/prisma generate && npm run build
 
 # --- Runtime stage ---
 FROM node:20-alpine AS runner

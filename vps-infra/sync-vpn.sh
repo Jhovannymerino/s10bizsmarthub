@@ -39,65 +39,76 @@ if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
   log "VPN ya activo — reutilizando conexión existente"
   VPN_PREEXISTENTE=true
 else
-  # Matar VPN previa si existe (PIDFILE stale)
-  if [ -f "$PIDFILE" ]; then
-    kill "$(cat "$PIDFILE")" 2>/dev/null || true
-    rm -f "$PIDFILE"
-    sleep 3
-  fi
-
   # Guardar ruta default actual (eth0) ANTES de conectar VPN
   ETH_GW=$(ip route show default | awk '/default via/ {print $3; exit}')
   ETH_DEV=$(ip route show default | awk '/default via/ {print $5; exit}')
   log "Ruta default previa: via ${ETH_GW:-?} dev ${ETH_DEV:-?}"
 
-  # Conectar VPN con --no-routes: openfortivpn NO toca la tabla de rutas.
-  # Sin esto, renegocia repetidamente y vuelve a poner su ruta default via ppp0,
-  # ganándole la carrera al restore y matando el SSH. Con --no-routes, la ruta
-  # default queda intacta en eth0 (SSH vivo) y abajo agregamos a mano solo la
-  # ruta a la red S10 (192.168.1.0/24) por el túnel.
-  openfortivpn -c /etc/openfortivpn/s10.conf --no-routes 2>>"$LOG" &
-  VPN_PID=$!
-  echo $VPN_PID > "$PIDFILE"
+  # Conectar el VPN con reintentos. El FortiGate a veces rechaza la reconexión
+  # ("Peer refused to agree to our IP address") porque aún retiene la IP de la
+  # sesión anterior; un cooldown entre intentos la libera. Hasta 3 intentos.
+  CONECTADO=false
+  for intento in 1 2 3; do
+    # Limpiar cualquier VPN previa/colgada antes de cada intento
+    if [ -f "$PIDFILE" ]; then kill "$(cat "$PIDFILE")" 2>/dev/null || true; rm -f "$PIDFILE"; fi
+    pkill -f 'openfortivpn -c /etc/openfortivpn/s10.conf' 2>/dev/null || true
+    if [ "$intento" -gt 1 ]; then
+      log "Reintento VPN #$intento — esperando 15s a que el FortiGate libere la IP"
+      sleep 15
+    else
+      sleep 3
+    fi
 
-  # Esperar interfaz ppp (max 60s)
-  VPN_LEVANTO=false
-  for i in $(seq 1 60); do
-    sleep 1
-    if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
-      log "ppp0 levantado tras ${i}s"
-      VPN_LEVANTO=true
+    # --no-routes: openfortivpn NO toca la tabla de rutas (mantiene SSH vivo).
+    # La ruta a la red S10 se agrega a mano más abajo.
+    openfortivpn -c /etc/openfortivpn/s10.conf --no-routes 2>>"$LOG" &
+    VPN_PID=$!
+    echo $VPN_PID > "$PIDFILE"
 
-      # Restaurar ruta default eth0 — el VPN no debe secuestrar el gateway
-      if [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
-        ip route replace default via "$ETH_GW" dev "$ETH_DEV" 2>/dev/null || true
-        log "Ruta default restaurada → $ETH_DEV (via $ETH_GW) — SSH sigue accesible"
-      fi
-
-      # Agregar ruta específica para la red S10 a través del túnel VPN
-      ip route add 192.168.1.0/24 dev ppp0 2>/dev/null || true
-      log "Ruta VPN específica: 192.168.1.0/24 → ppp0"
-
-      # Espera hasta que el SQL Server responda (max 30s)
-      SQL_OK=false
-      for j in $(seq 1 30); do
-        if timeout 2 bash -c '</dev/tcp/192.168.1.51/1433' 2>/dev/null; then
-          log "SQL accesible tras ${j}s - listo para sync"
-          SQL_OK=true
-          break
+    # Esperar interfaz ppp (max 60s)
+    VPN_LEVANTO=false
+    for i in $(seq 1 60); do
+      sleep 1
+      if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
+        log "ppp0 levantado tras ${i}s (intento $intento)"
+        VPN_LEVANTO=true
+        # Seguro extra: la ruta default debe quedar en eth0, no en el túnel
+        if [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
+          ip route replace default via "$ETH_GW" dev "$ETH_DEV" 2>/dev/null || true
         fi
-        sleep 1
-      done
-      if [ "$SQL_OK" = "false" ]; then
-        log "ERROR: SQL Server 192.168.1.51:1433 no accesible tras 30s — abortando"
-        exit 1
+        ip route add 192.168.1.0/24 dev ppp0 2>/dev/null || true
+        log "Ruta S10 192.168.1.0/24 → ppp0; default intacto en eth0 (SSH vivo)"
+        break
       fi
+    done
+
+    if [ "$VPN_LEVANTO" = "false" ]; then
+      log "VPN no levantó en 60s (intento $intento) — reintentando"
+      kill "$VPN_PID" 2>/dev/null || true; rm -f "$PIDFILE"
+      continue
+    fi
+
+    # Esperar a que el SQL Server responda (max 30s)
+    SQL_OK=false
+    for j in $(seq 1 30); do
+      if timeout 2 bash -c '</dev/tcp/192.168.1.51/1433' 2>/dev/null; then
+        log "SQL accesible tras ${j}s (intento $intento) — listo para sync"
+        SQL_OK=true
+        break
+      fi
+      sleep 1
+    done
+
+    if [ "$SQL_OK" = "true" ]; then
+      CONECTADO=true
       break
     fi
+    log "SQL no accesible en intento $intento — matando VPN y reintentando"
+    kill "$VPN_PID" 2>/dev/null || true; rm -f "$PIDFILE"
   done
 
-  if [ "$VPN_LEVANTO" = "false" ]; then
-    log "ERROR: VPN no levantó en 60s"
+  if [ "$CONECTADO" != "true" ]; then
+    log "ERROR: VPN/SQL no disponible tras 3 intentos — abortando"
     exit 1
   fi
 fi

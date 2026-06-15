@@ -480,23 +480,39 @@ export class KpiService {
     for (const row of rows) {
       const banco = row.Banco || row.CodBanco;
       if (!bancos[banco]) {
-        bancos[banco] = { banco, codBanco: row.CodBanco, meses: {} };
+        bancos[banco] = { banco, codBanco: row.CodBanco, saldoInicial: 0, meses: {} };
         for (let m = 1; m <= 12; m++) bancos[banco].meses[m] = 0;
       }
-      bancos[banco].meses[row.Mes] = round(parseFloat(row.FlujoNeto) || 0);
+      const val = round(parseFloat(row.FlujoNeto) || 0);
+      // Mes 0 = saldo inicial (neto antes del año); 1-12 = flujo del mes
+      if (Number(row.Mes) === 0) bancos[banco].saldoInicial = val;
+      else bancos[banco].meses[row.Mes] = val;
     }
 
-    const bancosArr = Object.values(bancos);
+    const bancosArr: any[] = Object.values(bancos);
 
-    // Total por mes (suma de todos los bancos)
+    // Saldo de cierre acumulado por mes = saldoInicial + Σ flujos hasta el mes
+    for (const b of bancosArr) {
+      b.saldos = {};
+      let acum = b.saldoInicial || 0;
+      for (let m = 1; m <= 12; m++) {
+        acum = round(acum + (b.meses[m] || 0));
+        b.saldos[m] = acum;
+      }
+    }
+
+    // Totales por mes (flujo y saldo de cierre)
     const totalPorMes: Record<number, number> = {};
+    const totalSaldoPorMes: Record<number, number> = {};
     for (let m = 1; m <= 12; m++) {
       totalPorMes[m] = round(bancosArr.reduce((s: number, b: any) => s + (b.meses[m] || 0), 0));
+      totalSaldoPorMes[m] = round(bancosArr.reduce((s: number, b: any) => s + (b.saldos[m] || 0), 0));
     }
 
     return {
       bancos: bancosArr,
       totalPorMes,
+      totalSaldoPorMes,
       syncedAt: new Date().toISOString(),
     };
   }

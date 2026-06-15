@@ -1,11 +1,12 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, ScrollText } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
 import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 import { DocPaymentsModal } from './DocPaymentsModal';
+import { MayorModal } from './MayorModal';
 
 const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -65,8 +66,8 @@ function getOtroLabel(d: any): string {
   return 'Documento no estándar — revisar en S10';
 }
 
-export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose }: {
-  companyId: string; proveedor: string; codProveedor: string; onClose: () => void;
+export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, onClose }: {
+  companyId: string; proveedor: string; codProveedor: string; year?: number; onClose: () => void;
 }) {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +75,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [pagosDrill, setPagosDrill] = useState<{ nroD: string; label: string; totalPagado: number } | null>(null);
+  const [verMayor, setVerMayor] = useState(false);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -147,6 +149,16 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
         onClose={() => setPagosDrill(null)}
       />
     )}
+    {verMayor && (
+      <MayorModal
+        companyId={companyId}
+        companyName={proveedor}
+        year={year ?? new Date().getFullYear()}
+        filtro={{ tercero: codProveedor }}
+        titulo={`Movimientos de ${proveedor}`}
+        onClose={() => setVerMayor(false)}
+      />
+    )}
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="cxp-docs-modal-title" tabIndex={-1}
@@ -165,7 +177,14 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                 : `Documentos a pagar · ${filtered.length} de ${pendientes.length} (facturas, recibos, boletas, letras, etc.)`}
             </div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <button onClick={() => setVerMayor(true)}
+              title="Ver todos los movimientos contables de este proveedor en el Mayor (incluye documentos saldados o anulados)"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: '#2BB4BB' }}>
+              <ScrollText size={13} aria-hidden="true" /> Ver en el Mayor
+            </button>
+            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>

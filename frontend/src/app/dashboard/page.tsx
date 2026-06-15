@@ -177,6 +177,8 @@ export default function DashboardPage() {
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
   const [cajaPosicion, setCajaPosicion] = useState<any>(null);
+  // Posición de Caja: 'saldo' = saldo de cierre acumulado (default, lo que espera un contador) · 'flujo' = movimiento neto del mes
+  const [cajaVista, setCajaVista] = useState<'saldo' | 'flujo'>('saldo');
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
@@ -732,6 +734,7 @@ export default function DashboardPage() {
           companyId={selectedCompany.codEmpresa}
           cliente={cxcTxDrill.cliente}
           codCliente={cxcTxDrill.codCliente}
+          year={selectedYear}
           onClose={() => setCxCTxDrill(null)}
         />
       )}
@@ -747,6 +750,7 @@ export default function DashboardPage() {
           companyId={selectedCompany.codEmpresa}
           proveedor={cxpTxDrill.proveedor}
           codProveedor={cxpTxDrill.codProveedor}
+          year={selectedYear}
           onClose={() => setCxPTxDrill(null)}
         />
       )}
@@ -2575,60 +2579,79 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Tabla flujo por banco */}
-            <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Flujo Neto por Banco</div>
-                <ExportBtn onClick={() => {
-                  const headers = ['Banco', ...MESES, 'Total Año'];
-                  const rows = (caja.bancos || []).map((b: any) => {
-                    const total = Object.values(b.meses).reduce((s: number, v: any) => s + v, 0) as number;
-                    return [b.banco, ...Array.from({ length: 12 }, (_, i) => b.meses[i + 1] || 0), total];
-                  });
-                  exportCSV(`Caja_${selectedCompany.shortName}_${selectedYear}.csv`, headers, rows);
-                }} />
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table className="table-s10">
-                  <thead>
-                    <tr>
-                      <th>Banco</th>
-                      {MESES.map((m, i) => <th key={i}>{m}</th>)}
-                      <th>Total Año</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {caja.bancos?.map((b: any) => {
-                      const total = Object.values(b.meses).reduce((s: number, v: any) => s + v, 0) as number;
-                      return (
+            {/* Tabla por banco — saldo de cierre acumulado (default) o flujo neto del mes */}
+            {(() => {
+              const esSaldo = cajaVista === 'saldo';
+              // Valor por mes según vista. Saldo: acumulado (saldos[m], cae a saldoInicial si aún no hay flujo). Flujo: meses[m].
+              const valor = (b: any, m: number) => esSaldo ? (b.saldos?.[m] ?? b.saldoInicial ?? 0) : (b.meses?.[m] || 0);
+              // Columna final: saldo = saldo de cierre de diciembre (no suma); flujo = suma del año.
+              const totalFila = (b: any) => esSaldo ? (b.saldos?.[12] ?? b.saldoInicial ?? 0) : Object.values(b.meses).reduce((s: number, v: any) => s + v, 0);
+              const totalMesGlobal = (m: number) => esSaldo ? (caja.totalSaldoPorMes?.[m] || 0) : (caja.totalPorMes?.[m] || 0);
+              return (
+              <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{esSaldo ? 'Saldo de Cierre por Banco' : 'Flujo Neto por Banco'}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginTop: '0.15rem' }}>
+                      {esSaldo ? 'Saldo acumulado al cierre de cada mes (lo que queda en cada cuenta)' : 'Movimiento neto del mes (entradas − salidas)'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <button onClick={() => setCajaVista('saldo')}
+                      style={{ padding: '0.25rem 0.7rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                        border: esSaldo ? '1px solid rgba(43,180,187,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                        background: esSaldo ? 'rgba(43,180,187,0.2)' : 'rgba(255,255,255,0.04)', color: esSaldo ? '#2BB4BB' : '#8B97A8' }}>
+                      Saldo de cierre
+                    </button>
+                    <button onClick={() => setCajaVista('flujo')}
+                      style={{ padding: '0.25rem 0.7rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                        border: !esSaldo ? '1px solid rgba(43,180,187,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                        background: !esSaldo ? 'rgba(43,180,187,0.2)' : 'rgba(255,255,255,0.04)', color: !esSaldo ? '#2BB4BB' : '#8B97A8' }}>
+                      Flujo neto
+                    </button>
+                    <ExportBtn onClick={() => {
+                      const headers = ['Banco', ...MESES, esSaldo ? 'Saldo Final' : 'Total Año'];
+                      const rows = (caja.bancos || []).map((b: any) => [b.banco, ...Array.from({ length: 12 }, (_, i) => valor(b, i + 1)), totalFila(b)]);
+                      exportCSV(`Caja_${esSaldo ? 'saldo' : 'flujo'}_${selectedCompany.shortName}_${selectedYear}.csv`, headers, rows);
+                    }} />
+                  </div>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-s10">
+                    <thead>
+                      <tr>
+                        <th>Banco</th>
+                        {MESES.map((m, i) => <th key={i}>{m}</th>)}
+                        <th>{esSaldo ? 'Saldo Final' : 'Total Año'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {caja.bancos?.map((b: any) => (
                         <tr key={b.codBanco}>
                           <td>{b.banco}</td>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                            <td key={m} className={(b.meses[m] || 0) < 0 ? 'negative' : ''}>
-                              {fmt(b.meses[m] || 0)}
-                            </td>
+                            <td key={m} className={valor(b, m) < 0 ? 'negative' : ''}>{fmt(valor(b, m))}</td>
                           ))}
-                          <td style={{ fontWeight: 700 }} className={total < 0 ? 'negative' : ''}>{fmt(total)}</td>
+                          <td style={{ fontWeight: 700 }} className={totalFila(b) < 0 ? 'negative' : ''}>{fmt(totalFila(b))}</td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                  {caja.totalPorMes && (
-                    <tfoot>
-                      <tr className="total-row">
-                        <td>TOTAL</td>
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                          <td key={m} className={(caja.totalPorMes[m] || 0) < 0 ? 'negative' : ''}>
-                            {fmt(caja.totalPorMes[m] || 0)}
-                          </td>
-                        ))}
-                        <td>{fmt(Object.values(caja.totalPorMes as Record<string, number>).reduce((s, v) => s + v, 0))}</td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
+                      ))}
+                    </tbody>
+                    {(caja.totalPorMes || caja.totalSaldoPorMes) && (
+                      <tfoot>
+                        <tr className="total-row">
+                          <td>TOTAL</td>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                            <td key={m} className={totalMesGlobal(m) < 0 ? 'negative' : ''}>{fmt(totalMesGlobal(m))}</td>
+                          ))}
+                          <td>{fmt(esSaldo ? totalMesGlobal(12) : Object.values((caja.totalPorMes || {}) as Record<string, number>).reduce((s, v) => s + v, 0))}</td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
               </div>
-            </div>
+              );
+            })()}
 
             {/* ── Posición de Caja Trimestral ── */}
             {(() => {

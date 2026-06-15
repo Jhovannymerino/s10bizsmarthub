@@ -20,6 +20,7 @@ import { CxCVinculadasModal } from './_components/modals/CxCVinculadasModal';
 import { CxPDocumentosModal } from './_components/modals/CxPDocumentosModal';
 import { GavCategoryModal } from './_components/modals/GavCategoryModal';
 import { DetalleModal } from './_components/modals/DetalleModal';
+import { MayorModal, MayorFiltro } from './_components/modals/MayorModal';
 import { CajaTxnModal } from './_components/modals/CajaTxnModal';
 import { AccountTxnModal } from './_components/modals/AccountTxnModal';
 import { AuditSinDocModal } from './_components/modals/AuditSinDocModal';
@@ -214,6 +215,8 @@ export default function DashboardPage() {
   const [cxpTxDrill, setCxPTxDrill] = useState<{ proveedor: string; codProveedor: string } | null>(null);
   const [cajaTxDrill, setCajaTxDrill] = useState<{ codBanco: string; desBanco: string } | null>(null);
   const [accountTxDrill, setAccountTxDrill] = useState<{ codCuenta: string; descripcion: string; endpoint: string; codTercero?: string; yearOverride?: number; mesPreset?: number } | null>(null);
+  // "Ver en el Mayor" — drawer en-contexto: cualquier número → sus líneas del mayor
+  const [mayorDrill, setMayorDrill] = useState<{ filtro?: MayorFiltro; titulo: string } | null>(null);
   const [auditSinDocDrill, setAuditSinDocDrill] = useState<{ clase: string; desClase: string } | null>(null);
   const [showAuditClasif, setShowAuditClasif] = useState(false);
   const [gavDrill, setGavDrill] = useState<{ cod: string; descripcion: string; meses: Record<number, number>; ytd: number } | null>(null);
@@ -775,6 +778,16 @@ export default function DashboardPage() {
           yearOverride={accountTxDrill.yearOverride}
           mesPreset={accountTxDrill.mesPreset}
           onClose={() => setAccountTxDrill(null)}
+        />
+      )}
+      {mayorDrill && (
+        <MayorModal
+          companyId={selectedCompany.codEmpresa}
+          companyName={selectedCompany.shortName}
+          year={selectedYear}
+          filtro={mayorDrill.filtro}
+          titulo={mayorDrill.titulo}
+          onClose={() => setMayorDrill(null)}
         />
       )}
       {showAuditClasif && (
@@ -1936,6 +1949,14 @@ export default function DashboardPage() {
                   <div style={{ fontSize: '0.75rem', color: '#8B97A8' }}>
                     {!isGrupo && 'Click en Ingresos, Costo, GAV o Gastos para ver el desglose'}
                   </div>
+                  {!isGrupo && (
+                    <button
+                      onClick={() => setMayorDrill({ titulo: 'Libro mayor completo', filtro: {} })}
+                      title="Ver el libro mayor — toda la verdad contable detrás de estas cifras"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: '#2BB4BB' }}>
+                      <ScrollText size={13} aria-hidden="true" /> Ver en el Mayor
+                    </button>
+                  )}
                   <ExportBtn onClick={() => {
                     const mesesActivos = plMonthly.filter((m: any) => m.ingresos > 0 || m.gav > 0);
                     const headers = ['Concepto', ...mesesActivos.map((m: any) => m.mesLabel), `YTD ${selectedYear}`, ...(prevYear ? [`Ant. ${prevYear.year}`, '∆ YoY%'] : [])];

@@ -661,6 +661,7 @@ export default function DashboardPage() {
     { key: 'ebitda',            label: 'EBITDA',             fmt: 'currency', bold: true },
     { key: 'ebitdaPct',         label: '% EBITDA',           fmt: 'pct' },
     { key: 'gastosFinancieros', label: 'Gastos Financieros', fmt: 'currency', detalleKey: 'gastosFinancieros', drillable: true },
+    { key: 'diferenciaCambio',  label: 'Pérdida Dif. Cambio', fmt: 'currency', detalleKey: 'diferenciaCambio',  drillable: true },
     { key: 'utilidadNeta',      label: 'Utilidad Neta',      fmt: 'currency', bold: true },
     { key: 'utilidadNetaPct',   label: '% Margen Neto',      fmt: 'pct' },
   ];
@@ -4295,9 +4296,10 @@ export default function DashboardPage() {
             gav: sumField(qRows, 'gav'),
             ebitda: sumField(qRows, 'ebitda'),
             gastosFinancieros: sumField(qRows, 'gastosFinancieros'),
+            diferenciaCambio: sumField(qRows, 'diferenciaCambio'),
             utilidadNeta: sumField(qRows, 'utilidadNeta'),
           };
-          const ytdData = ytd || { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 };
+          const ytdData = ytd || { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 };
           // % helpers (defensive against div-by-zero / negative ingresos)
           const safePct = (num: number, den: number) => (den && Math.abs(den) > 0.01) ? (num / den) * 100 : 0;
           const qGMpct = safePct(qData.margenBruto, qData.ingresos);
@@ -4473,7 +4475,8 @@ export default function DashboardPage() {
                       gav: raw.gav || 0,
                       ebitda: (raw.ingresos || 0) - Math.abs(raw.costoDirecto || 0) - Math.abs(raw.gav || 0),
                       gastosFinancieros: raw.gastosFinancieros || 0,
-                      utilidadNeta: (raw.ingresos || 0) - Math.abs(raw.costoDirecto || 0) - Math.abs(raw.gav || 0) - Math.abs(raw.gastosFinancieros || 0) - Math.abs(raw.da || 0),
+                      diferenciaCambio: raw.diferenciaCambio || 0,
+                      utilidadNeta: (raw.ingresos || 0) - Math.abs(raw.costoDirecto || 0) - Math.abs(raw.gav || 0) - Math.abs(raw.gastosFinancieros || 0) - Math.abs(raw.diferenciaCambio || 0) - Math.abs(raw.da || 0),
                     });
                     const pqDerived = buildPpto(pq);
                     const pyDerived = buildPpto(py);
@@ -4487,7 +4490,7 @@ export default function DashboardPage() {
                     const renderRow = (real: any, ppto: any, hasPpto: boolean) => plDirRows.map(r => {
                       const vReal = (real as any)[r.key] || 0;
                       const vPpto = (ppto as any)[r.key] || 0;
-                      const betterHigher = !['costoDirecto','gav','gastosFinancieros'].includes(r.key);
+                      const betterHigher = !['costoDirecto','gav','gastosFinancieros','diferenciaCambio'].includes(r.key);
                       const cumplVal = cumpl(Math.abs(vReal), Math.abs(vPpto));
                       const col = cumplColor(Math.abs(vReal), Math.abs(vPpto), betterHigher);
                       return (

@@ -137,7 +137,7 @@ export class KpiService {
       const prevMonths = (prevCachedData.plMonthly as any[]).filter((m: any) => activeMonths.has(m.mes));
 
       if (prevMonths.length > 0) {
-        const zero = { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 };
+        const zero = { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 };
         const py = prevMonths.reduce((acc: any, m: any) => ({
           ingresos: acc.ingresos + m.ingresos,
           costoDirecto: acc.costoDirecto + m.costoDirecto,
@@ -145,6 +145,7 @@ export class KpiService {
           gav: acc.gav + m.gav,
           ebitda: acc.ebitda + m.ebitda,
           gastosFinancieros: acc.gastosFinancieros + m.gastosFinancieros,
+          diferenciaCambio: acc.diferenciaCambio + (m.diferenciaCambio ?? 0),
           utilidadNeta: acc.utilidadNeta + m.utilidadNeta,
         }), zero);
 
@@ -178,10 +179,11 @@ export class KpiService {
       costo: number;
       gav: number;
       gastosFinancieros: number;
+      diferenciaCambio: number;
     }> = {};
 
     for (let m = 1; m <= 12; m++) {
-      monthly[m] = { ingresos: 0, costo: 0, gav: 0, gastosFinancieros: 0 };
+      monthly[m] = { ingresos: 0, costo: 0, gav: 0, gastosFinancieros: 0, diferenciaCambio: 0 };
     }
 
     const detalleMap: Record<string, Record<string, any>> = {
@@ -189,6 +191,7 @@ export class KpiService {
       costoDirecto: {},
       gav: {},
       gastosFinancieros: {},
+      diferenciaCambio: {},
     };
 
     for (const row of rows) {
@@ -214,8 +217,14 @@ export class KpiService {
         monthly[mes].gav += debito - credito;
         grupo = 'gav'; valor = debito - credito;
       } else if (clase === '97') {
-        monthly[mes].gastosFinancieros += debito - credito;
-        grupo = 'gastosFinancieros'; valor = debito - credito;
+        if (cod.startsWith('976')) {
+          // Pérdida por diferencia de cambio — línea separada, no gastos financieros
+          monthly[mes].diferenciaCambio += debito - credito;
+          grupo = 'diferenciaCambio'; valor = debito - credito;
+        } else {
+          monthly[mes].gastosFinancieros += debito - credito;
+          grupo = 'gastosFinancieros'; valor = debito - credito;
+        }
       }
 
       if (grupo && valor !== 0) {
@@ -233,7 +242,7 @@ export class KpiService {
       const costoNeto = v.costo;
       const margenBruto = v.ingresos - costoNeto;
       const ebitda = margenBruto - v.gav;
-      const utilidadNeta = ebitda - v.gastosFinancieros;
+      const utilidadNeta = ebitda - v.gastosFinancieros - v.diferenciaCambio;
 
       return {
         mes,
@@ -246,6 +255,7 @@ export class KpiService {
         ebitda: round(ebitda),
         ebitdaPct: v.ingresos > 0 ? round((ebitda / v.ingresos) * 100) : 0,
         gastosFinancieros: round(v.gastosFinancieros),
+        diferenciaCambio: round(v.diferenciaCambio),
         utilidadNeta: round(utilidadNeta),
         utilidadNetaPct: v.ingresos > 0 ? round((utilidadNeta / v.ingresos) * 100) : 0,
       };
@@ -259,9 +269,10 @@ export class KpiService {
         gav: acc.gav + m.gav,
         ebitda: acc.ebitda + m.ebitda,
         gastosFinancieros: acc.gastosFinancieros + m.gastosFinancieros,
+        diferenciaCambio: acc.diferenciaCambio + m.diferenciaCambio,
         utilidadNeta: acc.utilidadNeta + m.utilidadNeta,
       }),
-      { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, utilidadNeta: 0 },
+      { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 },
     );
 
     ytd['margenBrutoPct'] = ytd.ingresos > 0 ? round((ytd.margenBruto / ytd.ingresos) * 100) : 0;
@@ -277,6 +288,7 @@ export class KpiService {
       costoDirecto: Object.values(detalleMap.costoDirecto).sort((a: any, b: any) => b.ytd - a.ytd),
       gav: Object.values(detalleMap.gav).sort((a: any, b: any) => b.ytd - a.ytd),
       gastosFinancieros: Object.values(detalleMap.gastosFinancieros).sort((a: any, b: any) => b.ytd - a.ytd),
+      diferenciaCambio: Object.values(detalleMap.diferenciaCambio).sort((a: any, b: any) => b.ytd - a.ytd),
     };
 
     return { plMonthly, ytd, detalle };

@@ -115,7 +115,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} noValidate>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
+              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
                 Email o usuario
               </label>
               <div style={{ position: 'relative' }}>
@@ -125,7 +125,7 @@ export default function LoginPage() {
                   placeholder="usuario o nombre@empresa.com"
                   aria-invalid={!!loginErr}
                   aria-describedby={loginErr ? 'login-err' : undefined}
-                  style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: `1.5px solid ${loginErr ? '#EF4444' : '#E5E7EB'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
+                  style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: `1.5px solid ${loginErr ? '#EF4444' : 'var(--form-input-border)'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: 'var(--form-input-text)', background: 'var(--form-input-bg)', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
                   onFocus={e => (e.target.style.borderColor = loginErr ? '#EF4444' : '#207E83')}
                   onBlur={e => { const err = validateEmail(e.target.value); setLoginErr(err); e.target.style.borderColor = err ? '#EF4444' : '#E5E7EB'; }}
                 />
@@ -135,7 +135,7 @@ export default function LoginPage() {
 
             <div style={{ marginBottom: '1.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>
+                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>
                   Contraseña
                 </label>
                 <Link href="/login/forgot-password" style={{ fontSize: '0.72rem', color: '#207E83', textDecoration: 'none', fontFamily: "'Inter', sans-serif" }}>
@@ -149,7 +149,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   aria-invalid={!!passwordErr}
                   aria-describedby={passwordErr ? 'pwd-err' : undefined}
-                  style={{ width: '100%', padding: '0.75rem 2.75rem 0.75rem 2.5rem', border: `1.5px solid ${passwordErr ? '#EF4444' : '#E5E7EB'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
+                  style={{ width: '100%', padding: '0.75rem 2.75rem 0.75rem 2.5rem', border: `1.5px solid ${passwordErr ? '#EF4444' : 'var(--form-input-border)'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: 'var(--form-input-text)', background: 'var(--form-input-bg)', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter', sans-serif", transition: 'border-color 0.15s' }}
                   onFocus={e => (e.target.style.borderColor = passwordErr ? '#EF4444' : '#207E83')}
                   onBlur={e => { const err = validatePassword(e.target.value); setPasswordErr(err); e.target.style.borderColor = err ? '#EF4444' : '#E5E7EB'; }}
                 />

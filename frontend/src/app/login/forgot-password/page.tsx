@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} noValidate>
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Email o usuario</label>
+                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Email o usuario</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: loginErr ? '#EF4444' : '#9CA3AF' }} />
                   <input
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
                     placeholder="usuario o nombre@empresa.com"
                     aria-invalid={!!loginErr}
                     aria-describedby={loginErr ? 'login-err' : undefined}
-                    style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: `1.5px solid ${loginErr ? '#EF4444' : '#E5E7EB'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter',sans-serif" }}
+                    style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: `1.5px solid ${loginErr ? '#EF4444' : 'var(--form-input-border)'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: 'var(--form-input-text)', background: 'var(--form-input-bg)', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter',sans-serif" }}
                     onFocus={e => (e.target.style.borderColor = loginErr ? '#EF4444' : '#207E83')}
                     onBlur={e => { const err = validateLogin(e.target.value); setLoginErr(err); e.target.style.borderColor = err ? '#EF4444' : '#E5E7EB'; }}
                   />

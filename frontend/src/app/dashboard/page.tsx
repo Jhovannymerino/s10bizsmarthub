@@ -39,6 +39,7 @@ import { ExportBtn } from './_components/ExportBtn';
 import { SearchInput } from './_components/SearchInput';
 import { SortTh } from './_components/SortTh';
 import { SkeletonLoader } from './_components/SkeletonLoader';
+import { SkeletonLoaderTable } from './_components/SkeletonLoaderTable';
 
 // ─── Waterfall chart ──────────────────────────
 function buildWaterfallData(ytd: any) {
@@ -4163,7 +4164,8 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ Módulo Auditoría ═══ */}
-        {activeTab === 'audit' && !newTabLoading && (
+        {activeTab === 'audit' && !newTabLoading && loading && <SkeletonLoaderTable cols={4} rows={8} />}
+        {activeTab === 'audit' && !newTabLoading && !loading && (
           <TabAudit
             auditData={auditData}
             selectedYear={selectedYear}
@@ -4172,7 +4174,8 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ Validación Forense S10 ═══ */}
-        {activeTab === 'validation_forense' && !newTabLoading && (
+        {activeTab === 'validation_forense' && !newTabLoading && loading && <SkeletonLoaderTable cols={5} rows={10} />}
+        {activeTab === 'validation_forense' && !newTabLoading && !loading && (
           <TabValidacionForense
             validacionForenseData={validacionForenseData}
             isGrupo={isGrupo}

@@ -58,6 +58,12 @@
   --input-dir-border: rgba(43,180,187,0.25);
   --input-dir-color:  #F8FAFC;
   --input-dir-opt:    #0E1A2E;
+
+  /* Form inputs (login / auth pages — always light-card context) */
+  --form-input-bg:      #F9FAFB;
+  --form-input-border:  #E5E7EB;
+  --form-input-text:    #0D1525;
+  --form-label-color:   #6B7280;
 }
 
 /* ── LIGHT MODE — Premium cool blue-corporate ── */
@@ -135,6 +141,12 @@
   --input-dir-border: rgba(21,94,100,0.25);
   --input-dir-color:  #0B1C32;
   --input-dir-opt:    #FFFFFF;
+
+  /* Form inputs (login / auth pages — always light-card context) */
+  --form-input-bg:      #F9FAFB;
+  --form-input-border:  #D1D5DB;
+  --form-input-text:    #0D1525;
+  --form-label-color:   #6B7280;
 }
 
 /* ── Light mode elevation & contrast overrides ── */
@@ -286,7 +298,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .kpi-value {
   font-family: var(--font-mono), 'IBM Plex Mono', 'Courier New', monospace;
-  font-size: 1.5rem;
+  /* clamp: min 0.5rem | fluid based on container width & char count | max 1.4rem
+     Formula: (container - 3rem padding) / (chars × 0.6 ch-ratio for IBM Plex Mono) */
+  font-size: clamp(0.5rem, calc((100cqi - 3rem) / (var(--chars, 8) * 0.6)), 1.4rem);
   font-weight: 600;
   line-height: 1.2;
   color: var(--text-primary);
@@ -395,6 +409,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .table-s10 tr[data-clickable] { cursor: pointer; }
 .table-s10 tr[data-clickable]:hover td { background: var(--row-hover-teal-2) !important; }
+/* Left-border accent on hover — signals drill-down interactivity */
+.table-s10 tr[data-clickable] td:first-child { border-left: 2px solid transparent; transition: border-color 0.15s; }
+.table-s10 tr[data-clickable]:hover td:first-child { border-left-color: var(--primary-light); }
 
 /* ── Semantic colors ── */
 .positive { color: var(--green); }
@@ -975,7 +992,6 @@ h1, h2, h3, h4, h5, h6 {
 
   .page-title { font-size: 1.3rem !important; }
   .page-section-label { font-size: 0.55rem !important; }
-  .kpi-value { font-size: 1.2rem !important; }
   .chart-container-tall { height: 200px !important; }
   .bg-blur-primary, .bg-blur-indigo { display: none; }
   .context-topbar { display: none; }

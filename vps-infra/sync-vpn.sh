@@ -51,8 +51,12 @@ else
   ETH_DEV=$(ip route show default | awk '/default via/ {print $5; exit}')
   log "Ruta default previa: via ${ETH_GW:-?} dev ${ETH_DEV:-?}"
 
-  # Conectar VPN
-  openfortivpn -c /etc/openfortivpn/s10.conf 2>>"$LOG" &
+  # Conectar VPN con --no-routes: openfortivpn NO toca la tabla de rutas.
+  # Sin esto, renegocia repetidamente y vuelve a poner su ruta default via ppp0,
+  # ganándole la carrera al restore y matando el SSH. Con --no-routes, la ruta
+  # default queda intacta en eth0 (SSH vivo) y abajo agregamos a mano solo la
+  # ruta a la red S10 (192.168.1.0/24) por el túnel.
+  openfortivpn -c /etc/openfortivpn/s10.conf --no-routes 2>>"$LOG" &
   VPN_PID=$!
   echo $VPN_PID > "$PIDFILE"
 

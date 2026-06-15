@@ -136,6 +136,9 @@ ssh $SSH_OPTS "$VPS" "
   # Copiar archivos de vps-infra al directorio raíz donde los espera el service
   cp $VPS_APP_DIR/vps-infra/sync-trigger.js $VPS_APP_DIR/sync-trigger.js
   cp $VPS_APP_DIR/vps-infra/sync-vpn.sh $VPS_APP_DIR/sync-vpn.sh
+  # Normalizar a LF: si el tarball trae CRLF (working copy Windows), bash en el
+  # VPS falla con \"syntax error near \$'{\\r'\". Defensa independiente del git local.
+  sed -i 's/\r\$//' $VPS_APP_DIR/sync-vpn.sh
   chmod +x $VPS_APP_DIR/sync-vpn.sh
 
   # Instalar dependencias del sync-agent si no están o si cambiaron

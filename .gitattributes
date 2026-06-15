@@ -1,0 +1,4 @@
+# Los scripts shell corren en Linux (VPS) — SIEMPRE checkout con LF.
+# Sin esto, en Windows git los deja en CRLF y bash en el VPS falla con
+# "syntax error near unexpected token $'{\r'" (rompe sync-vpn.sh tras deploy).
+*.sh text eol=lf

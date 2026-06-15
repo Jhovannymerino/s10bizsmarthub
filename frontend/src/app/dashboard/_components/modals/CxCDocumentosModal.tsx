@@ -39,8 +39,8 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
       .catch(() => setLoading(false));
   }, [companyId, codCliente]);
 
-  const pendientes = docs.filter(d => (d.Saldo ?? 0) > 0);
-  const pagados = docs.filter(d => (d.Saldo ?? 0) <= 0);
+  const pendientes = docs.filter(d => (d.Saldo ?? 0) > 0 || (d.EsNotaCredito && (d.Saldo ?? 0) < 0));
+  const pagados = docs.filter(d => !d.EsNotaCredito && (d.Saldo ?? 0) <= 0);
 
   const baseFiltered = filter === 'pagado'
     ? pagados
@@ -156,9 +156,13 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, onClose }: 
                 {filtered.map((d: any, i: number) => {
                   const moneda = getMoneda(d);
                   const isUSD = moneda === 'USD';
+                  const esNC = d.EsNotaCredito === 1;
                   return (
-                    <tr key={i} style={{ background: isUSD ? 'rgba(74,222,128,0.03)' : undefined }}>
-                      <td style={{ color: '#8B97A8', fontSize: '0.72rem' }}>{d.DesTipo || d.TipoDoc}</td>
+                    <tr key={i} style={{ background: esNC ? 'rgba(239,68,68,0.04)' : isUSD ? 'rgba(74,222,128,0.03)' : undefined }}>
+                      <td style={{ color: esNC ? '#EF4444' : '#8B97A8', fontSize: '0.72rem' }}>
+                        {esNC && <span title="Nota de Crédito — resta del saldo del cliente" style={{ fontSize: '0.68rem', fontWeight: 700, marginRight: '0.3rem' }}>NC</span>}
+                        {d.DesTipo || d.TipoDoc}
+                      </td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
                         {d.Serie ? `${d.Serie}-${d.Numero}` : d.Numero || '—'}
                       </td>

@@ -88,8 +88,8 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
 
   const facturas = docs.filter(d => !isOtro(d));
   const otros = docs.filter(d => isOtro(d));
-  const pendientes = facturas.filter(d => (d.Saldo ?? 0) > 0);
-  const pagados = facturas.filter(d => (d.Saldo ?? 0) <= 0);
+  const pendientes = facturas.filter(d => (d.Saldo ?? 0) > 0 || (d.EsNotaCredito && (d.Saldo ?? 0) < 0));
+  const pagados = facturas.filter(d => !d.EsNotaCredito && (d.Saldo ?? 0) <= 0);
 
   const baseFiltered = filter === 'otros'
     ? otros
@@ -243,13 +243,18 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                   {filtered.map((d: any, i: number) => {
                     const moneda = getMoneda(d);
                     const isUSD = moneda === 'USD';
+                    const esNC = d.EsNotaCredito === 1;
                     return (
                       <tr key={i} style={{
                         background: showingOtros
                           ? 'rgba(245,158,11,0.04)'
+                          : esNC ? 'rgba(239,68,68,0.04)'
                           : isUSD ? 'rgba(74,222,128,0.03)' : undefined,
                       }}>
-                        <td style={{ color: showingOtros ? '#F59E0B' : '#8B97A8', fontSize: '0.72rem' }}>{d.DesTipo || d.TipoDoc}</td>
+                        <td style={{ color: showingOtros ? '#F59E0B' : esNC ? '#EF4444' : '#8B97A8', fontSize: '0.72rem' }}>
+                          {esNC && <span title="Nota de Crédito — resta del saldo del proveedor" style={{ fontSize: '0.68rem', fontWeight: 700, marginRight: '0.3rem' }}>NC</span>}
+                          {d.DesTipo || d.TipoDoc}
+                        </td>
                         {showingOtros && (
                           <td style={{ fontSize: '0.70rem', color: '#8B97A8', maxWidth: 200 }}>
                             {getOtroLabel(d)}

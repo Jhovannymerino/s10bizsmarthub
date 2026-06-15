@@ -5,35 +5,62 @@ on:
     branches: [main, develop]
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  # DEV: self-hosted runner ejecuta directamente en el servidor DEV (Hostinger bloquea SSH entrante de GitHub)
+  deploy-dev:
+    if: github.ref_name == 'develop'
+    runs-on: [self-hosted, dev]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set deploy target
-        id: target
+      - name: Deploy to /opt/apps/s10bizsmarthub
         run: |
-          if [[ "${{ github.ref_name }}" == "develop" ]]; then
-            echo "host=76.13.99.90" >> $GITHUB_OUTPUT
-            echo "dir=/opt/apps/s10bizsmarthub" >> $GITHUB_OUTPUT
-            echo "compose=docker-compose.dev.yml" >> $GITHUB_OUTPUT
-            echo "env=DEV" >> $GITHUB_OUTPUT
-          else
-            echo "host=72.62.16.28" >> $GITHUB_OUTPUT
-            echo "dir=/opt/apps/s10bizsmarthub" >> $GITHUB_OUTPUT
-            echo "compose=docker-compose.prod.yml" >> $GITHUB_OUTPUT
-            echo "env=PROD" >> $GITHUB_OUTPUT
+          APP_DIR=/opt/apps/s10bizsmarthub
+
+          # Restaurar .env antes de sobreescribir el directorio
+          SAVED_ENV=$(cat "$APP_DIR/backend/.env" 2>/dev/null || echo "")
+
+          # Sincronizar código del workspace al directorio de la app
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='backend/.env' \
+            --exclude='s10-agent/node_modules' \
+            "$GITHUB_WORKSPACE/" "$APP_DIR/"
+
+          # Restaurar .env si existe y no fue copiado
+          if [ -n "$SAVED_ENV" ] && [ ! -f "$APP_DIR/backend/.env" ]; then
+            echo "$SAVED_ENV" > "$APP_DIR/backend/.env"
           fi
+
+          # Build y restart
+          cd "$APP_DIR"
+          docker compose -f docker-compose.dev.yml build s10biz-frontend s10biz-backend
+          docker compose -f docker-compose.dev.yml up -d
+          echo '[DEV] Deploy OK'
+          docker compose -f docker-compose.dev.yml ps
+
+  # PROD: GitHub-hosted runner, SSH directo al servidor PROD (accesible desde GitHub)
+  deploy-prod:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    env:
+      PROD_HOST: 72.62.16.28
+      APP_DIR: /opt/apps/s10bizsmarthub
+      COMPOSE_FILE: docker-compose.prod.yml
+
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ steps.target.outputs.host }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ env.PROD_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Sync code to VPS
+      - name: Sync code to PROD
         run: |
           rsync -az \
             --exclude='.git' \
@@ -45,14 +72,14 @@ jobs:
             --exclude='.env' \
             --exclude='s10-agent/node_modules' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            ./ root@${{ steps.target.outputs.host }}:${{ steps.target.outputs.dir }}/
+            ./ root@${{ env.PROD_HOST }}:${{ env.APP_DIR }}/
 
       - name: Build and restart containers
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            root@${{ steps.target.outputs.host }} \
-            "cd ${{ steps.target.outputs.dir }} && \
-             docker compose -f ${{ steps.target.outputs.compose }} build s10biz-frontend s10biz-backend && \
-             docker compose -f ${{ steps.target.outputs.compose }} up -d && \
-             echo '[${{ steps.target.outputs.env }}] Deploy OK' && \
-             docker compose -f ${{ steps.target.outputs.compose }} ps"
+            root@${{ env.PROD_HOST }} \
+            "cd ${{ env.APP_DIR }} && \
+             docker compose -f ${{ env.COMPOSE_FILE }} build s10biz-frontend s10biz-backend && \
+             docker compose -f ${{ env.COMPOSE_FILE }} up -d && \
+             echo '[PROD] Deploy OK' && \
+             docker compose -f ${{ env.COMPOSE_FILE }} ps"

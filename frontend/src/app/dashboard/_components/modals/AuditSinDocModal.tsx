@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X, Check, AlertTriangle } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
@@ -13,6 +14,8 @@ export function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: 
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -31,20 +34,23 @@ export function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: 
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 980, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="audit-sindoc-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 980, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>Clase {clase} — Asientos sin documento fuente</div>
+            <div id="audit-sindoc-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>Clase {clase} — Asientos sin documento fuente</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>{desClase} · {year} · {filtered.length} asientos sin NroD</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
 
         {!loading && txns.length > 0 && (
           <div style={{ marginBottom: '1rem' }}>
             {txns.length >= 1000 && (
-              <div style={{ fontSize: '0.75rem', color: '#F59E0B', marginBottom: '0.5rem' }}>
-                ⚠ Mostrando los 1,000 asientos de mayor monto. Puede haber más — el total en el resumen refleja solo estos 1,000.
+              <div style={{ fontSize: '0.75rem', color: '#F59E0B', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <AlertTriangle size={13} aria-hidden="true" /> Mostrando los 1,000 asientos de mayor monto. Puede haber más — el total en el resumen refleja solo estos 1,000.
               </div>
             )}
             <input
@@ -56,7 +62,7 @@ export function AuditSinDocModal({ companyId, year, clase, desClase, onClose }: 
         )}
 
         {loading ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando...</div>
-        : txns.length === 0 ? <div style={{ textAlign: 'center', padding: '3rem', color: '#10B981', fontSize: '0.85rem' }}>✓ Sin asientos sin documento para esta clase.</div>
+        : txns.length === 0 ? <div style={{ textAlign: 'center', padding: '3rem', color: '#10B981', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}><Check size={16} aria-hidden="true" /> Sin asientos sin documento para esta clase.</div>
         : filtered.length === 0 ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Sin resultados para "{search}".</div>
         : (
           <div style={{ overflowX: 'auto' }}>

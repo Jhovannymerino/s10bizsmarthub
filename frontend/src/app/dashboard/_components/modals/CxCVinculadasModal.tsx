@@ -1,5 +1,6 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
 import { SortTh, searchInputStyle } from '../../_lib/SortTh';
@@ -23,6 +24,8 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   const filtered = useMemo(
     () => sortRows(searchRows(docs, search), sort.col, sort.dir),
@@ -36,12 +39,14 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1150, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="cxc-vin-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1150, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F59E0B' }}>{cliente}</div>
+            <div id="cxc-vin-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F59E0B' }}>{cliente}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               Cartera Especial · {filtered.length} documento{filtered.length !== 1 ? 's' : ''}
               <span style={{ marginLeft: '0.5rem', padding: '1px 7px', borderRadius: '1rem', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', fontSize: '0.70rem' }}>
@@ -49,7 +54,7 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
               </span>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
 
         <div style={{ marginBottom: '1rem' }}>

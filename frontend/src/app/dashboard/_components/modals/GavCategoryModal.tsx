@@ -1,5 +1,6 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { MESES } from '../../_lib/constants';
 import { fmt, pct } from '../../_lib/formatters';
@@ -15,6 +16,8 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
   const [txDrill, setTxDrill] = useState(false);
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   const mesesConDatos = Object.entries(cat.meses)
     .filter(([, v]) => (v as number) !== 0)
@@ -34,14 +37,16 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 720, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="gav-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 720, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cat.cod} — {cat.descripcion}</div>
+            <div id="gav-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cat.cod} — {cat.descripcion}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>GAV mensual · YTD: {fmt(cat.ytd)}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         {chartData.length > 0 && (
           <ResponsiveContainer width="100%" height={180}>
@@ -77,8 +82,8 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
         </table>
         <div style={{ marginTop: '1rem', textAlign: 'right' }}>
           <button onClick={() => setTxDrill(true)}
-            style={{ padding: '0.45rem 1rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-            Ver asientos individuales ▶
+            style={{ padding: '0.45rem 1rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            Ver asientos individuales <ChevronRight size={14} aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
@@ -132,6 +133,8 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
 
   const showingOtros = filter === 'otros';
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   return (
     <>
@@ -146,12 +149,14 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
     )}
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="cxp-docs-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
+            <div id="cxp-docs-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               {showingOtros
                 ? `Anticipos y otros · ${filtered.length} registros`
@@ -160,7 +165,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, onClose
                 : `Documentos a pagar · ${filtered.length} de ${pendientes.length} (facturas, recibos, boletas, letras, etc.)`}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Mail } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 
@@ -50,7 +51,7 @@ export default function ForgotPasswordPage() {
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-3rem', padding: '0 1rem 3rem', position: 'relative', zIndex: 10 }}>
         <div style={{ background: '#ffffff', borderRadius: '1.5rem', padding: '2.5rem', width: '100%', maxWidth: 440, boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(32,126,131,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>✉️</div>
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(32,126,131,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#207E83' }}><Mail size={22} aria-hidden="true" /></div>
           </div>
 
           <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: '1.4rem', fontWeight: 800, color: '#0D1525', textAlign: 'center', margin: '0 0 0.35rem 0' }}>Ingresa tu email o usuario</h2>
@@ -67,7 +68,7 @@ export default function ForgotPasswordPage() {
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Email o usuario</label>
                 <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>✉</span>
+                  <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
                   <input
                     type="text" value={login} onChange={e => setLogin(e.target.value)} required
                     placeholder="usuario o nombre@empresa.com"

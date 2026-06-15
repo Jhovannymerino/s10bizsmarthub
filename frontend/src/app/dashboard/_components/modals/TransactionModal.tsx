@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X, Link2, RotateCcw } from 'lucide-react';
 import { API, MESES } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
@@ -18,6 +19,8 @@ export function TransactionModal({ companyId, year, codCuenta, descripcion, onCl
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [docPreview, setDocPreview] = useState<string | null>(null);
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -57,14 +60,16 @@ export function TransactionModal({ companyId, year, codCuenta, descripcion, onCl
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 900, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="txn-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 900, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
+            <div id="txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {filtered.length} movimientos</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={() => setMesFilter(null)} style={btnStyle(mesFilter === null)}>Todos</button>
@@ -85,8 +90,8 @@ export function TransactionModal({ companyId, year, codCuenta, descripcion, onCl
               Error al cargar los datos. El servidor puede estar ocupado.
             </div>
             <button onClick={() => setRetryCount(c => c + 1)}
-              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-              ↻ Reintentar
+              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              <RotateCcw size={13} aria-hidden="true" /> Reintentar
             </button>
           </div>
         ) : filtered.length === 0 ? (
@@ -124,8 +129,8 @@ export function TransactionModal({ companyId, year, codCuenta, descripcion, onCl
                         {t.NroD ? (
                           <button onClick={() => setDocPreview(String(t.NroD))}
                             title={String(t.NroD)}
-                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: '#2BB4BB', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                            🔗 {String(t.NroD).slice(-8)}
+                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: '#2BB4BB', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Link2 size={11} aria-hidden="true" /> {String(t.NroD).slice(-8)}
                           </button>
                         ) : <span style={{ color: '#4B5563', fontSize: '0.7rem' }}>—</span>}
                       </td>

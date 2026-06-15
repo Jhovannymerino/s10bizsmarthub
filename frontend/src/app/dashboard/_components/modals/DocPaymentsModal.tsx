@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort } from '../../_lib/sort';
@@ -16,6 +17,8 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -41,18 +44,19 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}
     >
-      <div
-        style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 820, maxHeight: '80vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="doc-payments-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 820, maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Pagos del documento</div>
+            <div id="doc-payments-modal-title" style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Pagos del documento</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               {docLabel} · Total pagado: <span style={{ color: '#2BB4BB', fontWeight: 600 }}>{fmt(totalPagado)}</span>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
 
         {loading ? (

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3202';
 
@@ -78,8 +79,8 @@ export default function LoginPage() {
         }}>
           {/* Lock icon */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(32,126,131,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-              🔒
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(32,126,131,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#207E83' }}>
+              <Lock size={22} aria-hidden="true" />
             </div>
           </div>
 
@@ -96,7 +97,7 @@ export default function LoginPage() {
                 Email o usuario
               </label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>✉</span>
+                <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
                 <input
                   type="text" value={login} onChange={e => setLogin(e.target.value)} required
                   placeholder="usuario o nombre@empresa.com"
@@ -117,7 +118,7 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>🔒</span>
+                <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
                 <input
                   type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
                   placeholder="••••••••"
@@ -125,9 +126,9 @@ export default function LoginPage() {
                   onFocus={e => (e.target.style.borderColor = '#207E83')}
                   onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                 />
-                <button type="button" onClick={() => setShowPwd(!showPwd)}
-                  style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '0.85rem', padding: 0 }}>
-                  {showPwd ? '🙈' : '👁'}
+                <button type="button" onClick={() => setShowPwd(!showPwd)} aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 0, display: 'flex' }}>
+                  {showPwd ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                 </button>
               </div>
             </div>

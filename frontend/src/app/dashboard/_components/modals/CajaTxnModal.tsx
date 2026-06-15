@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X, Link2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { API, MESES } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
@@ -26,17 +27,21 @@ function AsientoCompletoPanel({ companyId, year, nroAsiento, onClose }: {
   const totalDeb = lineas.reduce((s, t) => s + (t.Debito || 0), 0);
   const totalCred = lineas.reduce((s, t) => s + (t.Credito || 0), 0);
 
+  const asientoModalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { asientoModalRef.current?.focus(); }, []);
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', maxWidth: '90vw', width: 780, maxHeight: '80vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={asientoModalRef} role="dialog" aria-modal="true" aria-labelledby="asiento-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', maxWidth: '90vw', width: 780, maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Asiento N° {nroAsiento}</div>
+            <div id="asiento-modal-title" style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Asiento N° {nroAsiento}</div>
             <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.15rem' }}>Partida doble completa — todas las cuentas de este asiento</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
@@ -74,8 +79,8 @@ function AsientoCompletoPanel({ companyId, year, nroAsiento, onClose }: {
                 </tr>
                 {Math.abs(totalDeb - totalCred) > 0.01 && (
                   <tr>
-                    <td colSpan={6} style={{ color: '#F87171', fontSize: '0.72rem', textAlign: 'center', padding: '0.5rem' }}>
-                      ⚠️ Descuadre: {fmt(Math.abs(totalDeb - totalCred))}
+                    <td colSpan={6} style={{ color: '#F87171', fontSize: '0.72rem', textAlign: 'center', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <AlertTriangle size={13} aria-hidden="true" /> Descuadre: {fmt(Math.abs(totalDeb - totalCred))}
                     </td>
                   </tr>
                 )}
@@ -101,6 +106,8 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
   const [docPreview, setDocPreview] = useState<string | null>(null);
   const [asientoCompleto, setAsientoCompleto] = useState<string | null>(null);
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -141,16 +148,18 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
     <>
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1020, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="caja-txn-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1020, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codBanco} — {desBanco}</div>
+            <div id="caja-txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codBanco} — {desBanco}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               Movimientos clase 10 · {year} · {filtered.length} asientos · clic en Nro. Asiento para ver partida doble completa
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={() => setMesFilter(null)} style={btnStyle(mesFilter === null)}>Todos</button>
@@ -169,8 +178,8 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
           <div style={{ textAlign: 'center', padding: '3rem' }}>
             <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
             <button onClick={() => setRetryCount(c => c + 1)}
-              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-              ↻ Reintentar
+              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              <RotateCcw size={13} aria-hidden="true" /> Reintentar
             </button>
           </div>
         ) : filtered.length === 0 ? (
@@ -215,8 +224,8 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
                         {t.NroD ? (
                           <button onClick={e => { e.stopPropagation(); setDocPreview(String(t.NroD)); }}
                             title={String(t.NroD)}
-                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: '#2BB4BB', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                            🔗 {String(t.NroD).slice(-8)}
+                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: '#2BB4BB', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Link2 size={11} aria-hidden="true" /> {String(t.NroD).slice(-8)}
                           </button>
                         ) : <span style={{ color: '#4B5563', fontSize: '0.7rem' }}>—</span>}
                       </td>

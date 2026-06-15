@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X, Link2, Inbox } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
@@ -16,6 +17,8 @@ export function CxPTransactionModal({ companyId, year, proveedor, codProveedor, 
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const [docPreview, setDocPreview] = useState<string | null>(null);
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { modalRef.current?.focus(); }, []);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -50,14 +53,16 @@ export function CxPTransactionModal({ companyId, year, proveedor, codProveedor, 
     <>
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
-      <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1020, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="cxp-txn-modal-title" tabIndex={-1}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1020, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Movimientos clase 42 (CxP) · {filtered.length} asientos · 🔗 = documento origen</div>
+            <div id="cxp-txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
+            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Movimientos clase 42 (CxP) · {filtered.length} asientos · <Link2 size={11} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle' }} /> = doc. origen</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8' }}>✕</button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={() => setAnioFilter(null)} style={btnStyle(anioFilter === null)}>Todos</button>
@@ -75,7 +80,7 @@ export function CxPTransactionModal({ companyId, year, proveedor, codProveedor, 
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>
             {search ? `Sin resultados para "${search}".` : (
-              <><div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>📭</div>
+              <><Inbox size={28} aria-hidden="true" style={{ marginBottom: '0.75rem', color: '#8B97A8' }} />
               <div>Sin asientos disponibles. Ejecuta una sincronización completa para cargar los movimientos de CxP.</div></>
             )}
           </div>
@@ -102,8 +107,8 @@ export function CxPTransactionModal({ companyId, year, proveedor, codProveedor, 
                       <td style={{ textAlign: 'center', padding: '0 0.25rem' }}>
                         {t.NroD
                           ? <button onClick={e => { e.stopPropagation(); setDocPreview(String(t.NroD)); }}
-                              title="Ver documento origen"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>🔗</button>
+                              title="Ver documento origen" aria-label="Ver documento origen"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1, display: 'flex' }}><Link2 size={14} aria-hidden="true" /></button>
                           : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
                         }
                       </td>

@@ -6,6 +6,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, ComposedChart, ReferenceLine,
 } from 'recharts';
+import {
+  X, Menu, Loader2, Check, AlertTriangle, AlertCircle, RotateCcw, Sun, Moon, Link2,
+  Home, TrendingUp, Target, BarChart2, DollarSign, Users, ShoppingBag, Factory,
+  Banknote, ClipboardList, Receipt, Scale, Bookmark, Archive, CreditCard, Landmark,
+  Package, Activity, Building2, RefreshCw, ScrollText, HardHat, Wrench, Search,
+  FlaskConical, Settings, Building, Download, Save, Info,
+} from 'lucide-react';
 import { DocPreview } from './_components/modals/DocPreview';
 import { TransactionModal } from './_components/modals/TransactionModal';
 import { CxCDocumentosModal } from './_components/modals/CxCDocumentosModal';
@@ -692,11 +699,11 @@ export default function DashboardPage() {
           <div className={`mobile-sync-dot${syncStatus === 'running' ? ' running' : syncStatus === 'error' ? ' error' : ''}`} title={syncStatus} />
           <button className="theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Cambiar tema">
             {mounted && theme === 'dark'
-              ? <span style={{ fontSize: '1rem' }}>☀️</span>
-              : <span style={{ fontSize: '1rem' }}>🌙</span>}
+              ? <Sun size={18} aria-hidden="true" />
+              : <Moon size={18} aria-hidden="true" />}
           </button>
           <button className="hamburger-btn" onClick={() => setSidebarOpen(o => !o)} aria-label="Abrir menú">
-            {sidebarOpen ? '✕' : '☰'}
+            {sidebarOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -860,9 +867,10 @@ export default function DashboardPage() {
               color: syncStatus === 'done' ? '#10B981' : syncStatus === 'error' ? '#EF4444' : syncStatus === 'running' ? '#F59E0B' : '#2BB4BB',
               fontSize: '0.75rem', fontWeight: 600, cursor: syncStatus === 'running' ? 'default' : 'pointer',
               letterSpacing: '0.03em', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif",
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
             }}
           >
-            {syncStatus === 'running' ? '⏳ Sincronizando…' : syncStatus === 'done' ? '✓ Datos actualizados' : syncStatus === 'error' ? '✗ Reintentar sync' : syncStatus === 'unavailable' ? '⚠ No disponible' : '↻ Sincronizar datos'}
+            {syncStatus === 'running' ? <><Loader2 size={13} aria-hidden="true" /> Sincronizando…</> : syncStatus === 'done' ? <><Check size={13} aria-hidden="true" /> Datos actualizados</> : syncStatus === 'error' ? <><X size={13} aria-hidden="true" /> Reintentar sync</> : syncStatus === 'unavailable' ? <><AlertTriangle size={13} aria-hidden="true" /> No disponible</> : <><RotateCcw size={13} aria-hidden="true" /> Sincronizar datos</>}
           </button>
 
           {/* Sync histórico: todos los años 2022→actual, fast mode */}
@@ -919,9 +927,10 @@ export default function DashboardPage() {
               color: syncStatus === 'running' ? '#F59E0B' : '#9B72CF',
               fontSize: '0.68rem', fontWeight: 600, cursor: syncStatus === 'running' ? 'default' : 'pointer',
               letterSpacing: '0.03em', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif",
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
             }}
           >
-            {syncStatus === 'running' ? '⏳ Sincronizando…' : '⟳ Sync histórico 2022→' + CURRENT_YEAR}
+            {syncStatus === 'running' ? <><Loader2 size={13} aria-hidden="true" /> Sincronizando…</> : <><RotateCcw size={13} aria-hidden="true" /> {'Sync histórico 2022→' + CURRENT_YEAR}</>}
           </button>
 
           {syncStatus === 'running' && syncProgress?.running && syncProgress?.totalYears > 0 && (() => {
@@ -945,9 +954,9 @@ export default function DashboardPage() {
                 <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: '0.35rem' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #F59E0B, #FBBF24)', borderRadius: 4, transition: 'width 0.6s ease' }} />
                 </div>
-                {p.currentYear && <div style={{ fontSize: '0.65rem', color: '#E5E7EB', fontWeight: 600 }}>📅 {p.currentYear}{p.currentBatch && <span style={{ color: '#9CA3AF', fontWeight: 400 }}> · {p.currentBatch}</span>}</div>}
-                {p.currentCompany && <div style={{ fontSize: '0.6rem', color: '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🏢 {p.currentCompany}</div>}
-                {p.completedYears?.length > 0 && <div style={{ fontSize: '0.58rem', color: '#6B7280', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.25rem', marginTop: '0.2rem' }}>✓ {p.completedYears.join(', ')}</div>}
+                {p.currentYear && <div style={{ fontSize: '0.65rem', color: '#E5E7EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}><RotateCcw size={10} aria-hidden="true" /> {p.currentYear}{p.currentBatch && <span style={{ color: '#9CA3AF', fontWeight: 400 }}> · {p.currentBatch}</span>}</div>}
+                {p.currentCompany && <div style={{ fontSize: '0.6rem', color: '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Building size={10} aria-hidden="true" /> {p.currentCompany}</div>}
+                {p.completedYears?.length > 0 && <div style={{ fontSize: '0.58rem', color: '#6B7280', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.25rem', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Check size={10} aria-hidden="true" /> {p.completedYears.join(', ')}</div>}
               </div>
             );
           })()}
@@ -956,7 +965,7 @@ export default function DashboardPage() {
           )}
           {syncStatus === 'done' && syncProgress?.completedYears?.length > 0 && (
             <div style={{ marginTop: '0.4rem', fontSize: '0.6rem', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderRadius: '0.4rem', padding: '0.35rem 0.5rem', border: '1px solid rgba(16,185,129,0.15)' }}>
-              ✓ {syncProgress.completedYears.length} años: {syncProgress.completedYears.join(', ')}
+              <Check size={11} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.2rem' }} /> {syncProgress.completedYears.length} años: {syncProgress.completedYears.join(', ')}
             </div>
           )}
         </div>}
@@ -974,16 +983,16 @@ export default function DashboardPage() {
           {/* Inicio */}
           <button onClick={() => handleTabChange('inicio')}
             className={`sidebar-link ${activeTab === 'inicio' ? 'active' : ''}`}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-            🏠  Inicio
+            style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Home size={14} aria-hidden="true" /> Inicio
           </button>
 
           {/* Dashboard Gerencial */}
           {!isGrupo && canViewTab('gerencial') && (
             <button onClick={() => handleTabChange('gerencial')}
               className={`sidebar-link ${activeTab === 'gerencial' ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-              📈  Gerencial
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <TrendingUp size={14} aria-hidden="true" /> Gerencial
             </button>
           )}
 
@@ -991,8 +1000,8 @@ export default function DashboardPage() {
           {!isGrupo && (
             <button onClick={() => handleTabChange('directorio')}
               className={`sidebar-link ${activeTab === 'directorio' ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-              🎯  Directorio
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Target size={14} aria-hidden="true" /> Directorio
             </button>
           )}
 
@@ -1003,15 +1012,15 @@ export default function DashboardPage() {
           {(['pl', 'cxc', 'cxc_ranking', 'cxp', 'cxp_ranking', 'caja', 'gav', 'docs'] as const).filter(canViewTab).map((tab) => (
             <button key={tab} onClick={() => handleTabChange(tab)}
               className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-              {tab === 'pl'          && '📊  P&L'}
-              {tab === 'cxc'         && '💰  CxC Aging'}
-              {tab === 'cxc_ranking' && '👥  Tamaño de Cliente'}
-              {tab === 'cxp'         && '🏪  CxP Aging'}
-              {tab === 'cxp_ranking' && '🏭  Tamaño de Proveedor'}
-              {tab === 'caja'        && '💵  Posición Caja'}
-              {tab === 'gav'         && '📋  GAV Detalle'}
-              {tab === 'docs'        && '🧾  Documentos'}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {tab === 'pl'          && <><BarChart2 size={14} aria-hidden="true" /> P&L</>}
+              {tab === 'cxc'         && <><DollarSign size={14} aria-hidden="true" /> CxC Aging</>}
+              {tab === 'cxc_ranking' && <><Users size={14} aria-hidden="true" /> Tamaño de Cliente</>}
+              {tab === 'cxp'         && <><ShoppingBag size={14} aria-hidden="true" /> CxP Aging</>}
+              {tab === 'cxp_ranking' && <><Factory size={14} aria-hidden="true" /> Tamaño de Proveedor</>}
+              {tab === 'caja'        && <><Banknote size={14} aria-hidden="true" /> Posición Caja</>}
+              {tab === 'gav'         && <><ClipboardList size={14} aria-hidden="true" /> GAV Detalle</>}
+              {tab === 'docs'        && <><Receipt size={14} aria-hidden="true" /> Documentos</>}
             </button>
           ))}
 
@@ -1029,13 +1038,13 @@ export default function DashboardPage() {
                   {(['balance','otras_cxc','otras_cxp','prestamos','patrimonio','inventarios'] as const).filter(canViewTab).map((tab) => (
                     <button key={tab} onClick={() => handleTabChange(tab)}
                       className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                      {tab === 'balance'    && '⚖️  Balance General'}
-                      {tab === 'otras_cxc' && '📌  Otras CxC'}
-                      {tab === 'otras_cxp' && '🗃️  Otras CxP'}
-                      {tab === 'prestamos' && '💳  Préstamos'}
-                      {tab === 'patrimonio' && '🏛️  Patrimonio'}
-                      {tab === 'inventarios' && '📦  Inventarios'}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {tab === 'balance'    && <><Scale size={14} aria-hidden="true" /> Balance General</>}
+                      {tab === 'otras_cxc' && <><Bookmark size={14} aria-hidden="true" /> Otras CxC</>}
+                      {tab === 'otras_cxp' && <><Archive size={14} aria-hidden="true" /> Otras CxP</>}
+                      {tab === 'prestamos' && <><CreditCard size={14} aria-hidden="true" /> Préstamos</>}
+                      {tab === 'patrimonio' && <><Landmark size={14} aria-hidden="true" /> Patrimonio</>}
+                      {tab === 'inventarios' && <><Package size={14} aria-hidden="true" /> Inventarios</>}
                     </button>
                   ))}
                 </div>
@@ -1053,11 +1062,11 @@ export default function DashboardPage() {
                   {(['tesoreria','caja_saldos','conciliacion','gastos_nat'] as const).filter(canViewTab).map((tab) => (
                     <button key={tab} onClick={() => handleTabChange(tab)}
                       className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                      {tab === 'tesoreria'   && '💹  Tesorería'}
-                      {tab === 'caja_saldos' && '🏦  Saldos Banco'}
-                      {tab === 'conciliacion' && '🔄  Conciliación Bancaria'}
-                      {tab === 'gastos_nat'  && '📈  Gastos Naturaleza'}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {tab === 'tesoreria'   && <><Activity size={14} aria-hidden="true" /> Tesorería</>}
+                      {tab === 'caja_saldos' && <><Building2 size={14} aria-hidden="true" /> Saldos Banco</>}
+                      {tab === 'conciliacion' && <><RefreshCw size={14} aria-hidden="true" /> Conciliación Bancaria</>}
+                      {tab === 'gastos_nat'  && <><TrendingUp size={14} aria-hidden="true" /> Gastos Naturaleza</>}
                     </button>
                   ))}
                 </div>
@@ -1075,10 +1084,10 @@ export default function DashboardPage() {
                   {(['tributos','laboral','activo_fijo'] as const).filter(canViewTab).map((tab) => (
                     <button key={tab} onClick={() => handleTabChange(tab)}
                       className={`sidebar-link ${activeTab === tab ? 'active' : ''}`}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                      {tab === 'tributos'    && '📜  Tributos'}
-                      {tab === 'laboral'     && '👷  Laboral'}
-                      {tab === 'activo_fijo' && '🏗️  Activo Fijo'}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {tab === 'tributos'    && <><ScrollText size={14} aria-hidden="true" /> Tributos</>}
+                      {tab === 'laboral'     && <><HardHat size={14} aria-hidden="true" /> Laboral</>}
+                      {tab === 'activo_fijo' && <><Wrench size={14} aria-hidden="true" /> Activo Fijo</>}
                     </button>
                   ))}
                 </div>
@@ -1096,15 +1105,15 @@ export default function DashboardPage() {
                   {canViewTab('audit') && (
                     <button onClick={() => handleTabChange('audit')}
                       className={`sidebar-link ${activeTab === 'audit' ? 'active' : ''}`}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                      🔍  Módulo Auditoría
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Search size={14} aria-hidden="true" /> Módulo Auditoría
                     </button>
                   )}
                   {canViewTab('validation_forense') && (
                     <button onClick={() => handleTabChange('validation_forense')}
                       className={`sidebar-link ${activeTab === 'validation_forense' ? 'active' : ''}`}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                      🧪  Validación Forense S10
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <FlaskConical size={14} aria-hidden="true" /> Validación Forense S10
                     </button>
                   )}
                 </div>
@@ -1127,8 +1136,8 @@ export default function DashboardPage() {
                     .catch(() => setAdminLoading(false));
                 }}
                 className={`sidebar-link ${activeTab === 'admin' ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-                ⚙️  Administración
+                style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Settings size={14} aria-hidden="true" /> Administración
               </button>
             </>
           )}
@@ -1170,7 +1179,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ fontSize: '0.6rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{userRole}</div>
             </div>
-            <span style={{ fontSize: '0.65rem', color: '#4B5563' }}>⚙</span>
+            <Settings size={14} aria-hidden="true" style={{ color: '#4B5563', flexShrink: 0 }} />
           </button>
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -1178,7 +1187,7 @@ export default function DashboardPage() {
             onMouseEnter={e => { (e.currentTarget.style.background = 'var(--primary-muted)'); (e.currentTarget.style.color = 'var(--primary-light)'); }}
             onMouseLeave={e => { (e.currentTarget.style.background = 'var(--hamburger-bg)'); (e.currentTarget.style.color = 'var(--text-muted)'); }}
           >
-            {mounted && theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
+            {mounted && theme === 'dark' ? <><Sun size={14} aria-hidden="true" /> Modo claro</> : <><Moon size={14} aria-hidden="true" /> Modo oscuro</>}
           </button>
           <button
             onClick={() => { localStorage.removeItem('token'); router.push('/login'); }}
@@ -1341,7 +1350,7 @@ export default function DashboardPage() {
                   loadedRef.current = {};
                 }}
               >
-                🏢 GRUPO
+                <Building size={14} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.3rem' }} /> GRUPO
               </button>
             )}
             {visibleCompanies.map((co) => (
@@ -1379,7 +1388,7 @@ export default function DashboardPage() {
           return (
             <div style={{ padding: '0.75rem 1rem', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '0.75rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#F59E0B' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '1rem', animation: 'spin 2s linear infinite' }}>⟳</span>
+                <Loader2 size={16} aria-hidden="true" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
                 <span style={{ fontWeight: 600 }}>Sincronización en progreso</span>
                 {total > 0 && <span style={{ color: '#8B97A8', fontSize: '0.75rem' }}>AÑO {done + 1}/{total} · {elapsed > 0 ? `${fmtTime(elapsed)} transcurrido` : ''}{estRemaining ? ` · ~${fmtTime(estRemaining)} restante` : ''}</span>}
               </div>
@@ -1621,12 +1630,12 @@ export default function DashboardPage() {
                 <div className="page-section-label" style={{ marginBottom: '0.75rem' }}>Acceso Rápido</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
                   {([
-                    { tab: 'pl',   icon: '📊', label: 'P&L', desc: 'Estado de Resultados' },
-                    { tab: 'cxc',  icon: '💰', label: 'CxC',  desc: 'Cuentas por Cobrar' },
-                    { tab: 'cxp',  icon: '🏪', label: 'CxP',  desc: 'Cuentas por Pagar' },
-                    { tab: 'caja', icon: '🏦', label: 'Caja', desc: 'Posición de Caja' },
-                    { tab: 'gav',  icon: '📋', label: 'GAV',  desc: 'Gastos Operativos' },
-                    { tab: 'docs', icon: '🧾', label: 'Docs', desc: 'Documentos' },
+                    { tab: 'pl',   Icon: BarChart2,    label: 'P&L', desc: 'Estado de Resultados' },
+                    { tab: 'cxc',  Icon: DollarSign,   label: 'CxC',  desc: 'Cuentas por Cobrar' },
+                    { tab: 'cxp',  Icon: ShoppingBag,  label: 'CxP',  desc: 'Cuentas por Pagar' },
+                    { tab: 'caja', Icon: Building2,    label: 'Caja', desc: 'Posición de Caja' },
+                    { tab: 'gav',  Icon: ClipboardList, label: 'GAV', desc: 'Gastos Operativos' },
+                    { tab: 'docs', Icon: Receipt,       label: 'Docs', desc: 'Documentos' },
                   ] as const).map(item => (
                     <button key={item.tab} onClick={() => handleTabChange(item.tab)}
                       style={{
@@ -1638,7 +1647,7 @@ export default function DashboardPage() {
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(32,126,131,0.1)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(32,126,131,0.25)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
                     >
-                      <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>{item.icon}</div>
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.4rem', color: 'var(--primary-light, #2BB4BB)' }}><item.Icon size={32} aria-hidden="true" /></div>
                       <div style={{ fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.15rem' }}>{item.label}</div>
                       <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{item.desc}</div>
                     </button>
@@ -1852,8 +1861,8 @@ export default function DashboardPage() {
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       {narEntry && !narrativeLoading && (
                         <button onClick={() => fetchNarrative(true)}
-                          style={{ padding: '0.35rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.04)', color: '#6B7A8D', cursor: 'pointer', fontSize: '0.75rem' }}>
-                          ↻ Regenerar
+                          style={{ padding: '0.35rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.04)', color: '#6B7A8D', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <RotateCcw size={12} aria-hidden="true" /> Regenerar
                         </button>
                       )}
                       <button onClick={() => fetchNarrative(false)} disabled={narrativeLoading}
@@ -2248,7 +2257,7 @@ export default function DashboardPage() {
                         borderRadius: '0.5rem', padding: '0.65rem 1rem', marginBottom: '1rem',
                         display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
                       }}>
-                        <span style={{ fontSize: '1rem' }}>⚠️</span>
+                        <AlertTriangle size={16} aria-hidden="true" style={{ color: '#F59E0B', flexShrink: 0 }} />
                         <div style={{ flex: 1 }}>
                           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#F59E0B' }}>
                             {fmt(totalRevision)}{totalRevisionUSD > 0.01 ? ` + $ ${totalRevisionUSD.toLocaleString('es-PE', { minimumFractionDigits: 0 })} USD` : ''} requieren revisión contable
@@ -2793,8 +2802,8 @@ export default function DashboardPage() {
                       borderColor: docsOnlySinAsiento ? '#EF4444' : 'rgba(239,68,68,0.3)',
                       background: docsOnlySinAsiento ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.08)',
                       color: '#EF4444',
-                      fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
-                    ⚠ Sin asiento contable ({sinAsientoCount}) · S/ {sinAsientoMonto.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
+                      fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <AlertTriangle size={13} aria-hidden="true" /> Sin asiento contable ({sinAsientoCount}) · S/ {sinAsientoMonto.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
                   </button>
                 )}
                 {duplicadosCount > 0 && (
@@ -2804,8 +2813,8 @@ export default function DashboardPage() {
                       borderColor: docsOnlyDuplicados ? '#F59E0B' : 'rgba(245,158,11,0.3)',
                       background: docsOnlyDuplicados ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.08)',
                       color: '#F59E0B',
-                      fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
-                    ⚠ Duplicados ({duplicadosCount})
+                      fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <AlertTriangle size={13} aria-hidden="true" /> Duplicados ({duplicadosCount})
                   </button>
                 )}
               </div>
@@ -2870,7 +2879,7 @@ export default function DashboardPage() {
                           <tr key={i} style={{ background: esDuplicado ? 'rgba(245,158,11,0.06)' : sinAsiento ? 'rgba(239,68,68,0.06)' : undefined }}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                               {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
-                              {sinAsiento && <span title="Sin asiento contable en cuenta de gasto" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de gasto" style={{ color: '#EF4444', marginRight: '0.3rem', display: 'inline-flex' }}><AlertTriangle size={13} aria-hidden="true" /></span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
@@ -2925,7 +2934,7 @@ export default function DashboardPage() {
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                               {esNC && <span title="Nota de Crédito — resta del total facturado" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.75rem' }}>NC</span>}
                               {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
-                              {sinAsiento && <span title="Sin asiento contable en cuenta de ingreso" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de ingreso" style={{ color: '#EF4444', marginRight: '0.3rem', display: 'inline-flex' }}><AlertTriangle size={13} aria-hidden="true" /></span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
@@ -2987,7 +2996,7 @@ export default function DashboardPage() {
                             <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                               {esNC && <span title="Nota de Crédito — resta del total de compras" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.75rem' }}>NC</span>}
                               {esDuplicado && <span title="Documento duplicado en S10 — revisar con contabilidad" style={{ color: '#F59E0B', marginRight: '0.3rem', fontSize: '0.8rem' }}>⧉</span>}
-                              {sinAsiento && <span title="Sin asiento contable en cuenta de costo/gasto" style={{ color: '#EF4444', marginRight: '0.3rem', fontSize: '0.8rem' }}>⚠</span>}
+                              {sinAsiento && <span title="Sin asiento contable en cuenta de costo/gasto" style={{ color: '#EF4444', marginRight: '0.3rem', display: 'inline-flex' }}><AlertTriangle size={13} aria-hidden="true" /></span>}
                               {d.Serie || '—'}-{d.Numero}
                             </td>
                             <td style={{ whiteSpace: 'nowrap' }}>{d.FechaDocumento}</td>
@@ -3156,44 +3165,44 @@ export default function DashboardPage() {
           };
 
           const COMPANY_OPTIONS = [
-            { value: 'GRUPO', label: '🏢 Grupo Consolidado' },
+            { value: 'GRUPO', label: 'Grupo Consolidado' },
             ...COMPANIES.map(c => ({ value: c.codEmpresa, label: c.shortName })),
           ];
 
           const TAB_GROUPS = [
             { group: 'Principales', tabs: [
-              { key: 'gerencial',    label: '📈 Gerencial' },
-              { key: 'pl',           label: '📊 P&L' },
-              { key: 'cxc',          label: '💰 CxC Aging' },
-              { key: 'cxc_ranking',  label: '👥 Tamaño de Cliente' },
-              { key: 'cxp',          label: '🏪 CxP Aging' },
-              { key: 'cxp_ranking',  label: '🏭 Tamaño de Proveedor' },
-              { key: 'caja',         label: '💵 Posición Caja' },
-              { key: 'gav',          label: '📋 GAV Detalle' },
-              { key: 'docs',         label: '🧾 Documentos' },
+              { key: 'gerencial',    label: 'Gerencial' },
+              { key: 'pl',           label: 'P&L' },
+              { key: 'cxc',          label: 'CxC Aging' },
+              { key: 'cxc_ranking',  label: 'Tamaño de Cliente' },
+              { key: 'cxp',          label: 'CxP Aging' },
+              { key: 'cxp_ranking',  label: 'Tamaño de Proveedor' },
+              { key: 'caja',         label: 'Posición Caja' },
+              { key: 'gav',          label: 'GAV Detalle' },
+              { key: 'docs',         label: 'Documentos' },
             ]},
             { group: 'Balance & Patrimonio', tabs: [
-              { key: 'balance',    label: '⚖️ Balance General' },
-              { key: 'otras_cxc',  label: '📌 Otras CxC' },
-              { key: 'otras_cxp',  label: '🗃️ Otras CxP' },
-              { key: 'prestamos',  label: '💳 Préstamos' },
-              { key: 'patrimonio', label: '🏛️ Patrimonio' },
-              { key: 'inventarios',label: '📦 Inventarios' },
+              { key: 'balance',    label: 'Balance General' },
+              { key: 'otras_cxc',  label: 'Otras CxC' },
+              { key: 'otras_cxp',  label: 'Otras CxP' },
+              { key: 'prestamos',  label: 'Préstamos' },
+              { key: 'patrimonio', label: 'Patrimonio' },
+              { key: 'inventarios',label: 'Inventarios' },
             ]},
             { group: 'Tesorería & Bancos', tabs: [
-              { key: 'tesoreria',   label: '💹 Tesorería' },
-              { key: 'caja_saldos', label: '🏦 Saldos Banco' },
-              { key: 'conciliacion',label: '🔄 Conciliación' },
-              { key: 'gastos_nat',  label: '📈 Gastos Naturaleza' },
+              { key: 'tesoreria',   label: 'Tesorería' },
+              { key: 'caja_saldos', label: 'Saldos Banco' },
+              { key: 'conciliacion',label: 'Conciliación' },
+              { key: 'gastos_nat',  label: 'Gastos Naturaleza' },
             ]},
             { group: 'Obligaciones', tabs: [
-              { key: 'tributos',    label: '📜 Tributos' },
-              { key: 'laboral',     label: '👷 Laboral' },
-              { key: 'activo_fijo', label: '🏗️ Activo Fijo' },
+              { key: 'tributos',    label: 'Tributos' },
+              { key: 'laboral',     label: 'Laboral' },
+              { key: 'activo_fijo', label: 'Activo Fijo' },
             ]},
             { group: 'Auditoría', tabs: [
-              { key: 'audit',              label: '🔍 Módulo Auditoría' },
-              { key: 'validation_forense', label: '🧪 Validación Forense' },
+              { key: 'audit',              label: 'Módulo Auditoría' },
+              { key: 'validation_forense', label: 'Validación Forense' },
             ]},
           ];
 
@@ -3493,7 +3502,9 @@ export default function DashboardPage() {
                           </tr>
                           <tr style={{ background: balanced ? 'rgba(16,185,129,0.07)' : 'rgba(239,68,68,0.08)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                             <td colSpan={6} style={{ fontSize: '0.7rem', color: balanced ? '#10B981' : '#EF4444', fontWeight: 600, paddingLeft: '0.75rem' }}>
-                              {balanced ? '✓ Balance cuadrado' : `⚠ Descuadre: ${fmt(difD)}`}
+                              {balanced
+                                ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><Check size={12} aria-hidden="true" /> Balance cuadrado</span>
+                                : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}><AlertTriangle size={12} aria-hidden="true" /> {`Descuadre: ${fmt(difD)}`}</span>}
                             </td>
                             <td colSpan={2} style={{ fontSize: '0.7rem', color: balanced ? '#10B981' : '#EF4444', fontWeight: 700, textAlign: 'right' }}>
                               {balanced ? fmt(netFinD) : fmt(Math.abs(netFinD - netFinH))}
@@ -3612,7 +3623,7 @@ export default function DashboardPage() {
                             {r.NroD
                               ? <button onClick={e => { e.stopPropagation(); setPrestamosDocPreview(String(r.NroD)); }}
                                   title="Ver documento origen"
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>🔗</button>
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', padding: 0, display: 'flex', alignItems: 'center' }}><Link2 size={14} aria-hidden="true" /></button>
                               : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
                             }
                           </td>
@@ -3649,7 +3660,7 @@ export default function DashboardPage() {
                             {r.NroD
                               ? <button onClick={e => { e.stopPropagation(); setPrestamosDocPreview(String(r.NroD)); }}
                                   title="Ver documento origen"
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>🔗</button>
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', padding: 0, display: 'flex', alignItems: 'center' }}><Link2 size={14} aria-hidden="true" /></button>
                               : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
                             }
                           </td>
@@ -3803,7 +3814,7 @@ export default function DashboardPage() {
                                 <td style={{ color: '#8B97A8' }}>{fmt(r.TotalDebito)}</td>
                                 <td style={{ color: '#8B97A8' }}>{fmt(r.TotalCredito)}</td>
                                 <td style={{ fontWeight: 600, color: (r.Saldo || 0) >= 0 ? '#F59E0B' : '#EF4444' }} title={r.Saldo < 0 ? 'Saldo INVERSO — depreciación con Db>Cr (error contable)' : ''}>
-                                  {fmt(r.Saldo)} {r.Saldo < 0 && '⚠️'}
+                                  {fmt(r.Saldo)} {r.Saldo < 0 && <AlertTriangle size={13} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '0.25rem' }} />}
                                 </td>
                               </tr>
                             ))}
@@ -4060,13 +4071,13 @@ export default function DashboardPage() {
                   </div>
                   {!conciliacionData.usaModulo && (
                     <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', padding: '0.75rem', borderRadius: '0.5rem', color: '#EF4444', fontSize: '0.85rem' }}>
-                      🚨 <strong>ALERTA:</strong> Esta empresa NO usa el módulo de conciliación bancaria.
+                      <AlertCircle size={16} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.4rem' }} /><strong>ALERTA:</strong> Esta empresa NO usa el módulo de conciliación bancaria.
                       NINGUNA cuenta tiene estados de cuenta cargados al sistema. Riesgo de control interno crítico.
                     </div>
                   )}
                   {conciliacionData.maxDiasAtraso > 90 && (
                     <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', padding: '0.75rem', borderRadius: '0.5rem', color: '#F59E0B', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                      ⚠️ La conciliación más reciente tiene {conciliacionData.maxDiasAtraso} días de atraso. Política: conciliación mensual obligatoria.
+                      <AlertTriangle size={15} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.4rem' }} /> La conciliación más reciente tiene {conciliacionData.maxDiasAtraso} días de atraso. Política: conciliación mensual obligatoria.
                     </div>
                   )}
                 </>
@@ -4105,7 +4116,7 @@ export default function DashboardPage() {
                             <td style={{ color: '#8B97A8' }}>{r.Moneda}</td>
                             <td style={{ fontWeight: 600, color: (r.BalanceContable || 0) >= 0 ? '#10B981' : '#EF4444' }}>{fmt(r.BalanceContable)}</td>
                             <td style={{ color: '#8B97A8' }}>{fmt(r.BalanceReal)}</td>
-                            <td style={{ color: sinEstado ? '#EF4444' : '#8B97A8' }}>{r.UltimoEstadoAl || '🚨 NUNCA'}</td>
+                            <td style={{ color: sinEstado ? '#EF4444' : '#8B97A8' }}>{r.UltimoEstadoAl || <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><AlertCircle size={12} aria-hidden="true" /> NUNCA</span>}</td>
                             <td style={{ fontWeight: 600, color: sinEstado ? '#EF4444' : dias > 365 ? '#EF4444' : dias > 90 ? '#F59E0B' : '#10B981' }}>
                               {sinEstado ? '∞' : `${dias}d`}
                             </td>
@@ -4126,7 +4137,7 @@ export default function DashboardPage() {
             {conciliacionData?.movsSinConciliar?.length > 0 && (
               <div className="kpi-card">
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
-                  ⚠️ Movimientos bancarios SIN CONCILIAR (top 100 más recientes)
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><AlertTriangle size={15} aria-hidden="true" /> Movimientos bancarios SIN CONCILIAR (top 100 más recientes)</span>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10" style={{ fontSize: '0.75rem' }}>
@@ -4214,8 +4225,8 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {narEntry && !narrativeLoading && (
                       <button onClick={() => fetchNarrative(true)}
-                        style={{ padding: '0.35rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.04)', color: '#6B7A8D', cursor: 'pointer', fontSize: '0.75rem' }}>
-                        ↻ Regenerar
+                        style={{ padding: '0.35rem 0.75rem', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.04)', color: '#6B7A8D', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <RotateCcw size={12} aria-hidden="true" /> Regenerar
                       </button>
                     )}
                     <button onClick={() => fetchNarrative(false)} disabled={narrativeLoading}
@@ -4384,7 +4395,7 @@ export default function DashboardPage() {
                       }}
                         style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: '1px solid rgba(226,92,26,0.4)', background: 'rgba(226,92,26,0.1)', color: '#FF8B4D', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
                         title="Descargar reporte como archivo PowerPoint">
-                        📥 Exportar PPTX
+                        <Download size={14} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.3rem' }} /> Exportar PPTX
                       </button>
                       <button onClick={() => {
                         // Inicializar draft si está vacío (primera vez en este Q/año/empresa)
@@ -4430,8 +4441,8 @@ export default function DashboardPage() {
                           alert(`Error: ${e.message}`);
                         } finally { setDirectorioSaving(false); }
                       }} disabled={directorioSaving}
-                        style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#10B981', color: '#0E1A2E', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
-                        {directorioSaving ? '⏳ Guardando…' : '💾 Guardar'}
+                        style={{ padding: '0.45rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#10B981', color: '#0E1A2E', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        {directorioSaving ? <><Loader2 size={13} aria-hidden="true" /> Guardando…</> : <><Save size={13} aria-hidden="true" /> Guardar</>}
                       </button>
                     </>
                   )}
@@ -4526,7 +4537,7 @@ export default function DashboardPage() {
                         </div>
                         {!hasPptoQ && !hasPptoYTD && (
                           <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.8rem', background: 'rgba(91,134,229,0.06)', border: '1px solid rgba(91,134,229,0.15)', borderRadius: '0.4rem', fontSize: '0.72rem', color: '#8B97A8' }}>
-                            💡 Activa <b>✎ Editar</b> arriba para cargar el presupuesto del trimestre y ver las columnas de cumplimiento.
+                            <Info size={13} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.3rem' }} /> Activa <b>✎ Editar</b> arriba para cargar el presupuesto del trimestre y ver las columnas de cumplimiento.
                           </div>
                         )}
                       </div>
@@ -5013,7 +5024,7 @@ export default function DashboardPage() {
                                       <td style={{ textAlign: 'right' }}>{editing ? <DirNumInput onChange={onCh}path={`backlog.${i}.avance`} value={r.avance} /> : `${(r.avance || 0).toFixed(0)}%`}</td>
                                       <td style={{ textAlign: 'right' }}>{editing ? <DirNumInput onChange={onCh}path={`backlog.${i}.ingresoQ`} value={r.ingresoQ} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.ingresoQ || 0)}</span>}</td>
                                       <td>{editing ? <DirSelectInput onChange={onCh}path={`backlog.${i}.estado`} value={r.estado} options={['En curso','En espera','Riesgo','Completado','Suspendido']} /> : r.estado}</td>
-                                      {editing && <td><button onClick={() => removeItem('backlog', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button></td>}
+                                      {editing && <td><button onClick={() => removeItem('backlog', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center' }}><X size={14} aria-hidden="true" /></button></td>}
                                     </tr>
                                   ))}
                                   {(d.backlog || []).length === 0 && (
@@ -5068,7 +5079,7 @@ export default function DashboardPage() {
                                         <td style={{ textAlign: 'right' }}>{editing ? <DirNumInput onChange={onCh}path={`pipeline.${i}.monto`} value={r.monto} /> : <span style={{ fontFamily: 'monospace' }}>{fmt(r.monto || 0)}</span>}</td>
                                         <td style={{ textAlign: 'center' }}>{editing ? <DirTextInput onChange={onCh}path={`pipeline.${i}.qCierre`} value={r.qCierre} placeholder="Q2 2026" /> : r.qCierre}</td>
                                         <td style={{ textAlign: 'center' }}>{editing ? <DirSelectInput onChange={onCh}path={`pipeline.${i}.prob`} value={r.prob} options={['A','B','C']} /> : <span style={{ fontWeight: 700, color: probColor }}>{r.prob}</span>}</td>
-                                        {editing && <td><button onClick={() => removeItem('pipeline', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button></td>}
+                                        {editing && <td><button onClick={() => removeItem('pipeline', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center' }}><X size={14} aria-hidden="true" /></button></td>}
                                       </tr>
                                     );
                                   })}
@@ -5113,7 +5124,7 @@ export default function DashboardPage() {
                                 <div>
                                   {editing ? <DirTextArea onChange={onCh}path={`greenFlags.${i}.descripcion`} value={g.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.8rem' }}>{g.descripcion}</span>}
                                 </div>
-                                {editing && <button onClick={() => removeItem('greenFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                                {editing && <button onClick={() => removeItem('greenFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center' }}><X size={14} aria-hidden="true" /></button>}
                               </div>
                             ))}
                             {(d.greenFlags || []).length === 0 && !editing && (
@@ -5146,7 +5157,7 @@ export default function DashboardPage() {
                                   <div>{editing ? <DirTextInput onChange={onCh}path={`redFlags.${i}.titulo`} value={r.titulo} placeholder="Título del riesgo" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{r.titulo}</b>}</div>
                                   <div>{editing ? <DirTextArea onChange={onCh}path={`redFlags.${i}.descripcion`} value={r.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{r.descripcion}</span>}</div>
                                   <div>{editing ? <DirTextArea onChange={onCh}path={`redFlags.${i}.accion`} value={r.accion} /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>→ {r.accion}</span>}</div>
-                                  {editing && <button onClick={() => removeItem('redFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                                  {editing && <button onClick={() => removeItem('redFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center' }}><X size={14} aria-hidden="true" /></button>}
                                 </div>
                               );
                             })}
@@ -5185,7 +5196,7 @@ export default function DashboardPage() {
                                   <div>{editing ? <DirTextArea onChange={onCh}path={`mustWin.${i}.descripcion`} value={m.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.descripcion}</span>}</div>
                                   <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.responsable`} value={m.responsable} placeholder="Responsable" /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>{m.responsable}</span>}</div>
                                   <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.plazo`} value={m.plazo} placeholder="mes/año" /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.plazo}</span>}</div>
-                                  {editing && <button onClick={() => removeItem('mustWin', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                                  {editing && <button onClick={() => removeItem('mustWin', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center' }}><X size={14} aria-hidden="true" /></button>}
                                 </div>
                               );
                             })}
@@ -5211,7 +5222,7 @@ export default function DashboardPage() {
                               <div key={i} style={{ display: 'grid', gridTemplateColumns: editing ? '40px 1fr auto' : '40px 1fr', gap: '0.6rem', alignItems: 'center', marginBottom: '0.5rem' }}>
                                 <div style={{ color: '#2BB4BB', fontWeight: 700, fontSize: '0.85rem' }}>{i + 1}.</div>
                                 <div>{editing ? <DirTextArea onChange={onCh}path={`acuerdos.${i}`} value={a} /> : <span style={{ color: '#CBD5E1', fontSize: '0.82rem' }}>{a}</span>}</div>
-                                {editing && <button onClick={() => removeItem('acuerdos', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '1rem' }}>✕</button>}
+                                {editing && <button onClick={() => removeItem('acuerdos', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center' }}><X size={14} aria-hidden="true" /></button>}
                               </div>
                             ))}
                             {(d.acuerdos || []).length === 0 && !editing && (
@@ -5243,17 +5254,17 @@ export default function DashboardPage() {
       <nav className="mobile-bottomnav" aria-label="Navegación principal">
         <div className="mobile-bottomnav-inner">
           {([
-            { key: 'inicio', icon: '🏠', label: 'Inicio' },
-            { key: 'pl',     icon: '📊', label: 'P&L' },
-            { key: 'cxc',   icon: '💰', label: 'CxC' },
-            { key: 'caja',  icon: '🏦', label: 'Caja' },
+            { key: 'inicio', Icon: Home,       label: 'Inicio' },
+            { key: 'pl',     Icon: BarChart2,  label: 'P&L' },
+            { key: 'cxc',    Icon: DollarSign, label: 'CxC' },
+            { key: 'caja',   Icon: Building2,  label: 'Caja' },
           ] as const).map(item => (
             <button
               key={item.key}
               className={`bottomnav-item${activeTab === item.key ? ' active' : ''}`}
               onClick={() => handleTabChange(item.key)}
             >
-              <span className="bottomnav-icon">{item.icon}</span>
+              <span className="bottomnav-icon"><item.Icon size={20} aria-hidden="true" /></span>
               <span className="bottomnav-label">{item.label}</span>
             </button>
           ))}
@@ -5262,7 +5273,7 @@ export default function DashboardPage() {
             onClick={() => setSidebarOpen(o => !o)}
             aria-label="Más opciones"
           >
-            <span className="bottomnav-icon">☰</span>
+            <span className="bottomnav-icon"><Menu size={20} aria-hidden="true" /></span>
             <span className="bottomnav-label">Más</span>
           </button>
         </div>

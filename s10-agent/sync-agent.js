@@ -32,6 +32,11 @@ const CONFIG = {
   S10_DATABASE: 'CMO',
 
   VPS_URL: 'https://s10bizsmarthub.bizwareapps.com',
+  // El agente corre en el MISMO host del backend. El push va por loopback
+  // (localhost:3202 = puerto del contenedor backend, sin nginx), inmune al
+  // VPN/policy-routing/DNS. Antes POSTeaba a la URL pública y durante el sync
+  // VPN la conexión del host a su propia IP pública fallaba ("fetch failed").
+  PUSH_URL: 'http://localhost:3202',
   SYNC_API_KEY: '1fe0bf01e872d7f586e4828abcdc1ba0a5283f5625570128',
 
   COMPANIES: [
@@ -3204,7 +3209,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
     };
 
     // POST to VPS
-    const response = await fetch(`${CONFIG.VPS_URL}/api/sync/push`, {
+    const response = await fetch(`${CONFIG.PUSH_URL}/sync/push`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3246,7 +3251,7 @@ async function pushLibroMayor(company, pool, year, tag) {
     const totalChunks = Math.ceil(rows.length / CHUNK);
     for (let i = 0; i < totalChunks; i++) {
       const chunk = rows.slice(i * CHUNK, (i + 1) * CHUNK);
-      const res = await fetch(`${CONFIG.VPS_URL}/api/sync/ledger`, {
+      const res = await fetch(`${CONFIG.PUSH_URL}/sync/ledger`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -225,7 +225,11 @@ WITH dedup AS (
     -- Se EXCLUYE '6' (vinculadas/intercompañía → su propia vista CXC_VINCULADAS).
     AND DescripcionEstado IN ('1','5')
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-    AND YEAR(FechaDocumento) >= YEAR(GETDATE()) - 2
+    -- Pendientes (estado '1'): TODAS sin importar antigüedad, para CUADRAR con la
+    -- cartera (QUERY_CXC no filtra fecha). Hay receivables viejos sin cobrar — ej.
+    -- CMO GROUP: Marina de Guerra 2020, Electrónica 2018 — que igual deben verse.
+    -- Pagados (estado '5'): solo últimos 3 años, para acotar el tamaño del payload.
+    AND (DescripcionEstado = '1' OR YEAR(FechaDocumento) >= YEAR(GETDATE()) - 2)
 )
 SELECT
   ISNULL(CodIdentificador,'')                                        AS CodCliente,

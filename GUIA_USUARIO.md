@@ -64,7 +64,7 @@ Por eso un total del Mayor puede ser un poco mayor que el del P&L: el Mayor incl
 
 **Notas de crédito (NC).** Las NC **reducen** el saldo (del cliente en CxC o del proveedor en CxP). Se muestran en rojo / negativas. Es correcto que resten.
 
-**Documentos saldados o anulados no aparecen en CxC/CxP.** Esas vistas muestran solo lo **pendiente**. Si una factura fue anulada por su NC (saldo neto cero), no sale en la cartera — pero la puedes ver en **"Ver en el Mayor"** del cliente/proveedor, con total trazabilidad.
+**Ver lo pagado y lo anulado en CxC.** La *cartera* (pantalla principal de CxC) muestra solo lo **pendiente**. Pero al hacer **clic en un cliente** se abre su detalle con pestañas: **Pendientes · Vencidos · Vigentes · Saldados · Notas de crédito · Todos**, cada documento con su **Estado** (🟡 Pendiente / 🟢 Saldado / 🔴 NC) y un **buscador por N° de documento**. Así ves lo ya **pagado** (pestaña Saldados) y las **NC** que reducen el saldo, sin salir de CxC. Para el respaldo contable de cualquier documento, usa **"Ver en el Mayor"** en ese mismo detalle. *Nota:* cuando una factura quedó anulada por una NC **flotante** (sin aplicar en S10), verás la factura y su NC por separado (mismo monto, una en rojo) y el **Neto** del cliente en cero — S10 no guarda el amarre formal entre ambas, por eso no se marcan como un solo movimiento.
 
 **Algunas líneas del Mayor no tienen documento.** Son contabilizaciones directas (aperturas, provisiones, reclasificaciones). Es normal que la columna de documento quede vacía.
 

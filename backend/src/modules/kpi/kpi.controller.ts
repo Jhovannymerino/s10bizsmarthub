@@ -38,9 +38,11 @@ export class KpiController {
   getDashboard(
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
     const y = parseYear(year);
-    return this.kpiService.getDashboard(companyId, y);
+    return this.kpiService.getDashboardRange(companyId, y, desde || undefined, hasta || undefined);
   }
 
   /** CxC Aging por cliente */

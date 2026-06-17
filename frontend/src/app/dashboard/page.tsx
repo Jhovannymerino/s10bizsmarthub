@@ -171,6 +171,9 @@ export default function DashboardPage() {
   const syncPollRef = useRef<NodeJS.Timeout | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [pl, setPL] = useState<any>(null);
+  // Rango de fechas del P&L (null = año completo, comportamiento por defecto)
+  const [plDesde, setPlDesde] = useState<string | null>(null);
+  const [plHasta, setPlHasta] = useState<string | null>(null);
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
   const [gav, setGAV] = useState<any>(null);
@@ -366,6 +369,7 @@ export default function DashboardPage() {
     setCxcSplitData(null);
     setCxcVinculadas(null);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
+    setPlDesde(null); setPlHasta(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
     setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null); setConciliacionData(null);
@@ -431,6 +435,24 @@ export default function DashboardPage() {
 
     return () => ctrl.abort();
   }, [router, selectedCompany, selectedYear, refreshKey]);
+
+  // P&L por rango de fechas: solo sobreescribe `pl` cuando hay un rango activo.
+  // Sin rango (null), el efecto principal ya cargó el año completo. Al limpiar el
+  // rango se hace setRefreshKey para recargar el año completo.
+  useEffect(() => {
+    if (isGrupo || (!plDesde && !plHasta)) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    let url = `/kpi/${id}/dashboard?year=${selectedYear}`;
+    if (plDesde) url += `&desde=${plDesde}`;
+    if (plHasta) url += `&hasta=${plHasta}`;
+    fetchApi(url, token, ctrl.signal)
+      .then((d) => setPL(d?.plMonthly ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener PL previo */ } });
+    return () => ctrl.abort();
+  }, [plDesde, plHasta, selectedCompany, selectedYear, isGrupo]);
 
   useEffect(() => {
     if (activeTab !== 'caja' || isGrupo) return;
@@ -1687,6 +1709,35 @@ export default function DashboardPage() {
         {activeTab === 'pl' && !ytd && !loading && <NoDataBanner kpi="P&L" />}
         {activeTab === 'pl' && ytd && (
           <>
+            {/* Filtro de rango de fechas del P&L (empresa individual; default = año completo) */}
+            {!isGrupo && (
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'rgba(32,126,131,0.06)', border: '1px solid rgba(32,126,131,0.18)', borderRadius: 8 }}>
+                <span style={{ fontSize: '0.75rem', color: '#8B97A8', fontWeight: 600 }}>Período:</span>
+                <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  Desde
+                  <input type="date" value={plDesde ?? `${selectedYear}-01-01`} min={`${selectedYear}-01-01`} max={`${selectedYear}-12-31`}
+                    onChange={(e) => setPlDesde(e.target.value)}
+                    style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' }} />
+                </label>
+                <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  Hasta
+                  <input type="date" value={plHasta ?? `${selectedYear}-12-31`} min={`${selectedYear}-01-01`} max={`${selectedYear}-12-31`}
+                    onChange={(e) => setPlHasta(e.target.value)}
+                    style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' }} />
+                </label>
+                {(plDesde || plHasta) ? (
+                  <>
+                    <span style={{ fontSize: '0.7rem', color: '#2BB4BB', fontWeight: 700 }}>● Período personalizado</span>
+                    <button onClick={() => { setPlDesde(null); setPlHasta(null); setRefreshKey((k) => k + 1); }}
+                      style={{ padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.72rem', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#8B97A8' }}>
+                      Ver año completo
+                    </button>
+                  </>
+                ) : (
+                  <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>Año completo {selectedYear}</span>
+                )}
+              </div>
+            )}
             {/* KPI Cards con semáforo */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               <KpiCard

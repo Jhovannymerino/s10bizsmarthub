@@ -4,6 +4,18 @@ import { S10Service } from '../s10/s10.service';
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 
+// Fecha 'DD/MM/YYYY' (formato CONVERT 103 de S10) → 'YYYY-MM-DD' para comparar rangos.
+function fechaDDMMYYYYtoISO(f: string): string {
+  if (!f) return '';
+  const [d, m, y] = String(f).split('/');
+  return y ? `${y}-${m}-${d}` : String(f);
+}
+// Desplaza el año de una fecha ISO (para comparar el mismo rango del año anterior).
+function shiftISOYear(iso: string, delta: number): string {
+  const [y, m, d] = iso.split('-');
+  return `${parseInt(y, 10) + delta}-${m}-${d}`;
+}
+
 // Tipo de cambio PEN/USD de respaldo cuando S10 no registra TC en el documento.
 // Actualizar si el TC de referencia cambia significativamente (>5%).
 const TC_USD_FALLBACK = 3.80;
@@ -292,6 +304,80 @@ export class KpiService {
     };
 
     return { plMonthly, ytd, detalle };
+  }
+
+  // ─────────────────────────────────────────────
+  // P&L por RANGO de fechas (desde/hasta) — derivado del snapshot `transactions`
+  // (mismas cuentas y mismo mapeo que el P&L mensual → cuadra al centavo).
+  // Default (año completo o sin rango) delega en getDashboard: comportamiento intacto.
+  // ─────────────────────────────────────────────
+  async getDashboardRange(companyId: string, year: number, desde?: string, hasta?: string) {
+    const fullYear =
+      (!desde || desde <= `${year}-01-01`) && (!hasta || hasta >= `${year}-12-31`);
+    if (fullYear) return this.getDashboard(companyId, year);
+
+    const company = await this.resolveCompany(companyId);
+    const claseIngreso = (company as any)?.claseIngreso ?? '70';
+
+    const txSnap = await this.getSnapshot(companyId, 'transactions', `${year}`);
+    if (!txSnap) {
+      // Sin detalle transaccional para ese año → no se puede acotar por fecha
+      const full = await this.getDashboard(companyId, year);
+      return { ...full, rango: { desde, hasta }, rangoNoDisponible: true };
+    }
+
+    // transactions no trae DesCuenta → mapa codCuenta→descripción del P&L cacheado
+    const plSnap = await this.getSnapshot(companyId, 'pl', `${year}`);
+    const descMap = this.buildDescMap((plSnap?.data as any)?.detalle);
+
+    const d = desde || `${year}-01-01`;
+    const h = hasta || `${year}-12-31`;
+    const adapt = (snapRows: any[], withDesc: boolean) =>
+      (snapRows || [])
+        .filter((r) => {
+          const iso = fechaDDMMYYYYtoISO(r.Fecha);
+          return iso >= d && iso <= h;
+        })
+        .map((r) => ({
+          Mes: r.Mes,
+          Clase: r.Clase,
+          CodCuenta: r.CodCuenta,
+          DesCuenta: withDesc ? descMap[r.CodCuenta] || r.CodCuenta : r.CodCuenta,
+          TotalDebito: r.Debito,
+          TotalCredito: r.Credito,
+        }));
+
+    const dashboard = this.buildDashboardFromPL(adapt(txSnap.data as any[], true), claseIngreso);
+
+    // Comparativo con el MISMO rango del año anterior (si hay transactions)
+    let prevYear: any = null;
+    const prevTx = await this.getSnapshot(companyId, 'transactions', `${year - 1}`);
+    if (prevTx) {
+      const pd = shiftISOYear(d, -1);
+      const ph = shiftISOYear(h, -1);
+      const prevRows = (prevTx.data as any[]).filter((r) => {
+        const iso = fechaDDMMYYYYtoISO(r.Fecha);
+        return iso >= pd && iso <= ph;
+      }).map((r) => ({
+        Mes: r.Mes, Clase: r.Clase, CodCuenta: r.CodCuenta,
+        DesCuenta: r.CodCuenta, TotalDebito: r.Debito, TotalCredito: r.Credito,
+      }));
+      const prevDash = this.buildDashboardFromPL(prevRows, claseIngreso);
+      prevYear = { ytd: prevDash.ytd, year: year - 1, rango: { desde: pd, hasta: ph } };
+    }
+
+    return { ...dashboard, prevYear, rango: { desde: d, hasta: h } };
+  }
+
+  private buildDescMap(detalle: any): Record<string, string> {
+    const map: Record<string, string> = {};
+    if (!detalle) return map;
+    for (const grupo of Object.values(detalle) as any[]) {
+      if (Array.isArray(grupo)) {
+        for (const c of grupo) if (c?.codCuenta) map[c.codCuenta] = c.descripcion || c.codCuenta;
+      }
+    }
+    return map;
   }
 
   // ─────────────────────────────────────────────

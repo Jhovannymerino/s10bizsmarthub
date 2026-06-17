@@ -42,7 +42,8 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
   }, [companyId, codCliente]);
 
   const pendientes = docs.filter(d => (d.Saldo ?? 0) > 0 || (d.EsNotaCredito && (d.Saldo ?? 0) < 0));
-  const pagados = docs.filter(d => !d.EsNotaCredito && (d.Saldo ?? 0) <= 0);
+  // Saldados/anulados: saldo neto ~0 (factura compensada por su NC, o pagada). Incluye facturas y NCs aplicadas.
+  const pagados = docs.filter(d => Math.abs(d.Saldo ?? 0) < 0.01);
 
   const baseFiltered = filter === 'pagado'
     ? pagados
@@ -116,7 +117,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
           <div>
             <div id="cxc-docs-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cliente}</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
-              {filter === 'pagado' ? 'Documentos pagados' : 'Documentos pendientes'} · {filtered.length} documentos
+              {filter === 'pagado' ? 'Documentos saldados / anulados (factura + NC que se compensan)' : 'Documentos pendientes'} · {filtered.length} documentos
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -138,8 +139,9 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
             Vigentes ({pendientes.filter(d => (d.DiasVencido ?? 0) <= 0).length})
           </button>
           {pagados.length > 0 && (
-            <button style={btnStyle(filter === 'pagado', 'green')} onClick={() => setFilter('pagado')}>
-              Pagados ({pagados.length})
+            <button style={btnStyle(filter === 'pagado', 'green')} onClick={() => setFilter('pagado')}
+              title="Documentos con saldo cero: facturas pagadas y facturas anuladas por su nota de crédito">
+              Saldados / Anulados ({pagados.length})
             </button>
           )}
           <input
@@ -152,7 +154,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>{filter === 'pagado' ? 'Sin documentos pagados.' : 'Sin documentos pendientes.'}</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>{filter === 'pagado' ? 'Sin documentos saldados o anulados (últimos 3 años).' : 'Sin documentos pendientes.'}</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>

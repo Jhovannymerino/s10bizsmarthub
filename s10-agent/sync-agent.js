@@ -208,6 +208,10 @@ ORDER BY Grupo, SaldoPendiente DESC
 // Documentos pendientes de cobro por cliente (trazabilidad en modal)
 // Reemplaza el drilldown de asientos contables — muestra los documentos reales
 // CTE dedup elimina duplicados que genera vw_12DocumentosPorCobrar por su JOIN interno
+// Incluye documentos PENDIENTES y SALDADOS/ANULADOS (factura compensada por su NC,
+// saldo neto 0). El frontend los separa con un toggle: por defecto solo pendientes;
+// al activar "saldados" muestra los de saldo ~0 (la factura y la NC que la anula).
+// Acotado a 3 años para no inflar el snapshot.
 const QUERY_CXC_DOCS = (codEmpresa) => `
 WITH dedup AS (
   SELECT *,
@@ -217,8 +221,7 @@ WITH dedup AS (
     AND CodTipoDocumento IN ('131','125','128','134')
     AND DescripcionEstado = '1'
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-    AND (Total - ISNULL(TotalPagado,0)) > 0.01
-    AND NOT (UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%' AND ISNULL(TotalPagado,0) < 0)
+    AND YEAR(FechaDocumento) >= YEAR(GETDATE()) - 2
 )
 SELECT
   ISNULL(CodIdentificador,'')                                        AS CodCliente,

@@ -23,3 +23,4 @@ s10-agent/vpn-sync/
 # Copias de runtime en VPS root (fuente: vps-infra/)
 /sync-vpn.sh
 /sync-trigger.js
+frontend/tsconfig.tsbuildinfo

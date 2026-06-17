@@ -220,7 +220,10 @@ WITH dedup AS (
   FROM CMO.dbo.vw_12DocumentosPorCobrar
   WHERE CodEmpresa = '${codEmpresa}'
     AND CodTipoDocumento IN ('131','125','128','134')
-    AND DescripcionEstado = '1'
+    -- Estado '1' = pendiente (con saldo); Estado '5' = pagado/saldado.
+    -- Incluir AMBOS para poder mostrar lo pagado en la pestaña "Saldados".
+    -- Se EXCLUYE '6' (vinculadas/intercompañía → su propia vista CXC_VINCULADAS).
+    AND DescripcionEstado IN ('1','5')
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
     AND YEAR(FechaDocumento) >= YEAR(GETDATE()) - 2
 )

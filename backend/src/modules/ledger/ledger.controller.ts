@@ -45,6 +45,8 @@ export class LedgerController {
     @Query('asiento') nroAsiento?: string,
     @Query('tercero') tercero?: string,
     @Query('search') search?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
@@ -58,6 +60,8 @@ export class LedgerController {
       nroAsiento: nroAsiento || undefined,
       tercero: tercero || undefined,
       search: search || undefined,
+      fechaDesde: desde || undefined,
+      fechaHasta: hasta || undefined,
       page: page ? Math.max(1, parseInt(page, 10)) : 1,
       pageSize: pageSize ? Math.min(500, Math.max(1, parseInt(pageSize, 10))) : 100,
     });

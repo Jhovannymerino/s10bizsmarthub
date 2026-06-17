@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { X, ArrowLeft, Link2 } from 'lucide-react';
+import { X, ArrowLeft, Link2, Search } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { DocPreview } from './DocPreview';
@@ -32,8 +32,19 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [asiento, setAsiento] = useState<{ nroAsiento: string; fecha: string; codUnico?: string } | null>(null);
+  // Búsqueda por texto (glosa / tercero / N° doc) + rango de fechas (default: año completo)
+  const [searchInput, setSearchInput] = useState(filtro?.search ?? '');
+  const [search, setSearch] = useState(filtro?.search ?? '');
+  const [desde, setDesde] = useState(`${year}-01-01`);
+  const [hasta, setHasta] = useState(`${year}-12-31`);
   const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => { modalRef.current?.focus(); }, []);
+
+  // Debounce de la búsqueda para no consultar en cada tecla
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -44,13 +55,15 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
     if (filtro?.grupo) p.set('grupo', filtro.grupo);
     if (filtro?.nroD) p.set('nroD', filtro.nroD);
     if (filtro?.tercero) p.set('tercero', filtro.tercero);
-    if (filtro?.search) p.set('search', filtro.search);
     if (filtro?.mes) p.set('mes', String(filtro.mes));
+    if (search) p.set('search', search);
+    if (desde) p.set('desde', desde);
+    if (hasta) p.set('hasta', hasta);
     fetch(`${API}/kpi/${companyId}/ledger?${p}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [companyId, year, filtro, page]);
+  }, [companyId, year, filtro, page, search, desde, hasta]);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   const soloUnaCuenta = !!filtro?.cuenta;
@@ -78,6 +91,38 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
               </div>
             </div>
             <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          </div>
+
+          {/* Barra de filtros: búsqueda por texto + rango de fechas */}
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
+              <Search size={13} aria-hidden="true" style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#5B6675' }} />
+              <input
+                type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)}
+                placeholder="Buscar por glosa, tercero o N° de documento…"
+                style={{ width: '100%', padding: '0.35rem 0.5rem 0.35rem 1.7rem', borderRadius: 6, fontSize: '0.76rem',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#F8FAFC', outline: 'none' }} />
+            </div>
+            <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              Desde
+              <input type="date" value={desde} min={`${year}-01-01`} max={`${year}-12-31`}
+                onChange={e => { setDesde(e.target.value); setPage(1); }}
+                style={dateInputStyle} />
+            </label>
+            <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              Hasta
+              <input type="date" value={hasta} min={`${year}-01-01`} max={`${year}-12-31`}
+                onChange={e => { setHasta(e.target.value); setPage(1); }}
+                style={dateInputStyle} />
+            </label>
+            {(searchInput || desde !== `${year}-01-01` || hasta !== `${year}-12-31`) && (
+              <button onClick={() => { setSearchInput(''); setDesde(`${year}-01-01`); setHasta(`${year}-12-31`); setPage(1); }}
+                title="Limpiar filtros"
+                style={{ padding: '0.3rem 0.6rem', borderRadius: 6, fontSize: '0.72rem', cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#8B97A8' }}>
+                Limpiar
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -226,6 +271,12 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
     </div>
   );
 }
+
+const dateInputStyle: React.CSSProperties = {
+  padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem',
+  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
+  color: '#F8FAFC', colorScheme: 'dark', outline: 'none',
+};
 
 const pgBtn = (disabled: boolean): React.CSSProperties => ({
   padding: '0.3rem 0.9rem', borderRadius: '0.4rem', fontSize: '0.78rem',

@@ -11,6 +11,8 @@ export interface LedgerFilters {
   nroAsiento?: string;
   tercero?: string;
   search?: string;
+  fechaDesde?: string;  // 'YYYY-MM-DD' inclusivo
+  fechaHasta?: string;  // 'YYYY-MM-DD' inclusivo
   page: number;
   pageSize: number;
 }
@@ -81,6 +83,8 @@ export class LedgerService {
     if (f.nroD) { conds.push(`"nroD" = $${p++}`); params.push(f.nroD); }
     if (f.nroAsiento) { conds.push(`"nroAsiento" = $${p++}`); params.push(f.nroAsiento); }
     if (f.tercero) { conds.push(`"codTercero" = $${p++}`); params.push(f.tercero); }
+    if (f.fechaDesde) { conds.push(`"fecha"::date >= $${p++}::date`); params.push(f.fechaDesde); }
+    if (f.fechaHasta) { conds.push(`"fecha"::date <= $${p++}::date`); params.push(f.fechaHasta); }
     if (f.search) {
       conds.push(`(UPPER("glosa") LIKE UPPER($${p}) OR UPPER("tercero") LIKE UPPER($${p}) OR "nroD" LIKE $${p})`);
       params.push(`%${f.search}%`); p++;

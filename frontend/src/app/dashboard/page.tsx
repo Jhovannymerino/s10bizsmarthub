@@ -282,6 +282,8 @@ export default function DashboardPage() {
   const [laboralData, setLaboralData] = useState<any>(null);
   const [activoFijoData, setActivoFijoData] = useState<any>(null);
   const [gastosNatData, setGastosNatData] = useState<any>(null);
+  const [gastosDesde, setGastosDesde] = useState<string | null>(null);
+  const [gastosHasta, setGastosHasta] = useState<string | null>(null);
   const [cajaSaldosData, setCajaSaldosData] = useState<any>(null);
   const [auditData, setAuditData] = useState<any>(null);
   const [validacionForenseData, setValidacionForenseData] = useState<any>(null);
@@ -404,6 +406,7 @@ export default function DashboardPage() {
     setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
+    setGastosDesde(null); setGastosHasta(null);
     setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null); setConciliacionData(null);
     setRankingClientesData(null); setRankingProveedoresData(null);
 
@@ -501,6 +504,22 @@ export default function DashboardPage() {
       .catch((err) => { if (err.name !== 'AbortError') { /* mantener GAV previo */ } });
     return () => ctrl.abort();
   }, [gavDesde, gavHasta, selectedCompany, selectedYear, isGrupo]);
+
+  // Gastos por naturaleza por rango: sobreescribe gastosNatData cuando hay rango activo.
+  useEffect(() => {
+    if (isGrupo || activeTab !== 'gastos_nat' || (!gastosDesde && !gastosHasta)) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    let url = `/kpi/${id}/gastos-naturaleza?year=${selectedYear}`;
+    if (gastosDesde) url += `&desde=${gastosDesde}`;
+    if (gastosHasta) url += `&hasta=${gastosHasta}`;
+    fetchApi(url, token, ctrl.signal)
+      .then((d) => setGastosNatData(d?.rows ? d : { rows: [] }))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener previo */ } });
+    return () => ctrl.abort();
+  }, [gastosDesde, gastosHasta, selectedCompany, selectedYear, activeTab, isGrupo]);
 
   useEffect(() => {
     if (activeTab !== 'caja' || isGrupo) return;
@@ -4139,6 +4158,16 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ Gastos por Naturaleza ═══ */}
+        {activeTab === 'gastos_nat' && !newTabLoading && !isGrupo && gastosNatData && (
+          <RangoFechasBar year={selectedYear} desde={gastosDesde} hasta={gastosHasta}
+            onDesde={setGastosDesde} onHasta={setGastosHasta}
+            onClear={() => {
+              setGastosDesde(null); setGastosHasta(null);
+              const token = localStorage.getItem('token');
+              if (token) fetchApi(`/kpi/${selectedCompany.codEmpresa}/gastos-naturaleza?year=${selectedYear}`, token)
+                .then((d) => setGastosNatData(d?.rows ? d : { rows: [] })).catch(() => {});
+            }} />
+        )}
         {activeTab === 'gastos_nat' && !newTabLoading && (
           <div className="kpi-card">
             {!gastosNatData?.rows?.length ? <NoDataBanner kpi="Gastos por Naturaleza" /> : (

@@ -471,9 +471,11 @@ export class KpiController {
   getGastosNaturaleza(
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
     const y = parseYear(year);
-    return this.kpiService.getGastosNaturaleza(companyId, y);
+    return this.kpiService.getGastosNaturalezaRange(companyId, y, desde || undefined, hasta || undefined);
   }
 
   /** Auditoría — asientos sin documento fuente (resumen por clase) */

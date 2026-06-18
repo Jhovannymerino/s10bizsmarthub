@@ -1503,6 +1503,37 @@ export class KpiService {
     return { rows: cached.data as any[], year, syncedAt: cached.syncedAt };
   }
 
+  // Gastos por naturaleza por RANGO — derivado de `gastos_nat_txn` (trae Fecha y DesCuenta).
+  // Monto = débito − crédito, agregado por (CodCuenta, Mes). Cuadra al centavo. Default = año.
+  async getGastosNaturalezaRange(companyId: string, year: number, desde?: string, hasta?: string) {
+    const fullYear =
+      (!desde || desde <= `${year}-01-01`) && (!hasta || hasta >= `${year}-12-31`);
+    if (fullYear) return this.getGastosNaturaleza(companyId, year);
+
+    const txSnap = await this.getSnapshot(companyId, 'gastos_nat_txn', `${year}`);
+    if (!txSnap) {
+      const full = await this.getGastosNaturaleza(companyId, year);
+      return { ...full, rango: { desde, hasta }, rangoNoDisponible: true };
+    }
+
+    const d = desde || `${year}-01-01`;
+    const h = hasta || `${year}-12-31`;
+    const agg = new Map<string, any>();
+    for (const r of (txSnap.data as any[])) {
+      const iso = fechaDDMMYYYYtoISO(r.Fecha);
+      if (iso < d || iso > h) continue;
+      const key = `${r.CodCuenta}|${r.Mes}`;
+      const val = (Number(r.Debito) || 0) - (Number(r.Credito) || 0);
+      const ex = agg.get(key);
+      if (ex) ex.Monto = round(ex.Monto + val);
+      else agg.set(key, {
+        Mes: r.Mes, Clase: r.Clase, Monto: round(val),
+        CodCuenta: r.CodCuenta, DesCuenta: r.DesCuenta, GrupoCuenta: r.GrupoCuenta,
+      });
+    }
+    return { rows: [...agg.values()], year, rango: { desde: d, hasta: h } };
+  }
+
   // ─────────────────────────────────────────────
   // Auditoría — sin documento, descuadres, atípicos, conciliación
   // ─────────────────────────────────────────────

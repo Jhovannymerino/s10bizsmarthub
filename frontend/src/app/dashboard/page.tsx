@@ -214,6 +214,8 @@ export default function DashboardPage() {
   const [cajaPosicion, setCajaPosicion] = useState<any>(null);
   // Posición de Caja: 'saldo' = saldo de cierre acumulado (default, lo que espera un contador) · 'flujo' = movimiento neto del mes
   const [cajaVista, setCajaVista] = useState<'saldo' | 'flujo'>('saldo');
+  const [cajaDesde, setCajaDesde] = useState<string | null>(null);
+  const [cajaHasta, setCajaHasta] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
@@ -403,7 +405,7 @@ export default function DashboardPage() {
     setCxcSplitData(null);
     setCxcVinculadas(null);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
-    setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null);
+    setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null); setCajaDesde(null); setCajaHasta(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
     setGastosDesde(null); setGastosHasta(null);
@@ -520,6 +522,22 @@ export default function DashboardPage() {
       .catch((err) => { if (err.name !== 'AbortError') { /* mantener previo */ } });
     return () => ctrl.abort();
   }, [gastosDesde, gastosHasta, selectedCompany, selectedYear, activeTab, isGrupo]);
+
+  // Caja por rango (estado de cuenta del período): sobreescribe `caja` cuando hay rango.
+  useEffect(() => {
+    if (isGrupo || (!cajaDesde && !cajaHasta)) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    let url = `/kpi/${id}/caja?year=${selectedYear}`;
+    if (cajaDesde) url += `&desde=${cajaDesde}`;
+    if (cajaHasta) url += `&hasta=${cajaHasta}`;
+    fetchApi(url, token, ctrl.signal)
+      .then((d) => setCaja(d?.bancos ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener caja previa */ } });
+    return () => ctrl.abort();
+  }, [cajaDesde, cajaHasta, selectedCompany, selectedYear, isGrupo]);
 
   useEffect(() => {
     if (activeTab !== 'caja' || isGrupo) return;
@@ -2669,6 +2687,20 @@ export default function DashboardPage() {
         {activeTab === 'caja' && !caja && !loading && <NoDataBanner kpi="Caja" />}
         {activeTab === 'caja' && caja && (
           <>
+            {!isGrupo && (
+              <RangoFechasBar year={selectedYear} desde={cajaDesde} hasta={cajaHasta}
+                onDesde={setCajaDesde} onHasta={setCajaHasta}
+                onClear={() => { setCajaDesde(null); setCajaHasta(null); setRefreshKey((k) => k + 1); }} />
+            )}
+            {/* Resumen tipo extracto del período (solo con rango activo) */}
+            {caja.periodo && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <KpiCard label="Saldo apertura" value={fmt(caja.periodo.apertura)} sub={`al ${cajaDesde ?? `${selectedYear}-01-01`}`} signal="neutral" />
+                <KpiCard label="Entradas del período" value={fmt(caja.periodo.entradas)} sub="cobros / ingresos" signal="green" />
+                <KpiCard label="Salidas del período" value={fmt(caja.periodo.salidas)} sub="pagos / egresos" signal="red" />
+                <KpiCard label="Saldo cierre" value={fmt(caja.periodo.cierre)} sub={`al ${cajaHasta ?? `${selectedYear}-12-31`}`} signal={caja.periodo.cierre >= 0 ? 'green' : 'red'} />
+              </div>
+            )}
             {/* KPI cards de caja */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               {saldoCaja !== null && (

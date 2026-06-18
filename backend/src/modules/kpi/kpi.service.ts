@@ -603,6 +603,83 @@ export class KpiService {
     };
   }
 
+  // Caja por RANGO (estado de cuenta del período): saldo de apertura al 'desde' +
+  // entradas/salidas del período + saldo de cierre al 'hasta', por banco. El flujo
+  // y los cortes se derivan del Mayor (LedgerEntry clase 10, fecha diaria, fuente
+  // limpia por línea); el saldoInicial del año se toma del snapshot (tiene historia
+  // completa, el Mayor puede no cubrir años previos). saldos[m] (cierre acumulado por
+  // mes) se reutiliza del snapshot. Default = año completo (delega en getCaja).
+  async getCajaRange(companyId: string, year: number, desde?: string, hasta?: string) {
+    const fullYear =
+      (!desde || desde <= `${year}-01-01`) && (!hasta || hasta >= `${year}-12-31`);
+    if (fullYear) return this.getCaja(companyId, year);
+
+    const cajaSnap = await this.getSnapshot(companyId, 'caja', `${year}`);
+    const meta: Record<string, { banco: string; saldoInicial: number; saldos: any }> = {};
+    for (const b of ((cajaSnap?.data as any)?.bancos ?? [])) {
+      meta[b.codBanco] = { banco: b.banco, saldoInicial: b.saldoInicial || 0, saldos: b.saldos || {} };
+    }
+
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT "codCuenta", "desCuenta", "fecha", "mes",
+              "debito"::float8 AS debito, "credito"::float8 AS credito
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND "anio" = $2 AND "clase" = '10'`,
+      companyId, year,
+    );
+
+    if (!rows.length && !Object.keys(meta).length) {
+      const full = await this.getCaja(companyId, year);
+      return { ...full, rango: { desde, hasta }, rangoNoDisponible: true };
+    }
+
+    const d = desde || `${year}-01-01`;
+    const h = hasta || `${year}-12-31`;
+    const bancos: Record<string, any> = {};
+    const ensure = (cod: string, nom: string) => {
+      if (!bancos[cod]) {
+        const m = meta[cod] || { banco: nom || cod, saldoInicial: 0, saldos: {} };
+        bancos[cod] = {
+          banco: m.banco, codBanco: cod, saldoInicial: m.saldoInicial,
+          meses: {}, saldos: m.saldos,
+          apertura: m.saldoInicial, entradas: 0, salidas: 0, cierre: m.saldoInicial,
+        };
+        for (let mm = 1; mm <= 12; mm++) bancos[cod].meses[mm] = 0;
+      }
+      return bancos[cod];
+    };
+
+    for (const r of rows) {
+      const b = ensure(r.codCuenta, r.desCuenta);
+      const iso = r.fecha instanceof Date ? r.fecha.toISOString().slice(0, 10) : String(r.fecha).slice(0, 10);
+      const deb = r.debito || 0, cred = r.credito || 0, flujo = deb - cred;
+      if (iso < d) b.apertura += flujo;
+      if (iso >= d && iso <= h) { b.meses[r.mes] = round((b.meses[r.mes] || 0) + flujo); b.entradas += deb; b.salidas += cred; }
+      if (iso <= h) b.cierre += flujo;
+    }
+    // Bancos con saldo inicial pero sin movimiento en el año → incluirlos igual
+    for (const cod of Object.keys(meta)) if (!bancos[cod]) ensure(cod, meta[cod].banco);
+
+    const bancosArr: any[] = Object.values(bancos).map((b: any) => ({
+      ...b, apertura: round(b.apertura), entradas: round(b.entradas), salidas: round(b.salidas), cierre: round(b.cierre),
+    }));
+
+    const totalPorMes: Record<number, number> = {};
+    const totalSaldoPorMes: Record<number, number> = {};
+    for (let m = 1; m <= 12; m++) {
+      totalPorMes[m] = round(bancosArr.reduce((s: number, b: any) => s + (b.meses[m] || 0), 0));
+      totalSaldoPorMes[m] = round(bancosArr.reduce((s: number, b: any) => s + (b.saldos?.[m] || 0), 0));
+    }
+    const periodo = {
+      apertura: round(bancosArr.reduce((s, b) => s + b.apertura, 0)),
+      entradas: round(bancosArr.reduce((s, b) => s + b.entradas, 0)),
+      salidas: round(bancosArr.reduce((s, b) => s + b.salidas, 0)),
+      cierre: round(bancosArr.reduce((s, b) => s + b.cierre, 0)),
+    };
+
+    return { bancos: bancosArr, totalPorMes, totalSaldoPorMes, periodo, rango: { desde: d, hasta: h }, syncedAt: new Date().toISOString() };
+  }
+
   // ─────────────────────────────────────────────
   // Caja — Posición Trimestral
   // ─────────────────────────────────────────────

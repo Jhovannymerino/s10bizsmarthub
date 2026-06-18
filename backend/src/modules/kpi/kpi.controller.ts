@@ -86,9 +86,11 @@ export class KpiController {
   getCaja(
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
     const y = parseYear(year);
-    return this.kpiService.getCaja(companyId, y);
+    return this.kpiService.getCajaRange(companyId, y, desde || undefined, hasta || undefined);
   }
 
   /** Detalle de asientos por cuenta y mes */

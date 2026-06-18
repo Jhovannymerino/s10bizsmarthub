@@ -216,6 +216,8 @@ export default function DashboardPage() {
   const [cajaVista, setCajaVista] = useState<'saldo' | 'flujo'>('saldo');
   const [cajaDesde, setCajaDesde] = useState<string | null>(null);
   const [cajaHasta, setCajaHasta] = useState<string | null>(null);
+  // CxC: incluir clientes anulados por NC (neto 0, ocultos del aging normal)
+  const [cxcAnulados, setCxcAnulados] = useState(false);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
@@ -405,7 +407,7 @@ export default function DashboardPage() {
     setCxcSplitData(null);
     setCxcVinculadas(null);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
-    setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null); setCajaDesde(null); setCajaHasta(null);
+    setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null); setCajaDesde(null); setCajaHasta(null); setCxcAnulados(false);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
     setGastosDesde(null); setGastosHasta(null);
@@ -538,6 +540,19 @@ export default function DashboardPage() {
       .catch((err) => { if (err.name !== 'AbortError') { /* mantener caja previa */ } });
     return () => ctrl.abort();
   }, [cajaDesde, cajaHasta, selectedCompany, selectedYear, isGrupo]);
+
+  // CxC: cuando se activa "incluir anulados por NC", recarga la cartera con esos clientes.
+  useEffect(() => {
+    if (isGrupo || !cxcAnulados) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    fetchApi(`/kpi/${id}/cxc?incluirAnulados=1`, token, ctrl.signal)
+      .then((d) => setCxC(d?.clientes ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener cartera previa */ } });
+    return () => ctrl.abort();
+  }, [cxcAnulados, selectedCompany, isGrupo]);
 
   useEffect(() => {
     if (activeTab !== 'caja' || isGrupo) return;
@@ -2212,6 +2227,15 @@ export default function DashboardPage() {
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Cliente — equiv. S/</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <button onClick={() => { if (cxcAnulados) { setCxcAnulados(false); setRefreshKey((k) => k + 1); } else { setCxcAnulados(true); } }}
+                    title="Incluir clientes cuyas facturas se anularon con su NC y quedaron en saldo cero (ocultos del aging normal porque no deben nada). Permite abrir su detalle y ver la factura + NC."
+                    style={{ padding: '0.3rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600,
+                      border: cxcAnulados ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.12)',
+                      background: cxcAnulados ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.04)',
+                      color: cxcAnulados ? '#EF4444' : '#8B97A8' }}>
+                    {cxcAnulados ? '● ' : ''}Anulados por NC{cxcAnulados && cxc.anuladosNC != null ? ` (${cxc.anuladosNC})` : ''}
+                  </button>
                   <ExportBtn onClick={() => {
                     const headers = ['Cliente', 'S/ PEN', '$ USD', 'Vigente S/', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total equiv S/', '% Cartera'];
                     const rows = filtered.map((c: any) => [
@@ -2222,6 +2246,7 @@ export default function DashboardPage() {
                     ]);
                     exportCSV(`CxC_${selectedCompany.shortName}.csv`, headers, rows);
                   }} />
+                  </div>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-s10">
@@ -2243,8 +2268,16 @@ export default function DashboardPage() {
                       {filtered.map((c: any, i: number) => (
                         <tr key={`${c.codCliente}-${i}`} data-clickable="1"
                           onClick={() => setCxCTxDrill({ cliente: c.cliente, codCliente: String(c.codCliente) })}
-                          title="Ver documentos pendientes">
-                          <td style={{ color: '#2BB4BB' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                          title={c.anuladoNC ? 'Cliente en saldo cero: factura(s) anulada(s) por NC — clic para ver el detalle' : 'Ver documentos pendientes'}>
+                          <td style={{ color: '#2BB4BB' }}>
+                            {c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span>
+                            {c.anuladoNC && (
+                              <span title={`${c.numNC} NC · ${c.numDocs} docs · neto 0`}
+                                style={{ marginLeft: '0.4rem', fontSize: '0.6rem', fontWeight: 700, padding: '1px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: '#EF4444', verticalAlign: 'middle' }}>
+                                ANULADO x NC
+                              </span>
+                            )}
+                          </td>
                           <td style={{ color: (c.saldoPEN ?? 0) > 0 ? '#E25C1A' : '#4B5563' }}>
                             {(c.saldoPEN ?? 0) > 0 ? fmt(c.saldoPEN) : '—'}
                           </td>

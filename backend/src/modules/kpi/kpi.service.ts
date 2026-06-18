@@ -384,20 +384,56 @@ export class KpiService {
   // CxC — con métricas de concentración
   // ─────────────────────────────────────────────
 
-  async getCxC(companyId: string) {
+  async getCxC(companyId: string, incluirAnulados = false) {
     const period = 'current';
     const cached = await this.getSnapshot(companyId, 'cxc', period);
-    if (cached) return cached.data;
-
-    if (this.s10.isDirectMode) {
+    let data: any;
+    if (cached) {
+      data = cached.data;
+    } else if (this.s10.isDirectMode) {
       const company = await this.resolveCompany(companyId);
       const rows = await this.s10.getCxC(companyId);
-      const data = this.buildCxC(rows);
+      data = this.buildCxC(rows);
       await this.saveSnapshot(companyId, company.name, 'cxc', period, new Date().getFullYear(), null, data);
-      return data;
+    } else {
+      return { message: 'No data available. Run sync first.' };
     }
 
-    return { message: 'No data available. Run sync first.' };
+    if (incluirAnulados) data = await this.augmentCxCAnulados(companyId, data);
+    return data;
+  }
+
+  // Agrega a la cartera los clientes ANULADOS POR NC (neto ≈ 0 con notas de crédito) que
+  // el aging normal oculta (HAVING saldo>0). Se derivan de cxc_docs (sin resync). Aparecen
+  // con saldo 0 y bandera anuladoNC para poder abrir su detalle (factura + NC flotantes/aplicadas).
+  private async augmentCxCAnulados(companyId: string, data: any) {
+    const docsSnap = await this.getSnapshot(companyId, 'cxc_docs', 'current');
+    if (!docsSnap) return data;
+
+    const enCartera = new Set((data.clientes || []).map((c: any) => String(c.codCliente)));
+    const byClient = new Map<string, any>();
+    for (const dd of (docsSnap.data as any[])) {
+      const key = String(dd.CodCliente);
+      if (!byClient.has(key)) byClient.set(key, { codCliente: dd.CodCliente, cliente: dd.Cliente || key, neto: 0, numNC: 0, numDocs: 0 });
+      const e = byClient.get(key);
+      e.neto += (dd.Saldo || 0); e.numDocs++;
+      if (dd.EsNotaCredito === 1) e.numNC++;
+    }
+
+    const anulados: any[] = [];
+    for (const e of byClient.values()) {
+      if (enCartera.has(String(e.codCliente))) continue; // ya está en la cartera (neto > 0)
+      if (Math.abs(e.neto) > 0.01) continue;             // solo neto cero
+      if (e.numNC === 0) continue;                        // debe tener NC (anulación), no solo pagos
+      anulados.push({
+        codCliente: e.codCliente, cliente: e.cliente,
+        saldoPEN: 0, saldoUSD: 0, tipoCambioUSD: TC_USD_FALLBACK, saldoTotalSoles: 0,
+        saldoVigente: 0, dias0_30: 0, dias31_60: 0, dias61_90: 0, dias90mas: 0,
+        anuladoNC: true, numDocs: e.numDocs, numNC: e.numNC,
+      });
+    }
+    anulados.sort((a, b) => String(a.cliente).localeCompare(String(b.cliente)));
+    return { ...data, clientes: [...(data.clientes || []), ...anulados], anuladosNC: anulados.length };
   }
 
   buildCxC(rows: any[]) {

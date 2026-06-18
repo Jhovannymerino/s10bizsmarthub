@@ -47,8 +47,11 @@ export class KpiController {
 
   /** CxC Aging por cliente */
   @Get(':companyId/cxc')
-  getCxC(@Param('companyId') companyId: string) {
-    return this.kpiService.getCxC(companyId);
+  getCxC(
+    @Param('companyId') companyId: string,
+    @Query('incluirAnulados') incluirAnulados?: string,
+  ) {
+    return this.kpiService.getCxC(companyId, incluirAnulados === '1' || incluirAnulados === 'true');
   }
 
   /** Documentos pendientes CxC desde vw_12DocumentosPorCobrar */

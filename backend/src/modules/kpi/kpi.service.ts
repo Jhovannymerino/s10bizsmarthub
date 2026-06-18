@@ -746,6 +746,45 @@ export class KpiService {
     };
   }
 
+  // GAV por RANGO de fechas — derivado del snapshot `transactions` (clase 94, fecha diaria).
+  // Mismo origen/agregación que QUERY_GAV → cuadra al centavo. Default = año completo.
+  async getGAVRange(companyId: string, year: number, desde?: string, hasta?: string) {
+    const fullYear =
+      (!desde || desde <= `${year}-01-01`) && (!hasta || hasta >= `${year}-12-31`);
+    if (fullYear) return this.getGAV(companyId, year);
+
+    const txSnap = await this.getSnapshot(companyId, 'transactions', `${year}`);
+    if (!txSnap) {
+      const full = await this.getGAV(companyId, year);
+      return { ...full, rango: { desde, hasta }, rangoNoDisponible: true };
+    }
+
+    // transactions no trae DesCuenta → mapa subcuenta(3) → descripción del GAV cacheado
+    const gavSnap = await this.getSnapshot(companyId, 'gav', `${year}`);
+    const descMap: Record<string, string> = {};
+    for (const c of ((gavSnap?.data as any)?.categorias ?? [])) if (c?.cod) descMap[c.cod] = c.descripcion;
+
+    const d = desde || `${year}-01-01`;
+    const h = hasta || `${year}-12-31`;
+
+    // Pre-agregar por (subcuenta de 3 dígitos, mes) — buildGAV ASIGNA meses[mes], no suma.
+    const agg = new Map<string, { CodCuenta: string; DesCuenta: string; Mes: number; GAV: number }>();
+    for (const r of (txSnap.data as any[])) {
+      if (r.Clase !== '94') continue;
+      const iso = fechaDDMMYYYYtoISO(r.Fecha);
+      if (iso < d || iso > h) continue;
+      const cod3 = String(r.CodCuenta).slice(0, 3);
+      const key = `${cod3}|${r.Mes}`;
+      const val = (Number(r.Debito) || 0) - (Number(r.Credito) || 0);
+      const ex = agg.get(key);
+      if (ex) ex.GAV += val;
+      else agg.set(key, { CodCuenta: cod3, DesCuenta: descMap[cod3] || cod3, Mes: r.Mes, GAV: val });
+    }
+
+    const data = this.buildGAV([...agg.values()]);
+    return { ...data, rango: { desde: d, hasta: h } };
+  }
+
   // ─────────────────────────────────────────────
   // Transacciones — detalle de asientos por cuenta
   // ─────────────────────────────────────────────

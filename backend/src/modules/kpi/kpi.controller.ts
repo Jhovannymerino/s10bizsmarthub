@@ -190,9 +190,11 @@ export class KpiController {
   getGAV(
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
     const y = parseYear(year);
-    return this.kpiService.getGAV(companyId, y);
+    return this.kpiService.getGAVRange(companyId, y, desde || undefined, hasta || undefined);
   }
 
   /** Documento fuente (factura/boleta/honorario) por NroD */

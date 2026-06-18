@@ -147,6 +147,36 @@ function DirSelectInput({ path, value, options, onChange }: { path: string; valu
 // ═══════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════
+// Barra reutilizable de rango de fechas (Desde/Hasta) — mismo look en todas las vistas.
+// desde/hasta null = año completo (comportamiento por defecto).
+function RangoFechasBar({ year, desde, hasta, onDesde, onHasta, onClear }: {
+  year: number; desde: string | null; hasta: string | null;
+  onDesde: (v: string) => void; onHasta: (v: string) => void; onClear: () => void;
+}) {
+  const inputStyle: React.CSSProperties = { padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' };
+  return (
+    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'rgba(32,126,131,0.06)', border: '1px solid rgba(32,126,131,0.18)', borderRadius: 8 }}>
+      <span style={{ fontSize: '0.75rem', color: '#8B97A8', fontWeight: 600 }}>Período:</span>
+      <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        Desde
+        <input type="date" value={desde ?? `${year}-01-01`} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => onDesde(e.target.value)} style={inputStyle} />
+      </label>
+      <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        Hasta
+        <input type="date" value={hasta ?? `${year}-12-31`} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => onHasta(e.target.value)} style={inputStyle} />
+      </label>
+      {(desde || hasta) ? (
+        <>
+          <span style={{ fontSize: '0.7rem', color: '#2BB4BB', fontWeight: 700 }}>● Período personalizado</span>
+          <button onClick={onClear} style={{ padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.72rem', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#8B97A8' }}>Ver año completo</button>
+        </>
+      ) : (
+        <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>Año completo {year}</span>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -177,6 +207,8 @@ export default function DashboardPage() {
   const [cxc, setCxC] = useState<any>(null);
   const [caja, setCaja] = useState<any>(null);
   const [gav, setGAV] = useState<any>(null);
+  const [gavDesde, setGavDesde] = useState<string | null>(null);
+  const [gavHasta, setGavHasta] = useState<string | null>(null);
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
   const [cajaPosicion, setCajaPosicion] = useState<any>(null);
@@ -369,7 +401,7 @@ export default function DashboardPage() {
     setCxcSplitData(null);
     setCxcVinculadas(null);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
-    setPlDesde(null); setPlHasta(null);
+    setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null);
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
     setCajaSaldosData(null); setAuditData(null); setTesoreriaData(null); setPatrimonioData(null); setInventariosData(null); setConciliacionData(null);
@@ -453,6 +485,22 @@ export default function DashboardPage() {
       .catch((err) => { if (err.name !== 'AbortError') { /* mantener PL previo */ } });
     return () => ctrl.abort();
   }, [plDesde, plHasta, selectedCompany, selectedYear, isGrupo]);
+
+  // GAV por rango de fechas: solo sobreescribe `gav` cuando hay rango activo.
+  useEffect(() => {
+    if (isGrupo || (!gavDesde && !gavHasta)) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    let url = `/kpi/${id}/gav?year=${selectedYear}`;
+    if (gavDesde) url += `&desde=${gavDesde}`;
+    if (gavHasta) url += `&hasta=${gavHasta}`;
+    fetchApi(url, token, ctrl.signal)
+      .then((d) => setGAV(d?.categorias ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener GAV previo */ } });
+    return () => ctrl.abort();
+  }, [gavDesde, gavHasta, selectedCompany, selectedYear, isGrupo]);
 
   useEffect(() => {
     if (activeTab !== 'caja' || isGrupo) return;
@@ -3142,6 +3190,11 @@ export default function DashboardPage() {
         {/* ═══ GAV Tab ═══ */}
         {activeTab === 'gav' && loading && <SkeletonLoader />}
         {activeTab === 'gav' && !gav && !loading && <NoDataBanner kpi="GAV" />}
+        {activeTab === 'gav' && gav && !isGrupo && (
+          <RangoFechasBar year={selectedYear} desde={gavDesde} hasta={gavHasta}
+            onDesde={setGavDesde} onHasta={setGavHasta}
+            onClear={() => { setGavDesde(null); setGavHasta(null); setRefreshKey((k) => k + 1); }} />
+        )}
         {activeTab === 'gav' && gav && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="kpi-card">

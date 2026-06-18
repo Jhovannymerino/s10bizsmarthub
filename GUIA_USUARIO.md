@@ -68,6 +68,15 @@ Por eso un total del Mayor puede ser un poco mayor que el del P&L: el Mayor incl
 
 **Algunas líneas del Mayor no tienen documento.** Son contabilizaciones directas (aperturas, provisiones, reclasificaciones). Es normal que la columna de documento quede vacía.
 
+## 5b. Analizar un período específico — rango de fechas
+
+Las vistas de **flujo** tienen un filtro **Período: Desde / Hasta** arriba:
+- **P&L**, **GAV** y **Gastos por Naturaleza** — al achicar el rango, los importes y gráficos se recalculan para ese período exacto (por día).
+- **Caja** — el rango muestra un **estado de cuenta del período**: saldo de apertura (al *desde*) + entradas/salidas + saldo de cierre (al *hasta*); el toggle *Saldo de cierre / Flujo neto* se mantiene.
+- **El Mayor** — además del rango, tiene buscador por glosa/tercero/N° de documento.
+
+Por defecto el rango está en **año completo** (idéntico a lo de siempre); "Ver año completo" lo restablece. Nota: en el mes en curso, el rango puede incluir asientos con fecha futura del mismo mes (igual que El Mayor; ver punto 5). El consolidado **GRUPO** no usa rango (es la suma de las 4 empresas).
+
 ## 6. Actualización de datos
 
 Los datos se sincronizan automáticamente desde S10 de lunes a viernes (mañana y tarde), y un consolidado completo los domingos. No necesitas hacer nada.

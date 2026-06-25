@@ -1549,6 +1549,82 @@ export class KpiService {
     return { payments, detraccion: round(detraccion), detraccionCobrada: detracTagged };
   }
 
+  // ─────────────────────────────────────────────
+  // Reporte de DETRACCIONES — sin resync (deriva de facturas_emitidas/recibidas + caja_txn).
+  // lado: 'cobradas' (facturas emitidas / CxC) | 'pagadas' (facturas recibidas / CxP).
+  // Identifica el movimiento de detracción con la máxima precisión disponible: (1) cuenta
+  // "Banco Nación - Cta Detracción" (autoritativo), (2) glosa con "DETRAC", (3) monto =
+  // MontoDetraccion del documento (fallback, p.ej. movimientos por "Caja en Tránsito").
+  // ─────────────────────────────────────────────
+  async getDetracciones(companyId: string, year: number, lado: 'cobradas' | 'pagadas' = 'cobradas') {
+    const docKpi = lado === 'pagadas' ? 'facturas_recibidas' : 'facturas_emitidas';
+    const docsSnap = await this.getSnapshot(companyId, docKpi, `${year}`);
+    if (!docsSnap) return { detracciones: [], year, lado, total: 0 };
+    const docs = (docsSnap.data as any[]).filter((d) => (Number(d.Detraccion) || 0) > 0.01);
+    if (!docs.length) return { detracciones: [], year, lado, total: 0 };
+
+    // Indexar caja_txn por NroD (año + adyacentes, por cobros/pagos a caballo de año)
+    const curY = new Date().getFullYear();
+    const yrs = [year - 1, year, year + 1].filter((y) => y >= 2022 && y <= curY);
+    const txByNroD = new Map<string, any[]>();
+    for (const y of yrs) {
+      const snap = await this.getSnapshot(companyId, 'caja_txn', `${y}`);
+      if (!snap) continue;
+      for (const t of (snap.data as any[])) {
+        if (!t.NroD) continue;
+        const k = String(t.NroD).toUpperCase();
+        if (!txByNroD.has(k)) txByNroD.set(k, []);
+        txByNroD.get(k)!.push(t);
+      }
+    }
+
+    const esDetracMov = (t: any, monto: number) => {
+      const banco = String(t.DesBanco || '').toUpperCase();
+      const glosa = String(t.Glosa || '').toUpperCase();
+      const amt = Math.abs((Number(t.Debito) || 0) - (Number(t.Credito) || 0));
+      if (banco.includes('DETRACCION') || banco.includes('NACION')) return true;
+      if (glosa.includes('DETRAC')) return true;
+      if (monto > 0.01 && Math.abs(amt - monto) < 0.01) return true;
+      return false;
+    };
+    const metodoDetrac = (t: any) => {
+      const banco = String(t.DesBanco || '').toUpperCase();
+      const glosa = String(t.Glosa || '').toUpperCase();
+      if (banco.includes('DETRACCION') || banco.includes('NACION')) return 'cuenta BN';
+      if (glosa.includes('DETRAC')) return 'glosa';
+      return 'monto';
+    };
+
+    const detracciones = docs.map((d: any) => {
+      const movs = txByNroD.get(String(d.NroD).toUpperCase()) || [];
+      const monto = round(Number(d.Detraccion) || 0);
+      const dm = movs.find((t) => esDetracMov(t, monto));
+      const pagos = movs.filter((t) => t !== dm);
+      const montoPago = round(pagos.reduce((s, t) => s + Math.abs((Number(t.Debito) || 0) - (Number(t.Credito) || 0)), 0));
+      return {
+        doc: `${d.Serie || ''}-${d.Numero || ''}`,
+        serie: d.Serie || '', numero: d.Numero || '',
+        fechaDocumento: d.FechaDocumento || '',
+        tercero: d.Cliente || d.Proveedor || '',
+        ruc: d.RucCliente || d.RucProveedor || '',
+        total: round(Number(d.Total) || 0),
+        montoDetraccion: monto,
+        fechaDetraccion: dm ? dm.Fecha : null,
+        metodoDetraccion: dm ? metodoDetrac(dm) : null,
+        montoPago,
+        fechaPago: pagos.length ? pagos[pagos.length - 1].Fecha : null,
+        estado: dm ? (pagos.length ? 'Completo' : 'Solo detracción') : (pagos.length ? 'Solo pago' : 'Pendiente'),
+      };
+    });
+
+    detracciones.sort((a, b) => (a.fechaDocumento < b.fechaDocumento ? 1 : -1));
+    return {
+      detracciones, year, lado, total: detracciones.length,
+      totalDetraccion: round(detracciones.reduce((s, r) => s + r.montoDetraccion, 0)),
+      syncedAt: docsSnap.syncedAt,
+    };
+  }
+
   // Busca el MontoDetraccion de un documento por su NroD en las facturas emitidas/recibidas.
   private async lookupDetraccion(companyId: string, nroD: string, years: number[]): Promise<number> {
     const key = String(nroD).toUpperCase();

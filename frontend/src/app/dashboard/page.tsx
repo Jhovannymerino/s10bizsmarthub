@@ -16,6 +16,7 @@ import {
 import { DocPreview } from './_components/modals/DocPreview';
 import { TransactionModal } from './_components/modals/TransactionModal';
 import { CxCDocumentosModal } from './_components/modals/CxCDocumentosModal';
+import { DetraccionesModal } from './_components/modals/DetraccionesModal';
 import { CxCVinculadasModal } from './_components/modals/CxCVinculadasModal';
 import { CxPDocumentosModal } from './_components/modals/CxPDocumentosModal';
 import { GavCategoryModal } from './_components/modals/GavCategoryModal';
@@ -218,6 +219,8 @@ export default function DashboardPage() {
   const [cajaHasta, setCajaHasta] = useState<string | null>(null);
   // CxC: incluir clientes anulados por NC (neto 0, ocultos del aging normal)
   const [cxcAnulados, setCxcAnulados] = useState(false);
+  // Reporte de detracciones (modal); lado inicial según vista (CxC=cobradas, CxP=pagadas)
+  const [detracModal, setDetracModal] = useState<null | 'cobradas' | 'pagadas'>(null);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
   const [userRole, setUserRole] = useState<string>(() => {
@@ -849,6 +852,15 @@ export default function DashboardPage() {
           companyId={selectedCompany.codEmpresa}
           year={selectedYear}
           onClose={() => setDrillDown(null)}
+        />
+      )}
+      {detracModal && (
+        <DetraccionesModal
+          companyId={selectedCompany.codEmpresa}
+          companyName={selectedCompany.shortName}
+          year={selectedYear}
+          ladoInicial={detracModal}
+          onClose={() => setDetracModal(null)}
         />
       )}
       {cxcTxDrill && (
@@ -2228,6 +2240,11 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Cliente — equiv. S/</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <button onClick={() => setDetracModal('cobradas')}
+                    title="Reporte de detracciones: fecha de cobro de la detracción y del pago, por documento"
+                    style={{ padding: '0.3rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>
+                    Detracciones
+                  </button>
                   <button onClick={() => { if (cxcAnulados) { setCxcAnulados(false); setRefreshKey((k) => k + 1); } else { setCxcAnulados(true); } }}
                     title="Incluir clientes cuyas facturas se anularon con su NC y quedaron en saldo cero (ocultos del aging normal porque no deben nada). Permite abrir su detalle y ver la factura + NC."
                     style={{ padding: '0.3rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600,

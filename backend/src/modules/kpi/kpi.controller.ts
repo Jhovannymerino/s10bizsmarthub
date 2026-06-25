@@ -424,6 +424,18 @@ export class KpiController {
     return this.kpiService.getDocumentPayments(companyId, nroD ?? '');
   }
 
+  /** Reporte de detracciones — cobradas (emitidas) o pagadas (recibidas), con fechas */
+  @Get(':companyId/detracciones')
+  getDetracciones(
+    @Param('companyId') companyId: string,
+    @Query('year') year?: string,
+    @Query('lado') lado?: string,
+  ) {
+    const y = parseYear(year);
+    const l = lado === 'pagadas' ? 'pagadas' : 'cobradas';
+    return this.kpiService.getDetracciones(companyId, y, l);
+  }
+
   /** Tesorería — posición bancaria con saldo inicial, entradas/salidas y saldo final */
   @Get(':companyId/tesoreria')
   getTesoreria(

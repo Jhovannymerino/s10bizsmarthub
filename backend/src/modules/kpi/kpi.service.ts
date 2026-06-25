@@ -1529,7 +1529,40 @@ export class KpiService {
       payments.push(...matches);
     }
     payments.sort((a, b) => (a.Fecha > b.Fecha ? 1 : -1));
-    return { payments };
+
+    // Monto de detracción del documento (para etiquetar el movimiento correspondiente)
+    const detraccion = await this.lookupDetraccion(companyId, nroD, years);
+
+    // Etiquetar cada movimiento: Detracción (el que coincide con MontoDetraccion) / Cobro / Pago
+    let detracTagged = false;
+    for (const p of payments) {
+      const deb = Number(p.Debito) || 0;
+      const cred = Number(p.Credito) || 0;
+      if (!detracTagged && detraccion > 0.01 && Math.abs(deb - detraccion) < 0.01) {
+        p.tipo = 'Detracción';
+        detracTagged = true;
+      } else {
+        p.tipo = deb >= cred ? 'Cobro' : 'Pago';
+      }
+    }
+
+    return { payments, detraccion: round(detraccion), detraccionCobrada: detracTagged };
+  }
+
+  // Busca el MontoDetraccion de un documento por su NroD en las facturas emitidas/recibidas.
+  private async lookupDetraccion(companyId: string, nroD: string, years: number[]): Promise<number> {
+    const key = String(nroD).toUpperCase();
+    for (const kpiType of ['facturas_emitidas', 'facturas_recibidas']) {
+      for (const y of years) {
+        const snap = await this.getSnapshot(companyId, kpiType, `${y}`);
+        if (!snap) continue;
+        const hit = (snap.data as any[]).find(
+          (d: any) => d.NroD && String(d.NroD).toUpperCase() === key,
+        );
+        if (hit) return Number(hit.Detraccion) || 0;
+      }
+    }
+    return 0;
   }
 
   async getCajaAsientoLineas(companyId: string, year: number, nroAsiento: string) {

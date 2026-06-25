@@ -14,6 +14,8 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
   onClose: () => void;
 }) {
   const [payments, setPayments] = useState<any[]>([]);
+  const [detraccion, setDetraccion] = useState(0);
+  const [detraccionCobrada, setDetraccionCobrada] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
@@ -27,7 +29,7 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
-      .then(d => { setPayments(d.payments || []); setLoading(false); })
+      .then(d => { setPayments(d.payments || []); setDetraccion(d.detraccion || 0); setDetraccionCobrada(!!d.detraccionCobrada); setLoading(false); })
       .catch(() => setLoading(false));
   }, [companyId, nroD]);
 
@@ -54,6 +56,13 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
             <div id="doc-payments-modal-title" style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Pagos del documento</div>
             <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
               {docLabel} · Total pagado: <span style={{ color: '#2BB4BB', fontWeight: 600 }}>{fmt(totalPagado)}</span>
+              {detraccion > 0 && (
+                <> · Detracción: <span style={{ color: '#F59E0B', fontWeight: 600 }}>{fmt(detraccion)}</span>
+                  <span style={{ color: detraccionCobrada ? '#10B981' : '#8B97A8', marginLeft: '0.3rem' }}>
+                    {detraccionCobrada ? '(identificada abajo)' : '(no ubicada en estos movimientos)'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
@@ -74,6 +83,7 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
               <thead>
                 <tr>
                   <SortTh col="Fecha" label="Fecha" sort={sort} onSort={onSort} />
+                  <SortTh col="tipo" label="Tipo" sort={sort} onSort={onSort} />
                   <SortTh col="NroAsiento" label="Asiento" sort={sort} onSort={onSort} />
                   <SortTh col="DesBanco" label="Cuenta bancaria" sort={sort} onSort={onSort} style={{ minWidth: 180 }} />
                   <SortTh col="Tercero" label="Tercero" sort={sort} onSort={onSort} style={{ minWidth: 140 }} />
@@ -86,6 +96,16 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
                 {filtered.map((p: any, i: number) => (
                   <tr key={i}>
                     <td style={{ whiteSpace: 'nowrap' }}>{p.Fecha}</td>
+                    <td>
+                      {p.tipo && (() => {
+                        const c = p.tipo === 'Detracción'
+                          ? { bg: 'rgba(245,158,11,0.15)', fg: '#F59E0B' }
+                          : p.tipo === 'Pago'
+                            ? { bg: 'rgba(239,68,68,0.12)', fg: '#EF4444' }
+                            : { bg: 'rgba(16,185,129,0.12)', fg: '#10B981' };
+                        return <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '1px 7px', borderRadius: 3, background: c.bg, color: c.fg, whiteSpace: 'nowrap' }}>{p.tipo}</span>;
+                      })()}
+                    </td>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2BB4BB' }}>{p.NroAsiento}</td>
                     <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.DesBanco}>{p.DesBanco || '—'}</td>
                     <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem' }}>{p.Tercero || '—'}</td>
@@ -101,7 +121,7 @@ export function DocPaymentsModal({ companyId, nroD, docLabel, totalPagado, onClo
               </tbody>
               <tfoot>
                 <tr className="total-row">
-                  <td colSpan={5}>TOTAL ({filtered.length} movimiento{filtered.length !== 1 ? 's' : ''})</td>
+                  <td colSpan={6}>TOTAL ({filtered.length} movimiento{filtered.length !== 1 ? 's' : ''})</td>
                   <td>{fmt(totalDeb)}</td>
                   <td>{fmt(totalCred)}</td>
                 </tr>

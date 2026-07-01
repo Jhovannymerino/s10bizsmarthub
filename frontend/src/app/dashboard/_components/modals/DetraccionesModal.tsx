@@ -26,6 +26,9 @@ export function DetraccionesModal({ companyId, companyName, year, ladoInicial = 
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortState>({ col: '', dir: 'asc' });
+  const [desde, setDesde] = useState(`${year}-01-01`);
+  const [hasta, setHasta] = useState(`${year}-12-31`);
+  useEffect(() => { setDesde(`${year}-01-01`); setHasta(`${year}-12-31`); }, [year]);
   const onSort = (col: string) => setSort(s => toggleSort(s, col));
   const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => { modalRef.current?.focus(); }, []);
@@ -42,7 +45,15 @@ export function DetraccionesModal({ companyId, companyName, year, ladoInicial = 
   }, [companyId, year, lado]);
 
   const rows = data?.detracciones || [];
-  const filtered = useMemo(() => sortRows(searchRows(rows, search), sort.col, sort.dir), [rows, search, sort]);
+  // Fecha 'DD/MM/YYYY' → 'YYYY-MM-DD' para comparar con el rango
+  const toISO = (f: string) => { const [d, m, y] = String(f || '').split('/'); return y ? `${y}-${m}-${d}` : ''; };
+  const filtered = useMemo(() => {
+    const inRange = rows.filter((r: any) => {
+      const iso = toISO(r.fechaDocumento);
+      return (!desde || iso >= desde) && (!hasta || iso <= hasta);
+    });
+    return sortRows(searchRows(inRange, search), sort.col, sort.dir);
+  }, [rows, search, sort, desde, hasta]);
   const totalDetrac = filtered.reduce((s: number, r: any) => s + (r.montoDetraccion || 0), 0);
 
   const estadoColor = (e: string) => e === 'Completo' ? { bg: 'rgba(16,185,129,0.12)', fg: '#10B981' }
@@ -79,6 +90,12 @@ export function DetraccionesModal({ companyId, companyName, year, ladoInicial = 
           {ladoBtn('cobradas', 'Cobradas (CxC)')}
           {ladoBtn('pagadas', 'Pagadas (CxP)')}
           <input type="text" placeholder="Buscar documento o tercero..." value={search} onChange={e => setSearch(e.target.value)} style={searchInputStyle} />
+          <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>Desde
+            <input type="date" value={desde} min={`${year}-01-01`} max={`${year}-12-31`} onChange={e => setDesde(e.target.value)}
+              style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' }} /></label>
+          <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>Hasta
+            <input type="date" value={hasta} min={`${year}-01-01`} max={`${year}-12-31`} onChange={e => setHasta(e.target.value)}
+              style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' }} /></label>
           <button onClick={() => {
             const headers = ['Estado', 'Documento', 'Fecha doc', 'Tercero', 'RUC', 'Total', 'Detracción', 'Fecha detracción', 'Identificada por', 'Pago', 'Fecha pago'];
             const csv = filtered.map((r: any) => [r.estado, r.doc, r.fechaDocumento, r.tercero, r.ruc, r.total, r.montoDetraccion, r.fechaDetraccion || '', r.metodoDetraccion || '', r.montoPago, r.fechaPago || '']);

@@ -1557,10 +1557,23 @@ export class KpiService {
   // MontoDetraccion del documento (fallback, p.ej. movimientos por "Caja en Tránsito").
   // ─────────────────────────────────────────────
   async getDetracciones(companyId: string, year: number, lado: 'cobradas' | 'pagadas' = 'cobradas') {
-    const docKpi = lado === 'pagadas' ? 'facturas_recibidas' : 'facturas_emitidas';
-    const docsSnap = await this.getSnapshot(companyId, docKpi, `${year}`);
-    if (!docsSnap) return { detracciones: [], year, lado, total: 0 };
-    const docs = (docsSnap.data as any[]).filter((d) => (Number(d.Detraccion) || 0) > 0.01);
+    // Fuente por lado:
+    //  - cobradas: facturas_emitidas (por año, trae Detraccion).
+    //  - pagadas: cxp_docs (snapshot 'current'; facturas_recibidas NO trae Detraccion),
+    //    filtrado por el año de la fecha del documento.
+    const yrOf = (f: any) => Number(String(f || '').split('/')[2]) || 0;
+    let docs: any[];
+    if (lado === 'pagadas') {
+      const snap = await this.getSnapshot(companyId, 'cxp_docs', 'current');
+      if (!snap) return { detracciones: [], year, lado, total: 0 };
+      docs = (snap.data as any[]).filter(
+        (d) => (Number(d.Detraccion) || 0) > 0.01 && yrOf(d.FechaDocumento) === year,
+      );
+    } else {
+      const snap = await this.getSnapshot(companyId, 'facturas_emitidas', `${year}`);
+      if (!snap) return { detracciones: [], year, lado, total: 0 };
+      docs = (snap.data as any[]).filter((d) => (Number(d.Detraccion) || 0) > 0.01);
+    }
     if (!docs.length) return { detracciones: [], year, lado, total: 0 };
 
     // Indexar caja_txn por NroD (año + adyacentes, por cobros/pagos a caballo de año)
@@ -1606,7 +1619,7 @@ export class KpiService {
         serie: d.Serie || '', numero: d.Numero || '',
         fechaDocumento: d.FechaDocumento || '',
         tercero: d.Cliente || d.Proveedor || '',
-        ruc: d.RucCliente || d.RucProveedor || '',
+        ruc: d.RucCliente || d.RucProveedor || d.CodProveedor || d.CodCliente || '',
         total: round(Number(d.Total) || 0),
         montoDetraccion: monto,
         fechaDetraccion: dm ? dm.Fecha : null,
@@ -1621,7 +1634,7 @@ export class KpiService {
     return {
       detracciones, year, lado, total: detracciones.length,
       totalDetraccion: round(detracciones.reduce((s, r) => s + r.montoDetraccion, 0)),
-      syncedAt: docsSnap.syncedAt,
+      syncedAt: new Date().toISOString(),
     };
   }
 

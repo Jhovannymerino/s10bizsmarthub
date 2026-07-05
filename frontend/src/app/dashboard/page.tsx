@@ -11,7 +11,7 @@ import {
   Home, TrendingUp, Target, BarChart2, DollarSign, Users, ShoppingBag, Factory,
   Banknote, ClipboardList, Receipt, Scale, Bookmark, Archive, CreditCard, Landmark,
   Package, Activity, Building2, RefreshCw, ScrollText, HardHat, Wrench, Search,
-  FlaskConical, Settings, Building, Download, Save, Info,
+  FlaskConical, Settings, Building, Download, Save, Info, Eye, EyeOff,
 } from 'lucide-react';
 import { DocPreview } from './_components/modals/DocPreview';
 import { TransactionModal } from './_components/modals/TransactionModal';
@@ -245,12 +245,16 @@ export default function DashboardPage() {
   const [profilePwd, setProfilePwd] = useState({ current: '', next: '', confirm: '' });
   const [profilePwdError, setProfilePwdError] = useState('');
   const [profilePwdSuccess, setProfilePwdSuccess] = useState('');
+  const [showProfilePwdCurrent, setShowProfilePwdCurrent] = useState(false);
+  const [showProfilePwdNext, setShowProfilePwdNext] = useState(false);
+  const [showProfilePwdConfirm, setShowProfilePwdConfirm] = useState(false);
   const [profilePwdLoading, setProfilePwdLoading] = useState(false);
   // ── Admin: gestión de usuarios ──
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminModal, setAdminModal] = useState<{ mode: 'create' | 'edit'; user?: any } | null>(null);
   const [adminForm, setAdminForm] = useState({ email: '', username: '', password: '', role: 'viewer', allowedCompanies: [] as string[], allowedTabs: [] as string[], active: true });
+  const [showAdminFormPassword, setShowAdminFormPassword] = useState(false);
   const [adminError, setAdminError] = useState('');
   const [adminSuccess, setAdminSuccess] = useState('');
   const [cxp, setCxP] = useState<any>(null);
@@ -1423,23 +1427,41 @@ export default function DashboardPage() {
 
               <div style={{ marginBottom: '0.875rem' }}>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Contraseña actual</label>
-                <input type="password" value={profilePwd.current} onChange={e => setProfilePwd(p => ({ ...p, current: e.target.value }))}
-                  placeholder="••••••••"
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                <div style={{ position: 'relative' }}>
+                  <input type={showProfilePwdCurrent ? 'text' : 'password'} value={profilePwd.current} onChange={e => setProfilePwd(p => ({ ...p, current: e.target.value }))}
+                    placeholder="••••••••"
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                  <button type="button" onClick={() => setShowProfilePwdCurrent(v => !v)} aria-label={showProfilePwdCurrent ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                    {showProfilePwdCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div style={{ marginBottom: '0.875rem' }}>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Nueva contraseña</label>
-                <input type="password" value={profilePwd.next} onChange={e => setProfilePwd(p => ({ ...p, next: e.target.value }))}
-                  placeholder="Mínimo 8 caracteres"
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                <div style={{ position: 'relative' }}>
+                  <input type={showProfilePwdNext ? 'text' : 'password'} value={profilePwd.next} onChange={e => setProfilePwd(p => ({ ...p, next: e.target.value }))}
+                    placeholder="Mínimo 8 caracteres"
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                  <button type="button" onClick={() => setShowProfilePwdNext(v => !v)} aria-label={showProfilePwdNext ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                    {showProfilePwdNext ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Confirmar nueva contraseña</label>
-                <input type="password" value={profilePwd.confirm} onChange={e => setProfilePwd(p => ({ ...p, confirm: e.target.value }))}
-                  placeholder="••••••••"
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: `1px solid ${profilePwd.confirm && profilePwd.confirm !== profilePwd.next ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                <div style={{ position: 'relative' }}>
+                  <input type={showProfilePwdConfirm ? 'text' : 'password'} value={profilePwd.confirm} onChange={e => setProfilePwd(p => ({ ...p, confirm: e.target.value }))}
+                    placeholder="••••••••"
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: `1px solid ${profilePwd.confirm && profilePwd.confirm !== profilePwd.next ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                  <button type="button" onClick={() => setShowProfilePwdConfirm(v => !v)} aria-label={showProfilePwdConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                    {showProfilePwdConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               {profilePwdError && (
@@ -3491,8 +3513,14 @@ export default function DashboardPage() {
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
                         {adminModal.mode === 'edit' ? 'Nueva contraseña (dejar en blanco para no cambiar)' : 'Contraseña'}
                       </label>
-                      <input type="password" value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                      <div style={{ position: 'relative' }}>
+                        <input type={showAdminFormPassword ? 'text' : 'password'} value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
+                          style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                        <button type="button" onClick={() => setShowAdminFormPassword(v => !v)} aria-label={showAdminFormPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                          style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                          {showAdminFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>

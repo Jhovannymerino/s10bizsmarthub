@@ -28,6 +28,10 @@ services:
     env_file:
       - ./backend/.env
     restart: always
+    # PID 1 sin handler ignora SIGTERM -> Docker mata con SIGKILL a los 10s (exit 137)
+    # y un recreate a medias deja el contenedor viejo renombrado -> 502. Ver CLAUDE.md #23.
+    init: true
+    stop_grace_period: 30s
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

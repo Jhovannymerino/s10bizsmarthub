@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.enableShutdownHooks();
 
   const { json, urlencoded } = await import('express');
   app.use(json({ limit: '100mb' }));
@@ -30,6 +31,11 @@ async function bootstrap() {
   const port = parseInt(process.env.PORT || '3202', 10);
   await app.listen(port, '0.0.0.0');
   console.log(`S10 BizSmartHub API running on port ${port}`);
+
+  // PID 1 sin handler explicito IGNORA SIGTERM -> Docker espera el grace period
+  // y mata con SIGKILL (exit 137), dejando el recreate a medias. Ver CLAUDE.md #23.
+  process.on('SIGTERM', () => app.close().then(() => process.exit(0)));
+  process.on('SIGINT', () => app.close().then(() => process.exit(0)));
 }
 
 bootstrap();

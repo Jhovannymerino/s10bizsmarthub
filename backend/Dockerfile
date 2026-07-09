@@ -37,4 +37,6 @@ COPY --from=builder /usr/src/app/node_modules/prisma ./node_modules/prisma
 EXPOSE 3202
 
 # Apply schema changes (new indexes) before starting the app
-CMD sh -c "npx prisma db push --skip-generate 2>/dev/null || true && node dist/main"
+# `exec` reemplaza a sh por node: si no, sh queda de PID 1 y no reenvia SIGTERM al
+# hijo -> apagado sucio (exit 137) en cada recreate. Ver CLAUDE.md #23.
+CMD sh -c "npx prisma db push --skip-generate 2>/dev/null || true && exec node dist/main"

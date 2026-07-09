@@ -230,22 +230,25 @@ ssh $SSH_OPTS "$VPS" "
   # apuntando a la imagen vieja y el contenedor nunca estrena el código nuevo.
   export BUILDX_NO_DEFAULT_ATTESTATIONS=1
 
-  echo 'Rebuilding todos los servicios...'
-  docker compose -f docker-compose.prod.yml up -d s10biz-db
-
   # Build explícito y separado: si tsc/prisma/next fallan, set -e aborta AQUÍ.
   docker compose -f docker-compose.prod.yml build s10biz-backend
   docker compose -f docker-compose.prod.yml build s10biz-frontend
 
-  # --force-recreate garantiza que el contenedor estrene la imagen recién construida.
-  docker compose -f docker-compose.prod.yml up -d --force-recreate s10biz-backend s10biz-frontend
+  # up -d COMPLETO y SIN --force-recreate.  NO REVERTIR:
+  #  - 'up -d <un-servicio>' (antes: 'up -d s10biz-db') aísla el servicio y puede dejarlo
+  #    en 'Created' y/o recrearlo con nombre prefijado <hash>_<nombre>.
+  #  - '--force-recreate' recrea aunque nada haya cambiado, y es el flujo donde compose
+  #    hace ese renombrado. Como el reverse-proxy resuelve por NOMBRE, el resultado es un
+  #    502 silencioso con el contenedor 'Up (healthy)'.
+  # Compose ya recrea SOLO los servicios cuya imagen acaba de cambiar.
+  docker compose -f docker-compose.prod.yml up -d
 
   echo ''
   echo 'Estado de contenedores s10biz:'
   docker ps --filter 'name=s10biz' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-  # Asegurar que ambos contenedores quedaron efectivamente corriendo (no Exited/Restarting)
-  for c in s10biz-api s10biz-web; do
+  # Verificación 1: nombre canónico + realmente corriendo (no Created/Exited/Restarting)
+  for c in s10biz-db s10biz-api s10biz-web; do
     st=\$(docker inspect -f '{{.State.Status}}' \$c 2>/dev/null || echo missing)
     if [ \"\$st\" != 'running' ]; then
       echo \"ERROR: contenedor \$c en estado '\$st' tras el deploy\"
@@ -253,35 +256,51 @@ ssh $SSH_OPTS "$VPS" "
       exit 1
     fi
   done
-  echo '✓ Contenedores corriendo la imagen nueva'
-" 2>&1 | tee -a "$LOG_FILE"
-
-# ── 10. Health check ──────────────────────────────────────
-log ""
-log "── Paso 9: Health check ──"
-sleep 15
-
-ssh $SSH_OPTS "$VPS" "
-  set -e
-  echo 'Verificando API (hasta 6 intentos)...'
-  ok=false
-  for i in \$(seq 1 6); do
-    code=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3202/kpi/80688541/dashboard?year=2026 -H 'Authorization: Bearer test' || echo 000)
-    # Cualquier HTTP real (incl. 401/403) = la app responde. 000 = conexión rechazada/arrancando.
-    if [ \"\$code\" != '000' ]; then
-      echo \"✓ API responde (HTTP \$code)\"
-      ok=true; break
-    fi
-    echo \"  intento \$i: sin respuesta aun...\"; sleep 5
-  done
-  echo ''
-  echo 'Logs backend (ultimas 20 lineas):'
-  docker logs s10biz-api --tail 20 2>&1
-  if [ \"\$ok\" != 'true' ]; then
-    echo 'ERROR: la API no respondió tras el deploy — abortando'
+  PREF=\$(docker ps -a --format '{{.Names}}' | grep -E '_s10biz-' || true)
+  if [ -n \"\$PREF\" ]; then
+    echo \"ERROR: contenedores con nombre prefijado (el proxy no los encuentra): \$PREF\"
     exit 1
   fi
+
+  # Verificación 2: el reverse-proxy los resuelve POR NOMBRE (si no, es 502 seguro).
+  # Un 404/401 del backend es SANO: el proxy resolvió el nombre y conectó. El 502 lo
+  # produce 'bad address' (nombre no resuelto) o 'Connection refused' (puerto malo).
+  for pair in s10biz-api:3202 s10biz-web:3100; do
+    OUT=\$(docker exec reverse-proxy sh -lc \"wget -O /dev/null -T 5 http://\$pair\" 2>&1 || true)
+    if printf '%s' \"\$OUT\" | grep -qiE \"bad address|can't connect|connection refused|timed out|no route to host\"; then
+      echo \"ERROR: el reverse-proxy NO alcanza \$pair -> \$(printf '%s' \"\$OUT\" | tail -1)\"
+      exit 1
+    fi
+    echo \"✓ proxy -> \$pair\"
+  done
+  echo '✓ Contenedores corriendo la imagen nueva, con nombre canónico y visibles para el proxy'
 " 2>&1 | tee -a "$LOG_FILE"
+
+# ── 10. Health check DESDE FUERA (no 'curl localhost') ────
+# Un 'curl localhost:3202' dentro del VPS salta el reverse-proxy, el certificado y el
+# DNS: pasa aunque el sitio esté caído para un usuario real. Se prueba el dominio
+# público, desde esta máquina.
+log ""
+log "── Paso 9: Health check contra el dominio público ──"
+sleep 15
+
+PUB="https://s10bizsmarthub.bizwareapps.com"
+ok=false
+for i in $(seq 1 10); do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 -L "$PUB/" || echo 000)
+  if [ "$code" = "200" ]; then
+    log "  ✓ $PUB -> 200"
+    ok=true; break
+  fi
+  log "  intento $i: $PUB -> $code"
+  sleep 5
+done
+
+if [ "$ok" != 'true' ]; then
+  log "ERROR: $PUB no respondió 200 tras el deploy — NO des el deploy por bueno."
+  ssh $SSH_OPTS "$VPS" "docker logs s10biz-api --tail 30 2>&1" | tee -a "$LOG_FILE" || true
+  exit 1
+fi
 
 log ""
 log "╔══════════════════════════════════════════════════════╗"

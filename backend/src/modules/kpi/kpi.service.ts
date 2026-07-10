@@ -182,12 +182,15 @@ export class KpiService {
   // ─────────────────────────────────────────────
 
   buildDashboardFromPL(rows: any[], claseIngreso: string) {
-    // Clase 79 (Cargas imputables) es el contra-asiento de clase 9x:
-    // suma clase91+94+97 en créditos. Restarla solo de clase91 daría
-    // costoDirecto = -(GAV+GastosFinancieros), lo cual es incorrecto.
-    // Se ignora clase79 y se usa clase91 bruto como costo directo.
+    // P&L completo por clases contables (PCGE):
+    //  70=ingresos oper · 75=otros ingresos · 77=ingresos financieros (incl. 776 ganancia dif.cambio)
+    //  79=cargas imputables (contra-asiento de clase 9x, se ignora) · 91=costo · 94=gastos adm ·
+    //  95=gastos de ventas (94+95 = GAV) · 97=gastos financieros (incl. 976 perdida dif.cambio).
+    // La diferencia de cambio se presenta NETA (ganancia 776 − perdida 976); positivo = ganancia.
     const monthly: Record<number, {
       ingresos: number;
+      otrosIngresos: number;
+      ingresosFinancieros: number;
       costo: number;
       gav: number;
       gastosFinancieros: number;
@@ -195,11 +198,13 @@ export class KpiService {
     }> = {};
 
     for (let m = 1; m <= 12; m++) {
-      monthly[m] = { ingresos: 0, costo: 0, gav: 0, gastosFinancieros: 0, diferenciaCambio: 0 };
+      monthly[m] = { ingresos: 0, otrosIngresos: 0, ingresosFinancieros: 0, costo: 0, gav: 0, gastosFinancieros: 0, diferenciaCambio: 0 };
     }
 
     const detalleMap: Record<string, Record<string, any>> = {
       ingresos: {},
+      otrosIngresos: {},
+      ingresosFinancieros: {},
       costoDirecto: {},
       gav: {},
       gastosFinancieros: {},
@@ -218,24 +223,29 @@ export class KpiService {
       let valor = 0;
 
       if (clase === claseIngreso) {
-        monthly[mes].ingresos += credito - debito;
-        grupo = 'ingresos'; valor = credito - debito;
-      } else if (clase === '91') {
-        monthly[mes].costo += debito - credito;
-        grupo = 'costoDirecto'; valor = debito - credito;
+        valor = credito - debito; monthly[mes].ingresos += valor; grupo = 'ingresos';
+      } else if (clase === '75') {
+        valor = credito - debito; monthly[mes].otrosIngresos += valor; grupo = 'otrosIngresos';
+      } else if (clase === '77') {
+        if (cod.startsWith('776')) {
+          // Ganancia por diferencia de cambio → suma a la dif. de cambio NETA
+          valor = credito - debito; monthly[mes].diferenciaCambio += valor; grupo = 'diferenciaCambio';
+        } else {
+          valor = credito - debito; monthly[mes].ingresosFinancieros += valor; grupo = 'ingresosFinancieros';
+        }
       } else if (clase === '79') {
         // ignorar — es el contra-asiento de clase 9x, no un costo real
-      } else if (clase === '94') {
-        monthly[mes].gav += debito - credito;
-        grupo = 'gav'; valor = debito - credito;
+      } else if (clase === '91') {
+        valor = debito - credito; monthly[mes].costo += valor; grupo = 'costoDirecto';
+      } else if (clase === '94' || clase === '95') {
+        // GAV = gastos administrativos (94) + gastos de ventas (95)
+        valor = debito - credito; monthly[mes].gav += valor; grupo = 'gav';
       } else if (clase === '97') {
         if (cod.startsWith('976')) {
-          // Pérdida por diferencia de cambio — línea separada, no gastos financieros
-          monthly[mes].diferenciaCambio += debito - credito;
-          grupo = 'diferenciaCambio'; valor = debito - credito;
+          // Pérdida por diferencia de cambio → resta de la dif. de cambio NETA (valor negativo)
+          valor = -(debito - credito); monthly[mes].diferenciaCambio += valor; grupo = 'diferenciaCambio';
         } else {
-          monthly[mes].gastosFinancieros += debito - credito;
-          grupo = 'gastosFinancieros'; valor = debito - credito;
+          valor = debito - credito; monthly[mes].gastosFinancieros += valor; grupo = 'gastosFinancieros';
         }
       }
 
@@ -254,12 +264,15 @@ export class KpiService {
       const costoNeto = v.costo;
       const margenBruto = v.ingresos - costoNeto;
       const ebitda = margenBruto - v.gav;
-      const utilidadNeta = ebitda - v.gastosFinancieros - v.diferenciaCambio;
+      // Utilidad neta = EBITDA + otros ingresos + ingresos financieros − gastos financieros + dif. cambio NETA
+      const utilidadNeta = ebitda + v.otrosIngresos + v.ingresosFinancieros - v.gastosFinancieros + v.diferenciaCambio;
 
       return {
         mes,
         mesLabel: MONTHS[mes - 1],
         ingresos: round(v.ingresos),
+        otrosIngresos: round(v.otrosIngresos),
+        ingresosFinancieros: round(v.ingresosFinancieros),
         costoDirecto: round(costoNeto),
         margenBruto: round(margenBruto),
         margenBrutoPct: v.ingresos > 0 ? round((margenBruto / v.ingresos) * 100) : 0,
@@ -276,6 +289,8 @@ export class KpiService {
     const ytd = plMonthly.reduce(
       (acc, m) => ({
         ingresos: acc.ingresos + m.ingresos,
+        otrosIngresos: acc.otrosIngresos + m.otrosIngresos,
+        ingresosFinancieros: acc.ingresosFinancieros + m.ingresosFinancieros,
         costoDirecto: acc.costoDirecto + m.costoDirecto,
         margenBruto: acc.margenBruto + m.margenBruto,
         gav: acc.gav + m.gav,
@@ -284,7 +299,7 @@ export class KpiService {
         diferenciaCambio: acc.diferenciaCambio + (m.diferenciaCambio ?? 0),
         utilidadNeta: acc.utilidadNeta + m.utilidadNeta,
       }),
-      { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 },
+      { ingresos: 0, otrosIngresos: 0, ingresosFinancieros: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 },
     );
 
     ytd['margenBrutoPct'] = ytd.ingresos > 0 ? round((ytd.margenBruto / ytd.ingresos) * 100) : 0;
@@ -293,10 +308,14 @@ export class KpiService {
     ytd['utilidadNetaPct'] = ytd['margenNetoPct']; // alias para compatibilidad con PL_ROWS del frontend
     ytd['gavPct'] = ytd.ingresos > 0 ? round((ytd.gav / ytd.ingresos) * 100) : 0;
     ytd['costoPct'] = ytd.ingresos > 0 ? round((ytd.costoDirecto / ytd.ingresos) * 100) : 0;
-    ytd['covIntereses'] = (ytd.gastosFinancieros + ytd.diferenciaCambio) > 0 ? round(ytd.ebitda / (ytd.gastosFinancieros + ytd.diferenciaCambio)) : null;
+    // Cobertura de intereses: EBITDA / carga financiera (gastos financieros + pérdida NETA por dif. de cambio si la hubiera)
+    const cargaFin = ytd.gastosFinancieros + (ytd.diferenciaCambio < 0 ? -ytd.diferenciaCambio : 0);
+    ytd['covIntereses'] = cargaFin > 0 ? round(ytd.ebitda / cargaFin) : null;
 
     const detalle = {
       ingresos: Object.values(detalleMap.ingresos).sort((a: any, b: any) => b.ytd - a.ytd),
+      otrosIngresos: Object.values(detalleMap.otrosIngresos).sort((a: any, b: any) => b.ytd - a.ytd),
+      ingresosFinancieros: Object.values(detalleMap.ingresosFinancieros).sort((a: any, b: any) => b.ytd - a.ytd),
       costoDirecto: Object.values(detalleMap.costoDirecto).sort((a: any, b: any) => b.ytd - a.ytd),
       gav: Object.values(detalleMap.gav).sort((a: any, b: any) => b.ytd - a.ytd),
       gastosFinancieros: Object.values(detalleMap.gastosFinancieros).sort((a: any, b: any) => b.ytd - a.ytd),
@@ -859,7 +878,7 @@ export class KpiService {
     };
   }
 
-  // GAV por RANGO de fechas — derivado del snapshot `transactions` (clase 94, fecha diaria).
+  // GAV por RANGO de fechas — derivado del snapshot `transactions` (clases 94+95, fecha diaria).
   // Mismo origen/agregación que QUERY_GAV → cuadra al centavo. Default = año completo.
   async getGAVRange(companyId: string, year: number, desde?: string, hasta?: string) {
     const fullYear =
@@ -883,7 +902,7 @@ export class KpiService {
     // Pre-agregar por (subcuenta de 3 dígitos, mes) — buildGAV ASIGNA meses[mes], no suma.
     const agg = new Map<string, { CodCuenta: string; DesCuenta: string; Mes: number; GAV: number }>();
     for (const r of (txSnap.data as any[])) {
-      if (r.Clase !== '94') continue;
+      if (r.Clase !== '94' && r.Clase !== '95') continue; // GAV = gastos adm (94) + ventas (95)
       const iso = fechaDDMMYYYYtoISO(r.Fecha);
       if (iso < d || iso > h) continue;
       const cod3 = String(r.CodCuenta).slice(0, 3);
@@ -1994,7 +2013,7 @@ export class KpiService {
     );
 
     const zeroYtd = () => ({
-      ingresos: 0, costoDirecto: 0, margenBruto: 0,
+      ingresos: 0, otrosIngresos: 0, ingresosFinancieros: 0, costoDirecto: 0, margenBruto: 0,
       gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0,
     });
 
@@ -2004,7 +2023,7 @@ export class KpiService {
     // Monthly consolidado (12 meses)
     const monthlyTotal: Record<number, any> = {};
     for (let m = 1; m <= 12; m++) {
-      monthlyTotal[m] = { mes: m, mesLabel: MONTHS[m - 1], ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 };
+      monthlyTotal[m] = { mes: m, mesLabel: MONTHS[m - 1], ingresos: 0, otrosIngresos: 0, ingresosFinancieros: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 };
     }
 
     for (const { company, data } of snapshots) {
@@ -2013,6 +2032,8 @@ export class KpiService {
       const y = d.ytd;
 
       ytdTotal.ingresos += y.ingresos || 0;
+      ytdTotal.otrosIngresos += y.otrosIngresos || 0;
+      ytdTotal.ingresosFinancieros += y.ingresosFinancieros || 0;
       ytdTotal.costoDirecto += y.costoDirecto || 0;
       ytdTotal.margenBruto += y.margenBruto || 0;
       ytdTotal.gav += y.gav || 0;
@@ -2032,6 +2053,8 @@ export class KpiService {
       if (d.plMonthly) {
         for (const m of d.plMonthly) {
           monthlyTotal[m.mes].ingresos += m.ingresos || 0;
+          monthlyTotal[m.mes].otrosIngresos += m.otrosIngresos || 0;
+          monthlyTotal[m.mes].ingresosFinancieros += m.ingresosFinancieros || 0;
           monthlyTotal[m.mes].costoDirecto += m.costoDirecto || 0;
           monthlyTotal[m.mes].margenBruto += m.margenBruto || 0;
           monthlyTotal[m.mes].gav += m.gav || 0;
@@ -2056,7 +2079,8 @@ export class KpiService {
     ytd.ebitdaPct = ytd.ingresos > 0 ? round((ytd.ebitda / ytd.ingresos) * 100) : 0;
     ytd.margenNetoPct = ytd.ingresos > 0 ? round((ytd.utilidadNeta / ytd.ingresos) * 100) : 0;
     ytd.gavPct = ytd.ingresos > 0 ? round((ytd.gav / ytd.ingresos) * 100) : 0;
-    ytd.covIntereses = (ytd.gastosFinancieros + ytd.diferenciaCambio) > 0 ? round(ytd.ebitda / (ytd.gastosFinancieros + ytd.diferenciaCambio)) : null;
+    const cargaFinCons = ytd.gastosFinancieros + (ytd.diferenciaCambio < 0 ? -ytd.diferenciaCambio : 0);
+    ytd.covIntereses = cargaFinCons > 0 ? round(ytd.ebitda / cargaFinCons) : null;
 
     const plMonthly = Object.values(monthlyTotal).map((m: any) => ({
       ...m,

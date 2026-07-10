@@ -1110,7 +1110,11 @@ export class KpiService {
       .map((r) => ({
         proveedor: r.Proveedor || r.CodProveedor,
         codProveedor: r.CodProveedor,
+        // saldoTotal ya viene en SOLES (USD convertido por tipo de cambio en la consulta)
         saldoTotal:   round(parseFloat(r.SaldoTotal)   || 0),
+        saldoPEN:     round(parseFloat(r.SaldoPEN)     || 0),
+        saldoUSD:     round(parseFloat(r.SaldoUSD)     || 0),
+        tipoCambioUSD: parseFloat(r.TipoCambio) || TC_USD_FALLBACK,
         saldoVigente: round(parseFloat(r.SaldoVigente) || 0),
         dias0_30:     round(parseFloat(r.Dias_0_30)    || 0),
         dias31_60:    round(parseFloat(r.Dias_31_60)   || 0),

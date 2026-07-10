@@ -499,39 +499,53 @@ WITH dedup AS (
 SELECT
   ISNULL(DescripcionIdentificador, CAST(CodIdentificador AS VARCHAR))  AS Proveedor,
   ISNULL(CodIdentificador,'')                                          AS CodProveedor,
-  -- NCs (notas de crédito de proveedores) reducen el saldo: se restan del total
+  -- SaldoTotal en SOLES: los documentos en USD se convierten por su tipo de cambio.
+  -- (Antes se sumaban montos USD como si fueran soles → descuadre de la cuenta 42.)
+  -- NCs (notas de crédito de proveedores) reducen el saldo: se restan del total.
   ROUND(SUM(
-    CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+    (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
       THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0
                 ELSE -(Total - ISNULL(TotalPagado,0)) END
     ELSE Total - ISNULL(TotalPagado,0)
-    END
+    END)
+    * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END
   ), 2) AS SaldoTotal,
-  -- Aging buckets excluyen NCs (no tienen fecha de vencimiento comercial)
+  -- Saldo en su moneda original (para mostrar por moneda como en CxC)
+  ROUND(SUM(CASE WHEN CodMoneda='01' THEN
+    (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+      THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
+    ELSE Total - ISNULL(TotalPagado,0) END) ELSE 0 END), 2) AS SaldoPEN,
+  ROUND(SUM(CASE WHEN CodMoneda<>'01' THEN
+    (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+      THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
+    ELSE Total - ISNULL(TotalPagado,0) END) ELSE 0 END), 2) AS SaldoUSD,
+  MAX(CASE WHEN CodMoneda<>'01' THEN ISNULL(TipoCambio, ${TC_USD_FALLBACK}) ELSE NULL END) AS TipoCambio,
+  -- Aging buckets (en SOLES) excluyen NCs (no tienen fecha de vencimiento comercial)
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) >= GETDATE()
                   AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS SaldoVigente,
+            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS SaldoVigente,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
                   AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_0_30,
+            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_0_30,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
                   AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_31_60,
+            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_31_60,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
                   AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_61_90,
+            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_61_90,
   ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) < DATEADD(DAY,-90,GETDATE())
                   AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN Total - ISNULL(TotalPagado,0) ELSE 0 END), 2) AS Dias_90_mas
+            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_90_mas
 FROM dedup
 WHERE rn = 1
 GROUP BY DescripcionIdentificador, CodIdentificador
 HAVING SUM(
-  CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+  (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
     THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0
               ELSE -(Total - ISNULL(TotalPagado,0)) END
   ELSE Total - ISNULL(TotalPagado,0)
-  END
+  END)
+  * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END
 ) > 0.01
 ORDER BY SaldoTotal DESC
 `;

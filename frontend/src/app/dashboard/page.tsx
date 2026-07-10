@@ -2609,7 +2609,14 @@ export default function DashboardPage() {
                         <tr key={p.codProveedor} data-clickable="1"
                           onClick={() => setCxPTxDrill({ proveedor: p.proveedor, codProveedor: String(p.codProveedor) })}
                           title="Ver asientos individuales">
-                          <td style={{ color: '#2BB4BB' }}>{p.proveedor} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                          <td style={{ color: '#2BB4BB' }}>{p.proveedor} <span style={{ fontSize: '0.65rem' }}>▶</span>
+                            {(p.saldoUSD ?? 0) > 0 && (
+                              <span title="Proveedor con deuda en dólares — el Total ya está convertido a soles por el tipo de cambio"
+                                style={{ marginLeft: 6, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: 'rgba(74,222,128,0.15)', color: '#4ade80', verticalAlign: 'middle' }}>
+                                $ {p.saldoUSD.toLocaleString('es-PE', { maximumFractionDigits: 0 })}
+                              </span>
+                            )}
+                          </td>
                           <td>{p.saldoVigente > 0 ? fmt(p.saldoVigente) : '—'}</td>
                           <td>{p.dias0_30 > 0 ? fmt(p.dias0_30) : '—'}</td>
                           <td>{p.dias31_60 > 0 ? fmt(p.dias31_60) : '—'}</td>

@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, ScrollText } from 'lucide-react';
+import { X, ScrollText, Download } from 'lucide-react';
 import { API } from '../../_lib/constants';
 import { fmt } from '../../_lib/formatters';
 import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
@@ -9,6 +9,16 @@ import { DocPaymentsModal } from './DocPaymentsModal';
 import { MayorModal } from './MayorModal';
 
 const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function exportCSV(filename: string, headers: string[], rows: any[][]) {
+  const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
 
 function getMoneda(d: any): 'USD' | 'PEN' {
   const raw = String(d.Moneda ?? d.CodMoneda ?? '01').trim();
@@ -192,6 +202,18 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
             onChange={e => setSearch(e.target.value)}
             style={searchInputStyle}
           />
+          <button onClick={() => {
+            const headers = ['Estado', 'Tipo', 'Serie/N°', 'Fecha Doc.', 'Vencimiento', 'Días Venc.', 'Moneda', 'Total', 'Pagado', 'Detracción', 'Saldo'];
+            const rows = filtered.map((d: any) => [
+              estadoBadge(d).label, d.DesTipo || d.TipoDoc, d.Serie ? `${d.Serie}-${d.Numero}` : d.Numero,
+              d.FechaDocumento, d.FechaVencimiento, d.DiasVencido, getMoneda(d),
+              d.Total, d.Pagado, d.Detraccion, d.Saldo,
+            ]);
+            exportCSV(`CxC_${String(cliente).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}_${filter}.csv`, headers, rows);
+          }} title="Exportar a Excel (CSV) los documentos de esta vista"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.7rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: '#8B97A8' }}>
+            <Download size={13} aria-hidden="true" /> Exportar
+          </button>
         </div>
 
         {loading ? (

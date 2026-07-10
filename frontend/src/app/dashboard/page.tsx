@@ -47,20 +47,30 @@ import { SkeletonLoaderTable } from './_components/SkeletonLoaderTable';
 function buildWaterfallData(ytd: any) {
   const ing = ytd.ingresos || 0;
   const costo = ytd.costoDirecto || 0;
-  const margen = ytd.margenBruto || 0;
   const gav = ytd.gav || 0;
-  const ebitda = ytd.ebitda || 0;
+  const otros = (ytd.otrosIngresos || 0) + (ytd.ingresosFinancieros || 0);
   const gf = ytd.gastosFinancieros || 0;
-  const util = ytd.utilidadNeta || 0;
-  return [
-    { name: 'Ingresos',    base: 0,                  value: ing,            type: 'income' },
-    { name: 'Costo Dir.',  base: margen > 0 ? margen : 0, value: Math.abs(costo), type: 'expense' },
-    { name: 'Margen',      base: 0,                  value: margen,         type: 'total' },
-    { name: 'GAV',         base: ebitda > 0 ? ebitda : 0, value: Math.abs(gav), type: 'expense' },
-    { name: 'EBITDA',      base: 0,                  value: ebitda,         type: 'total' },
-    { name: 'Gastos Fin.', base: util > 0 ? util : 0, value: Math.abs(gf), type: 'expense' },
-    { name: 'Utilidad',    base: 0,                  value: util,           type: 'total' },
-  ];
+  const dc = ytd.diferenciaCambio || 0; // NETA: positivo = ganancia
+  const margen = ytd.margenBruto ?? (ing - costo);
+  const ebitda = ytd.ebitda ?? (margen - gav);
+  const util = ytd.utilidadNeta ?? (ebitda + otros - gf + dc);
+
+  const steps: any[] = [];
+  let running = 0;
+  const flow = (name: string, delta: number, type: string) => {
+    steps.push({ name, base: Math.min(running, running + delta), value: Math.abs(delta), type });
+    running += delta;
+  };
+  flow('Ingresos', ing, 'income');
+  flow('Costo Dir.', -costo, 'expense');
+  steps.push({ name: 'Margen', base: 0, value: margen, type: 'total' });
+  flow('GAV', -gav, 'expense');
+  steps.push({ name: 'EBITDA', base: 0, value: ebitda, type: 'total' });
+  if (Math.abs(otros) > 0.5) flow('Otros/Fin.', otros, otros >= 0 ? 'income' : 'expense');
+  if (Math.abs(gf) > 0.5) flow('Gastos Fin.', -gf, 'expense');
+  if (Math.abs(dc) > 0.5) flow('Dif. Cambio', dc, dc >= 0 ? 'income' : 'expense');
+  steps.push({ name: 'Utilidad', base: 0, value: util, type: 'total' });
+  return steps;
 }
 
 const getWfColor = (type: string, value: number) => {
@@ -73,6 +83,7 @@ const WaterfallChart = React.memo(function WaterfallChart({ ytd }: { ytd: any })
   const data = React.useMemo(() => buildWaterfallData(ytd), [
     ytd?.ingresos, ytd?.costoDirecto, ytd?.margenBruto,
     ytd?.gav, ytd?.ebitda, ytd?.gastosFinancieros, ytd?.utilidadNeta,
+    ytd?.otrosIngresos, ytd?.ingresosFinancieros, ytd?.diferenciaCambio,
   ]);
 
   return (
@@ -787,17 +798,19 @@ export default function DashboardPage() {
   );
 
   const PL_ROWS = [
-    { key: 'ingresos',          label: 'Ingresos',           fmt: 'currency', detalleKey: 'ingresos',          drillable: true },
-    { key: 'costoDirecto',      label: 'Costo Directo',      fmt: 'currency', detalleKey: 'costoDirecto',      drillable: true },
-    { key: 'margenBruto',       label: 'Margen Bruto',       fmt: 'currency', bold: true },
-    { key: 'margenBrutoPct',    label: '% Margen',           fmt: 'pct' },
-    { key: 'gav',               label: 'GAV',                fmt: 'currency', detalleKey: 'gav',               drillable: true },
-    { key: 'ebitda',            label: 'EBITDA',             fmt: 'currency', bold: true },
-    { key: 'ebitdaPct',         label: '% EBITDA',           fmt: 'pct' },
-    { key: 'gastosFinancieros', label: 'Gastos Financieros', fmt: 'currency', detalleKey: 'gastosFinancieros', drillable: true },
-    { key: 'diferenciaCambio',  label: 'Pérdida Dif. Cambio', fmt: 'currency', detalleKey: 'diferenciaCambio',  drillable: true },
-    { key: 'utilidadNeta',      label: 'Utilidad Neta',      fmt: 'currency', bold: true },
-    { key: 'utilidadNetaPct',   label: '% Margen Neto',      fmt: 'pct' },
+    { key: 'ingresos',            label: 'Ingresos',                  fmt: 'currency', detalleKey: 'ingresos',            drillable: true },
+    { key: 'costoDirecto',        label: 'Costo Directo',             fmt: 'currency', detalleKey: 'costoDirecto',        drillable: true },
+    { key: 'margenBruto',         label: 'Margen Bruto',              fmt: 'currency', bold: true },
+    { key: 'margenBrutoPct',      label: '% Margen',                  fmt: 'pct' },
+    { key: 'gav',                 label: 'GAV (Adm. + Ventas)',       fmt: 'currency', detalleKey: 'gav',                 drillable: true },
+    { key: 'ebitda',              label: 'EBITDA',                    fmt: 'currency', bold: true },
+    { key: 'ebitdaPct',           label: '% EBITDA',                  fmt: 'pct' },
+    { key: 'otrosIngresos',       label: 'Otros Ingresos',            fmt: 'currency', detalleKey: 'otrosIngresos',       drillable: true },
+    { key: 'ingresosFinancieros', label: 'Ingresos Financieros',      fmt: 'currency', detalleKey: 'ingresosFinancieros', drillable: true },
+    { key: 'gastosFinancieros',   label: 'Gastos Financieros',        fmt: 'currency', detalleKey: 'gastosFinancieros',   drillable: true },
+    { key: 'diferenciaCambio',    label: 'Diferencia de Cambio (neta)', fmt: 'currency', detalleKey: 'diferenciaCambio',   drillable: true },
+    { key: 'utilidadNeta',        label: 'Utilidad Neta',             fmt: 'currency', bold: true },
+    { key: 'utilidadNetaPct',     label: '% Margen Neto',             fmt: 'pct' },
   ];
 
   const handleTabChange = (tab: string) => {

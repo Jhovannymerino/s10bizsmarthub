@@ -93,7 +93,10 @@ JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND LEFT(pcd.CodCuenta, 2) IN ('${claseIngreso}', '79', '91', '94', '97')
+  -- 70=ingresos oper · 75=otros ingresos · 77=ingresos financieros (incl 776 ganancia dif.cambio)
+  -- 79=cargas imputables (contra-asiento, se ignora) · 91=costo · 94=gastos adm · 95=gastos venta
+  -- 97=gastos financieros (incl 976 perdida dif.cambio)
+  AND LEFT(pcd.CodCuenta, 2) IN ('${claseIngreso}', '75', '77', '79', '91', '94', '95', '97')
 GROUP BY LEFT(pcd.CodCuenta,2), pcd.CodCuenta, pcd.Descripcion, MONTH(ac.FechaAplicacionContable)
 ORDER BY Clase, CodCuenta, Mes
 `;
@@ -117,7 +120,9 @@ LEFT JOIN CMO.dbo.Identificador i
   ON ac.CodIdentificador = i.CodIdentificador
 WHERE ac.CodEmpresa = '${codEmpresa}'
   AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND LEFT(pcd.CodCuenta, 2) IN ('${claseIngreso}', '91', '94', '97')
+  -- Mismas clases del P&L (incluye 75 otros ing, 77 ing.fin, 95 gastos venta) para que
+  -- el P&L por RANGO (derivado de transactions) cuadre con el P&L mensual.
+  AND LEFT(pcd.CodCuenta, 2) IN ('${claseIngreso}', '75', '77', '91', '94', '95', '97')
 ORDER BY ac.FechaAplicacionContable, ac.CodUnico
 `;
 
@@ -618,7 +623,7 @@ FROM (
     ON ac.NroPlanContableDetalle = d.NroPlanContableDetalle
   WHERE ac.CodEmpresa = '${codEmpresa}'
     AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
-    AND LEFT(d.CodCuenta, 2) = '94'
+    AND LEFT(d.CodCuenta, 2) IN ('94', '95')
   GROUP BY LEFT(d.CodCuenta, 3), MONTH(ac.FechaAplicacionContable)
 ) g
 ORDER BY g.CodCuenta, g.Mes

@@ -2504,6 +2504,46 @@ export default function DashboardPage() {
                         hint=">60% en 3 proveedores indica dependencia. Si uno exige pago inmediato puede generar crisis de liquidez"
                       />
                     </div>
+                    {cxp.composicion42 && (cxp.composicion42.items?.length ?? 0) > 0 && (
+                      <div className="kpi-card" style={{ marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Composición de la cuenta 42 (contable)</div>
+                          <span style={{ fontSize: '0.7rem', color: '#8B97A8' }}>Según el Balance · reconcilia con S10 · incluye anticipos</span>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="table-s10" style={{ fontSize: '0.8rem' }}>
+                            <tbody>
+                              {cxp.composicion42.items.map((it: any) => (
+                                <tr key={it.sub}>
+                                  <td style={{ color: '#8B97A8', fontFamily: 'monospace', fontSize: '0.72rem', width: 50 }}>{it.sub}</td>
+                                  <td>
+                                    {it.descripcion}
+                                    {it.esAnticipo && (
+                                      <span title="Los anticipos otorgados son un saldo deudor (cuenta 422): reducen la deuda con el proveedor"
+                                        style={{ marginLeft: 6, fontSize: '0.6rem', fontWeight: 700, padding: '1px 6px', borderRadius: 3, background: 'rgba(96,165,250,0.15)', color: '#60a5fa', verticalAlign: 'middle' }}>
+                                        ANTICIPO · resta
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td style={{ textAlign: 'right', fontWeight: 600, color: it.neto < 0 ? '#60a5fa' : '#F8FAFC' }}>{fmt(it.neto)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr className="total-row">
+                                <td colSpan={2}>= Cuenta 42 neta (deuda real por pagar)</td>
+                                <td style={{ textAlign: 'right' }}>{fmt(cxp.composicion42.total)}</td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                        {cxp.composicion42.anticipos < -0.01 && (
+                          <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginTop: '0.6rem' }}>
+                            Incluye <b style={{ color: '#60a5fa' }}>{fmt(cxp.composicion42.anticipos)}</b> de anticipos otorgados a proveedores, que reducen la deuda (saldo deudor de la subcuenta 422). Así la cuenta 42 cuadra con S10.
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {totalRevision !== null && totalRevision > 0.01 && (
                       <div style={{
                         background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',

@@ -1067,16 +1067,50 @@ export class KpiService {
   }
 
   async getCxP(companyId: string) {
-    const [cached, docsSnap] = await Promise.all([
+    const year = new Date().getFullYear();
+    const [cached, docsSnap, balSnap] = await Promise.all([
       this.getSnapshot(companyId, 'cxp', 'current'),
       this.getSnapshot(companyId, 'cxp_docs', 'current'),
+      this.getSnapshot(companyId, 'balance', `${year}`),
     ]);
     if (!cached) return { message: 'No data available. Run sync first.' };
     const result: any = this.buildCxP(cached.data as any[]);
     if (docsSnap) {
       result.breakdown = this.buildCxPBreakdown(docsSnap.data as any[]);
     }
+    if (balSnap) {
+      result.composicion42 = this.buildComposicion42(balSnap.data as any[]);
+    }
     return result;
+  }
+
+  // Composición contable de la cuenta 42 (por subcuenta) desde el Balance, con signo real:
+  // facturas/honorarios/letras (crédito, +) y ANTICIPOS a proveedores (débito, − reduce la deuda).
+  // Reconcilia la cuenta 42 con S10 y hace visibles los anticipos "junto con las facturas".
+  // Saldo = TotalHaber − TotalDebe (el Total del Balance ya incluye el saldo de apertura).
+  buildComposicion42(balRows: any[]) {
+    const labels: Record<string, string> = {
+      '421': 'Facturas y comprobantes por pagar',
+      '422': 'Anticipos a proveedores',
+      '423': 'Letras por pagar',
+      '424': 'Honorarios por pagar',
+      '425': 'Selección de pagos',
+      '426': 'Otras cuentas por pagar',
+    };
+    const map = new Map<string, any>();
+    for (const r of (balRows || [])) {
+      const cod = String(r.CodCuenta || '');
+      if (cod.slice(0, 2) !== '42') continue;
+      const sub = cod.slice(0, 3);
+      const neto = (parseFloat(r.TotalHaber) || 0) - (parseFloat(r.TotalDebe) || 0);
+      const e = map.get(sub) || { sub, descripcion: labels[sub] || r.DesCuenta || sub, neto: 0, esAnticipo: sub === '422' };
+      e.neto = round(e.neto + neto);
+      map.set(sub, e);
+    }
+    const items = [...map.values()].filter((e) => Math.abs(e.neto) > 0.01).sort((a, b) => b.neto - a.neto);
+    const total = round(items.reduce((s, e) => s + e.neto, 0));
+    const anticipos = round(items.filter((e) => e.sub === '422').reduce((s, e) => s + e.neto, 0));
+    return { items, total, anticipos };
   }
 
   buildCxPBreakdown(docs: any[]) {

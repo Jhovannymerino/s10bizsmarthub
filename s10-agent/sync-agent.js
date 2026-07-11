@@ -3352,9 +3352,13 @@ async function main() {
 
   const fechaInicio = `${year}-01-01`;
   const currentYear = new Date().getFullYear();
+  // fechaFin INCLUSIVO del día completo (23:59:59). Antes era medianoche ('YYYY-12-31'
+  // = 00:00), lo que EXCLUÍA de las consultas BETWEEN los asientos del 31-dic con hora
+  // (p.ej. provisiones/cierres de año a las 17:03) — el P&L histórico los perdía y no
+  // cuadraba con El Mayor (que usa YEAR()). Ver [[P&L clases completas + CxP moneda]].
   const fechaFin = year < currentYear
-    ? `${year}-12-31`
-    : new Date().toISOString().slice(0, 10);
+    ? `${year}-12-31 23:59:59`
+    : `${new Date().toISOString().slice(0, 10)} 23:59:59`;
 
   const t0 = Date.now();
   await runWithConcurrency(

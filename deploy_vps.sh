@@ -265,10 +265,21 @@ ssh $SSH_OPTS "$VPS" "
   # Verificación 2: el reverse-proxy los resuelve POR NOMBRE (si no, es 502 seguro).
   # Un 404/401 del backend es SANO: el proxy resolvió el nombre y conectó. El 502 lo
   # produce 'bad address' (nombre no resuelto) o 'Connection refused' (puerto malo).
+  # SONDEO con reintentos: tras 'up -d' la app Node/Nest tarda unos segundos (o más, si
+  # corre prisma migrate/seed) en empezar a escuchar el puerto, así que un 'connection
+  # refused' inicial es NORMAL — no es un fallo. Se reintenta hasta ~90s antes de abortar.
   for pair in s10biz-api:3202 s10biz-web:3100; do
-    OUT=\$(docker exec reverse-proxy sh -lc \"wget -O /dev/null -T 5 http://\$pair\" 2>&1 || true)
-    if printf '%s' \"\$OUT\" | grep -qiE \"bad address|can't connect|connection refused|timed out|no route to host\"; then
-      echo \"ERROR: el reverse-proxy NO alcanza \$pair -> \$(printf '%s' \"\$OUT\" | tail -1)\"
+    okp=false
+    for i in \$(seq 1 30); do
+      OUT=\$(docker exec reverse-proxy sh -lc \"wget -O /dev/null -T 5 http://\$pair\" 2>&1 || true)
+      if printf '%s' \"\$OUT\" | grep -qiE \"bad address|can't connect|connection refused|timed out|no route to host\"; then
+        sleep 3
+      else
+        okp=true; break
+      fi
+    done
+    if [ \"\$okp\" != 'true' ]; then
+      echo \"ERROR: el reverse-proxy NO alcanza \$pair tras ~90s -> \$(printf '%s' \"\$OUT\" | tail -1)\"
       exit 1
     fi
     echo \"✓ proxy -> \$pair\"

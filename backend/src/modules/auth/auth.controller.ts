@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Patch, Body, HttpCode, UseGuards, Request } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -6,13 +7,17 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // Rate-limit mas laxo que recovery: login legitimo puede fallar por typo varias veces
+  // desde la misma IP (oficina compartida). Mismo valor que Factum (patron canonico, regla #62).
   @Post('login')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   login(@Body() body: { login: string; password: string }) {
     return this.authService.login(body.login, body.password);
   }
 
   @Post('recovery/request')
   @HttpCode(200)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async requestRecovery(@Body() body: { login: string }) {
     await this.authService.requestPasswordRecovery(body.login);
     return { message: 'Si el correo está registrado, recibirás un código de verificación.' };
@@ -20,6 +25,7 @@ export class AuthController {
 
   @Post('recovery/verify')
   @HttpCode(200)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyOtp(@Body() body: { login: string; otp: string }) {
     await this.authService.verifyOtp(body.login, body.otp);
     return { valid: true };
@@ -27,6 +33,7 @@ export class AuthController {
 
   @Post('recovery/reset')
   @HttpCode(200)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async resetPassword(@Body() body: { login: string; otp: string; newPassword: string }) {
     await this.authService.resetPassword(body.login, body.otp, body.newPassword);
     return { message: 'Contraseña actualizada correctamente.' };

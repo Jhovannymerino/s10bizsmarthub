@@ -119,3 +119,14 @@ Frontend:
 ### Deployment
 
 Production runs on VPS at `s10bizsmarthub.bizwareapps.com` behind Nginx (`nginx-s10block.conf`). See `DEPLOY.md` for full setup. Use `deploy_vps.sh` for deployments.
+
+**MIGRADO 2026-07-14** (regla #62/#34 global): `/opt/apps/s10bizsmarthub` en el VPS PROD (`72.62.16.28`)
+ahora es un clone git real (deploy key de solo lectura `~/.ssh/s10bizsmarthub_deploy`, alias SSH
+`github-s10bizsmarthub`), no una copia por tarball. `deploy_vps.sh` hace `git fetch + reset --hard
+origin/main` en el VPS en vez de empaquetar/subir el working tree local completo. Efecto colateral
+encontrado y corregido: la rama de trabajo local es `develop`, pero el VPS siempre desplegaba `main` — un
+commit (`cb9a527`, rate-limit de login) llevaba horas solo en `develop` sin mergear, así que el nuevo
+`deploy_vps.sh` ahora, en su Paso 1, mergea automáticamente la rama actual a `main` antes de pushear si
+no se está trabajando directo en `main`. La clave real de Postgres (antes horneada con `sed -i` sobre
+`docker-compose.prod.yml`, un archivo trackeado — reintroducía drift en cada deploy) ahora vive solo en
+`$VPS_APP_DIR/.env` (gitignored), que Docker Compose ya lee para `${DB_PASSWORD:-...}` sin tocar el yml.

@@ -23,7 +23,17 @@ log "╚════════════════════════
 log ""
 
 # ── 1. GitHub ─────────────────────────────────────────────
-log "── Paso 1: Git push a GitHub ──"
+# MIGRADO 2026-07-14: antes este paso hacia `git push origin main` sin
+# importar la rama local real (convencion del repo: se trabaja en `develop`,
+# main es la rama de deploy) -- eso podia pushear un `main` local
+# desactualizado y pisar commits reales en remoto, o simplemente no llevar
+# nada nuevo a main mientras el VPS seguia leyendo de ahi (paso el caso real:
+# el rate-limit de auth.controller.ts vivio solo en develop varias horas
+# mientras el VPS -- via tarball, ver nota de Paso 3 -- corria el codigo
+# correcto igual porque el tarball empaqueta el working tree, no un ref de
+# git; pero el git de main quedo desincronizado y una conversion a
+# git-fetch-based deploy lo habria revertido en silencio de no corregirlo).
+log "── Paso 1: Git push a GitHub (rama actual -> develop, luego merge a main) ──"
 
 cd "$PROJECT"
 
@@ -36,10 +46,11 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
   git commit -m "feat: S10 BizSmartHub initial scaffold"
   log "  Repo git inicializado"
 else
-  # Agregar cambios si los hay
+  CURRENT_BRANCH=$(git branch --show-current)
+  # Agregar cambios si los hay, en la rama en la que el developer este parado
   git add . 2>/dev/null || true
   git diff --cached --quiet 2>/dev/null || git commit -m "chore: deploy update $(date '+%Y-%m-%d')" 2>/dev/null || true
-  log "  Repo git existente — OK"
+  log "  Repo git existente (rama: $CURRENT_BRANCH) — OK"
 fi
 
 # Intentar push con gh CLI
@@ -48,8 +59,19 @@ if command -v gh > /dev/null 2>&1 && gh auth status > /dev/null 2>&1; then
     gh repo create s10bizsmarthub --public --source=. --remote=origin --push 2>&1 | tee -a "$LOG_FILE"
     log "  ✓ Repo GitHub creado y codigo subido"
   else
-    git push origin main 2>&1 | tee -a "$LOG_FILE" || log "  ⚠ Push fallido — continuar con deploy"
-    log "  ✓ Codigo subido a GitHub"
+    CURRENT_BRANCH=$(git branch --show-current)
+    git push origin "$CURRENT_BRANCH" 2>&1 | tee -a "$LOG_FILE" || log "  ⚠ Push de $CURRENT_BRANCH fallido — continuar con deploy"
+    # main es la rama que el VPS realmente despliega (ver Paso 3). Si se
+    # trabajo en otra rama (develop), mergearla a main AHORA -- nunca dejar
+    # que el VPS reciba una version de main mas vieja que lo recien pusheado.
+    if [ "$CURRENT_BRANCH" != "main" ]; then
+      git fetch origin main -q 2>&1 | tee -a "$LOG_FILE" || true
+      git checkout main 2>&1 | tee -a "$LOG_FILE"
+      git merge "origin/$CURRENT_BRANCH" -m "Merge $CURRENT_BRANCH into main (deploy $(date '+%Y-%m-%d'))" 2>&1 | tee -a "$LOG_FILE"
+      git push origin main 2>&1 | tee -a "$LOG_FILE" || log "  ⚠ Push de main fallido — continuar con deploy"
+      git checkout "$CURRENT_BRANCH" 2>&1 | tee -a "$LOG_FILE"
+    fi
+    log "  ✓ Codigo subido a GitHub (main actualizado)"
   fi
 else
   log "  ⚠ gh CLI no disponible — saltando GitHub (deploy continua igual)"
@@ -67,37 +89,31 @@ if ! ssh $SSH_OPTS "$VPS" "echo 'VPS OK'" 2>&1 | tee -a "$LOG_FILE" | grep -q "V
 fi
 log "  ✓ Conexion SSH OK"
 
-# ── 3. Upload del codigo al VPS ───────────────────────────
+# ── 3. Sincronizar codigo en el VPS (git fetch + reset) ───
+# MIGRADO 2026-07-14 (regla #62/#34 global): antes este paso empaquetaba el
+# working tree LOCAL entero en un tarball (incluyendo .git completo, sin
+# excluirlo) y lo extraia pisando /opt/apps/s10bizsmarthub -- el codigo
+# desplegado terminaba siendo un calco byte-a-byte de lo que hubiera en el
+# disco local en ESE momento (comiteado o no), y el git del VPS quedaba
+# atado a cualquier estado (limpio o sucio) que tuviera la maquina local al
+# pushear, en vez de reflejar de forma confiable "lo que esta en GitHub".
+# Ahora el VPS tiene su propio clone real (deploy key de solo lectura
+# ~/.ssh/s10bizsmarthub_deploy, alias SSH `github-s10bizsmarthub`) y trae SU
+# PROPIA copia de `main` con git fetch + reset --hard, igual que el resto
+# del ecosistema -- inmune a que la maquina local tenga cambios sin
+# commitear. Ver lecciones/2026-07-14-vera-git-desactualizado-no-era-drift.
 log ""
-log "── Paso 3: Subiendo codigo al VPS ──"
-
-ssh $SSH_OPTS "$VPS" "mkdir -p $VPS_APP_DIR" 2>&1 | tee -a "$LOG_FILE"
-
-# Crear tarball excluyendo directorios pesados
-cd "$(dirname "$PROJECT")"
-tar \
-  --exclude='s10bizsmarthub/node_modules' \
-  --exclude='s10bizsmarthub/*/node_modules' \
-  --exclude='s10bizsmarthub/.next' \
-  --exclude='s10bizsmarthub/*/dist' \
-  --exclude='s10bizsmarthub/*.log' \
-  -czf /tmp/s10bizsmarthub_deploy.tar.gz \
-  s10bizsmarthub/ 2>&1 | tee -a "$LOG_FILE"
-
-log "  Archivo creado: $(du -sh /tmp/s10bizsmarthub_deploy.tar.gz | cut -f1)"
-
-scp $SSH_OPTS /tmp/s10bizsmarthub_deploy.tar.gz "$VPS:/tmp/" 2>&1 | tee -a "$LOG_FILE"
+log "── Paso 3: Sincronizando codigo en el VPS (git fetch + reset --hard origin/main) ──"
 
 ssh $SSH_OPTS "$VPS" "
-  cd /opt/apps
-  rm -rf s10bizsmarthub_old
-  [ -d s10bizsmarthub ] && mv s10bizsmarthub s10bizsmarthub_old
-  tar -xzf /tmp/s10bizsmarthub_deploy.tar.gz
-  rm /tmp/s10bizsmarthub_deploy.tar.gz
-  echo 'Extraccion OK'
+  set -e
+  cd $VPS_APP_DIR
+  git fetch origin main -q
+  git reset --hard origin/main
+  echo \"  HEAD=\$(git rev-parse --short HEAD)\"
 " 2>&1 | tee -a "$LOG_FILE"
 
-log "  ✓ Codigo en VPS"
+log "  ✓ Codigo en VPS sincronizado con GitHub"
 
 # ── 4. Configurar .env en VPS ─────────────────────────────
 log ""
@@ -157,10 +173,14 @@ ssh $SSH_OPTS "$VPS" "
 
 log "  ✓ sync-trigger service instalado"
 
-# ── 5. Actualizar docker-compose.prod.yml con password real ─
-ssh $SSH_OPTS "$VPS" "
-  sed -i 's/DB_PASSWORD:-s10biz2026/DB_PASSWORD:-7949413b5c1997927dd3b57c/g' $VPS_APP_DIR/docker-compose.prod.yml
-" 2>&1 | tee -a "$LOG_FILE"
+# ── 5. Password real de Postgres ──────────────────────────
+# ELIMINADO 2026-07-14: este paso hacia `sed -i` sobre docker-compose.prod.yml
+# (un archivo TRACKEADO por git) para hornear la clave real de Postgres,
+# reintroduciendo drift entre el VPS y GitHub cada vez que se corria (el
+# mismo problema de fondo que llevo a migrar esta app a git-fetch-based
+# deploy). La clave real ahora vive SOLO en $VPS_APP_DIR/.env (gitignored,
+# *.env), que Docker Compose ya usa para resolver ${DB_PASSWORD:-...} sin
+# tocar el yml. No revertir -- ver lecciones/2026-07-14-vera-git-desactualizado-no-era-drift.
 
 # ── 6. Docker network ─────────────────────────────────────
 log ""

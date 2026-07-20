@@ -61,6 +61,9 @@ export class DirectorioPptxService {
     const { empresa, quarter, year, qData, ytdData, pptoQ, pptoYTD, gav, cxc, caja, cajaPosicion, directorio } = ctx;
     const d = directorio || {};
     const qLabel = Q_LABELS[quarter] || quarter;
+    // El YTD del reporte llega recortado a ene..cierre del trimestre; el rótulo lo dice.
+    const ultimoMesQ = ({ Q1: 3, Q2: 6, Q3: 9, Q4: 12 } as Record<string, number>)[quarter] || 12;
+    const ytdLabel = `YTD ${year} (Ene – ${MES_NAMES[ultimoMesQ - 1]})`;
 
     const pres: any = new PptxGenJS();
     pres.author = 'S10 BizSmartHub';
@@ -195,7 +198,7 @@ export class DirectorioPptxService {
         });
       };
       renderTable(`${quarter} ${year} (${qLabel})`, qData, pq, hasPptoQ, 0.4);
-      renderTable(`YTD ${year}`, ytdData, py, hasPptoYTD, 6.85);
+      renderTable(ytdLabel, ytdData, py, hasPptoYTD, 6.85);
       addFooter(s);
     }
 
@@ -251,7 +254,7 @@ export class DirectorioPptxService {
     // ═══════════════════════════════════════
     if (gav?.categorias && gav.categorias.length > 0) {
       const s = pres.addSlide();
-      addTitle(s, '03', `ANÁLISIS DE GAV — YTD ${year}`);
+      addTitle(s, '03', `ANÁLISIS DE GAV — ${ytdLabel}`);
       const top = gav.categorias.slice(0, 15);
       const header = [
         { text: 'Cuenta', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 10 } },
@@ -346,7 +349,10 @@ export class DirectorioPptxService {
       });
 
       // Tabla aging por cliente
-      const sortedCli = [...cxc.clientes].sort((a, b) => (b.saldoTotal || 0) - (a.saldoTotal || 0)).slice(0, 9);
+      // El snapshot emite `saldoTotalSoles`; `saldoTotal` no existe y hacía que la
+      // columna TOTAL imprimiera 0 en todos los clientes.
+      const saldoCli = (c: any) => Number(c?.saldoTotalSoles ?? c?.saldoTotal ?? 0);
+      const sortedCli = [...cxc.clientes].sort((a, b) => saldoCli(b) - saldoCli(a)).slice(0, 9);
       const comentarios: Record<string, string> = d.cxcComentarios || {};
       const colHeaders = [
         { text: 'Cliente',    fill: NAVY,     w: 3.5 },
@@ -375,7 +381,7 @@ export class DirectorioPptxService {
           { text: (c.dias31_60 || 0) > 0 ? fmt(c.dias31_60) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: agingColor(c.dias31_60, YELLOW, ORANGE) } },
           { text: (c.dias61_90 || 0) > 0 ? fmt(c.dias61_90) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: agingColor(c.dias61_90, ORANGE, RED) } },
           { text: (c.dias90mas || 0) > 0 ? fmt(c.dias90mas) : '—', options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', color: (c.dias90mas || 0) > 0 ? RED : TEXT, bold: (c.dias90mas || 0) > 0 } },
-          { text: fmt(c.saldoTotal || 0), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', bold: true } },
+          { text: fmt(saldoCli(c)), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', bold: true } },
           { text: nota || '—', options: { fontSize: 8, color: SUBTLE, italic: !nota } },
         ];
       });

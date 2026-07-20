@@ -646,17 +646,42 @@ export class KpiController {
     // Calcular qData y ytdData del P&L mensual
     const plMonthly = (pl as any)?.plMonthly || [];
     const sumF = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0);
-    const qRows = plMonthly.filter((m: any) => qMeses.includes(m.mes));
-    const qData = {
-      ingresos: sumF(qRows, 'ingresos'),
-      costoDirecto: sumF(qRows, 'costoDirecto'),
-      margenBruto: sumF(qRows, 'margenBruto'),
-      gav: sumF(qRows, 'gav'),
-      ebitda: sumF(qRows, 'ebitda'),
-      gastosFinancieros: sumF(qRows, 'gastosFinancieros'),
-      utilidadNeta: sumF(qRows, 'utilidadNeta'),
-    };
-    const ytdData = (pl as any)?.ytd || qData;
+    const agg = (rows: any[]) => ({
+      ingresos: sumF(rows, 'ingresos'),
+      costoDirecto: sumF(rows, 'costoDirecto'),
+      margenBruto: sumF(rows, 'margenBruto'),
+      gav: sumF(rows, 'gav'),
+      ebitda: sumF(rows, 'ebitda'),
+      gastosFinancieros: sumF(rows, 'gastosFinancieros'),
+      utilidadNeta: sumF(rows, 'utilidadNeta'),
+    });
+    const qData = agg(plMonthly.filter((m: any) => qMeses.includes(m.mes)));
+
+    // El YTD del reporte es ene..último mes del trimestre reportado, NO el año
+    // completo del snapshot: `pl.ytd` acumula los 12 meses, así que un Directorio
+    // Q2 generado en julio traía ene–jul contaminando la columna YTD.
+    const ultimoMesQ = Math.max(...qMeses);
+    const ytdRows = plMonthly.filter((m: any) => m.mes <= ultimoMesQ);
+    const ytdData = ytdRows.length ? agg(ytdRows) : ((pl as any)?.ytd || qData);
+
+    // Mismo recorte para el detalle de GAV: el snapshot acumula el año completo,
+    // pero el slide debe mostrar ene..último mes del trimestre. Se recalcula desde
+    // `meses`; si un snapshot viejo no lo trae, se deja tal cual.
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+    const gavQ = (() => {
+      const cats: any[] = (gav as any)?.categorias || [];
+      if (!cats.length || !cats.some(c => c?.meses && Object.keys(c.meses).length)) return gav;
+      const recal = cats.map((c: any) => {
+        const meses = c.meses || {};
+        const ytd = Object.keys(meses).reduce(
+          (s, k) => (Number(k) <= ultimoMesQ ? s + (Number(meses[k]) || 0) : s), 0);
+        return { ...c, ytd: r2(ytd) };
+      });
+      const total = recal.reduce((s, c) => s + c.ytd, 0);
+      recal.forEach(c => { c.pct = total ? r2((c.ytd / total) * 100) : 0; });
+      recal.sort((a, b) => b.ytd - a.ytd);
+      return { ...(gav as any), categorias: recal, total: r2(total) };
+    })();
 
     const buf = await this.pptxService.generate({
       empresa: company?.name || companyId,
@@ -666,7 +691,7 @@ export class KpiController {
       ytdData,
       pptoQ: (directorio as any)?.data?.presupuesto?.q || {},
       pptoYTD: (directorio as any)?.data?.presupuesto?.ytd || {},
-      gav,
+      gav: gavQ,
       cxc,
       caja,
       cajaPosicion,

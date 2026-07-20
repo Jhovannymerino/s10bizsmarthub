@@ -333,6 +333,33 @@ if [ "$ok" != 'true' ]; then
   exit 1
 fi
 
+# ── 11. Verificar el PROCESO DE SINCRONIZACIÓN ────────────
+# El Paso 3 reemplaza $VPS_APP_DIR (mv + tar), lo que BORRA del root sync-trigger.js,
+# sync-vpn.sh y s10-agent/node_modules; el Paso 4b los restaura. Si el deploy se corta
+# entre medio (timeout, Ctrl-C), el sync queda ROTO EN SILENCIO: el cron falla porque
+# sync-vpn.sh no existe, el servicio entra en crash-loop, y los DATOS SE CONGELAN sin
+# que el sitio muestre nada raro. Caso real: 6 días sin sincronizar y nadie se enteró.
+# Un deploy no está bien hasta que el sync también lo está.
+log ""
+log "── Paso 10: Verificando el proceso de sincronización ──"
+SYNC_CHK=$(ssh $SSH_OPTS "$VPS" "
+  miss=''
+  [ -f $VPS_APP_DIR/sync-trigger.js ]        || miss=\"\$miss sync-trigger.js\"
+  [ -x $VPS_APP_DIR/sync-vpn.sh ]            || miss=\"\$miss sync-vpn.sh(ejecutable)\"
+  [ -d $VPS_APP_DIR/s10-agent/node_modules ] || miss=\"\$miss s10-agent/node_modules\"
+  systemctl is-active --quiet s10-sync-trigger || miss=\"\$miss servicio-s10-sync-trigger\"
+  [ -z \"\$miss\" ] && echo SYNC_OK || echo \"SYNC_ROTO:\$miss\"
+" 2>&1 | tail -1)
+
+if ! printf '%s' "$SYNC_CHK" | grep -q 'SYNC_OK'; then
+  log "ERROR: el proceso de sincronización quedó incompleto -> $SYNC_CHK"
+  log "  OJO: el sitio puede verse bien, pero los DATOS dejarán de actualizarse."
+  log "  Arreglo: cp \$VPS_APP_DIR/vps-infra/{sync-trigger.js,sync-vpn.sh} al root,"
+  log "           npm install --omit=dev en s10-agent, y systemctl restart s10-sync-trigger."
+  exit 1
+fi
+log "  ✓ sync-trigger.js, sync-vpn.sh, node_modules y servicio activos"
+
 log ""
 log "╔══════════════════════════════════════════════════════╗"
 log "║   ✓ DEPLOY COMPLETADO — $(date '+%H:%M:%S')                   ║"

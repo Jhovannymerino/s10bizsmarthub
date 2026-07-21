@@ -169,7 +169,7 @@ ssh $SSH_OPTS "$VPS" "
   systemctl restart s10-sync-trigger
   sleep 2
   systemctl is-active s10-sync-trigger && echo '✓ s10-sync-trigger activo' || echo '✗ fallo al iniciar'
-" 2>&1 | tee -a "\$LOG_FILE"
+" 2>&1 | tee -a "$LOG_FILE"
 
 log "  ✓ sync-trigger service instalado"
 

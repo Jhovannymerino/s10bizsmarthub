@@ -24,3 +24,6 @@ s10-agent/vpn-sync/
 /sync-vpn.sh
 /sync-trigger.js
 frontend/tsconfig.tsbuildinfo
+
+# artefacto de un bug del deploy (tee -a "\$LOG_FILE")
+$LOG_FILE

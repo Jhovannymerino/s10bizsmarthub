@@ -141,24 +141,36 @@ export class DirectorioPptxService {
     {
       const s = pres.addSlide();
       addTitle(s, '01', `RESUMEN EJECUTIVO ${quarter} ${year}`);
+      // La depreciación va como línea propia DEBAJO del EBITDA (el GAV ya llega sin
+      // ella) y lo financiero en una sola línea neta, de modo que los renglones
+      // visibles sumen exactamente la utilidad neta.
       const rows = [
         ['ingresos', 'Ingresos'],
         ['costoDirecto', '(−) Costo Directo (COGS)'],
         ['margenBruto', 'Margen Bruto'],
         ['gav', '(−) GAV'],
         ['ebitda', 'EBITDA'],
-        ['gastosFinancieros', '(−) Gastos Financieros'],
+        ['depreciacion', '(−) Depreciación'],
+        ['finNeto', 'Ingresos / Gastos Financieros (neto)'],
         ['utilidadNeta', 'Utilidad Neta'],
       ];
-      const buildPpto = (raw: any) => ({
-        ingresos: raw?.ingresos || 0,
-        costoDirecto: raw?.costoDirecto || 0,
-        margenBruto: (raw?.ingresos || 0) - Math.abs(raw?.costoDirecto || 0),
-        gav: raw?.gav || 0,
-        ebitda: (raw?.ingresos || 0) - Math.abs(raw?.costoDirecto || 0) - Math.abs(raw?.gav || 0),
-        gastosFinancieros: raw?.gastosFinancieros || 0,
-        utilidadNeta: (raw?.ingresos || 0) - Math.abs(raw?.costoDirecto || 0) - Math.abs(raw?.gav || 0) - Math.abs(raw?.da || 0),
-      });
+      const buildPpto = (raw: any) => {
+        const ing = raw?.ingresos || 0;
+        const cos = Math.abs(raw?.costoDirecto || 0);
+        const g = Math.abs(raw?.gav || 0);
+        const da = Math.abs(raw?.da || 0);
+        const gf = Math.abs(raw?.gastosFinancieros || 0);
+        return {
+          ingresos: ing,
+          costoDirecto: raw?.costoDirecto || 0,
+          margenBruto: ing - cos,
+          gav: g,
+          ebitda: ing - cos - g,
+          depreciacion: da,
+          finNeto: -gf,
+          utilidadNeta: ing - cos - g - da - gf,
+        };
+      };
       const pq = buildPpto(pptoQ);
       const py = buildPpto(pptoYTD);
       const hasPptoQ = Math.abs(pq.ingresos) + Math.abs(pq.gav) > 1;
@@ -207,13 +219,15 @@ export class DirectorioPptxService {
     // ═══════════════════════════════════════
     {
       const s = pres.addSlide();
-      addTitle(s, '02', 'INDICADORES CLAVE — Umbrales del Directorio');
-      const qGMpct = safePct(qData?.margenBruto || 0, qData?.ingresos || 0);
-      const qCOGSpct = safePct(Math.abs(qData?.costoDirecto || 0), qData?.ingresos || 0);
-      const qGAVpct = safePct(Math.abs(qData?.gav || 0), qData?.ingresos || 0);
-      const qEBITDApct = safePct(qData?.ebitda || 0, qData?.ingresos || 0);
-      const qDSO = cxc?.totalSaldo && (qData?.ingresos || 0) > 0
-        ? Math.round((cxc.totalSaldo / qData.ingresos) * 90) : null;
+      // Los indicadores se leen sobre el ACUMULADO del año hasta el cierre del
+      // trimestre (definición del Directorio), no sobre el trimestre aislado.
+      addTitle(s, '02', `INDICADORES CLAVE — ${ytdLabel}`);
+      const qGMpct = safePct(ytdData?.margenBruto || 0, ytdData?.ingresos || 0);
+      const qCOGSpct = safePct(Math.abs(ytdData?.costoDirecto || 0), ytdData?.ingresos || 0);
+      const qGAVpct = safePct(Math.abs(ytdData?.gav || 0), ytdData?.ingresos || 0);
+      const qEBITDApct = safePct(ytdData?.ebitda || 0, ytdData?.ingresos || 0);
+      const qDSO = cxc?.totalSaldo && (ytdData?.ingresos || 0) > 0
+        ? Math.round((cxc.totalSaldo / ytdData.ingresos) * (ultimoMesQ * 30)) : null;
 
       const semaforo = (value: number, target: number, alert: number, betterHigher: boolean) => {
         const ok = betterHigher ? value >= target : value <= target;

@@ -646,6 +646,7 @@ export class KpiController {
     // Calcular qData y ytdData del P&L mensual
     const plMonthly = (pl as any)?.plMonthly || [];
     const sumF = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0);
+    const r2 = (n: number) => Math.round(n * 100) / 100;
     const agg = (rows: any[]) => ({
       ingresos: sumF(rows, 'ingresos'),
       costoDirecto: sumF(rows, 'costoDirecto'),
@@ -654,20 +655,53 @@ export class KpiController {
       ebitda: sumF(rows, 'ebitda'),
       gastosFinancieros: sumF(rows, 'gastosFinancieros'),
       utilidadNeta: sumF(rows, 'utilidadNeta'),
+      otrosIngresos: sumF(rows, 'otrosIngresos'),
+      ingresosFinancieros: sumF(rows, 'ingresosFinancieros'),
+      diferenciaCambio: sumF(rows, 'diferenciaCambio'),
     });
-    const qData = agg(plMonthly.filter((m: any) => qMeses.includes(m.mes)));
+
+    // La depreciación se contabiliza DENTRO del GAV (cuentas de destino 94x/95x
+    // "Prov. para Deprec."). El Directorio la pide como línea propia debajo del
+    // EBITDA, así que se descuenta del GAV para no contarla dos veces y el EBITDA
+    // pasa a ser "antes de depreciación". La utilidad neta no cambia.
+    const ES_DEPREC = /deprec|amortiz/i;
+    const ctasDeprec: any[] = ((pl as any)?.detalle?.gav || [])
+      .filter((c: any) => ES_DEPREC.test(String(c?.descripcion || '')));
+    const depreciacion = (desdeMes: number, hastaMes: number) => r2(
+      ctasDeprec.reduce((s, c) => {
+        const meses = c?.meses || {};
+        return s + Object.keys(meses).reduce((a, k) => {
+          const m = Number(k);
+          return m >= desdeMes && m <= hastaMes ? a + (Number(meses[k]) || 0) : a;
+        }, 0);
+      }, 0));
+
+    // Ingresos financieros − gastos financieros ± diferencia de cambio, en una sola
+    // línea neta: así los renglones visibles suman exactamente la utilidad neta.
+    const presentar = (base: any, deprec: number) => ({
+      ...base,
+      gav: r2(base.gav - deprec),
+      ebitda: r2(base.ebitda + deprec),
+      depreciacion: deprec,
+      finNeto: r2(base.otrosIngresos + base.ingresosFinancieros
+        + base.diferenciaCambio - base.gastosFinancieros),
+    });
 
     // El YTD del reporte es ene..último mes del trimestre reportado, NO el año
     // completo del snapshot: `pl.ytd` acumula los 12 meses, así que un Directorio
     // Q2 generado en julio traía ene–jul contaminando la columna YTD.
     const ultimoMesQ = Math.max(...qMeses);
+    const qData = presentar(
+      agg(plMonthly.filter((m: any) => qMeses.includes(m.mes))),
+      depreciacion(Math.min(...qMeses), ultimoMesQ));
     const ytdRows = plMonthly.filter((m: any) => m.mes <= ultimoMesQ);
-    const ytdData = ytdRows.length ? agg(ytdRows) : ((pl as any)?.ytd || qData);
+    const ytdData = ytdRows.length
+      ? presentar(agg(ytdRows), depreciacion(1, ultimoMesQ))
+      : ((pl as any)?.ytd || qData);
 
     // Mismo recorte para el detalle de GAV: el snapshot acumula el año completo,
     // pero el slide debe mostrar ene..último mes del trimestre. Se recalcula desde
     // `meses`; si un snapshot viejo no lo trae, se deja tal cual.
-    const r2 = (n: number) => Math.round(n * 100) / 100;
     const gavQ = (() => {
       const cats: any[] = (gav as any)?.categorias || [];
       if (!cats.length || !cats.some(c => c?.meses && Object.keys(c.meses).length)) return gav;

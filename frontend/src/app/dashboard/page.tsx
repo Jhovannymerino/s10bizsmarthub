@@ -2255,13 +2255,16 @@ export default function DashboardPage() {
         {activeTab === 'cxc' && cxc && (() => {
           const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
           const hasUSD = (cxc.totalSaldoUSD ?? 0) > 0;
+          const hasPorEmitir = (cxc.totalPorEmitir ?? 0) > 0;
           const filtered = cxcFiltered;
           const sumCol = (col: string) => filtered.reduce((s: number, c: any) => s + (c[col] ?? 0), 0);
+          const totalRef = cxc.totalSaldo || sumCol('saldoConEmitir') || sumCol('saldoTotalSoles');
           return (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 {(cxc.totalSaldoPEN ?? 0) > 0 && <KpiCard label="Cartera S/ PEN" value={fmt(cxc.totalSaldoPEN)} signal="neutral" sub="Saldo pendiente de cobro en soles" hint="Facturas emitidas aún no cobradas, moneda soles" />}
                 {hasUSD && <KpiCard label="Cartera $ USD" value={fUSD(cxc.totalSaldoUSD)} signal="neutral" sub="Saldo pendiente de cobro en dólares" hint="Facturas emitidas aún no cobradas, moneda USD" />}
+                {hasPorEmitir && <KpiCard label="Facturas por Emitir" value={fmt(cxc.totalPorEmitir)} signal="neutral" sub="Provisión — cuenta 1211" hint="Receivable ya devengado pero sin comprobante emitido (provisión de facturas por emitir, cuenta contable 1211). No tiene vencimiento, por eso no aparece en el aging; se incluye para que el total cuadre con la cuenta 12 del balance." />}
                 {dso !== null && (
                   <KpiCard label="DSO (Días de Cobro)" value={fmtDays(dso)} sub="Equiv. soles / (Ingresos / 365)" signal={semaforo('dso', dso)} hint="Days Sales Outstanding — cuántos días tarda en promedio cobrar una venta. <45d bueno, >60d alerta" />
                 )}
@@ -2289,12 +2292,13 @@ export default function DashboardPage() {
                     {cxcAnulados ? '● ' : ''}Anulados por NC{cxcAnulados && cxc.anuladosNC != null ? ` (${cxc.anuladosNC})` : ''}
                   </button>
                   <ExportBtn onClick={() => {
-                    const headers = ['Cliente', 'S/ PEN', '$ USD', 'Vigente S/', '0-30 días', '31-60 días', '61-90 días', '+90 días', 'Total equiv S/', '% Cartera'];
+                    const headers = ['Cliente', 'S/ PEN', '$ USD', 'Vigente S/', '0-30 días', '31-60 días', '61-90 días', '+90 días', ...(hasPorEmitir ? ['Por emitir S/'] : []), 'Total equiv S/', '% Cartera'];
                     const rows = filtered.map((c: any) => [
                       c.cliente, c.saldoPEN, c.saldoUSD, c.saldoVigente,
                       c.dias0_30, c.dias31_60, c.dias61_90, c.dias90mas,
-                      c.saldoTotalSoles,
-                      cxc.totalSaldo > 0 ? ((c.saldoTotalSoles / cxc.totalSaldo) * 100).toFixed(1) + '%' : '—',
+                      ...(hasPorEmitir ? [c.porEmitir ?? 0] : []),
+                      c.saldoConEmitir ?? c.saldoTotalSoles,
+                      totalRef > 0 ? (((c.saldoConEmitir ?? c.saldoTotalSoles) / totalRef) * 100).toFixed(1) + '%' : '—',
                     ]);
                     exportCSV(`CxC_${selectedCompany.shortName}.csv`, headers, rows);
                   }} />
@@ -2312,7 +2316,8 @@ export default function DashboardPage() {
                         <SortTh label="31-60 días" col="dias31_60" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                         <SortTh label="61-90 días" col="dias61_90" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                         <SortTh label="+90 días" col="dias90mas" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
-                        <SortTh label="Total S/" col="saldoTotalSoles" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
+                        {hasPorEmitir && <SortTh label="Por emitir S/" col="porEmitir" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />}
+                        <SortTh label="Total S/" col="saldoConEmitir" sort={cxcSort} onSort={c => setCxcSort(toggleSort(cxcSort, c))} />
                         <th>% Cartera</th>
                       </tr>
                     </thead>
@@ -2343,9 +2348,10 @@ export default function DashboardPage() {
                           <td>{fmt(c.dias31_60)}</td>
                           <td>{fmt(c.dias61_90)}</td>
                           <td className={c.dias90mas > 0 ? 'negative' : ''}>{fmt(c.dias90mas)}</td>
-                          <td style={{ fontWeight: 600 }}>{fmt(c.saldoTotalSoles)}</td>
+                          {hasPorEmitir && <td style={{ color: (c.porEmitir ?? 0) > 0 ? '#A78BFA' : '#4B5563' }}>{(c.porEmitir ?? 0) > 0 ? fmt(c.porEmitir) : '—'}</td>}
+                          <td style={{ fontWeight: 600 }}>{fmt(c.saldoConEmitir ?? c.saldoTotalSoles)}</td>
                           <td style={{ color: '#8B97A8' }}>
-                            {cxc.totalSaldo > 0 ? pct((c.saldoTotalSoles / cxc.totalSaldo) * 100) : '—'}
+                            {totalRef > 0 ? pct(((c.saldoConEmitir ?? c.saldoTotalSoles) / totalRef) * 100) : '—'}
                           </td>
                         </tr>
                       ))}
@@ -2360,13 +2366,60 @@ export default function DashboardPage() {
                         <td>{fmt(sumCol('dias31_60'))}</td>
                         <td>{fmt(sumCol('dias61_90'))}</td>
                         <td className="negative">{fmt(sumCol('dias90mas'))}</td>
-                        <td>{fmt(sumCol('saldoTotalSoles'))}</td>
+                        {hasPorEmitir && <td>{fmt(sumCol('porEmitir'))}</td>}
+                        <td>{fmt(sumCol('saldoConEmitir'))}</td>
                         <td>100%</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
               </div>
+
+              {/* ── Reconciliación con el balance (cuenta 12) ── */}
+              {(hasPorEmitir || (cxc.totalVinculados ?? 0) > 0) && (
+                <div className="kpi-card" style={{ marginTop: '1rem', fontSize: '0.8rem' }}>
+                  <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.6rem' }}>Reconciliación con el balance — cuenta 12 (Comerciales · Terceros)</div>
+                  <table className="table-s10" style={{ maxWidth: 540 }}>
+                    <tbody>
+                      <tr><td style={{ color: '#8B97A8' }}>Facturas emitidas en cartera (documentos)</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{fmt(cxc.totalEmitidas ?? 0)}</td></tr>
+                      {hasPorEmitir && <tr><td style={{ color: '#8B97A8' }}>(+) Facturas por emitir · provisión (cta. 1211)</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#A78BFA' }}>{fmt(cxc.totalPorEmitir)}</td></tr>}
+                      <tr className="total-row"><td>= CxC comercial terceros (≈ cuenta 121)</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmt(cxc.totalSaldo ?? 0)}</td></tr>
+                      {(cxc.totalVinculados ?? 0) > 0 && <tr><td style={{ color: '#8B97A8' }}>Cartera intercompañía (grupo) — segregada, va aparte</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#5B86E5' }}>{fmt(cxc.totalVinculados)}</td></tr>}
+                    </tbody>
+                  </table>
+                  <div style={{ color: '#8B97A8', fontSize: '0.7rem', marginTop: '0.5rem', lineHeight: 1.5 }}>
+                    La cartera de arriba concilia con la cuenta 121 del balance de comprobación. Las <b>facturas por emitir</b> son provisiones ya devengadas sin comprobante (no envejecen). Las empresas del grupo (CxC intercompañía) se muestran aparte porque la cuenta 12 es de <b>terceros</b>; su saldo real suele vivir como préstamo intercompañía (cta. 1612), no como CxC comercial. Diferencias menores = tipo de cambio/timing en clientes en dólares.
+                  </div>
+                </div>
+              )}
+
+              {/* ── Cartera Intercompañía (empresas del grupo, segregadas del comercial) ── */}
+              {(cxc.clientesVinculados?.length ?? 0) > 0 && (
+                <div className="kpi-card" style={{ marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Cartera Intercompañía (empresas del grupo) <span style={{ fontSize: '0.7rem', color: '#5B86E5', fontWeight: 600 }}>· {cxc.numVinculados} · fuera del CxC comercial</span></div>
+                    <div style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#5B86E5' }}>{fmt(cxc.totalVinculados ?? 0)}</div>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="table-s10">
+                      <thead><tr><th>Cliente (grupo)</th><th style={{ textAlign: 'right' }}>Vigente S/</th><th style={{ textAlign: 'right' }}>+90 días</th>{hasPorEmitir && <th style={{ textAlign: 'right' }}>Por emitir S/</th>}<th style={{ textAlign: 'right' }}>Total S/</th></tr></thead>
+                      <tbody>
+                        {cxc.clientesVinculados.map((c: any, i: number) => (
+                          <tr key={`vin-${c.codCliente}-${i}`} data-clickable="1"
+                            onClick={() => setCxCTxDrill({ cliente: c.cliente, codCliente: String(c.codCliente) })}
+                            title="Ver documentos — cartera intercompañía">
+                            <td style={{ color: '#5B86E5' }}>{c.cliente} <span style={{ fontSize: '0.65rem' }}>▶</span></td>
+                            <td style={{ textAlign: 'right' }}>{fmt(c.saldoVigente)}</td>
+                            <td style={{ textAlign: 'right' }} className={c.dias90mas > 0 ? 'negative' : ''}>{fmt(c.dias90mas)}</td>
+                            {hasPorEmitir && <td style={{ textAlign: 'right', color: (c.porEmitir ?? 0) > 0 ? '#A78BFA' : '#4B5563' }}>{(c.porEmitir ?? 0) > 0 ? fmt(c.porEmitir) : '—'}</td>}
+                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(c.saldoConEmitir ?? c.saldoTotalSoles)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* ── Cartera Especial (Estado 6 / Vinculadas) ── */}
               {cxcVinculadas && (cxcVinculadas.numDocs ?? 0) > 0 && (() => {

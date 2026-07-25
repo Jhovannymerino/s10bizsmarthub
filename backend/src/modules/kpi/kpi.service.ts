@@ -418,8 +418,105 @@ export class KpiService {
       return { message: 'No data available. Run sync first.' };
     }
 
+    data = await this.enrichCxCReconciliacion(companyId, data);
     if (incluirAnulados) data = await this.augmentCxCAnulados(companyId, data);
     return data;
+  }
+
+  // Reconcilia la cartera de DOCUMENTOS (lo que devuelve el aging) con el saldo contable
+  // de la cuenta 12 (lo que ve la contadora en el balance de comprobación). Dos ajustes,
+  // ambos derivados del Mayor (LedgerEntry) sin resync:
+  //  (1) "Facturas por emitir" = provisión de la cuenta 1211 (receivable ya devengado pero
+  //      SIN comprobante, por eso no aparece en un aging de documentos), sumada por RUC.
+  //  (2) segrega las empresas del grupo (CxC intercompañía) fuera del CxC comercial: la
+  //      cuenta 12 de S10 es "TERCEROS" y excluye relacionadas (p.ej. CMO GROUP, cuyo saldo
+  //      real vive como préstamo intercompañía en la cuenta 1612, no en el 12).
+  // Con esto `totalSaldo` ata a la cuenta 121 del balance (± dif. de cambio en clientes USD).
+  private async enrichCxCReconciliacion(companyId: string, data: any) {
+    if (!data?.clientes) return data;
+
+    // Empresas del grupo, para segregar intercompañía (se excluye la propia empresa).
+    const grupo = await this.prisma.company.findMany({ select: { codEmpresa: true } });
+    const grupoRuc = new Set(
+      grupo.map((g) => String(g.codEmpresa)).filter((r) => r !== String(companyId)),
+    );
+
+    // Provisión "facturas por emitir" (cuenta 1211): saldo contable acumulado por tercero.
+    const emitirRows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT "codTercero" AS ruc, SUM("debito" - "credito")::float8 AS por_emitir
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND LEFT("codCuenta", 4) = '1211'
+        GROUP BY "codTercero"`,
+      companyId,
+    );
+    const porEmitirMap = new Map<string, number>();
+    for (const r of emitirRows) {
+      if (r.ruc == null) continue;
+      porEmitirMap.set(String(r.ruc), round(Number(r.por_emitir) || 0));
+    }
+
+    const terceros: any[] = [];
+    const vinculados: any[] = [];
+    for (const c of data.clientes) {
+      const ruc = String(c.codCliente);
+      const esVinculada = grupoRuc.has(ruc);
+      const porEmitir = porEmitirMap.get(ruc) || 0;
+      porEmitirMap.delete(ruc); // consumido: no volver a agregarlo como fila sintética
+      const enriched = {
+        ...c,
+        esVinculada,
+        porEmitir,
+        saldoConEmitir: round((c.saldoTotalSoles || 0) + porEmitir),
+      };
+      (esVinculada ? vinculados : terceros).push(enriched);
+    }
+
+    // Terceros con provisión (1211) pero SIN documento emitido en cartera: fila sintética,
+    // así el total ata al balance aunque no exista aún un comprobante que envejecer.
+    for (const [ruc, porEmitir] of porEmitirMap) {
+      if (grupoRuc.has(ruc) || Math.abs(porEmitir) < 0.01) continue;
+      terceros.push({
+        codCliente: ruc, cliente: `(Por emitir) ${ruc}`,
+        saldoPEN: 0, saldoUSD: 0, tipoCambioUSD: TC_USD_FALLBACK,
+        saldoTotalSoles: 0, saldoVigente: 0, dias0_30: 0, dias31_60: 0, dias61_90: 0, dias90mas: 0,
+        esVinculada: false, porEmitir, saldoConEmitir: porEmitir, soloPorEmitir: true,
+      });
+    }
+
+    terceros.sort((a, b) => b.saldoConEmitir - a.saldoConEmitir);
+    vinculados.sort((a, b) => b.saldoConEmitir - a.saldoConEmitir);
+
+    const sum = (arr: any[], f: string) => round(arr.reduce((s, x) => s + (x[f] || 0), 0));
+    const totalEmitidas  = sum(terceros, 'saldoTotalSoles');
+    const totalPorEmitir = sum(terceros, 'porEmitir');
+    const totalSaldo     = round(totalEmitidas + totalPorEmitir);
+    const total90mas     = sum(terceros, 'dias90mas');
+    const top3 = terceros.slice(0, 3).reduce((s, c) => s + (c.saldoConEmitir || 0), 0);
+    const totalVinculados = round(sum(vinculados, 'saldoTotalSoles') + sum(vinculados, 'porEmitir'));
+
+    return {
+      ...data,
+      clientes: terceros,
+      clientesVinculados: vinculados,
+      totalEmitidas,
+      totalPorEmitir,
+      totalSaldo,
+      totalVigente:  sum(terceros, 'saldoVigente'),
+      total90mas,
+      totalSaldoPEN: sum(terceros, 'saldoPEN'),
+      totalSaldoUSD: sum(terceros, 'saldoUSD'),
+      pct90mas: totalSaldo > 0 ? round((total90mas / totalSaldo) * 100) : 0,
+      concentracionTop3: totalSaldo > 0 ? round((top3 / totalSaldo) * 100) : 0,
+      numClientes: terceros.filter((c) => !c.soloPorEmitir).length,
+      totalVinculados,
+      numVinculados: vinculados.length,
+      reconciliacion: {
+        emitidas: totalEmitidas,
+        porEmitir: totalPorEmitir,
+        totalTerceros: totalSaldo,
+        vinculados: totalVinculados,
+      },
+    };
   }
 
   // Agrega a la cartera los clientes ANULADOS POR NC (neto ≈ 0 con notas de crédito) que

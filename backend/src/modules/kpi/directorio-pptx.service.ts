@@ -400,6 +400,20 @@ export class DirectorioPptxService {
         ];
       });
 
+      // Fila "Facturas por emitir" (provisión cta. 1211, sin vencimiento) — para que la
+      // columna TOTAL reconcilie con la cuenta 121 del balance. Solo la última columna.
+      const porEmitir = Number(cxc.totalPorEmitir || 0);
+      const emitirRow = porEmitir > 0.5 ? [
+        { text: 'Facturas por emitir (provisión)', options: { fontSize: 9, italic: true, color: SUBTLE } },
+        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
+        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
+        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
+        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
+        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
+        { text: fmt(porEmitir), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', bold: true, color: '7C3AED' } },
+        { text: 'Sin comprobante', options: { fontSize: 8, color: SUBTLE, italic: true } },
+      ] : null;
+
       // Fila TOTAL
       const totalRow = [
         { text: 'TOTAL', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9 } },
@@ -412,7 +426,7 @@ export class DirectorioPptxService {
         { text: '', options: { fill: { color: NAVY } } },
       ];
 
-      s.addTable([header, ...rows, totalRow as any], {
+      s.addTable([header, ...rows, ...(emitirRow ? [emitirRow as any] : []), totalRow as any], {
         x: 0.4, y: 2.6, w: 12.5,
         colW,
         rowH: 0.315,
@@ -420,9 +434,12 @@ export class DirectorioPptxService {
         border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
       });
 
-      if (cxc.clientes.length > 9) {
-        s.addText(`Top 9 de ${cxc.clientes.length} clientes · Aging por FechaVencimiento del documento`, { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
-      }
+      const notaVinc = Number(cxc.totalVinculados || 0) > 0
+        ? ` · Cartera intercompañía (grupo) S/ ${fmt(cxc.totalVinculados)} segregada aparte`
+        : '';
+      s.addText(
+        `${cxc.clientes.length > 9 ? `Top 9 de ${cxc.clientes.length} clientes · ` : ''}Aging por FechaVencimiento · TOTAL reconcilia con la cuenta 121 del balance (emitidas + provisión por emitir)${notaVinc}`,
+        { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
       addFooter(s, '07');
     }
 

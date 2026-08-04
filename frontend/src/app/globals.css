@@ -66,6 +66,30 @@
   --form-label-color:   #6B7280;
 }
 
+/* ── MODALES DE DETALLE — fondo oscuro fijo (#0D1A2D) en AMBOS temas ──
+   Los diálogos ([role="dialog"]) siempre tienen fondo oscuro. En MODO CLARO las variables
+   de tema se vuelven claras y el contenido (texto, cabeceras, filas de tabla) queda
+   invisible sobre el fondo oscuro (solo se ve al sombrear). Al re-declarar las variables
+   OSCURAS en el propio div del modal, todo su contenido las hereda y se ve bien en ambos
+   temas — sin depender de dónde esté la clase .light ni de portales. */
+[role="dialog"] {
+  --text-primary:     #F8FAFC;
+  --text-muted:       #8B97A8;
+  --border:           rgba(255,255,255,0.06);
+  --surface-hover:    rgba(255,255,255,0.05);
+  --surface-hover-2:  rgba(255,255,255,0.09);
+  --surface-active:   rgba(255,255,255,0.07);
+  --th-bg:            rgba(255,255,255,0.06);
+  --th-color:         #A8B5C5;
+  --th-border-b:      rgba(255,255,255,0.10);
+  --th-border-t:      rgba(255,255,255,0.06);
+  --td-border:        rgba(255,255,255,0.04);
+  --row-alt:          rgba(255,255,255,0.018);
+  --row-hover-teal:   rgba(43,180,187,0.07);
+  --row-hover-teal-2: rgba(43,180,187,0.10);
+  --total-row-bg:     rgba(32,126,131,0.10);
+}
+
 /* ── LIGHT MODE — Premium cool blue-corporate ── */
 .light {
   /* Backgrounds — 3-level elevation system */

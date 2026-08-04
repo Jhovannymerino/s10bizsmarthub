@@ -441,63 +441,88 @@ export class KpiService {
       grupo.map((g) => String(g.codEmpresa)).filter((r) => r !== String(companyId)),
     );
 
-    // Provisión "facturas por emitir" (cuenta 1211): saldo contable acumulado por tercero.
-    const emitirRows = await this.prisma.$queryRawUnsafe<any[]>(
-      `SELECT "codTercero" AS ruc, SUM("debito" - "credito")::float8 AS por_emitir
+    // Saldo CONTABLE de la clase 12 por tercero desde el Mayor (lo que ve la contadora en el
+    // balance). 1212 = facturas emitidas en cartera; 1211 = facturas por emitir (provisión sin
+    // comprobante). El aging de documentos (`vw_12DocumentosPorCobrar`) puede diferir del mayor
+    // a nivel de documento (detracciones ya depositadas, timing) — caso STILER 2026-08: mayor
+    // 1,180,000 vs aging 972,320. El mayor es la verdad; se muestran AMBOS.
+    const ledgerRows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT "codTercero" AS ruc, LEFT("codCuenta", 4) AS sub,
+              SUM("debito" - "credito")::float8 AS saldo
          FROM "LedgerEntry"
-        WHERE "companyId" = $1 AND LEFT("codCuenta", 4) = '1211'
-        GROUP BY "codTercero"`,
+        WHERE "companyId" = $1 AND LEFT("codCuenta", 2) = '12'
+        GROUP BY "codTercero", LEFT("codCuenta", 4)`,
       companyId,
     );
-    const porEmitirMap = new Map<string, number>();
-    for (const r of emitirRows) {
+    const ledgerMap = new Map<string, { emitidas: number; porEmitir: number }>();
+    for (const r of ledgerRows) {
       if (r.ruc == null) continue;
-      porEmitirMap.set(String(r.ruc), round(Number(r.por_emitir) || 0));
+      const ruc = String(r.ruc);
+      const e = ledgerMap.get(ruc) || { emitidas: 0, porEmitir: 0 };
+      if (r.sub === '1212') e.emitidas = round(e.emitidas + (Number(r.saldo) || 0));
+      else if (r.sub === '1211') e.porEmitir = round(e.porEmitir + (Number(r.saldo) || 0));
+      ledgerMap.set(ruc, e);
     }
+    const saldoLedgerDe = (ruc: string) => {
+      const l = ledgerMap.get(ruc);
+      return l ? round(l.emitidas + l.porEmitir) : 0; // = cuenta 121 del tercero
+    };
 
     const terceros: any[] = [];
     const vinculados: any[] = [];
+    const vistos = new Set<string>();
     for (const c of data.clientes) {
       const ruc = String(c.codCliente);
+      vistos.add(ruc);
       const esVinculada = grupoRuc.has(ruc);
-      const porEmitir = porEmitirMap.get(ruc) || 0;
-      porEmitirMap.delete(ruc); // consumido: no volver a agregarlo como fila sintética
+      const l = ledgerMap.get(ruc) || { emitidas: 0, porEmitir: 0 };
+      const saldoDocs = round(c.saldoTotalSoles || 0);
+      const saldoLedger = round(l.emitidas + l.porEmitir);
       const enriched = {
         ...c,
         esVinculada,
-        porEmitir,
-        saldoConEmitir: round((c.saldoTotalSoles || 0) + porEmitir),
+        porEmitir: l.porEmitir,
+        saldoDocs,
+        saldoLedger,
+        saldoConEmitir: saldoLedger, // alias retro-compat
+        diferencia: round(saldoLedger - saldoDocs),
       };
       (esVinculada ? vinculados : terceros).push(enriched);
     }
 
-    // Terceros con provisión (1211) pero SIN documento emitido en cartera: fila sintética,
-    // así el total ata al balance aunque no exista aún un comprobante que envejecer.
-    for (const [ruc, porEmitir] of porEmitirMap) {
-      if (grupoRuc.has(ruc) || Math.abs(porEmitir) < 0.01) continue;
-      terceros.push({
-        codCliente: ruc, cliente: `(Por emitir) ${ruc}`,
+    // Terceros con saldo contable (mayor) pero SIN fila en el aging de documentos: se agregan
+    // para que el total ate al balance aunque no exista un comprobante que envejecer.
+    for (const [ruc, l] of ledgerMap) {
+      if (vistos.has(ruc)) continue;
+      const saldoLedger = round(l.emitidas + l.porEmitir);
+      if (Math.abs(saldoLedger) < 0.01) continue;
+      (grupoRuc.has(ruc) ? vinculados : terceros).push({
+        codCliente: ruc, cliente: `(Solo contable) ${ruc}`,
         saldoPEN: 0, saldoUSD: 0, tipoCambioUSD: TC_USD_FALLBACK,
         saldoTotalSoles: 0, saldoVigente: 0, dias0_30: 0, dias31_60: 0, dias61_90: 0, dias90mas: 0,
-        esVinculada: false, porEmitir, saldoConEmitir: porEmitir, soloPorEmitir: true,
+        esVinculada: grupoRuc.has(ruc), porEmitir: l.porEmitir,
+        saldoDocs: 0, saldoLedger, saldoConEmitir: saldoLedger, diferencia: saldoLedger,
+        soloContable: true,
       });
     }
 
-    terceros.sort((a, b) => b.saldoConEmitir - a.saldoConEmitir);
-    vinculados.sort((a, b) => b.saldoConEmitir - a.saldoConEmitir);
+    terceros.sort((a, b) => b.saldoLedger - a.saldoLedger);
+    vinculados.sort((a, b) => b.saldoLedger - a.saldoLedger);
 
     const sum = (arr: any[], f: string) => round(arr.reduce((s, x) => s + (x[f] || 0), 0));
-    const totalEmitidas  = sum(terceros, 'saldoTotalSoles');
+    const totalDocs      = sum(terceros, 'saldoDocs');       // cartera de documentos (aging)
+    const totalEmitidas  = round(terceros.reduce((s, c) => s + ((ledgerMap.get(String(c.codCliente))?.emitidas) || 0), 0));
     const totalPorEmitir = sum(terceros, 'porEmitir');
-    const totalSaldo     = round(totalEmitidas + totalPorEmitir);
+    const totalSaldo     = sum(terceros, 'saldoLedger');     // = cuenta 121 (contable) → headline
     const total90mas     = sum(terceros, 'dias90mas');
-    const top3 = terceros.slice(0, 3).reduce((s, c) => s + (c.saldoConEmitir || 0), 0);
-    const totalVinculados = round(sum(vinculados, 'saldoTotalSoles') + sum(vinculados, 'porEmitir'));
+    const top3 = terceros.slice(0, 3).reduce((s, c) => s + (c.saldoLedger || 0), 0);
+    const totalVinculados = sum(vinculados, 'saldoLedger');
 
     return {
       ...data,
       clientes: terceros,
       clientesVinculados: vinculados,
+      totalDocs,
       totalEmitidas,
       totalPorEmitir,
       totalSaldo,
@@ -507,13 +532,15 @@ export class KpiService {
       totalSaldoUSD: sum(terceros, 'saldoUSD'),
       pct90mas: totalSaldo > 0 ? round((total90mas / totalSaldo) * 100) : 0,
       concentracionTop3: totalSaldo > 0 ? round((top3 / totalSaldo) * 100) : 0,
-      numClientes: terceros.filter((c) => !c.soloPorEmitir).length,
+      numClientes: terceros.filter((c) => !c.soloContable).length,
       totalVinculados,
       numVinculados: vinculados.length,
       reconciliacion: {
+        docs: totalDocs,
         emitidas: totalEmitidas,
         porEmitir: totalPorEmitir,
         totalTerceros: totalSaldo,
+        diferenciaDocsVsLedger: round(totalSaldo - totalDocs),
         vinculados: totalVinculados,
       },
     };
@@ -1164,28 +1191,26 @@ export class KpiService {
   }
 
   async getCxP(companyId: string) {
-    const year = new Date().getFullYear();
-    const [cached, docsSnap, balSnap] = await Promise.all([
+    const [cached, docsSnap, comp42] = await Promise.all([
       this.getSnapshot(companyId, 'cxp', 'current'),
       this.getSnapshot(companyId, 'cxp_docs', 'current'),
-      this.getSnapshot(companyId, 'balance', `${year}`),
+      this.composicion42FromLedger(companyId),
     ]);
     if (!cached) return { message: 'No data available. Run sync first.' };
     const result: any = this.buildCxP(cached.data as any[]);
     if (docsSnap) {
       result.breakdown = this.buildCxPBreakdown(docsSnap.data as any[]);
     }
-    if (balSnap) {
-      result.composicion42 = this.buildComposicion42(balSnap.data as any[]);
-    }
+    if (comp42) result.composicion42 = comp42;
     return result;
   }
 
-  // Composición contable de la cuenta 42 (por subcuenta) desde el Balance, con signo real:
-  // facturas/honorarios/letras (crédito, +) y ANTICIPOS a proveedores (débito, − reduce la deuda).
-  // Reconcilia la cuenta 42 con S10 y hace visibles los anticipos "junto con las facturas".
-  // Saldo = TotalHaber − TotalDebe (el Total del Balance ya incluye el saldo de apertura).
-  buildComposicion42(balRows: any[]) {
+  // Composición contable de la cuenta 42 (por subcuenta), con signo real: facturas/honorarios/
+  // letras (crédito, +) y ANTICIPOS a proveedores (débito, − reduce la deuda). Se deriva del
+  // MAYOR (LedgerEntry), no del snapshot de balance: el balance sincronizado difería del mayor
+  // en 421/424 por unos miles (reporte de Milka 2026-08), y el mayor es lo que ve la contadora
+  // en S10 (cuadra con su balance de comprobación). Saldo = credito − debito acumulado.
+  private async composicion42FromLedger(companyId: string) {
     const labels: Record<string, string> = {
       '421': 'Facturas y comprobantes por pagar',
       '422': 'Anticipos a proveedores',
@@ -1194,17 +1219,22 @@ export class KpiService {
       '425': 'Selección de pagos',
       '426': 'Otras cuentas por pagar',
     };
-    const map = new Map<string, any>();
-    for (const r of (balRows || [])) {
-      const cod = String(r.CodCuenta || '');
-      if (cod.slice(0, 2) !== '42') continue;
-      const sub = cod.slice(0, 3);
-      const neto = (parseFloat(r.TotalHaber) || 0) - (parseFloat(r.TotalDebe) || 0);
-      const e = map.get(sub) || { sub, descripcion: labels[sub] || r.DesCuenta || sub, neto: 0, esAnticipo: sub === '422' };
-      e.neto = round(e.neto + neto);
-      map.set(sub, e);
-    }
-    const items = [...map.values()].filter((e) => Math.abs(e.neto) > 0.01).sort((a, b) => b.neto - a.neto);
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT LEFT("codCuenta", 3) AS sub, SUM("credito" - "debito")::float8 AS neto
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND LEFT("codCuenta", 2) = '42'
+        GROUP BY LEFT("codCuenta", 3)`,
+      companyId,
+    );
+    const items = (rows || [])
+      .map((r) => ({
+        sub: String(r.sub),
+        descripcion: labels[String(r.sub)] || String(r.sub),
+        neto: round(Number(r.neto) || 0),
+        esAnticipo: String(r.sub) === '422',
+      }))
+      .filter((e) => Math.abs(e.neto) > 0.01)
+      .sort((a, b) => b.neto - a.neto);
     const total = round(items.reduce((s, e) => s + e.neto, 0));
     const anticipos = round(items.filter((e) => e.sub === '422').reduce((s, e) => s + e.neto, 0));
     return { items, total, anticipos };

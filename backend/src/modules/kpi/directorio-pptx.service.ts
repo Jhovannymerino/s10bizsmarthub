@@ -362,10 +362,10 @@ export class DirectorioPptxService {
         s.addText(`S/ ${fmt(c.val)}`, { x: x + 0.05, y: 1.65, w: cardW - 0.1, h: 0.65, color: c.color, fontSize: 18, bold: true, align: 'center', fontFace: 'Consolas' });
       });
 
-      // Tabla aging por cliente
-      // El snapshot emite `saldoTotalSoles`; `saldoTotal` no existe y hacía que la
-      // columna TOTAL imprimiera 0 en todos los clientes.
-      const saldoCli = (c: any) => Number(c?.saldoTotalSoles ?? c?.saldoTotal ?? 0);
+      // Tabla aging por cliente. El TOTAL usa el saldo CONTABLE del Mayor (saldoLedger =
+      // cuenta 121 del cliente), que es lo que ve la contadora; el aging (documentos) es un
+      // desglose indicativo que puede diferir por detracciones/timing. Fallback a documentos.
+      const saldoCli = (c: any) => Number(c?.saldoLedger ?? c?.saldoTotalSoles ?? c?.saldoTotal ?? 0);
       const sortedCli = [...cxc.clientes].sort((a, b) => saldoCli(b) - saldoCli(a)).slice(0, 9);
       const comentarios: Record<string, string> = d.cxcComentarios || {};
       const colHeaders = [
@@ -400,19 +400,9 @@ export class DirectorioPptxService {
         ];
       });
 
-      // Fila "Facturas por emitir" (provisión cta. 1211, sin vencimiento) — para que la
-      // columna TOTAL reconcilie con la cuenta 121 del balance. Solo la última columna.
-      const porEmitir = Number(cxc.totalPorEmitir || 0);
-      const emitirRow = porEmitir > 0.5 ? [
-        { text: 'Facturas por emitir (provisión)', options: { fontSize: 9, italic: true, color: SUBTLE } },
-        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
-        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
-        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
-        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
-        { text: '—', options: { fontSize: 9, align: 'right' as const, color: SUBTLE } },
-        { text: fmt(porEmitir), options: { fontSize: 9, align: 'right' as const, fontFace: 'Consolas', bold: true, color: '7C3AED' } },
-        { text: 'Sin comprobante', options: { fontSize: 8, color: SUBTLE, italic: true } },
-      ] : null;
+      // El TOTAL por cliente ya es el saldo contable (incluye la provisión por emitir de la
+      // cuenta 1211), así que no se agrega una fila separada de "por emitir".
+      const emitirRow = null;
 
       // Fila TOTAL
       const totalRow = [

@@ -839,59 +839,62 @@ export class KpiService {
   // completa, el Mayor puede no cubrir años previos). saldos[m] (cierre acumulado por
   // mes) se reutiliza del snapshot. Default = año completo (delega en getCaja).
   async getCajaRange(companyId: string, year: number, desde?: string, hasta?: string) {
-    const fullYear =
-      (!desde || desde <= `${year}-01-01`) && (!hasta || hasta >= `${year}-12-31`);
-    if (fullYear) return this.getCaja(companyId, year);
-
-    const cajaSnap = await this.getSnapshot(companyId, 'caja', `${year}`);
-    const meta: Record<string, { banco: string; saldoInicial: number; saldos: any }> = {};
-    for (const b of ((cajaSnap?.data as any)?.bancos ?? [])) {
-      meta[b.codBanco] = { banco: b.banco, saldoInicial: b.saldoInicial || 0, saldos: b.saldos || {} };
-    }
-
+    // Todo se deriva del Mayor (LedgerEntry clase 10). El ASIENTO DE APERTURA (glosa
+    // "Asiento de Apertura", enero) es el saldo de arranque del año, NO un flujo — se separa
+    // como `opening`. Antes se sumaba además el `saldoInicial` del snapshot `caja` sobre unos
+    // flujos que YA incluían la apertura → doble conteo (reporte de Milka 2026-08: Caja Chica
+    // salía 3,458.58 = 2,000 real + 1,458.58 del snapshot). Ahora: saldo por mes = opening +
+    // Σ flujos-no-apertura → cuadra con el balance de comprobación de S10.
     const rows = await this.prisma.$queryRawUnsafe<any[]>(
       `SELECT "codCuenta", "desCuenta", "fecha", "mes",
-              "debito"::float8 AS debito, "credito"::float8 AS credito
+              "debito"::float8 AS debito, "credito"::float8 AS credito, "glosa"
          FROM "LedgerEntry"
         WHERE "companyId" = $1 AND "anio" = $2 AND "clase" = '10'`,
       companyId, year,
     );
 
-    if (!rows.length && !Object.keys(meta).length) {
+    if (!rows.length) {
       const full = await this.getCaja(companyId, year);
       return { ...full, rango: { desde, hasta }, rangoNoDisponible: true };
     }
 
     const d = desde || `${year}-01-01`;
     const h = hasta || `${year}-12-31`;
+    const esApertura = (g: any) => /apertura/i.test(String(g || ''));
     const bancos: Record<string, any> = {};
     const ensure = (cod: string, nom: string) => {
       if (!bancos[cod]) {
-        const m = meta[cod] || { banco: nom || cod, saldoInicial: 0, saldos: {} };
         bancos[cod] = {
-          banco: m.banco, codBanco: cod, saldoInicial: m.saldoInicial,
-          meses: {}, saldos: m.saldos,
-          apertura: m.saldoInicial, entradas: 0, salidas: 0, cierre: m.saldoInicial,
+          banco: nom || cod, codBanco: cod, opening: 0,
+          mesNet: {}, meses: {}, entradas: 0, salidas: 0, aperturaAntes: 0,
         };
-        for (let mm = 1; mm <= 12; mm++) bancos[cod].meses[mm] = 0;
+        for (let mm = 1; mm <= 12; mm++) { bancos[cod].mesNet[mm] = 0; bancos[cod].meses[mm] = 0; }
       }
       return bancos[cod];
     };
 
     for (const r of rows) {
       const b = ensure(r.codCuenta, r.desCuenta);
-      const iso = r.fecha instanceof Date ? r.fecha.toISOString().slice(0, 10) : String(r.fecha).slice(0, 10);
       const deb = r.debito || 0, cred = r.credito || 0, flujo = deb - cred;
-      if (iso < d) b.apertura += flujo;
+      if (esApertura(r.glosa)) { b.opening = round(b.opening + flujo); continue; } // arranque, no flujo
+      const iso = r.fecha instanceof Date ? r.fecha.toISOString().slice(0, 10) : String(r.fecha).slice(0, 10);
+      b.mesNet[r.mes] = round((b.mesNet[r.mes] || 0) + flujo);
+      if (iso < d) b.aperturaAntes = round(b.aperturaAntes + flujo);
       if (iso >= d && iso <= h) { b.meses[r.mes] = round((b.meses[r.mes] || 0) + flujo); b.entradas += deb; b.salidas += cred; }
-      if (iso <= h) b.cierre += flujo;
     }
-    // Bancos con saldo inicial pero sin movimiento en el año → incluirlos igual
-    for (const cod of Object.keys(meta)) if (!bancos[cod]) ensure(cod, meta[cod].banco);
 
-    const bancosArr: any[] = Object.values(bancos).map((b: any) => ({
-      ...b, apertura: round(b.apertura), entradas: round(b.entradas), salidas: round(b.salidas), cierre: round(b.cierre),
-    }));
+    const bancosArr: any[] = Object.values(bancos).map((b: any) => {
+      // Saldo de cierre acumulado por mes = opening + Σ flujos-no-apertura hasta el mes.
+      const saldos: Record<number, number> = {};
+      let acum = b.opening;
+      for (let m = 1; m <= 12; m++) { acum = round(acum + (b.mesNet[m] || 0)); saldos[m] = acum; }
+      const apertura = round(b.opening + b.aperturaAntes);        // saldo al inicio del período
+      const cierre = round(apertura + b.entradas - b.salidas);    // saldo al cierre del período
+      return {
+        banco: b.banco, codBanco: b.codBanco, saldoInicial: round(b.opening),
+        meses: b.meses, saldos, apertura, entradas: round(b.entradas), salidas: round(b.salidas), cierre,
+      };
+    });
 
     const totalPorMes: Record<number, number> = {};
     const totalSaldoPorMes: Record<number, number> = {};

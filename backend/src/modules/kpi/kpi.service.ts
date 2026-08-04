@@ -918,8 +918,16 @@ export class KpiService {
       Q1: [1,2,3], Q2: [4,5,6], Q3: [7,8,9], Q4: [10,11,12],
     };
     const months = Q_MONTHS[quarter] ?? [1,2,3];
-    // Cuentas de tránsito interno — excluir de entradas/salidas reales
+    // Universo de caja (definición de la contadora): cuentas bancarias reales. Se EXCLUYE la
+    // caja chica (101x, efectivo menor) y las cuentas de tránsito interno (10300010/11/12).
     const TRANSIT = new Set(['10300010','10300011','10300012']);
+    const excluir = (cod: string) => TRANSIT.has(cod) || String(cod).startsWith('101');
+    // Traspaso interno entre cuentas propias ("TR" = TipoDocumento 'TRANSFERENCIA BANCARIA').
+    // Se saca de entradas/salidas (no es cobro ni pago), pero su NETO se conserva en el saldo
+    // como diferencia de cambio (las patas soles/dólares no cierran exacto por el TC). Si el
+    // snapshot no trae TipoDocumento (histórico), esTraspaso=false → comportamiento anterior.
+    const esTraspaso = (t: any) =>
+      String(t.TipoDocumento || '').toUpperCase().includes('TRANSFERENCIA BANCARIA');
 
     const [cajaTxnSnap, tesoreriaSnap, tributosTxnSnap, laboralTxnSnap] = await Promise.all([
       this.getSnapshot(companyId, 'caja_txn', `${year}`),
@@ -933,20 +941,24 @@ export class KpiService {
     const tributosTxn  = (tributosTxnSnap?.data as any[]) ?? [];
     const laboralTxn   = (laboralTxnSnap?.data as any[]) ?? [];
 
-    // Saldo inicial del año (balance al 01/01/year) desde tesoreria, excl. tránsito
+    // Saldo inicial del año (balance al 01/01/year) desde tesoreria, excl. tránsito y caja chica
     const saldoInicialAnio = round(
       tesoreria
-        .filter(b => !TRANSIT.has(b.CodBanco))
+        .filter(b => !excluir(b.CodBanco))
         .reduce((s, b) => s + (Number(b.SaldoInicial) || 0), 0),
     );
 
-    // Acumular flujos mensuales de caja_txn (excl. tránsito)
-    const txnPorMes: Record<number, { entradas: number; salidas: number }> = {};
+    // Acumular flujos mensuales de caja_txn. entradas/salidas SIN traspasos; `traspasos` = neto
+    // (dif. de cambio) que se conserva en el saldo para que cuadre con la contabilidad.
+    const txnPorMes: Record<number, { entradas: number; salidas: number; traspasos: number }> = {};
     for (let m = 1; m <= 12; m++) {
-      const txns = cajaTxn.filter(t => Number(t.Mes) === m && !TRANSIT.has(t.CodBanco));
+      const txns = cajaTxn.filter(t => Number(t.Mes) === m && !excluir(t.CodBanco));
+      const flujo = txns.filter(t => !esTraspaso(t));
+      const tras  = txns.filter(t => esTraspaso(t));
       txnPorMes[m] = {
-        entradas: round(txns.reduce((s, t) => s + (Number(t.Debito) || 0), 0)),
-        salidas:  round(txns.reduce((s, t) => s + (Number(t.Credito) || 0), 0)),
+        entradas: round(flujo.reduce((s, t) => s + (Number(t.Debito) || 0), 0)),
+        salidas:  round(flujo.reduce((s, t) => s + (Number(t.Credito) || 0), 0)),
+        traspasos: round(tras.reduce((s, t) => s + (Number(t.Debito) || 0) - (Number(t.Credito) || 0), 0)),
       };
     }
 
@@ -964,11 +976,11 @@ export class KpiService {
       if (m >= 1 && m <= 12) sunatPorMes[m] = round((sunatPorMes[m] || 0) + (Number(t.Debito) || 0));
     }
 
-    // Saldo inicial del Q = saldo inicio año + flujos netos de meses previos al Q
+    // Saldo inicial del Q = saldo inicio año + flujos netos (incl. traspasos) de meses previos
     let saldoInicialQ = saldoInicialAnio;
     for (let m = 1; m < months[0]; m++) {
       const d = txnPorMes[m];
-      saldoInicialQ += (d?.entradas || 0) - (d?.salidas || 0);
+      saldoInicialQ += (d?.entradas || 0) - (d?.salidas || 0) + (d?.traspasos || 0);
     }
     saldoInicialQ = round(saldoInicialQ);
 
@@ -977,20 +989,23 @@ export class KpiService {
     const meses = months.map(m => {
       const ent  = txnPorMes[m]?.entradas ?? 0;
       const sal  = txnPorMes[m]?.salidas  ?? 0;
+      const tras = txnPorMes[m]?.traspasos ?? 0;
       const remu = remuPorMes[m] ?? 0;
       const sun  = sunatPorMes[m] ?? 0;
       const prov = round(Math.max(0, sal - remu - sun));
       const saldoInicial = saldoAcum;
-      saldoAcum = round(saldoAcum + ent - sal);
-      return { mes: m, saldoInicial, entradas: ent, salidas: sal, remuneraciones: remu, sunat: sun, proveedores: prov, saldoFinal: saldoAcum };
+      // El saldo incorpora el neto de traspasos (dif. cambio) para cuadrar con la contabilidad.
+      saldoAcum = round(saldoAcum + ent - sal + tras);
+      return { mes: m, saldoInicial, entradas: ent, salidas: sal, traspasos: tras, remuneraciones: remu, sunat: sun, proveedores: prov, saldoFinal: saldoAcum };
     });
 
     const totalEntradas     = round(meses.reduce((s, m) => s + m.entradas, 0));
     const totalSalidas      = round(meses.reduce((s, m) => s + m.salidas, 0));
+    const totalTraspasos    = round(meses.reduce((s, m) => s + m.traspasos, 0));
     const totalRemuneraciones = round(meses.reduce((s, m) => s + m.remuneraciones, 0));
     const totalSunat        = round(meses.reduce((s, m) => s + m.sunat, 0));
     const totalProveedores  = round(meses.reduce((s, m) => s + m.proveedores, 0));
-    const saldoFinalQ       = round(saldoInicialQ + totalEntradas - totalSalidas);
+    const saldoFinalQ       = round(saldoInicialQ + totalEntradas - totalSalidas + totalTraspasos);
 
     return {
       quarter,
@@ -999,10 +1014,12 @@ export class KpiService {
       saldoFinalQ,
       totalEntradas,
       totalSalidas,
+      totalTraspasos,
       totalRemuneraciones,
       totalSunat,
       totalProveedores,
       meses,
+      hasTraspasos:  cajaTxn.some(t => esTraspaso(t)),
       hasCajaTxn:    cajaTxn.length > 0,
       hasTesoreria:  tesoreria.length > 0,
       hasLaboral:    laboralTxn.length > 0,

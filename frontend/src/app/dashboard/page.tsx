@@ -3147,6 +3147,13 @@ export default function DashboardPage() {
                               {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#EF4444' }}>{fmtCash(m.salidas)}</td>)}
                               <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#EF4444', fontWeight: 700 }}>{fmtCash(cp.totalSalidas ?? 0)}</td>
                             </tr>
+                            {Math.abs(cp.totalTraspasos ?? 0) > 0.5 && (
+                              <tr title="Traspasos entre cuentas propias (soles↔dólares). No son cobros ni pagos; su neto es diferencia de cambio y se incorpora al saldo para que cuadre con la contabilidad.">
+                                <td style={{ paddingLeft: '1.5rem', color: '#A78BFA' }}>Traspasos entre cuentas (dif. cambio)</td>
+                                {(cp.meses || []).map((m: any) => <td key={m.mes} style={{ textAlign: 'right', fontFamily: 'monospace', color: '#A78BFA' }}>{fmtCash(m.traspasos)}</td>)}
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#A78BFA', fontWeight: 700 }}>{fmtCash(cp.totalTraspasos ?? 0)}</td>
+                              </tr>
+                            )}
                           </tbody>
                           <tfoot>
                             <tr className="total-row">

@@ -514,6 +514,12 @@ export class DirectorioPptxService {
       const provRow     = makeRow('Proveedores, arriendo, servicios y otros', m => m.proveedores, cp.totalProveedores ?? 0, { indent: true });
       const sunatRow    = makeRow('SUNAT / impuestos', m => m.sunat, cp.totalSunat ?? 0, { indent: true });
       const totalSalRow = makeRow('Total Salidas', m => m.salidas, sal, { bold: true, fill: 'FEE2E2', color: RED });
+      // Traspasos entre cuentas propias (neto = dif. de cambio de las patas soles/dólares).
+      // No es entrada ni salida, pero afecta el saldo; se muestra aparte para que reconcilie.
+      const traspNeto = Number(cp.totalTraspasos || 0);
+      const traspasosRow = Math.abs(traspNeto) > 0.5
+        ? makeRow('Traspasos entre cuentas (dif. cambio)', m => m.traspasos, traspNeto, { indent: true, color: '7C3AED' })
+        : null;
       const saldoFinalRow = makeRow('SALDO FINAL', m => m.saldoFinal, sf, { bold: true, fill: '1E3A5F', color: sf >= 0 ? GREEN : RED });
       // Override fill on SALDO FINAL to navy bg
       (saldoFinalRow[0] as any).options = { ...((saldoFinalRow[0] as any).options), fill: { color: NAVY }, color: 'FFFFFF', bold: true, fontSize: 10 };
@@ -533,6 +539,7 @@ export class DirectorioPptxService {
         provRow,
         sunatRow,
         totalSalRow,
+        ...(traspasosRow ? [traspasosRow] : []),
         saldoFinalRow,
       ], {
         x: 0.4, y: 2.65, w: 12.5,

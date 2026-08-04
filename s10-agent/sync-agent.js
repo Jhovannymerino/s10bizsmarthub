@@ -1109,7 +1109,13 @@ ORDER BY ABS(SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0))) DESC
 `;
 
 // Transacciones bancarias detalle para drilldown (año de sync, clase 10)
-const QUERY_CAJA_TXN = (codEmpresa, year) => `
+// tipoDocSel: expresión SQL para el tipo de documento del movimiento. La vista general
+// AsientoContable NO trae el tipo; la tabla materializada AsientoContable_<RUC>_001_<AÑO> sí.
+// Si esa tabla existe (2025+), el agente pasa una subconsulta correlacionada por CodUnico;
+// si no, pasa '' (histórico sin tipo). Sirve para excluir los traspasos internos ("TR" =
+// TipoDocumento 'TRANSFERENCIA BANCARIA') en la posición de caja, según la definición de la
+// contadora. Validado contra S10 2026-08-04.
+const QUERY_CAJA_TXN = (codEmpresa, year, tipoDocSel = `''`) => `
 SELECT
   CONVERT(varchar(20), CONVERT(bigint, ac.CodAsientoContable)) AS NroAsiento,
   ac.NroD                                                  AS NroD,
@@ -1122,7 +1128,8 @@ SELECT
   ISNULL(ac.Debito, 0)                                     AS Debito,
   ISNULL(ac.Credito, 0)                                    AS Credito,
   ISNULL(i.Descripcion, '')                                AS Tercero,
-  CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END              AS SinDocumento
+  CASE WHEN ac.NroD IS NULL THEN 1 ELSE 0 END              AS SinDocumento,
+  ${tipoDocSel}                                            AS TipoDocumento
 FROM CMO.dbo.AsientoContable ac
 JOIN CMO.dbo.PlanContableDetalle pcd
   ON ac.NroPlanContableDetalle = pcd.NroPlanContableDetalle
@@ -3090,6 +3097,16 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
     let b3 = null;
     if (!fast) {
       console.log(`${tag} → Batch 3: Préstamos, Caja, Tesorería, Gastos, Auditoría...`);
+      // Tipo de documento para la posición de caja (identifica los traspasos internos "TR").
+      // Solo la tabla materializada AsientoContable_<RUC>_001_<AÑO> lo trae (existe 2025+).
+      const cajaPY = `AsientoContable_${company.codEmpresa}_001_${year}`;
+      let tipoDocSel = `''`;
+      try {
+        const chk = await pool.request().query(`SELECT OBJECT_ID('CMO.dbo.${cajaPY}') AS id`);
+        if (chk.recordset[0]?.id != null) {
+          tipoDocSel = `(SELECT TOP 1 ISNULL(py.TipoDocumento,'') FROM CMO.dbo.${cajaPY} py WHERE py.CodUnico = ac.CodUnico AND CAST(py.CodCuenta AS varchar) = pcd.CodCuenta)`;
+        }
+      } catch (e) { console.log(`${tag}   ⚠ no se pudo verificar ${cajaPY}: ${e.message} — caja sin TipoDocumento`); }
       const [
         prestamosOtorgResult, prestamosReciResult, transferenciasResult,
         cajaSaldosResult, cajaTxnResult, cajaAsientoFullResult,
@@ -3108,7 +3125,7 @@ async function syncCompany(company, pool, year, fechaInicio, fechaFin, opts) {
         pool.request().query(QUERY_PRESTAMOS_RECIBIDOS(company.codEmpresa)),
         pool.request().query(QUERY_TRANSFERENCIAS(company.codEmpresa)),
         pool.request().query(QUERY_CAJA_SALDOS(company.codEmpresa)),
-        pool.request().query(QUERY_CAJA_TXN(company.codEmpresa, year)),
+        pool.request().query(QUERY_CAJA_TXN(company.codEmpresa, year, tipoDocSel)),
         pool.request().query(QUERY_CAJA_ASIENTO_FULL(company.codEmpresa, year)),
         pool.request().query(QUERY_TESORERIA(company.codEmpresa, year)),
         pool.request().query(QUERY_OB_SALDOS_BANCO(company.codEmpresa, year)),

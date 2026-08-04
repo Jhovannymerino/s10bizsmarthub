@@ -17,7 +17,7 @@ export function KpiCard({ label, value, sub, signal, hint, onClick }: {
         className="kpi-value"
         style={{
           fontWeight: 700,
-          color: signal ? SIGNAL_COLOR[signal] : '#F8FAFC',
+          color: signal ? SIGNAL_COLOR[signal] : 'var(--text-primary)',
           fontFamily: 'var(--font-mono)',
           '--chars': value.length,
         } as React.CSSProperties}

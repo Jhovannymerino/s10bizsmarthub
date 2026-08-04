@@ -423,6 +423,56 @@ export class KpiService {
     return data;
   }
 
+  // CxC por RANGO de FECHA DE EMISIÓN (FechaDocumento). Deriva de cxc_docs sin resync: la
+  // cartera queda acotada a los documentos emitidos en [desde, hasta]. Sin rango delega en
+  // getCxC (comportamiento con reconciliación al Mayor intacto). En modo rango NO se muestra
+  // el saldo contable del Mayor (es un saldo puntual, no filtrable por fecha de emisión).
+  async getCxCRange(companyId: string, desde?: string, hasta?: string) {
+    if (!desde && !hasta) return this.getCxC(companyId);
+    const docsSnap = await this.getSnapshot(companyId, 'cxc_docs', 'current');
+    if (!docsSnap) return this.getCxC(companyId);
+    const d = desde || '0000-01-01';
+    const h = hasta || '9999-12-31';
+    const map = new Map<string, any>();
+    for (const doc of (docsSnap.data as any[])) {
+      const iso = fechaDDMMYYYYtoISO(String(doc.FechaDocumento || ''));
+      if (!iso || iso < d || iso > h) continue;
+      const key = String(doc.CodCliente);
+      const esUSD = String(doc.Moneda || '01').trim() === '02';
+      const orig = parseFloat(doc.Saldo) || 0;
+      const soles = esUSD ? round(orig * TC_USD_FALLBACK) : orig;
+      if (!map.has(key)) map.set(key, {
+        codCliente: doc.CodCliente, cliente: doc.Cliente || key,
+        saldoPEN: 0, saldoUSD: 0, tipoCambioUSD: TC_USD_FALLBACK, saldoTotalSoles: 0,
+        saldoVigente: 0, dias0_30: 0, dias31_60: 0, dias61_90: 0, dias90mas: 0, numDocs: 0,
+      });
+      const c = map.get(key);
+      if (esUSD) c.saldoUSD = round(c.saldoUSD + orig); else c.saldoPEN = round(c.saldoPEN + orig);
+      c.saldoTotalSoles = round(c.saldoTotalSoles + soles);
+      const dv = Number(doc.DiasVencido) || 0;
+      if (dv <= 0) c.saldoVigente = round(c.saldoVigente + soles);
+      else if (dv <= 30) c.dias0_30 = round(c.dias0_30 + soles);
+      else if (dv <= 60) c.dias31_60 = round(c.dias31_60 + soles);
+      else if (dv <= 90) c.dias61_90 = round(c.dias61_90 + soles);
+      else c.dias90mas = round(c.dias90mas + soles);
+      c.numDocs++;
+    }
+    const clientes = [...map.values()].filter((c) => Math.abs(c.saldoTotalSoles) > 0.01)
+      .sort((a, b) => b.saldoTotalSoles - a.saldoTotalSoles);
+    const sum = (f: string) => round(clientes.reduce((s, c) => s + (c[f] || 0), 0));
+    const totalSaldo = sum('saldoTotalSoles');
+    const top3 = clientes.slice(0, 3).reduce((s, c) => s + c.saldoTotalSoles, 0);
+    return {
+      clientes, clientesVinculados: [], rango: { desde: desde || null, hasta: hasta || null }, rangoModo: true,
+      totalSaldo, totalDocs: totalSaldo, totalVinculados: 0, numVinculados: 0,
+      totalSaldoPEN: sum('saldoPEN'), totalSaldoUSD: sum('saldoUSD'),
+      totalVigente: sum('saldoVigente'), total90mas: sum('dias90mas'),
+      pct90mas: totalSaldo > 0 ? round((sum('dias90mas') / totalSaldo) * 100) : 0,
+      concentracionTop3: totalSaldo > 0 ? round((top3 / totalSaldo) * 100) : 0,
+      numClientes: clientes.length,
+    };
+  }
+
   // Reconcilia la cartera de DOCUMENTOS (lo que devuelve el aging) con el saldo contable
   // de la cuenta 12 (lo que ve la contadora en el balance de comprobación). Dos ajustes,
   // ambos derivados del Mayor (LedgerEntry) sin resync:
@@ -1203,6 +1253,53 @@ export class KpiService {
     }
     if (comp42) result.composicion42 = comp42;
     return result;
+  }
+
+  // CxP por RANGO de FECHA DE EMISIÓN (FechaDocumento). Deriva de cxp_docs sin resync.
+  // Sin rango delega en getCxP (con composición 42 del Mayor). En modo rango se muestra la
+  // deuda de los documentos emitidos en el período; sin la composición contable (puntual).
+  async getCxPRange(companyId: string, desde?: string, hasta?: string) {
+    if (!desde && !hasta) return this.getCxP(companyId);
+    const docsSnap = await this.getSnapshot(companyId, 'cxp_docs', 'current');
+    if (!docsSnap) return this.getCxP(companyId);
+    const d = desde || '0000-01-01';
+    const h = hasta || '9999-12-31';
+    const map = new Map<string, any>();
+    for (const doc of (docsSnap.data as any[])) {
+      const iso = fechaDDMMYYYYtoISO(String(doc.FechaDocumento || ''));
+      if (!iso || iso < d || iso > h) continue;
+      const key = String(doc.CodProveedor);
+      const esUSD = String(doc.Moneda || '01').trim() === '02';
+      const orig = parseFloat(doc.Saldo) || 0;
+      const soles = esUSD ? round(orig * TC_USD_FALLBACK) : orig;
+      if (!map.has(key)) map.set(key, {
+        codProveedor: doc.CodProveedor, proveedor: doc.Proveedor || key,
+        saldoPEN: 0, saldoUSD: 0, saldoTotal: 0,
+        saldoVigente: 0, dias0_30: 0, dias31_60: 0, dias61_90: 0, dias90mas: 0, numDocs: 0,
+      });
+      const p = map.get(key);
+      if (esUSD) p.saldoUSD = round(p.saldoUSD + orig); else p.saldoPEN = round(p.saldoPEN + orig);
+      p.saldoTotal = round(p.saldoTotal + soles);
+      const dv = Number(doc.DiasVencido) || 0;
+      if (dv <= 0) p.saldoVigente = round(p.saldoVigente + soles);
+      else if (dv <= 30) p.dias0_30 = round(p.dias0_30 + soles);
+      else if (dv <= 60) p.dias31_60 = round(p.dias31_60 + soles);
+      else if (dv <= 90) p.dias61_90 = round(p.dias61_90 + soles);
+      else p.dias90mas = round(p.dias90mas + soles);
+      p.numDocs++;
+    }
+    const proveedores = [...map.values()].filter((p) => Math.abs(p.saldoTotal) > 0.01)
+      .sort((a, b) => b.saldoTotal - a.saldoTotal);
+    const sum = (f: string) => round(proveedores.reduce((s, p) => s + (p[f] || 0), 0));
+    const totalSaldo = sum('saldoTotal');
+    const top3 = proveedores.slice(0, 3).reduce((s, p) => s + p.saldoTotal, 0);
+    return {
+      proveedores, rango: { desde: desde || null, hasta: hasta || null }, rangoModo: true,
+      totalSaldo, totalVigente: sum('saldoVigente'), total90mas: sum('dias90mas'),
+      pct90mas: totalSaldo > 0 ? round((sum('dias90mas') / totalSaldo) * 100) : 0,
+      concentracionTop3: totalSaldo > 0 ? round((top3 / totalSaldo) * 100) : 0,
+      numProveedores: proveedores.length,
+    };
   }
 
   // Composición contable de la cuenta 42 (por subcuenta), con signo real: facturas/honorarios/

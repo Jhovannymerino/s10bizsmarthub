@@ -126,7 +126,7 @@ const YoYBadge = React.memo(function YoYBadge({ curr, prev }: { curr: number; pr
 // ═══════════════════════════════════════════════
 const DIR_INPUT_STYLE: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(43,180,187,0.25)',
-  borderRadius: '0.35rem', padding: '0.35rem 0.55rem', color: '#F8FAFC',
+  borderRadius: '0.35rem', padding: '0.35rem 0.55rem', color: 'var(--text-primary)',
   fontSize: '0.75rem', fontFamily: 'monospace', width: '100%',
 };
 const DIR_INPUT_TEXT: React.CSSProperties = { ...DIR_INPUT_STYLE, fontFamily: 'inherit' };
@@ -165,7 +165,7 @@ function RangoFechasBar({ year, desde, hasta, onDesde, onHasta, onClear }: {
   year: number; desde: string | null; hasta: string | null;
   onDesde: (v: string) => void; onHasta: (v: string) => void; onClear: () => void;
 }) {
-  const inputStyle: React.CSSProperties = { padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' };
+  const inputStyle: React.CSSProperties = { padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--text-primary)', colorScheme: 'dark' };
   return (
     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'rgba(32,126,131,0.06)', border: '1px solid rgba(32,126,131,0.18)', borderRadius: 8 }}>
       <span style={{ fontSize: '0.75rem', color: '#8B97A8', fontWeight: 600 }}>Período:</span>
@@ -230,6 +230,11 @@ export default function DashboardPage() {
   const [cajaHasta, setCajaHasta] = useState<string | null>(null);
   // CxC: incluir clientes anulados por NC (neto 0, ocultos del aging normal)
   const [cxcAnulados, setCxcAnulados] = useState(false);
+  // CxC / CxP por rango de fecha de emisión (deriva de cxc_docs/cxp_docs sin resync)
+  const [cxcDesde, setCxcDesde] = useState<string | null>(null);
+  const [cxcHasta, setCxcHasta] = useState<string | null>(null);
+  const [cxpDesde, setCxpDesde] = useState<string | null>(null);
+  const [cxpHasta, setCxpHasta] = useState<string | null>(null);
   // Reporte de detracciones (modal); lado inicial según vista (CxC=cobradas, CxP=pagadas)
   const [detracModal, setDetracModal] = useState<null | 'cobradas' | 'pagadas'>(null);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
@@ -526,6 +531,40 @@ export default function DashboardPage() {
       .catch((err) => { if (err.name !== 'AbortError') { /* mantener GAV previo */ } });
     return () => ctrl.abort();
   }, [gavDesde, gavHasta, selectedCompany, selectedYear, isGrupo]);
+
+  // CxC por rango de fecha de emisión: sobreescribe `cxc` cuando hay rango activo. Al
+  // limpiar el rango, el botón "Limpiar" bumpea refreshKey y la carga principal recarga
+  // la cartera completa (con reconciliación al Mayor).
+  useEffect(() => {
+    if (isGrupo || (!cxcDesde && !cxcHasta)) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    let url = `/kpi/${id}/cxc?`;
+    if (cxcDesde) url += `desde=${cxcDesde}`;
+    if (cxcHasta) url += `${cxcDesde ? '&' : ''}hasta=${cxcHasta}`;
+    fetchApi(url, token, ctrl.signal)
+      .then((d) => setCxC(d?.clientes ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener CxC previo */ } });
+    return () => ctrl.abort();
+  }, [cxcDesde, cxcHasta, selectedCompany, selectedYear, isGrupo]);
+
+  // CxP por rango de fecha de emisión: sobreescribe `cxp` cuando hay rango activo.
+  useEffect(() => {
+    if (isGrupo || (!cxpDesde && !cxpHasta)) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    let url = `/kpi/${id}/cxp?`;
+    if (cxpDesde) url += `desde=${cxpDesde}`;
+    if (cxpHasta) url += `${cxpDesde ? '&' : ''}hasta=${cxpHasta}`;
+    fetchApi(url, token, ctrl.signal)
+      .then((d) => setCxP(d?.proveedores ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener CxP previo */ } });
+    return () => ctrl.abort();
+  }, [cxpDesde, cxpHasta, selectedCompany, selectedYear, isGrupo]);
 
   // Gastos por naturaleza por rango: sobreescribe gastosNatData cuando hay rango activo.
   useEffect(() => {
@@ -969,7 +1008,7 @@ export default function DashboardPage() {
         <div style={{ padding: '1.125rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #207E83, #2563EB)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 0 2px rgba(255,255,255,0.08), 0 8px 20px rgba(32,126,131,0.3)' }}>S</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: '0.9rem', color: '#F8FAFC', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               S10 <span style={{ color: '#2BB4BB' }}>BizSmartHub</span>
             </div>
             <div style={{ fontSize: '0.5rem', color: '#8B97A8', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.1rem' }}>Dashboard Financiero</div>
@@ -1349,7 +1388,7 @@ export default function DashboardPage() {
               {userEmail ? userEmail[0].toUpperCase() : 'U'}
             </div>
             <div style={{ overflow: 'hidden', flex: 1 }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Inter', sans-serif" }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Inter', sans-serif" }}>
                 {userUsername || userEmail || 'Usuario'}
               </div>
               <div style={{ fontSize: '0.6rem', color: '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{userRole}</div>
@@ -1388,7 +1427,7 @@ export default function DashboardPage() {
                 {userEmail ? userEmail[0].toUpperCase() : 'U'}
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{userUsername || userEmail || 'Usuario'}</div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{userUsername || userEmail || 'Usuario'}</div>
                 {userUsername && <div style={{ fontSize: '0.78rem', color: '#6B7A8D', marginTop: 2 }}>{userEmail}</div>}
                 <div style={{ marginTop: 4, display: 'inline-block', padding: '0.15rem 0.6rem', background: userRole === 'admin' ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.06)', borderRadius: 999, fontSize: '0.65rem', fontWeight: 700, color: userRole === 'admin' ? '#2BB4BB' : '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   {userRole}
@@ -1404,7 +1443,7 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <input type="email" value={profileEmail} onChange={e => { setProfileEmail(e.target.value); setProfileEmailError(''); setProfileEmailSuccess(''); }}
                   placeholder="correo@empresa.com"
-                  style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box' as const, background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                  style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box' as const, background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
                 <button disabled={profileEmailLoading || !profileEmail || profileEmail === userEmail}
                   onClick={async () => {
                     if (!profileEmail.includes('@')) { setProfileEmailError('Ingresa un correo válido'); return; }
@@ -1443,7 +1482,7 @@ export default function DashboardPage() {
                 <div style={{ position: 'relative' }}>
                   <input type={showProfilePwdCurrent ? 'text' : 'password'} value={profilePwd.current} onChange={e => setProfilePwd(p => ({ ...p, current: e.target.value }))}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
                   <button type="button" onClick={() => setShowProfilePwdCurrent(v => !v)} aria-label={showProfilePwdCurrent ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
                     {showProfilePwdCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -1456,7 +1495,7 @@ export default function DashboardPage() {
                 <div style={{ position: 'relative' }}>
                   <input type={showProfilePwdNext ? 'text' : 'password'} value={profilePwd.next} onChange={e => setProfilePwd(p => ({ ...p, next: e.target.value }))}
                     placeholder="Mínimo 8 caracteres"
-                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
                   <button type="button" onClick={() => setShowProfilePwdNext(v => !v)} aria-label={showProfilePwdNext ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
                     {showProfilePwdNext ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -1469,7 +1508,7 @@ export default function DashboardPage() {
                 <div style={{ position: 'relative' }}>
                   <input type={showProfilePwdConfirm ? 'text' : 'password'} value={profilePwd.confirm} onChange={e => setProfilePwd(p => ({ ...p, confirm: e.target.value }))}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: `1px solid ${profilePwd.confirm && profilePwd.confirm !== profilePwd.next ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: `1px solid ${profilePwd.confirm && profilePwd.confirm !== profilePwd.next ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
                   <button type="button" onClick={() => setShowProfilePwdConfirm(v => !v)} aria-label={showProfilePwdConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
                     {showProfilePwdConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -1864,13 +1903,13 @@ export default function DashboardPage() {
                   Desde
                   <input type="date" value={plDesde ?? `${selectedYear}-01-01`} min={`${selectedYear}-01-01`} max={`${selectedYear}-12-31`}
                     onChange={(e) => setPlDesde(e.target.value)}
-                    style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' }} />
+                    style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--text-primary)', colorScheme: 'dark' }} />
                 </label>
                 <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   Hasta
                   <input type="date" value={plHasta ?? `${selectedYear}-12-31`} min={`${selectedYear}-01-01`} max={`${selectedYear}-12-31`}
                     onChange={(e) => setPlHasta(e.target.value)}
-                    style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#F8FAFC', colorScheme: 'dark' }} />
+                    style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--text-primary)', colorScheme: 'dark' }} />
                 </label>
                 {(plDesde || plHasta) ? (
                   <>
@@ -1949,7 +1988,7 @@ export default function DashboardPage() {
             {/* Vista Grupo: ranking de empresas */}
             {isGrupo && consolidado?.empresas?.length > 0 && (
               <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '1rem' }}>Aporte por Empresa</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Aporte por Empresa</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
                   {consolidado.empresas
                     .sort((a: any, b: any) => b.ytd.ingresos - a.ytd.ingresos)
@@ -1958,7 +1997,7 @@ export default function DashboardPage() {
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: COLORS_EMPRESA[i % 4], textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                           {e.shortName} · {e.pctIngresos}% del grupo
                         </div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#F8FAFC' }}>{fmt(e.ytd.ingresos)}</div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{fmt(e.ytd.ingresos)}</div>
                         <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.2rem' }}>
                           EBITDA {pct(e.ytd.ebitdaPct ?? 0)} · Neto {fmt(e.ytd.utilidadNeta)}
                         </div>
@@ -1986,7 +2025,7 @@ export default function DashboardPage() {
             {isGrupo && scorecard?.companies?.length > 0 && (
               <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Scorecard Comparativo</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Scorecard Comparativo</div>
                   <ExportBtn onClick={() => {
                     const headers = ['Empresa', 'Ingresos YTD', '% Margen', '% EBITDA', 'DSO (días)', 'DPO (días)', 'Capital de Trabajo', 'Caja Total'];
                     const rows = scorecard.companies.map((c: any) => [
@@ -2019,7 +2058,7 @@ export default function DashboardPage() {
                         const wc = c.workingCapital;
                         return (
                           <tr key={c.codEmpresa}>
-                            <td style={{ fontWeight: 600, color: '#F8FAFC' }}>{c.shortName}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.shortName}</td>
                             <td style={{ fontWeight: 600 }}>{fmt(c.ingresosYTD)}</td>
                             <td style={{ color: c.margenPct != null ? SIGNAL_COLOR[semaforo('margenBrutoPct', c.margenPct)] : '#8B97A8', fontWeight: 600 }}>
                               {c.margenPct != null ? `${SIGNAL_DOT[semaforo('margenBrutoPct', c.margenPct)]} ${pct(c.margenPct)}` : '—'}
@@ -2072,7 +2111,7 @@ export default function DashboardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                       <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>✦</div>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#F8FAFC', fontFamily: "'Outfit', sans-serif" }}>Análisis Ejecutivo IA — Grupo Consolidado</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Análisis Ejecutivo IA — Grupo Consolidado</div>
                         {narEntry && !narrativeLoading && (
                           <div style={{ fontSize: '0.68rem', color: '#4B5563' }}>
                             Generado {new Date(narEntry.generatedAt).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -2120,7 +2159,7 @@ export default function DashboardPage() {
 
             {/* Waterfall chart */}
             <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-              <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.75rem' }}>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
                 Cascada P&L — YTD {selectedYear}
               </div>
               <WaterfallChart ytd={ytd} />
@@ -2129,7 +2168,7 @@ export default function DashboardPage() {
             {/* Gráfico mensual Ingresos vs EBITDA */}
             {!isGrupo && (
               <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '1rem' }}>Ingresos vs EBITDA — Mensual</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Ingresos vs EBITDA — Mensual</div>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={plMonthly.filter((m: any) => m.ingresos > 0)} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -2146,7 +2185,7 @@ export default function DashboardPage() {
             {/* Tabla Detalle Mensual con YoY */}
             <div className="kpi-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Detalle Mensual</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Detalle Mensual</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div style={{ fontSize: '0.75rem', color: '#8B97A8' }}>
                     {!isGrupo && 'Click en Ingresos, Costo, GAV o Gastos para ver el desglose'}
@@ -2262,6 +2301,14 @@ export default function DashboardPage() {
           const totalRef = cxc.totalSaldo || sumCol('saldoLedger') || sumCol('saldoTotalSoles');
           return (
             <>
+              <RangoFechasBar year={selectedYear} desde={cxcDesde} hasta={cxcHasta}
+                onDesde={setCxcDesde} onHasta={setCxcHasta}
+                onClear={() => { setCxcDesde(null); setCxcHasta(null); setRefreshKey((k) => k + 1); }} />
+              {cxc.rangoModo && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
+                  Rango por <b>fecha de emisión</b> del documento. Muestra la cartera de los comprobantes emitidos en el período; en este modo no se reconcilia con el saldo contable del Mayor (que es puntual, no filtrable por fecha de emisión).
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 {(cxc.totalSaldoPEN ?? 0) > 0 && <KpiCard label="Cartera S/ PEN" value={fmt(cxc.totalSaldoPEN)} signal="neutral" sub="Saldo pendiente de cobro en soles" hint="Facturas emitidas aún no cobradas, moneda soles" />}
                 {hasUSD && <KpiCard label="Cartera $ USD" value={fUSD(cxc.totalSaldoUSD)} signal="neutral" sub="Saldo pendiente de cobro en dólares" hint="Facturas emitidas aún no cobradas, moneda USD" />}
@@ -2277,7 +2324,7 @@ export default function DashboardPage() {
               </div>
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Cliente — equiv. S/</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Aging por Cliente — equiv. S/</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                   <button onClick={() => setDetracModal('cobradas')}
                     title="Reporte de detracciones: fecha de cobro de la detracción y del pago, por documento"
@@ -2521,6 +2568,14 @@ export default function DashboardPage() {
             : null;
           return (
             <>
+              <RangoFechasBar year={selectedYear} desde={cxpDesde} hasta={cxpHasta}
+                onDesde={setCxpDesde} onHasta={setCxpHasta}
+                onClear={() => { setCxpDesde(null); setCxpHasta(null); setRefreshKey((k) => k + 1); }} />
+              {cxp.rangoModo && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
+                  Rango por <b>fecha de emisión</b> del documento. Muestra la deuda de los comprobantes emitidos en el período; en este modo no se muestra la composición contable de la cuenta 42 (que es un saldo puntual).
+                </div>
+              )}
               {(() => {
                 const bd = cxp.breakdown;
                 const totalComercial = bd ? (bd.comercialPEN + bd.rrhhPEN) : null;
@@ -2638,7 +2693,7 @@ export default function DashboardPage() {
                 ].filter(c => c.pen > 0.01 || c.usd > 0.01);
                 return (
                   <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-                    <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
                       Composición de CxP
                     </div>
                     {/* Barra proporcional */}
@@ -2658,7 +2713,7 @@ export default function DashboardPage() {
                             <div style={{ width: 10, height: 10, borderRadius: 2, background: c.color, flexShrink: 0 }} />
                             <span style={{ fontSize: '0.72rem', color: '#8B97A8' }}>{c.label}</span>
                           </div>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#F8FAFC' }}>{fmt(c.pen)}</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmt(c.pen)}</span>
                           {c.usd > 0.01 && <span style={{ fontSize: '0.70rem', color: '#4ade80' }}>+ $ {c.usd.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</span>}
                           <span style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '0.1rem' }}>{pct((c.pen / total) * 100)}</span>
                           <span style={{ fontSize: '0.65rem', color: '#475569', marginTop: '0.1rem', maxWidth: 150 }}>{c.hint}</span>
@@ -2671,7 +2726,7 @@ export default function DashboardPage() {
 
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Aging por Proveedor</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Aging por Proveedor</div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <SearchInput value={cxpSearch} onChange={setCxpSearch} placeholder="Buscar proveedor..." />
                     <ExportBtn onClick={() => {
@@ -2758,7 +2813,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="kpi-card">
-                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.5rem' }}>Ranking por Facturación Total</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ranking por Facturación Total</div>
                 <div style={{ fontSize: '0.72rem', color: '#6B7A8D', marginBottom: '1rem' }}>Incluye todas las facturas del año {selectedYear} (pagadas y pendientes), neto de notas de crédito</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   {clientes.map((c: any, i: number) => {
@@ -2770,7 +2825,7 @@ export default function DashboardPage() {
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <span style={{ fontSize: '0.7rem', color: '#4B5563', textAlign: 'right' }}>#{i + 1}</span>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: '0.82rem', color: '#F8FAFC', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3 }}>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3 }}>
                             {c.nombre}
                           </div>
                           <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', width: `${Math.max(pctTotal * 2.5, 2)}%`, minWidth: 4 }}>
@@ -2796,7 +2851,7 @@ export default function DashboardPage() {
                 return (
                   <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(32,126,131,0.08)', border: '1px solid rgba(32,126,131,0.2)', borderRadius: '0.5rem', fontSize: '0.82rem', color: '#8B97A8' }}>
                     <span style={{ color: '#2BB4BB', fontWeight: 600 }}>Regla 80/20: </span>
-                    Los <strong style={{ color: '#F8FAFC' }}>{n80}</strong> cliente{n80 !== 1 ? 's' : ''} más grande{n80 !== 1 ? 's' : ''} concentran el 80% de la facturación
+                    Los <strong style={{ color: 'var(--text-primary)' }}>{n80}</strong> cliente{n80 !== 1 ? 's' : ''} más grande{n80 !== 1 ? 's' : ''} concentran el 80% de la facturación
                     {n80 <= 3 && <span style={{ color: '#F59E0B' }}> — alta concentración, monitorear de cerca</span>}
                   </div>
                 );
@@ -2822,7 +2877,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="kpi-card">
-                <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '0.5rem' }}>Ranking por Facturación Total Recibida</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Ranking por Facturación Total Recibida</div>
                 <div style={{ fontSize: '0.72rem', color: '#6B7A8D', marginBottom: '1rem' }}>Incluye facturas y honorarios recibidos en {selectedYear} (pagados y pendientes), neto de notas de crédito</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   {proveedores.map((p: any, i: number) => {
@@ -2834,7 +2889,7 @@ export default function DashboardPage() {
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <span style={{ fontSize: '0.7rem', color: '#4B5563', textAlign: 'right' }}>#{i + 1}</span>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: '0.82rem', color: '#F8FAFC', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3 }}>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3 }}>
                             {p.nombre}
                           </div>
                           <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', width: `${Math.max(pctTotal * 2.5, 2)}%`, minWidth: 4 }}>
@@ -2860,7 +2915,7 @@ export default function DashboardPage() {
                 return (
                   <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(32,126,131,0.08)', border: '1px solid rgba(32,126,131,0.2)', borderRadius: '0.5rem', fontSize: '0.82rem', color: '#8B97A8' }}>
                     <span style={{ color: '#2BB4BB', fontWeight: 600 }}>Regla 80/20: </span>
-                    Los <strong style={{ color: '#F8FAFC' }}>{n80}</strong> proveedor{n80 !== 1 ? 'es' : ''} más grande{n80 !== 1 ? 's' : ''} concentran el 80% de las compras
+                    Los <strong style={{ color: 'var(--text-primary)' }}>{n80}</strong> proveedor{n80 !== 1 ? 'es' : ''} más grande{n80 !== 1 ? 's' : ''} concentran el 80% de las compras
                     {n80 <= 3 && <span style={{ color: '#F59E0B' }}> — alta dependencia, considerar diversificar</span>}
                   </div>
                 );
@@ -2928,7 +2983,7 @@ export default function DashboardPage() {
               <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{esSaldo ? 'Saldo de Cierre por Banco' : 'Flujo Neto por Banco'}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{esSaldo ? 'Saldo de Cierre por Banco' : 'Flujo Neto por Banco'}</div>
                     <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginTop: '0.15rem' }}>
                       {esSaldo ? 'Saldo acumulado al cierre de cada mes (lo que queda en cada cuenta)' : 'Movimiento neto del mes (entradas − salidas)'}
                     </div>
@@ -3001,7 +3056,7 @@ export default function DashboardPage() {
               return (
                 <div className="kpi-card" style={{ marginTop: '1.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div style={{ fontWeight: 700, color: '#F8FAFC', fontSize: '1rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1rem' }}>
                       Posición de Caja — {selectedQuarter} {selectedYear}
                     </div>
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -3209,7 +3264,7 @@ export default function DashboardPage() {
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, color: '#F8FAFC' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                       {docsTab === 'emitidas' ? 'Facturas emitidas a clientes'
                        : docsTab === 'recibidas' ? 'Facturas y boletas recibidas'
                        : docsTab === 'honorarios' ? 'Recibos por Honorarios Profesionales'
@@ -3225,7 +3280,7 @@ export default function DashboardPage() {
                       placeholder={(docsTab === 'emitidas' || docsTab === 'operativos') ? 'Buscar cliente o número...' : 'Buscar proveedor o número...'}
                       value={docsSearch}
                       onChange={e => setDocsSearch(e.target.value)}
-                      style={{ padding: '0.4rem 0.75rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 200, background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }}
+                      style={{ padding: '0.4rem 0.75rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', fontSize: '0.82rem', minWidth: 200, background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }}
                     />
                     <ExportBtn onClick={() => {
                       const tab = docsTab;
@@ -3437,7 +3492,7 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="kpi-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div style={{ fontWeight: 700, color: '#F8FAFC' }}>GAV por Categoría</div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>GAV por Categoría</div>
                 <ExportBtn onClick={() => {
                   const headers = ['Categoría', 'YTD', '% GAV', '% Ingresos'];
                   const rows = sortRows(gav.categorias || [], gavSort.col, gavSort.dir).map((c: any) => [
@@ -3485,7 +3540,7 @@ export default function DashboardPage() {
               </table>
             </div>
             <div className="kpi-card">
-              <div style={{ fontWeight: 700, color: '#F8FAFC', marginBottom: '1rem' }}>Distribución GAV</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>Distribución GAV</div>
               <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
                   <Pie
@@ -3605,14 +3660,14 @@ export default function DashboardPage() {
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
                   onClick={() => setAdminModal(null)}>
                   <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', padding: '2rem', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#F8FAFC', marginBottom: '1.25rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '1.25rem' }}>
                       {adminModal.mode === 'create' ? 'Nuevo usuario' : `Editar: ${adminModal.user?.email}`}
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Email</label>
                       <input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} required={adminModal.mode === 'create'}
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
@@ -3621,7 +3676,7 @@ export default function DashboardPage() {
                       </label>
                       <input type="text" value={adminForm.username} onChange={e => setAdminForm(f => ({ ...f, username: e.target.value }))}
                         placeholder="ej: jmerino"
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
@@ -3630,7 +3685,7 @@ export default function DashboardPage() {
                       </label>
                       <div style={{ position: 'relative' }}>
                         <input type={showAdminFormPassword ? 'text' : 'password'} value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
-                          style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#F8FAFC', outline: 'none' }} />
+                          style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
                         <button type="button" onClick={() => setShowAdminFormPassword(v => !v)} aria-label={showAdminFormPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                           style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
                           {showAdminFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -3726,7 +3781,7 @@ export default function DashboardPage() {
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, color: '#F8FAFC' }}>Usuarios del sistema</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Usuarios del sistema</div>
                     {adminSuccess && <div style={{ fontSize: '0.78rem', color: '#10B981', marginTop: '0.2rem' }}>{adminSuccess}</div>}
                   </div>
                   <button onClick={openCreate}
@@ -3858,10 +3913,10 @@ export default function DashboardPage() {
                           <tr key={i} style={isSaldado ? { opacity: 0.55 } : undefined}>
                             <td style={{ fontFamily: 'monospace', color: '#2BB4BB', whiteSpace: 'nowrap' }}>{r.CodCuenta}</td>
                             <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta}</td>
-                            <td style={{ background: 'rgba(32,126,131,0.04)', color: (r.SaldoIniDebe||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.SaldoIniDebe||0) > 0 ? fmt(r.SaldoIniDebe) : '—'}</td>
-                            <td style={{ background: 'rgba(32,126,131,0.04)', color: (r.SaldoIniHaber||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.SaldoIniHaber||0) > 0 ? fmt(r.SaldoIniHaber) : '—'}</td>
-                            <td style={{ background: 'rgba(245,158,11,0.04)', color: (r.MovDebe||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.MovDebe||0) > 0 ? fmt(r.MovDebe) : '—'}</td>
-                            <td style={{ background: 'rgba(245,158,11,0.04)', color: (r.MovHaber||0) > 0 ? '#F8FAFC' : '#4B5563' }}>{(r.MovHaber||0) > 0 ? fmt(r.MovHaber) : '—'}</td>
+                            <td style={{ background: 'rgba(32,126,131,0.04)', color: (r.SaldoIniDebe||0) > 0 ? 'var(--text-primary)' : '#4B5563' }}>{(r.SaldoIniDebe||0) > 0 ? fmt(r.SaldoIniDebe) : '—'}</td>
+                            <td style={{ background: 'rgba(32,126,131,0.04)', color: (r.SaldoIniHaber||0) > 0 ? 'var(--text-primary)' : '#4B5563' }}>{(r.SaldoIniHaber||0) > 0 ? fmt(r.SaldoIniHaber) : '—'}</td>
+                            <td style={{ background: 'rgba(245,158,11,0.04)', color: (r.MovDebe||0) > 0 ? 'var(--text-primary)' : '#4B5563' }}>{(r.MovDebe||0) > 0 ? fmt(r.MovDebe) : '—'}</td>
+                            <td style={{ background: 'rgba(245,158,11,0.04)', color: (r.MovHaber||0) > 0 ? 'var(--text-primary)' : '#4B5563' }}>{(r.MovHaber||0) > 0 ? fmt(r.MovHaber) : '—'}</td>
                             <td style={{ background: 'rgba(16,185,129,0.06)', fontWeight: 600, color: finDebe > 0 ? '#10B981' : '#4B5563' }}>{finDebe > 0 ? fmt(finDebe) : '—'}</td>
                             <td style={{ background: 'rgba(16,185,129,0.06)', fontWeight: 600, color: finHaber > 0 ? '#EF4444' : '#4B5563' }}>{finHaber > 0 ? fmt(finHaber) : '—'}</td>
                           </tr>
@@ -4008,7 +4063,7 @@ export default function DashboardPage() {
         {activeTab === 'prestamos' && !newTabLoading && (
           <>
             <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>Préstamos Otorgados (tipo 071 — Activo)</div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>Préstamos Otorgados (tipo 071 — Activo)</div>
               {!prestamosData?.otorgados?.rows?.length ? (
                 <div style={{ color: '#8B97A8', fontSize: '0.85rem', padding: '1rem 0' }}>Sin préstamos otorgados registrados.</div>
               ) : (
@@ -4045,7 +4100,7 @@ export default function DashboardPage() {
               )}
             </div>
             <div className="kpi-card">
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>Préstamos Recibidos (tipo 071 — Pasivo)</div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>Préstamos Recibidos (tipo 071 — Pasivo)</div>
               {!prestamosData?.recibidos?.rows?.length ? (
                 <div style={{ color: '#8B97A8', fontSize: '0.85rem', padding: '1rem 0' }}>Sin préstamos recibidos registrados.</div>
               ) : (
@@ -4177,7 +4232,7 @@ export default function DashboardPage() {
                       Activo Fijo (clase 33) + Depreciación Acumulada (clase 39) según S10
                     </div>
                     <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#F8FAFC', marginBottom: '0.5rem' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                         Valor Bruto del Activo Fijo (clase 33)
                       </div>
                       <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -4199,7 +4254,7 @@ export default function DashboardPage() {
                     </div>
                     {activoFijoData.depreciaciones?.length > 0 && (
                       <div style={{ overflowX: 'auto' }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#F8FAFC', marginBottom: '0.5rem' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                           Depreciación Acumulada (clase 39)
                         </div>
                         <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -4463,7 +4518,7 @@ export default function DashboardPage() {
           <>
             {/* Resumen ejecutivo */}
             <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
                 Estado del módulo OB_EstadoBanco — Conciliación Bancaria
               </div>
               <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginBottom: '1rem' }}>
@@ -4495,7 +4550,7 @@ export default function DashboardPage() {
 
             {/* Detalle por cuenta */}
             <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
                 Detalle por cuenta bancaria
               </div>
               {!conciliacionData?.rows?.length ? <div style={{ color: '#8B97A8' }}>Sin cuentas bancarias en OB_CuentaBanco. La empresa NO usa el módulo de tesorería de S10.</div> : (
@@ -4545,7 +4600,7 @@ export default function DashboardPage() {
             {/* Movimientos sin conciliar */}
             {conciliacionData?.movsSinConciliar?.length > 0 && (
               <div className="kpi-card">
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><AlertTriangle size={15} aria-hidden="true" /> Movimientos bancarios SIN CONCILIAR (top 100 más recientes)</span>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
@@ -4625,7 +4680,7 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                     <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB, #7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>✦</div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#F8FAFC', fontFamily: "'Outfit', sans-serif" }}>Análisis Ejecutivo IA</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', fontFamily: "'Outfit', sans-serif" }}>Análisis Ejecutivo IA</div>
                       {narEntry && !narrativeLoading && (
                         <div style={{ fontSize: '0.68rem', color: '#4B5563' }}>
                           Generado {new Date(narEntry.generatedAt).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -4762,7 +4817,7 @@ export default function DashboardPage() {
               <div className="kpi-card" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>TRIMESTRE</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#F8FAFC' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {selectedQuarter} {selectedYear} <span style={{ color: '#8B97A8', fontWeight: 400, fontSize: '0.85rem' }}>· {Q_LABELS[selectedQuarter]}</span>
                   </div>
                 </div>
@@ -4903,7 +4958,7 @@ export default function DashboardPage() {
                       return (
                         <tr key={r.key} style={r.hl ? { background: 'rgba(226,92,26,0.04)' } : {}}>
                           <td style={{ fontWeight: r.bold ? 700 : 400 }}>{r.label}</td>
-                          <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: r.bold ? 700 : 400, color: vReal < 0 ? '#F87171' : '#F8FAFC' }}>{fmt(vReal)}</td>
+                          <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: r.bold ? 700 : 400, color: vReal < 0 ? '#F87171' : 'var(--text-primary)' }}>{fmt(vReal)}</td>
                           {hasPpto && <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#8B97A8' }}>{Math.abs(vPpto) > 0.01 ? fmt(vPpto) : '—'}</td>}
                           {hasPpto && <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600, color: col }}>{Math.abs(vPpto) > 0.01 ? `${cumplVal.toFixed(0)}%` : '—'}</td>}
                         </tr>
@@ -4976,7 +5031,7 @@ export default function DashboardPage() {
                               </span>
                               <span style={{ fontSize: '0.62rem', fontWeight: 700, color: s.color, padding: '0.1rem 0.5rem', background: `${s.color}1F`, borderRadius: '0.35rem' }}>{s.label}</span>
                             </div>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#F8FAFC', marginBottom: '0.2rem' }}>{k.label}</div>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>{k.label}</div>
                             <div style={{ fontSize: '1.4rem', fontWeight: 700, color: s.color, fontFamily: 'monospace', marginBottom: '0.2rem' }}>
                               {k.fmt === 'pct' ? `${k.value.toFixed(1)}%` : `${Math.round(k.value)}d`}
                             </div>
@@ -5060,7 +5115,7 @@ export default function DashboardPage() {
                         </h2>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                           {[
-                            { label: 'Total CxC',    val: totalCxC,  color: '#F8FAFC',
+                            { label: 'Total CxC',    val: totalCxC,  color: 'var(--text-primary)',
                               tipTitle: 'Total Cuentas por Cobrar',
                               tip: 'Suma de saldos pendientes de cobro a todos los clientes al cierre del período.' },
                             { label: 'Vigente',      val: tVigente,  color: '#10B981',
@@ -5107,14 +5162,14 @@ export default function DashboardPage() {
                               <label style={{ fontSize: '0.65rem', color: '#8B97A8', display: 'block', marginBottom: '0.25rem' }}>Cedido a Factoring (S/)</label>
                               {isEditing
                                 ? <input type="number" value={draft.cxcCedido || ''} onChange={e => setCxcField('cxcCedido', parseFloat(e.target.value) || 0)}
-                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', color: '#F8FAFC', padding: '0.4rem 0.6rem', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', color: 'var(--text-primary)', padding: '0.4rem 0.6rem', fontFamily: 'monospace', fontSize: '0.85rem' }} />
                                 : <div style={{ fontFamily: 'monospace', color: '#3B82F6', fontWeight: 700 }}>{fmt(draft.cxcCedido || 0)}</div>}
                             </div>
                             <div>
                               <label style={{ fontSize: '0.65rem', color: '#8B97A8', display: 'block', marginBottom: '0.25rem' }}>Incobrable / Provisión (S/)</label>
                               {isEditing
                                 ? <input type="number" value={draft.cxcIncobrable || ''} onChange={e => setCxcField('cxcIncobrable', parseFloat(e.target.value) || 0)}
-                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', color: '#F8FAFC', padding: '0.4rem 0.6rem', fontFamily: 'monospace', fontSize: '0.85rem' }} />
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', color: 'var(--text-primary)', padding: '0.4rem 0.6rem', fontFamily: 'monospace', fontSize: '0.85rem' }} />
                                 : <div style={{ fontFamily: 'monospace', color: '#EF4444', fontWeight: 700 }}>{fmt(draft.cxcIncobrable || 0)}</div>}
                             </div>
                           </div>
@@ -5149,7 +5204,7 @@ export default function DashboardPage() {
                                       ? <input value={draft.cxcComentarios?.[c.codCliente] || ''}
                                           onChange={e => setCxcComment(c.codCliente, e.target.value)}
                                           placeholder="comentario…"
-                                          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.25rem', color: '#F8FAFC', padding: '0.2rem 0.4rem', fontSize: '0.72rem' }} />
+                                          style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.25rem', color: 'var(--text-primary)', padding: '0.2rem 0.4rem', fontSize: '0.72rem' }} />
                                       : <span style={{ color: '#8B97A8', fontStyle: 'italic', fontSize: '0.7rem' }}>{draft.cxcComentarios?.[c.codCliente] || ''}</span>}
                                   </td>
                                 </tr>
@@ -5210,7 +5265,7 @@ export default function DashboardPage() {
                               {saldoCaja !== null && saldoCaja !== undefined && (
                                 <div className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
                                   <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>Último mes<span className="info-icon">i</span></div>
-                                  <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: (saldoCaja as number) < 0 ? '#F87171' : '#F8FAFC' }}>{fmt(saldoCaja as number)}</div>
+                                  <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: (saldoCaja as number) < 0 ? '#F87171' : 'var(--text-primary)' }}>{fmt(saldoCaja as number)}</div>
                                   <div className="info-tooltip">
                                     <div className="info-tip-title">Saldo del Último Mes</div>
                                     <div>Saldo neto de caja del mes más reciente con movimientos registrados. Refleja la fotografía actual de tesorería.</div>
@@ -5379,7 +5434,7 @@ export default function DashboardPage() {
                                   <div style={labelStyle}>{label}<span className="info-icon">i</span></div>
                                   {editing
                                     ? <DirNumInput onChange={onCh}path={`productividad.${k}`} value={d.productividad?.[k] || 0} />
-                                    : <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: '#F8FAFC' }}>{(d.productividad?.[k] || 0).toLocaleString('es-PE')}</div>}
+                                    : <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-primary)' }}>{(d.productividad?.[k] || 0).toLocaleString('es-PE')}</div>}
                                   <div className="info-tooltip">
                                     <div className="info-tip-title">{label}</div>
                                     <div>{tip}</div>
@@ -5390,7 +5445,7 @@ export default function DashboardPage() {
                             {!editing && (d.productividad?.hhDisponibles || 0) > 0 && (
                               <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.8rem', background: 'rgba(43,180,187,0.06)', borderRadius: '0.4rem', fontSize: '0.78rem' }}>
                                 <b style={{ color: '#2BB4BB' }}>Tasa de Utilización: </b>
-                                <span style={{ fontFamily: 'monospace', color: '#F8FAFC' }}>
+                                <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>
                                   {((d.productividad.hhFacturadas / d.productividad.hhDisponibles) * 100).toFixed(1)}%
                                 </span>
                                 <span style={{ color: '#8B97A8', marginLeft: '0.5rem', fontSize: '0.7rem' }}>(target 70-85%)</span>
@@ -5567,7 +5622,7 @@ export default function DashboardPage() {
                                       ? <DirSelectInput onChange={onCh}path={`redFlags.${i}.criticidad`} value={r.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
                                       : <span style={{ color: critColor, fontWeight: 700, fontSize: '0.72rem' }}>{r.criticidad}</span>}
                                   </div>
-                                  <div>{editing ? <DirTextInput onChange={onCh}path={`redFlags.${i}.titulo`} value={r.titulo} placeholder="Título del riesgo" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{r.titulo}</b>}</div>
+                                  <div>{editing ? <DirTextInput onChange={onCh}path={`redFlags.${i}.titulo`} value={r.titulo} placeholder="Título del riesgo" /> : <b style={{ color: 'var(--text-primary)', fontSize: '0.8rem' }}>{r.titulo}</b>}</div>
                                   <div>{editing ? <DirTextArea onChange={onCh}path={`redFlags.${i}.descripcion`} value={r.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{r.descripcion}</span>}</div>
                                   <div>{editing ? <DirTextArea onChange={onCh}path={`redFlags.${i}.accion`} value={r.accion} /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>→ {r.accion}</span>}</div>
                                   {editing && <button onClick={() => removeItem('redFlags', i)} style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.1rem', display: 'flex', alignItems: 'center' }}><X size={14} aria-hidden="true" /></button>}
@@ -5605,7 +5660,7 @@ export default function DashboardPage() {
                                       ? <DirSelectInput onChange={onCh}path={`mustWin.${i}.criticidad`} value={m.criticidad} options={['CRÍTICO','ALTO','MEDIO']} />
                                       : <span style={{ color: critColor, fontWeight: 700, fontSize: '0.72rem' }}>{m.criticidad}</span>}
                                   </div>
-                                  <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.titulo`} value={m.titulo} placeholder="Título del hito" /> : <b style={{ color: '#F8FAFC', fontSize: '0.8rem' }}>{m.titulo}</b>}</div>
+                                  <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.titulo`} value={m.titulo} placeholder="Título del hito" /> : <b style={{ color: 'var(--text-primary)', fontSize: '0.8rem' }}>{m.titulo}</b>}</div>
                                   <div>{editing ? <DirTextArea onChange={onCh}path={`mustWin.${i}.descripcion`} value={m.descripcion} /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.descripcion}</span>}</div>
                                   <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.responsable`} value={m.responsable} placeholder="Responsable" /> : <span style={{ color: '#A5F3FC', fontSize: '0.78rem' }}>{m.responsable}</span>}</div>
                                   <div>{editing ? <DirTextInput onChange={onCh}path={`mustWin.${i}.plazo`} value={m.plazo} placeholder="mes/año" /> : <span style={{ color: '#CBD5E1', fontSize: '0.78rem' }}>{m.plazo}</span>}</div>

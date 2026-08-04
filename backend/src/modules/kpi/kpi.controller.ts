@@ -50,7 +50,10 @@ export class KpiController {
   getCxC(
     @Param('companyId') companyId: string,
     @Query('incluirAnulados') incluirAnulados?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
+    if (desde || hasta) return this.kpiService.getCxCRange(companyId, desde || undefined, hasta || undefined);
     return this.kpiService.getCxC(companyId, incluirAnulados === '1' || incluirAnulados === 'true');
   }
 
@@ -71,7 +74,12 @@ export class KpiController {
 
   /** CxP Aging por proveedor */
   @Get(':companyId/cxp')
-  getCxP(@Param('companyId') companyId: string) {
+  getCxP(
+    @Param('companyId') companyId: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    if (desde || hasta) return this.kpiService.getCxPRange(companyId, desde || undefined, hasta || undefined);
     return this.kpiService.getCxP(companyId);
   }
 

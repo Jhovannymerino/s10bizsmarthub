@@ -261,6 +261,17 @@ ssh $SSH_OPTS "$VPS" "
   #    hace ese renombrado. Como el reverse-proxy resuelve por NOMBRE, el resultado es un
   #    502 silencioso con el contenedor 'Up (healthy)'.
   # Compose ya recrea SOLO los servicios cuya imagen acaba de cambiar.
+
+  # Limpiar contenedores HUÉRFANOS con prefijo de hash (p.ej. '26e50295a753_s10biz-web') que
+  # quedan de un recreate interrumpido: bloquean el 'up' con 'Conflict. The container name ...
+  # is already in use'. Solo se borran los de nombre <hash>_s10biz-* — NUNCA los canónicos
+  # (s10biz-web/api/db no empiezan con hash_), así que este barrido es seguro.
+  HUERFANOS=\$(docker ps -a --format '{{.Names}}' | grep -E '^[0-9a-f]{8,}_s10biz-' || true)
+  if [ -n \"\$HUERFANOS\" ]; then
+    echo \"  Removiendo contenedores huérfanos con prefijo de hash: \$HUERFANOS\"
+    echo \"\$HUERFANOS\" | xargs -r docker rm -f || true
+  fi
+
   docker compose -f docker-compose.prod.yml up -d
 
   echo ''

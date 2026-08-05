@@ -501,6 +501,7 @@ export class KpiService {
               SUM("debito" - "credito")::float8 AS saldo
          FROM "LedgerEntry"
         WHERE "companyId" = $1 AND LEFT("codCuenta", 2) = '12'
+          AND NOT (UPPER(COALESCE("glosa", '')) = 'ASIENTO DE CIERRE' AND "fecha"::date > CURRENT_DATE)
         GROUP BY "codTercero", LEFT("codCuenta", 4)`,
       companyId,
     );
@@ -849,7 +850,8 @@ export class KpiService {
       `SELECT "codCuenta", "desCuenta", "fecha", "mes",
               "debito"::float8 AS debito, "credito"::float8 AS credito, "glosa"
          FROM "LedgerEntry"
-        WHERE "companyId" = $1 AND "anio" = $2 AND "clase" = '10'`,
+        WHERE "companyId" = $1 AND "anio" = $2 AND "clase" = '10'
+          AND "codCuenta" NOT IN ('10300010', '10300011', '10300012')`,
       companyId, year,
     );
 
@@ -1214,7 +1216,11 @@ export class KpiService {
       const key = ((f.RucCliente as string) || (f.Cliente as string) || '').trim();
       if (!map.has(key)) map.set(key, { nombre: f.Cliente ?? '', ruc: f.RucCliente ?? '', totalFacturado: 0 });
       const entry = map.get(key)!;
-      entry.totalFacturado += f.EsNotaCredito ? -Number(f.Total || 0) : Number(f.Total || 0);
+      // Convertir USD→soles antes de sumar; si no, se mezclan unidades y los clientes en
+      // dólares quedan subvaluados ~TC veces (distorsiona total y orden del ranking).
+      const esUSD = String(f.Moneda || '01').trim() === '02';
+      const totalSoles = esUSD ? Number(f.Total || 0) * TC_USD_FALLBACK : Number(f.Total || 0);
+      entry.totalFacturado += f.EsNotaCredito ? -totalSoles : totalSoles;
     }
     const clientes = [...map.values()].filter(c => c.totalFacturado > 0).sort((a, b) => b.totalFacturado - a.totalFacturado);
     const total = clientes.reduce((s, c) => s + c.totalFacturado, 0);
@@ -1234,7 +1240,9 @@ export class KpiService {
       const key = (ruc || nombre).trim();
       if (!map.has(key)) map.set(key, { nombre, ruc, totalFacturado: 0 });
       const entry = map.get(key)!;
-      entry.totalFacturado += f.EsNotaCredito ? -Number(f.Total || 0) : Number(f.Total || 0);
+      const esUSD = String(f.Moneda || '01').trim() === '02';
+      const totalSoles = esUSD ? Number(f.Total || 0) * TC_USD_FALLBACK : Number(f.Total || 0);
+      entry.totalFacturado += f.EsNotaCredito ? -totalSoles : totalSoles;
     }
     const proveedores = [...map.values()].filter(p => p.totalFacturado > 0).sort((a, b) => b.totalFacturado - a.totalFacturado);
     const total = proveedores.reduce((s, p) => s + p.totalFacturado, 0);
@@ -1347,6 +1355,7 @@ export class KpiService {
       `SELECT LEFT("codCuenta", 3) AS sub, SUM("credito" - "debito")::float8 AS neto
          FROM "LedgerEntry"
         WHERE "companyId" = $1 AND LEFT("codCuenta", 2) = '42'
+          AND NOT (UPPER(COALESCE("glosa", '')) = 'ASIENTO DE CIERRE' AND "fecha"::date > CURRENT_DATE)
         GROUP BY LEFT("codCuenta", 3)`,
       companyId,
     );

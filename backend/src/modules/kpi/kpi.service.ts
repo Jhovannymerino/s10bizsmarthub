@@ -1914,7 +1914,14 @@ export class KpiService {
       const monto = round(Number(d.Detraccion) || 0);
       const dm = movs.find((t) => esDetracMov(t, monto));
       const pagos = movs.filter((t) => t !== dm);
-      const montoPago = round(pagos.reduce((s, t) => s + Math.abs((Number(t.Debito) || 0) - (Number(t.Credito) || 0)), 0));
+      // El pago NETO de un documento con detracción es SIEMPRE Total − Detracción: en el
+      // régimen SPOT la contraparte retiene la detracción (la deposita en la cta. BN aparte)
+      // y paga el resto. NO se suman los movimientos de caja por NroD: eso sobrecuenta cuando
+      // un pago en lote cubre varias facturas (cobro CxC salía > documento) o cuando hay dos
+      // movimientos de detracción (CxP "Completo" restaba la detracción dos veces). Los
+      // movimientos solo sirven para la FECHA de pago y el estado (pagado / no pagado).
+      const pagado = pagos.length > 0;
+      const montoPago = pagado ? round((Number(d.Total) || 0) - monto) : 0;
       return {
         doc: `${d.Serie || ''}-${d.Numero || ''}`,
         serie: d.Serie || '', numero: d.Numero || '',

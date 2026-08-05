@@ -1202,8 +1202,15 @@ export class KpiService {
     const cached = await this.getSnapshot(companyId, 'facturas_emitidas', `${year}`);
     if (!cached) return { clientes: [], total: 0, year };
     const facturas = cached.data as any[];
+    // El snapshot facturas_emitidas trae TODOS los tipos por cobrar (incluye préstamos 071,
+    // transferencias bancarias 058, anticipos 070, doc. sin comprobante 060) — NO son ventas.
+    // Un ranking de FACTURACIÓN debe contar solo VENTAS comerciales (facturas/boletas + NC),
+    // la misma definición del CxC. Si no, aparecen "clientes" como BANCO CONTINENTAL
+    // (transferencias) o personas con préstamos, inflando el total.
+    const COMERCIAL = new Set(['131', '125', '128', '134']);
     const map = new Map<string, { nombre: string; ruc: string; totalFacturado: number }>();
     for (const f of facturas) {
+      if (!COMERCIAL.has(String(f.CodTipo || ''))) continue;
       const key = ((f.RucCliente as string) || (f.Cliente as string) || '').trim();
       if (!map.has(key)) map.set(key, { nombre: f.Cliente ?? '', ruc: f.RucCliente ?? '', totalFacturado: 0 });
       const entry = map.get(key)!;

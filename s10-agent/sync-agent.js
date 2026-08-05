@@ -143,21 +143,29 @@ SELECT
     ELSE doc.Total - ISNULL(doc.TotalPagado,0)
     END
   ), 2)                                                                     AS SaldoTotal,
-  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) >= GETDATE()
-                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)     AS SaldoVigente,
-  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
-                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_0_30,
-  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
-                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_31_60,
-  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
-                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_61_90,
-  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,GETDATE()) < DATEADD(DAY,-90,GETDATE())
-                  AND UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-           THEN doc.Total - ISNULL(doc.TotalPagado,0) ELSE 0 END), 2)    AS Dias_90_mas,
+  -- Aging: cada doc cae en EXACTAMENTE una ventana por su vencimiento y aporta su monto
+  -- NC-aware (negativo si es NC flotante), IGUAL que SaldoTotal -> la suma de buckets == SaldoTotal.
+  -- "Vence hoy" (venc == hoy) cae en Vigente (CAST a DATE evita el hueco por la hora de GETDATE()).
+  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,CAST(GETDATE() AS DATE)) >= CAST(GETDATE() AS DATE)
+           THEN (CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                   THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0 ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+                   ELSE doc.Total - ISNULL(doc.TotalPagado,0) END) ELSE 0 END), 2)     AS SaldoVigente,
+  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,CAST(GETDATE() AS DATE)) BETWEEN DATEADD(DAY,-30,CAST(GETDATE() AS DATE)) AND DATEADD(DAY,-1,CAST(GETDATE() AS DATE))
+           THEN (CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                   THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0 ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+                   ELSE doc.Total - ISNULL(doc.TotalPagado,0) END) ELSE 0 END), 2)    AS Dias_0_30,
+  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,CAST(GETDATE() AS DATE)) BETWEEN DATEADD(DAY,-60,CAST(GETDATE() AS DATE)) AND DATEADD(DAY,-31,CAST(GETDATE() AS DATE))
+           THEN (CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                   THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0 ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+                   ELSE doc.Total - ISNULL(doc.TotalPagado,0) END) ELSE 0 END), 2)    AS Dias_31_60,
+  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,CAST(GETDATE() AS DATE)) BETWEEN DATEADD(DAY,-90,CAST(GETDATE() AS DATE)) AND DATEADD(DAY,-61,CAST(GETDATE() AS DATE))
+           THEN (CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                   THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0 ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+                   ELSE doc.Total - ISNULL(doc.TotalPagado,0) END) ELSE 0 END), 2)    AS Dias_61_90,
+  ROUND(SUM(CASE WHEN ISNULL(doc.FechaVencimiento,CAST(GETDATE() AS DATE)) < DATEADD(DAY,-90,CAST(GETDATE() AS DATE))
+           THEN (CASE WHEN UPPER(ISNULL(doc.DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                   THEN CASE WHEN ISNULL(doc.TotalPagado,0) < 0 THEN 0 ELSE -(doc.Total - ISNULL(doc.TotalPagado,0)) END
+                   ELSE doc.Total - ISNULL(doc.TotalPagado,0) END) ELSE 0 END), 2)    AS Dias_90_mas,
   MAX(ISNULL(doc.TipoCambio, ${TC_USD_FALLBACK}))                                        AS TipoCambio
 FROM CMO.dbo.vw_12DocumentosPorCobrar doc
 WHERE doc.CodEmpresa = '${codEmpresa}'
@@ -520,22 +528,34 @@ SELECT
       THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
     ELSE Total - ISNULL(TotalPagado,0) END) ELSE 0 END), 2) AS SaldoUSD,
   MAX(CASE WHEN CodMoneda<>'01' THEN ISNULL(TipoCambio, ${TC_USD_FALLBACK}) ELSE NULL END) AS TipoCambio,
-  -- Aging buckets (en SOLES) excluyen NCs (no tienen fecha de vencimiento comercial)
-  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) >= GETDATE()
-                  AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS SaldoVigente,
-  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-30,GETDATE()) AND DATEADD(DAY,-1,GETDATE())
-                  AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_0_30,
-  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-60,GETDATE()) AND DATEADD(DAY,-31,GETDATE())
-                  AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_31_60,
-  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) BETWEEN DATEADD(DAY,-90,GETDATE()) AND DATEADD(DAY,-61,GETDATE())
-                  AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_61_90,
-  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, GETDATE()) < DATEADD(DAY,-90,GETDATE())
-                  AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%NOTA% DE CR%'
-            THEN (Total - ISNULL(TotalPagado,0)) * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_90_mas
+  -- Aging (en SOLES): cada doc cae en EXACTAMENTE una ventana por su vencimiento y aporta su monto
+  -- NC-aware (NCs flotantes netean en negativo), IGUAL que SaldoTotal -> suma de buckets == SaldoTotal.
+  -- "Vence hoy" -> Vigente (CAST a DATE evita el hueco por la hora de GETDATE()).
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, CAST(GETDATE() AS DATE)) >= CAST(GETDATE() AS DATE)
+            THEN (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                    THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
+                    ELSE Total - ISNULL(TotalPagado,0) END)
+                 * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS SaldoVigente,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, CAST(GETDATE() AS DATE)) BETWEEN DATEADD(DAY,-30,CAST(GETDATE() AS DATE)) AND DATEADD(DAY,-1,CAST(GETDATE() AS DATE))
+            THEN (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                    THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
+                    ELSE Total - ISNULL(TotalPagado,0) END)
+                 * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_0_30,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, CAST(GETDATE() AS DATE)) BETWEEN DATEADD(DAY,-60,CAST(GETDATE() AS DATE)) AND DATEADD(DAY,-31,CAST(GETDATE() AS DATE))
+            THEN (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                    THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
+                    ELSE Total - ISNULL(TotalPagado,0) END)
+                 * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_31_60,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, CAST(GETDATE() AS DATE)) BETWEEN DATEADD(DAY,-90,CAST(GETDATE() AS DATE)) AND DATEADD(DAY,-61,CAST(GETDATE() AS DATE))
+            THEN (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                    THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
+                    ELSE Total - ISNULL(TotalPagado,0) END)
+                 * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_61_90,
+  ROUND(SUM(CASE WHEN ISNULL(FechaVencimiento, CAST(GETDATE() AS DATE)) < DATEADD(DAY,-90,CAST(GETDATE() AS DATE))
+            THEN (CASE WHEN UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%'
+                    THEN CASE WHEN ISNULL(TotalPagado,0) < 0 THEN 0 ELSE -(Total - ISNULL(TotalPagado,0)) END
+                    ELSE Total - ISNULL(TotalPagado,0) END)
+                 * CASE WHEN CodMoneda='01' THEN 1.0 ELSE ISNULL(TipoCambio, ${TC_USD_FALLBACK}) END ELSE 0 END), 2) AS Dias_90_mas
 FROM dedup
 WHERE rn = 1
 GROUP BY DescripcionIdentificador, CodIdentificador

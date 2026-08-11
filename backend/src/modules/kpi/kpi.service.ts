@@ -583,6 +583,101 @@ export class KpiService {
     };
   }
 
+  // ── Saldo a fecha de corte GENÉRICO para rubros de balance (Milka: validar el saldo de
+  // cada rubro a un periodo cerrado). Mismo criterio de cierre/apertura que CxC/CxP: acumula
+  // la(s) clase(s) del Mayor con fecha <= corte, excluyendo sólo el cierre del año del corte.
+  // Signo por naturaleza (deudor = Db−Cr, acreedor = Cr−Db). Agrupa por tercero o por cuenta;
+  // para cuenta toma el nombre del snapshot del rubro (el Mayor no guarda descripción de cuenta).
+  private readonly RUBRO_SALDO: Record<string, {
+    clases: string[]; signo: 'deudor' | 'acreedor'; agrupar: 'tercero' | 'cuenta';
+    sub: number; snap?: string; nameFields?: string[];
+  }> = {
+    laboral:    { clases: ['41'], signo: 'acreedor', agrupar: 'cuenta', sub: 4, snap: 'laboral',    nameFields: ['DesConcepto', 'Descripcion', 'DesCuenta'] },
+    tributos:   { clases: ['40'], signo: 'acreedor', agrupar: 'cuenta', sub: 4, snap: 'tributos',   nameFields: ['Descripcion', 'DesConcepto', 'DesCuenta'] },
+    patrimonio: { clases: ['50','51','52','53','54','55','56','57','58','59'], signo: 'acreedor', agrupar: 'cuenta', sub: 4, snap: 'patrimonio', nameFields: ['Descripcion', 'DesConcepto', 'DesCuenta'] },
+    otras_cxc:  { clases: ['13','14','16','17','18'], signo: 'deudor',   agrupar: 'tercero', sub: 4 },
+    otras_cxp:  { clases: ['43','44','45','46','47'], signo: 'acreedor', agrupar: 'tercero', sub: 4 },
+  };
+
+  private async loadCuentaNombres(companyId: string, snap: string, sub: number, fields: string[]) {
+    const map = new Map<string, string>();
+    let cached = await this.getSnapshot(companyId, snap, 'current');
+    if (!cached) cached = await this.getSnapshot(companyId, snap, `${new Date().getFullYear()}`);
+    if (!cached) return map;
+    for (const r of (cached.data as any[]) || []) {
+      const cod = String(r.CodCuenta || '').slice(0, sub);
+      if (!cod) continue;
+      const nombre = fields.map((f) => r[f]).find((v) => v) || cod;
+      if (!map.has(cod)) map.set(cod, String(nombre));
+    }
+    return map;
+  }
+
+  async getRubroSaldoAFecha(companyId: string, hasta: string, rubro: string) {
+    if (rubro === 'activo_fijo') return this.getActivoFijoSaldoAFecha(companyId, hasta);
+    const cfg = this.RUBRO_SALDO[rubro];
+    if (!cfg) return { modo: 'saldo-a-fecha', fechaCorte: hasta, items: [], total: 0 };
+    const signExpr = cfg.signo === 'deudor' ? 'SUM("debito" - "credito")' : 'SUM("credito" - "debito")';
+    const claseList = cfg.clases.map((c) => `'${c}'`).join(',');
+    const groupCol = cfg.agrupar === 'tercero' ? '"codTercero"' : `LEFT("codCuenta",${cfg.sub})`;
+    const nameSel = cfg.agrupar === 'tercero' ? 'MAX("tercero")' : 'MAX("codCuenta")';
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT ${groupCol} AS cod, ${nameSel} AS nombre, ${signExpr}::float8 AS saldo
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND LEFT("codCuenta",2) IN (${claseList})
+          AND "fecha"::date <= $2::date
+          AND NOT (UPPER(COALESCE("glosa",'')) = 'ASIENTO DE CIERRE'
+                   AND EXTRACT(YEAR FROM "fecha") = EXTRACT(YEAR FROM $2::date))
+        GROUP BY ${groupCol}`,
+      companyId, hasta,
+    );
+    const nameMap = cfg.agrupar === 'cuenta' && cfg.snap
+      ? await this.loadCuentaNombres(companyId, cfg.snap, cfg.sub, cfg.nameFields || [])
+      : null;
+    const items = rows
+      .filter((r) => r.cod != null && Math.abs(Number(r.saldo) || 0) > 0.01)
+      .map((r) => {
+        const cod = String(r.cod);
+        const nombre = nameMap?.get(cod) || String(r.nombre || cod);
+        return { cod, nombre, saldo: round(Number(r.saldo) || 0) };
+      })
+      .sort((a, b) => Math.abs(b.saldo) - Math.abs(a.saldo));
+    const total = round(items.reduce((s, i) => s + i.saldo, 0));
+    return { modo: 'saldo-a-fecha', fechaCorte: hasta, agrupar: cfg.agrupar, items, total };
+  }
+
+  // Activo fijo a fecha: bruto (clase 33, deudor) − depreciación acumulada (clase 39, acreedor).
+  private async getActivoFijoSaldoAFecha(companyId: string, hasta: string) {
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT LEFT("codCuenta",2) AS clase, LEFT("codCuenta",4) AS cod,
+              SUM("debito" - "credito")::float8 AS saldodeudor
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND LEFT("codCuenta",2) IN ('33','39')
+          AND "fecha"::date <= $2::date
+          AND NOT (UPPER(COALESCE("glosa",'')) = 'ASIENTO DE CIERRE'
+                   AND EXTRACT(YEAR FROM "fecha") = EXTRACT(YEAR FROM $2::date))
+        GROUP BY LEFT("codCuenta",2), LEFT("codCuenta",4)`,
+      companyId, hasta,
+    );
+    const nameMap = await this.loadCuentaNombres(companyId, 'activo_fijo', 4, ['DesActivo', 'Descripcion', 'DesCuenta']);
+    const activos: any[] = [];
+    let totalBruto = 0, totalDeprec = 0;
+    for (const r of rows) {
+      const cod = String(r.cod);
+      const val = round(Number(r.saldodeudor) || 0);
+      if (r.clase === '33') {
+        if (Math.abs(val) > 0.01) { activos.push({ cod, nombre: nameMap.get(cod) || cod, saldo: val }); totalBruto += val; }
+      } else {
+        totalDeprec += -val; // clase 39 acreedor: deprec = Cr−Db = −(Db−Cr)
+      }
+    }
+    activos.sort((a, b) => b.saldo - a.saldo);
+    totalBruto = round(totalBruto); totalDeprec = round(totalDeprec);
+    const totalNeto = round(totalBruto - totalDeprec);
+    const items = [...activos, { cod: '39', nombre: '(−) Depreciación acumulada', saldo: round(-totalDeprec) }];
+    return { modo: 'saldo-a-fecha', fechaCorte: hasta, agrupar: 'cuenta', items, total: totalNeto, totalBruto, totalDeprec, totalNeto };
+  }
+
   // Reconcilia la cartera de DOCUMENTOS (lo que devuelve el aging) con el saldo contable
   // de la cuenta 12 (lo que ve la contadora en el balance de comprobación). Dos ajustes,
   // ambos derivados del Mayor (LedgerEntry) sin resync:

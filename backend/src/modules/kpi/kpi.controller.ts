@@ -241,7 +241,12 @@ export class KpiController {
 
   /** Otras CxC — aging clases 13,14,16,17,18 */
   @Get(':companyId/otras-cxc')
-  getOtrasCxC(@Param('companyId') companyId: string) {
+  getOtrasCxC(
+    @Param('companyId') companyId: string,
+    @Query('modo') modo?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getRubroSaldoAFecha(companyId, hasta, 'otras_cxc');
     return this.kpiService.getOtrasCxC(companyId);
   }
 
@@ -259,7 +264,12 @@ export class KpiController {
 
   /** Otras CxP — aging clases 43,44,45,46,47 */
   @Get(':companyId/otras-cxp')
-  getOtrasCxP(@Param('companyId') companyId: string) {
+  getOtrasCxP(
+    @Param('companyId') companyId: string,
+    @Query('modo') modo?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getRubroSaldoAFecha(companyId, hasta, 'otras_cxp');
     return this.kpiService.getOtrasCxP(companyId);
   }
 
@@ -280,7 +290,10 @@ export class KpiController {
   getTributos(
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
+    @Query('modo') modo?: string,
+    @Query('hasta') hasta?: string,
   ) {
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getRubroSaldoAFecha(companyId, hasta, 'tributos');
     const y = year ? parseInt(year, 10) : undefined;
     return this.kpiService.getTributos(companyId, y);
   }
@@ -298,13 +311,23 @@ export class KpiController {
 
   /** Laboral — clase 41 (CTS, remuneraciones por pagar) */
   @Get(':companyId/laboral')
-  getLaboral(@Param('companyId') companyId: string) {
+  getLaboral(
+    @Param('companyId') companyId: string,
+    @Query('modo') modo?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getRubroSaldoAFecha(companyId, hasta, 'laboral');
     return this.kpiService.getLaboral(companyId);
   }
 
   /** Activo Fijo — clase 33 vs 39, valor neto */
   @Get(':companyId/activo-fijo')
-  getActivoFijo(@Param('companyId') companyId: string) {
+  getActivoFijo(
+    @Param('companyId') companyId: string,
+    @Query('modo') modo?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getRubroSaldoAFecha(companyId, hasta, 'activo_fijo');
     return this.kpiService.getActivoFijo(companyId);
   }
 
@@ -461,7 +484,12 @@ export class KpiController {
 
   /** Patrimonio neto — clases 50-59 (capital, reservas, resultados acumulados) */
   @Get(':companyId/patrimonio')
-  getPatrimonio(@Param('companyId') companyId: string) {
+  getPatrimonio(
+    @Param('companyId') companyId: string,
+    @Query('modo') modo?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getRubroSaldoAFecha(companyId, hasta, 'patrimonio');
     return this.kpiService.getPatrimonio(companyId);
   }
 

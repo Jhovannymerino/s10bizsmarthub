@@ -212,6 +212,61 @@ function RangoFechasBar({ year, desde, hasta, onDesde, onHasta, onClear, modo, o
   );
 }
 
+// Panel colapsable "Saldo a fecha de corte" reutilizable para rubros de balance (laboral,
+// tributos, otras CxC/CxP, activo fijo, patrimonio). Consulta el saldo contable del Mayor al
+// corte (modo=saldo-a-fecha) y muestra una tabla concepto/tercero → saldo. Autónomo.
+function SaldoAFechaPanel({ companyId, endpoint, year, titulo, isGrupo }: {
+  companyId: string; endpoint: string; year: number; titulo: string; isGrupo?: boolean;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [hasta, setHasta] = useState<string>(`${year}-12-31`);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => { setData(null); setHasta(`${year}-12-31`); setAbierto(false); }, [companyId, year]);
+  useEffect(() => {
+    if (!abierto || isGrupo) return;
+    const token = localStorage.getItem('token'); if (!token) return;
+    const ctrl = new AbortController(); setLoading(true);
+    fetchApi(`/kpi/${companyId}/${endpoint}?modo=saldo-a-fecha&hasta=${hasta}`, token, ctrl.signal)
+      .then((d) => { setData(d); setLoading(false); })
+      .catch((err) => { if (err.name !== 'AbortError') setLoading(false); });
+    return () => ctrl.abort();
+  }, [abierto, hasta, companyId, endpoint, isGrupo]);
+  if (isGrupo) return null;
+  const items: any[] = data?.items || [];
+  return (
+    <div style={{ marginBottom: '1rem', border: '1px solid rgba(32,126,131,0.18)', borderRadius: 8, background: 'rgba(32,126,131,0.06)' }}>
+      <button onClick={() => setAbierto((a) => !a)} style={{ width: '100%', textAlign: 'left', padding: '0.6rem 0.85rem', background: 'transparent', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontWeight: 700, fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Saldo a fecha de corte{titulo ? ` — ${titulo}` : ''}</span>
+        <span>{abierto ? '▲' : '▼'}</span>
+      </button>
+      {abierto && (
+        <div style={{ padding: '0 0.85rem 0.85rem' }}>
+          <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
+            Al corte
+            <input type="date" value={hasta} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => setHasta(e.target.value)} style={{ padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--text-primary)', colorScheme: 'dark' }} />
+            <span style={{ color: '#6B7280' }}>saldo contable del Mayor a esa fecha (cuadra con el balance)</span>
+          </label>
+          {loading ? <div style={{ fontSize: '0.75rem', color: '#8B97A8' }}>Calculando…</div> : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table-s10" style={{ fontSize: '0.78rem' }}>
+                <thead><tr><th>{data?.agrupar === 'tercero' ? 'Tercero' : 'Cuenta'}</th><th style={{ textAlign: 'right' }}>Saldo al corte</th></tr></thead>
+                <tbody>
+                  {items.map((it: any, i: number) => (
+                    <tr key={i}><td>{it.nombre}</td><td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(it.saldo)}</td></tr>
+                  ))}
+                  {!items.length && <tr><td colSpan={2} style={{ color: '#8B97A8' }}>Sin saldo a esta fecha</td></tr>}
+                </tbody>
+                <tfoot><tr className="total-row"><td>TOTAL al {hasta}</td><td style={{ textAlign: 'right' }}>{fmt(data?.total || 0)}</td></tr></tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -4053,6 +4108,9 @@ export default function DashboardPage() {
 
         {/* ═══ Otras CxC ═══ */}
         {activeTab === 'otras_cxc' && !newTabLoading && (
+          <SaldoAFechaPanel companyId={selectedCompany.codEmpresa} endpoint="otras-cxc" year={selectedYear} titulo="Otras CxC" isGrupo={isGrupo} />
+        )}
+        {activeTab === 'otras_cxc' && !newTabLoading && (
           <div className="kpi-card">
             {!otrasCxCData?.rows?.length ? <NoDataBanner kpi="Otras CxC" /> : (
               <>
@@ -4094,6 +4152,9 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ Otras CxP ═══ */}
+        {activeTab === 'otras_cxp' && !newTabLoading && (
+          <SaldoAFechaPanel companyId={selectedCompany.codEmpresa} endpoint="otras-cxp" year={selectedYear} titulo="Otras CxP" isGrupo={isGrupo} />
+        )}
         {activeTab === 'otras_cxp' && !newTabLoading && (
           <div className="kpi-card">
             {!otrasCxPData?.rows?.length ? <NoDataBanner kpi="Otras CxP" /> : (
@@ -4217,6 +4278,9 @@ export default function DashboardPage() {
 
         {/* ═══ Tributos ═══ */}
         {activeTab === 'tributos' && !newTabLoading && (
+          <SaldoAFechaPanel companyId={selectedCompany.codEmpresa} endpoint="tributos" year={selectedYear} titulo="Tributos" isGrupo={isGrupo} />
+        )}
+        {activeTab === 'tributos' && !newTabLoading && (
           <div className="kpi-card">
             {!tributosData?.rows?.length ? <NoDataBanner kpi="Tributos" /> : (
               <>
@@ -4256,6 +4320,9 @@ export default function DashboardPage() {
 
         {/* ═══ Laboral ═══ */}
         {activeTab === 'laboral' && !newTabLoading && (
+          <SaldoAFechaPanel companyId={selectedCompany.codEmpresa} endpoint="laboral" year={selectedYear} titulo="Obligaciones laborales" isGrupo={isGrupo} />
+        )}
+        {activeTab === 'laboral' && !newTabLoading && (
           <div className="kpi-card">
             {!laboralData?.rows?.length ? <NoDataBanner kpi="Laboral" /> : (
               <>
@@ -4292,6 +4359,9 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ Activo Fijo ═══ */}
+        {activeTab === 'activo_fijo' && !newTabLoading && (
+          <SaldoAFechaPanel companyId={selectedCompany.codEmpresa} endpoint="activo-fijo" year={selectedYear} titulo="Activo fijo (neto)" isGrupo={isGrupo} />
+        )}
         {activeTab === 'activo_fijo' && !newTabLoading && (
           <div className="kpi-card">
             {!activoFijoData?.rows?.length ? <NoDataBanner kpi="Activo Fijo" /> : (
@@ -4429,6 +4499,9 @@ export default function DashboardPage() {
         )}
 
         {/* ═══ Patrimonio ═══ */}
+        {activeTab === 'patrimonio' && !newTabLoading && (
+          <SaldoAFechaPanel companyId={selectedCompany.codEmpresa} endpoint="patrimonio" year={selectedYear} titulo="Patrimonio" isGrupo={isGrupo} />
+        )}
         {activeTab === 'patrimonio' && !newTabLoading && (
           <div className="kpi-card">
             {!patrimonioData?.rows?.length ? <NoDataBanner kpi="Patrimonio" /> : (

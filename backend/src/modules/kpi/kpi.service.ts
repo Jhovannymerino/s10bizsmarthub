@@ -1209,9 +1209,10 @@ export class KpiService {
   private clasificarNaturalezaGAV(desc: string): string {
     const d = (desc || '').toLowerCase();
     const has = (...ks: string[]) => ks.some((k) => d.includes(k));
-    if (has('deprecia', 'amortiz')) return 'Depreciación y amortización';
+    // 'deprec' (no 'deprecia') para cazar la abreviatura real "Prov.Para Deprec.Edificaciones"
+    if (has('deprec', 'amortiz')) return 'Depreciación y amortización';
     if (has('sueld', 'salari', 'remunerac', 'gratific', 'vacacion', 'cts', 'planilla', 'essalud',
-            'senati', 'conafovicer', 'bonific', 'asignacion familiar', 'participacion', 'dietas',
+            'eps', 'senati', 'conafovicer', 'bonific', 'asignacion familiar', 'participacion', 'dietas',
             'compensacion', 'indemnizac', 'personal')) return 'Gastos de personal';
     if (has('tribut', 'impuest', 'arbitri', 'licenci', 'sunat', 'contribuc', 'municipal', 'predial',
             'itan', 'sencico', 'multa', 'sancion')) return 'Tributos';

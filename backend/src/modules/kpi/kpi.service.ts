@@ -473,6 +473,116 @@ export class KpiService {
     };
   }
 
+  // Saldo CONTABLE de la cartera (cuenta 12) por tercero a una FECHA DE CORTE, desde el Mayor.
+  // Milka: "ver el saldo a un determinado periodo". Acumula clase 12 (subcuentas 1211 "por
+  // emitir" + 1212 "emitidas", igual que la reconciliación) con fecha <= corte. Excluye el
+  // asiento de cierre de ejercicio (revierte saldos para el arrastre entre años); el asiento
+  // de apertura SÍ cuenta (es el saldo inicial). Ata al balance de comprobación a esa fecha.
+  // No trae aging: el envejecimiento a una fecha pasada exigiría el estado de pago histórico,
+  // que el snapshot no guarda.
+  //
+  // Cierre/apertura: el cierre de cada dic (Cr que lleva a cero) se cancela con la apertura de
+  // enero siguiente (Db que reabre). Por eso se incluyen los cierres de años PREVIOS al corte
+  // (sus aperturas ya ocurrieron y cancelan) y solo se excluye el cierre del AÑO DEL CORTE (su
+  // apertura aún no ocurre → aplicarlo dejaría el saldo en ~0). Verificado: CMO @hoy = 6,315,610.84
+  // = reconciliación viva; INTEGRAL @31-dic-2025 pre-cierre = 7,139,078.10.
+  async getCxCSaldoAFecha(companyId: string, hasta: string) {
+    const grupo = await this.prisma.company.findMany({ select: { codEmpresa: true } });
+    const grupoRuc = new Set(
+      grupo.map((g) => String(g.codEmpresa)).filter((r) => r !== String(companyId)),
+    );
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre, LEFT("codCuenta",4) AS sub,
+              SUM("debito" - "credito")::float8 AS saldo
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND LEFT("codCuenta",2) = '12'
+          AND "fecha"::date <= $2::date
+          AND NOT (UPPER(COALESCE("glosa",'')) = 'ASIENTO DE CIERRE'
+                   AND EXTRACT(YEAR FROM "fecha") = EXTRACT(YEAR FROM $2::date))
+        GROUP BY "codTercero", LEFT("codCuenta",4)`,
+      companyId, hasta,
+    );
+    const map = new Map<string, { nombre: string; emitidas: number; porEmitir: number }>();
+    for (const r of rows) {
+      if (r.ruc == null) continue;
+      const ruc = String(r.ruc);
+      const e = map.get(ruc) || { nombre: r.nombre || ruc, emitidas: 0, porEmitir: 0 };
+      if (r.nombre) e.nombre = r.nombre;
+      if (r.sub === '1212') e.emitidas = round(e.emitidas + (Number(r.saldo) || 0));
+      else if (r.sub === '1211') e.porEmitir = round(e.porEmitir + (Number(r.saldo) || 0));
+      map.set(ruc, e);
+    }
+    const terceros: any[] = [];
+    const vinculados: any[] = [];
+    for (const [ruc, l] of map) {
+      const saldoLedger = round(l.emitidas + l.porEmitir);
+      if (Math.abs(saldoLedger) < 0.01) continue;
+      (grupoRuc.has(ruc) ? vinculados : terceros).push({
+        codCliente: ruc, cliente: l.nombre, esVinculada: grupoRuc.has(ruc),
+        emitidas: l.emitidas, porEmitir: l.porEmitir,
+        saldoLedger, saldoTotalSoles: saldoLedger, saldoDocs: saldoLedger, diferencia: 0,
+      });
+    }
+    terceros.sort((a, b) => b.saldoLedger - a.saldoLedger);
+    vinculados.sort((a, b) => b.saldoLedger - a.saldoLedger);
+    const sum = (arr: any[], f: string) => round(arr.reduce((s, x) => s + (x[f] || 0), 0));
+    const totalSaldo = sum(terceros, 'saldoLedger');
+    const top3 = terceros.slice(0, 3).reduce((s, c) => s + (c.saldoLedger || 0), 0);
+    return {
+      modo: 'saldo-a-fecha', fechaCorte: hasta, rangoModo: true,
+      clientes: terceros, clientesVinculados: vinculados,
+      totalSaldo, totalDocs: totalSaldo,
+      totalEmitidas: sum(terceros, 'emitidas'), totalPorEmitir: sum(terceros, 'porEmitir'),
+      totalVinculados: sum(vinculados, 'saldoLedger'), numVinculados: vinculados.length,
+      concentracionTop3: totalSaldo > 0 ? round((top3 / totalSaldo) * 100) : 0,
+      numClientes: terceros.length, totalVigente: 0, total90mas: 0, pct90mas: 0,
+    };
+  }
+
+  // Saldo CONTABLE de las cuentas por pagar (clase 42) por proveedor a una FECHA DE CORTE.
+  // Clase 42 es acreedora → saldo = Σ(crédito − débito). Mismo criterio de cierre/apertura y
+  // segregación intercompañía que getCxCSaldoAFecha.
+  async getCxPSaldoAFecha(companyId: string, hasta: string) {
+    const grupo = await this.prisma.company.findMany({ select: { codEmpresa: true } });
+    const grupoRuc = new Set(
+      grupo.map((g) => String(g.codEmpresa)).filter((r) => r !== String(companyId)),
+    );
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre,
+              SUM("credito" - "debito")::float8 AS saldo
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND LEFT("codCuenta",2) = '42'
+          AND "fecha"::date <= $2::date
+          AND NOT (UPPER(COALESCE("glosa",'')) = 'ASIENTO DE CIERRE'
+                   AND EXTRACT(YEAR FROM "fecha") = EXTRACT(YEAR FROM $2::date))
+        GROUP BY "codTercero"`,
+      companyId, hasta,
+    );
+    const proveedores: any[] = [];
+    const vinculados: any[] = [];
+    for (const r of rows) {
+      if (r.ruc == null) continue;
+      const ruc = String(r.ruc);
+      const saldo = round(Number(r.saldo) || 0);
+      if (Math.abs(saldo) < 0.01) continue;
+      (grupoRuc.has(ruc) ? vinculados : proveedores).push({
+        codProveedor: ruc, proveedor: r.nombre || ruc, esVinculada: grupoRuc.has(ruc),
+        saldoTotal: saldo, saldoTotalSoles: saldo,
+      });
+    }
+    proveedores.sort((a, b) => b.saldoTotal - a.saldoTotal);
+    vinculados.sort((a, b) => b.saldoTotal - a.saldoTotal);
+    const sum = (arr: any[]) => round(arr.reduce((s, x) => s + (x.saldoTotal || 0), 0));
+    const total = sum(proveedores);
+    return {
+      modo: 'saldo-a-fecha', fechaCorte: hasta, rangoModo: true,
+      proveedores, proveedoresVinculados: vinculados,
+      total, totalSaldo: total, totalVinculados: sum(vinculados),
+      numProveedores: proveedores.length, numVinculados: vinculados.length,
+      total90mas: 0, pct90mas: 0,
+    };
+  }
+
   // Reconcilia la cartera de DOCUMENTOS (lo que devuelve el aging) con el saldo contable
   // de la cuenta 12 (lo que ve la contadora en el balance de comprobación). Dos ajustes,
   // ambos derivados del Mayor (LedgerEntry) sin resync:

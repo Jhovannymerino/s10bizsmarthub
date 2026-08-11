@@ -161,29 +161,52 @@ function DirSelectInput({ path, value, options, onChange }: { path: string; valu
 // ═══════════════════════════════════════════════
 // Barra reutilizable de rango de fechas (Desde/Hasta) — mismo look en todas las vistas.
 // desde/hasta null = año completo (comportamiento por defecto).
-function RangoFechasBar({ year, desde, hasta, onDesde, onHasta, onClear }: {
+function RangoFechasBar({ year, desde, hasta, onDesde, onHasta, onClear, modo, onModo }: {
   year: number; desde: string | null; hasta: string | null;
   onDesde: (v: string) => void; onHasta: (v: string) => void; onClear: () => void;
+  // Opcional: si se pasa onModo, se muestra un toggle "Saldo a fecha" / "Docs por rango".
+  // 'saldo' = saldo contable de la cartera al corte (del Mayor); 'docs' = docs por fecha de emisión.
+  modo?: 'docs' | 'saldo'; onModo?: (m: 'docs' | 'saldo') => void;
 }) {
   const inputStyle: React.CSSProperties = { padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--text-primary)', colorScheme: 'dark' };
+  const esSaldo = modo === 'saldo';
+  const tabBtn = (activo: boolean): React.CSSProperties => ({ padding: '0.28rem 0.7rem', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: activo ? '1px solid rgba(43,180,187,0.5)' : '1px solid rgba(255,255,255,0.12)', background: activo ? 'rgba(43,180,187,0.15)' : 'rgba(255,255,255,0.04)', color: activo ? '#2BB4BB' : '#8B97A8' });
   return (
     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'rgba(32,126,131,0.06)', border: '1px solid rgba(32,126,131,0.18)', borderRadius: 8 }}>
-      <span style={{ fontSize: '0.75rem', color: '#8B97A8', fontWeight: 600 }}>Período:</span>
-      <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-        Desde
-        <input type="date" value={desde ?? `${year}-01-01`} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => onDesde(e.target.value)} style={inputStyle} />
-      </label>
-      <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-        Hasta
-        <input type="date" value={hasta ?? `${year}-12-31`} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => onHasta(e.target.value)} style={inputStyle} />
-      </label>
-      {(desde || hasta) ? (
+      {onModo && (
+        <div style={{ display: 'flex', gap: '0.35rem', marginRight: '0.3rem' }}>
+          <button onClick={() => onModo('saldo')} style={tabBtn(esSaldo)}>Saldo a fecha</button>
+          <button onClick={() => onModo('docs')} style={tabBtn(!esSaldo)}>Docs por rango</button>
+        </div>
+      )}
+      {esSaldo ? (
         <>
-          <span style={{ fontSize: '0.7rem', color: '#2BB4BB', fontWeight: 700 }}>● Período personalizado</span>
-          <button onClick={onClear} style={{ padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.72rem', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#8B97A8' }}>Ver año completo</button>
+          <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            Al corte
+            <input type="date" value={hasta ?? `${year}-12-31`} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => onHasta(e.target.value)} style={inputStyle} />
+          </label>
+          <span style={{ fontSize: '0.7rem', color: '#2BB4BB', fontWeight: 700 }}>● Saldo contable del Mayor a la fecha</span>
         </>
       ) : (
-        <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>Año completo {year}</span>
+        <>
+          <span style={{ fontSize: '0.75rem', color: '#8B97A8', fontWeight: 600 }}>Período:</span>
+          <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            Desde
+            <input type="date" value={desde ?? `${year}-01-01`} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => onDesde(e.target.value)} style={inputStyle} />
+          </label>
+          <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            Hasta
+            <input type="date" value={hasta ?? `${year}-12-31`} min={`${year}-01-01`} max={`${year}-12-31`} onChange={(e) => onHasta(e.target.value)} style={inputStyle} />
+          </label>
+          {(desde || hasta) ? (
+            <>
+              <span style={{ fontSize: '0.7rem', color: '#2BB4BB', fontWeight: 700 }}>● Período personalizado</span>
+              <button onClick={onClear} style={{ padding: '0.3rem 0.7rem', borderRadius: 6, fontSize: '0.72rem', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', color: '#8B97A8' }}>Ver año completo</button>
+            </>
+          ) : (
+            <span style={{ fontSize: '0.7rem', color: '#6B7280' }}>Año completo {year}</span>
+          )}
+        </>
       )}
     </div>
   );
@@ -235,6 +258,10 @@ export default function DashboardPage() {
   const [cxcHasta, setCxcHasta] = useState<string | null>(null);
   const [cxpDesde, setCxpDesde] = useState<string | null>(null);
   const [cxpHasta, setCxpHasta] = useState<string | null>(null);
+  // Modo de la vista de cartera: 'docs' = aging por documentos / rango de emisión (default);
+  // 'saldo' = saldo contable de la cartera a una fecha de corte (del Mayor, ata al balance).
+  const [cxcModo, setCxcModo] = useState<'docs' | 'saldo'>('docs');
+  const [cxpModo, setCxpModo] = useState<'docs' | 'saldo'>('docs');
   // Reporte de detracciones (modal); lado inicial según vista (CxC=cobradas, CxP=pagadas)
   const [detracModal, setDetracModal] = useState<null | 'cobradas' | 'pagadas'>(null);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
@@ -431,6 +458,7 @@ export default function DashboardPage() {
     setCxcVinculadas(null);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
     setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null); setCajaDesde(null); setCajaHasta(null); setCxcAnulados(false);
+    setCxcDesde(null); setCxcHasta(null); setCxpDesde(null); setCxpHasta(null); setCxcModo('docs'); setCxpModo('docs');
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
     setGastosDesde(null); setGastosHasta(null);
@@ -536,35 +564,47 @@ export default function DashboardPage() {
   // limpiar el rango, el botón "Limpiar" bumpea refreshKey y la carga principal recarga
   // la cartera completa (con reconciliación al Mayor).
   useEffect(() => {
-    if (isGrupo || (!cxcDesde && !cxcHasta)) return;
+    const saldoMode = cxcModo === 'saldo';
+    if (isGrupo || (!saldoMode && !cxcDesde && !cxcHasta)) return;
     const token = localStorage.getItem('token');
     if (!token) return;
     const id = selectedCompany.codEmpresa;
     const ctrl = new AbortController();
     let url = `/kpi/${id}/cxc?`;
-    if (cxcDesde) url += `desde=${cxcDesde}`;
-    if (cxcHasta) url += `${cxcDesde ? '&' : ''}hasta=${cxcHasta}`;
+    if (saldoMode) {
+      const corte = cxcHasta || `${selectedYear}-12-31`;
+      url += `modo=saldo-a-fecha&hasta=${corte}`;
+    } else {
+      if (cxcDesde) url += `desde=${cxcDesde}`;
+      if (cxcHasta) url += `${cxcDesde ? '&' : ''}hasta=${cxcHasta}`;
+    }
     fetchApi(url, token, ctrl.signal)
       .then((d) => setCxC(d?.clientes ? d : null))
       .catch((err) => { if (err.name !== 'AbortError') { /* mantener CxC previo */ } });
     return () => ctrl.abort();
-  }, [cxcDesde, cxcHasta, selectedCompany, selectedYear, isGrupo]);
+  }, [cxcDesde, cxcHasta, cxcModo, selectedCompany, selectedYear, isGrupo]);
 
   // CxP por rango de fecha de emisión: sobreescribe `cxp` cuando hay rango activo.
   useEffect(() => {
-    if (isGrupo || (!cxpDesde && !cxpHasta)) return;
+    const saldoMode = cxpModo === 'saldo';
+    if (isGrupo || (!saldoMode && !cxpDesde && !cxpHasta)) return;
     const token = localStorage.getItem('token');
     if (!token) return;
     const id = selectedCompany.codEmpresa;
     const ctrl = new AbortController();
     let url = `/kpi/${id}/cxp?`;
-    if (cxpDesde) url += `desde=${cxpDesde}`;
-    if (cxpHasta) url += `${cxpDesde ? '&' : ''}hasta=${cxpHasta}`;
+    if (saldoMode) {
+      const corte = cxpHasta || `${selectedYear}-12-31`;
+      url += `modo=saldo-a-fecha&hasta=${corte}`;
+    } else {
+      if (cxpDesde) url += `desde=${cxpDesde}`;
+      if (cxpHasta) url += `${cxpDesde ? '&' : ''}hasta=${cxpHasta}`;
+    }
     fetchApi(url, token, ctrl.signal)
       .then((d) => setCxP(d?.proveedores ? d : null))
       .catch((err) => { if (err.name !== 'AbortError') { /* mantener CxP previo */ } });
     return () => ctrl.abort();
-  }, [cxpDesde, cxpHasta, selectedCompany, selectedYear, isGrupo]);
+  }, [cxpDesde, cxpHasta, cxpModo, selectedCompany, selectedYear, isGrupo]);
 
   // Gastos por naturaleza por rango: sobreescribe gastosNatData cuando hay rango activo.
   useEffect(() => {
@@ -2303,8 +2343,15 @@ export default function DashboardPage() {
             <>
               <RangoFechasBar year={selectedYear} desde={cxcDesde} hasta={cxcHasta}
                 onDesde={setCxcDesde} onHasta={setCxcHasta}
+                modo={cxcModo}
+                onModo={(m) => { if (m === 'docs') { setCxcModo('docs'); setCxcDesde(null); setCxcHasta(null); setRefreshKey((k) => k + 1); } else { setCxcModo('saldo'); } }}
                 onClear={() => { setCxcDesde(null); setCxcHasta(null); setRefreshKey((k) => k + 1); }} />
-              {cxc.rangoModo && (
+              {cxc.modo === 'saldo-a-fecha' && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
+                  <b>Saldo contable de la cartera</b> al corte, tomado del Mayor (cuenta 12). Ata al balance de comprobación a esa fecha. No muestra envejecimiento: el aging a una fecha pasada requeriría el estado de pago histórico del documento, que no se guarda.
+                </div>
+              )}
+              {cxc.rangoModo && cxc.modo !== 'saldo-a-fecha' && (
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
                   Rango por <b>fecha de emisión</b> del documento. Muestra la cartera de los comprobantes emitidos en el período; en este modo no se reconcilia con el saldo contable del Mayor (que es puntual, no filtrable por fecha de emisión).
                 </div>
@@ -2570,8 +2617,15 @@ export default function DashboardPage() {
             <>
               <RangoFechasBar year={selectedYear} desde={cxpDesde} hasta={cxpHasta}
                 onDesde={setCxpDesde} onHasta={setCxpHasta}
+                modo={cxpModo}
+                onModo={(m) => { if (m === 'docs') { setCxpModo('docs'); setCxpDesde(null); setCxpHasta(null); setRefreshKey((k) => k + 1); } else { setCxpModo('saldo'); } }}
                 onClear={() => { setCxpDesde(null); setCxpHasta(null); setRefreshKey((k) => k + 1); }} />
-              {cxp.rangoModo && (
+              {cxp.modo === 'saldo-a-fecha' && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
+                  <b>Saldo contable de las cuentas por pagar</b> al corte, tomado del Mayor (cuenta 42). Ata al balance de comprobación a esa fecha. No muestra envejecimiento por la misma razón que en CxC.
+                </div>
+              )}
+              {cxp.rangoModo && cxp.modo !== 'saldo-a-fecha' && (
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
                   Rango por <b>fecha de emisión</b> del documento. Muestra la deuda de los comprobantes emitidos en el período; en este modo no se muestra la composición contable de la cuenta 42 (que es un saldo puntual).
                 </div>

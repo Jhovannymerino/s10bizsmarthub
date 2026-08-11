@@ -52,7 +52,10 @@ export class KpiController {
     @Query('incluirAnulados') incluirAnulados?: string,
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
+    @Query('modo') modo?: string,
   ) {
+    // modo='saldo-a-fecha' → saldo contable de la cartera al corte (hasta), desde el Mayor.
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getCxCSaldoAFecha(companyId, hasta);
     if (desde || hasta) return this.kpiService.getCxCRange(companyId, desde || undefined, hasta || undefined);
     return this.kpiService.getCxC(companyId, incluirAnulados === '1' || incluirAnulados === 'true');
   }
@@ -78,7 +81,9 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
+    @Query('modo') modo?: string,
   ) {
+    if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getCxPSaldoAFecha(companyId, hasta);
     if (desde || hasta) return this.kpiService.getCxPRange(companyId, desde || undefined, hasta || undefined);
     return this.kpiService.getCxP(companyId);
   }

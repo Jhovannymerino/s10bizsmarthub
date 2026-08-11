@@ -639,18 +639,25 @@ ORDER BY pcd.Descripcion, Mes
 // PlanContableDetalle por LEFT(CodCuenta,3) multiplicaba las filas (ese código
 // no es único) e inflaba el GAV (lo duplicaba). El P&L no tiene ese join, por
 // eso el P&L sí estaba correcto.
+// GAV a nivel de SUBCUENTA COMPLETA (no 3 dígitos): además del destino (LEFT,3) se emite
+// la cuenta completa + su descripción, para que el backend pueda reagrupar por NATURALEZA
+// (personal, servicios, tributos, depreciación…) sin perder la vista por destino. CodDestino
+// / DesDestino conservan el rótulo del destino de 3 dígitos.
 const QUERY_GAV = (codEmpresa, fechaInicio, fechaFin) => `
 SELECT
   g.CodCuenta,
   ISNULL((SELECT MAX(p.Descripcion) FROM CMO.dbo.PlanContableDetalle p
           WHERE p.CodCuenta = g.CodCuenta), g.DesSub) AS DesCuenta,
+  LEFT(g.CodCuenta, 3)                                   AS CodDestino,
+  ISNULL((SELECT MAX(p.Descripcion) FROM CMO.dbo.PlanContableDetalle p
+          WHERE p.CodCuenta = LEFT(g.CodCuenta, 3)), LEFT(g.CodCuenta, 3)) AS DesDestino,
   g.Mes,
   g.GAV
 FROM (
   SELECT
-    LEFT(d.CodCuenta, 3)                                  AS CodCuenta,
-    MAX(d.Descripcion)                                    AS DesSub,
-    MONTH(ac.FechaAplicacionContable)                     AS Mes,
+    d.CodCuenta                                          AS CodCuenta,
+    MAX(d.Descripcion)                                   AS DesSub,
+    MONTH(ac.FechaAplicacionContable)                    AS Mes,
     SUM(ISNULL(ac.Debito,0)) - SUM(ISNULL(ac.Credito,0)) AS GAV
   FROM CMO.dbo.AsientoContable ac
   JOIN CMO.dbo.PlanContableDetalle d
@@ -658,7 +665,7 @@ FROM (
   WHERE ac.CodEmpresa = '${codEmpresa}'
     AND ac.FechaAplicacionContable BETWEEN '${fechaInicio}' AND '${fechaFin}'
     AND LEFT(d.CodCuenta, 2) IN ('94', '95')
-  GROUP BY LEFT(d.CodCuenta, 3), MONTH(ac.FechaAplicacionContable)
+  GROUP BY d.CodCuenta, MONTH(ac.FechaAplicacionContable)
 ) g
 ORDER BY g.CodCuenta, g.Mes
 `;

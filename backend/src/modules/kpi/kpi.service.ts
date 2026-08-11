@@ -1148,7 +1148,13 @@ export class KpiService {
   async getGAV(companyId: string, year: number) {
     const period = `${year}`;
     const cached = await this.getSnapshot(companyId, 'gav', period);
-    if (cached) return cached.data;
+    if (cached) {
+      const data: any = cached.data;
+      // Vista por NATURALEZA: se arma en lectura desde `cuentas` (subcuentas completas), para
+      // poder afinar el clasificador con un redeploy de backend, sin re-sincronizar.
+      if (data?.cuentas?.length && !data.naturaleza) data.naturaleza = this.gavPorNaturaleza(data.cuentas);
+      return data;
+    }
 
     if (this.s10.isDirectMode) {
       const company = await this.resolveCompany(companyId);
@@ -1162,26 +1168,81 @@ export class KpiService {
   }
 
   buildGAV(rows: any[]) {
-    const categorias: Record<string, any> = {};
+    const categorias: Record<string, any> = {}; // por DESTINO (3 díg) — vista actual
+    const cuentas: Record<string, any> = {};    // por subcuenta COMPLETA — para naturaleza
 
     for (const row of rows) {
-      const key = row.CodCuenta;
-      if (!categorias[key]) {
-        categorias[key] = { cod: row.CodCuenta, descripcion: row.DesCuenta, ytd: 0, meses: {} };
-      }
+      const full = String(row.CodCuenta ?? '');
+      // CodDestino sólo viene en el formato nuevo (subcuenta completa). Si no está (rango por
+      // transacciones, snapshots viejos), el propio CodCuenta ya es el destino de 3 díg.
+      const codDestino = row.CodDestino != null ? String(row.CodDestino) : full.slice(0, 3) || full;
+      const desDestino = row.DesDestino ?? row.DesCuenta ?? codDestino;
       const val = round(parseFloat(row.GAV) || 0);
-      categorias[key].meses[row.Mes] = val;
-      categorias[key].ytd += val;
+
+      if (!categorias[codDestino]) categorias[codDestino] = { cod: codDestino, descripcion: desDestino, ytd: 0, meses: {} };
+      categorias[codDestino].meses[row.Mes] = round((categorias[codDestino].meses[row.Mes] || 0) + val);
+      categorias[codDestino].ytd = round(categorias[codDestino].ytd + val);
+
+      if (row.CodDestino != null) {
+        if (!cuentas[full]) cuentas[full] = { cod: full, descripcion: row.DesCuenta || full, destino: codDestino, ytd: 0, meses: {} };
+        cuentas[full].meses[row.Mes] = round((cuentas[full].meses[row.Mes] || 0) + val);
+        cuentas[full].ytd = round(cuentas[full].ytd + val);
+      }
     }
 
     const lista = Object.values(categorias).sort((a: any, b: any) => b.ytd - a.ytd);
     const total = lista.reduce((sum: number, c: any) => sum + c.ytd, 0);
+    const listaCuentas = Object.values(cuentas).sort((a: any, b: any) => b.ytd - a.ytd);
 
     return {
       categorias: lista.map((c: any) => ({ ...c, pct: total > 0 ? round((c.ytd / total) * 100) : 0 })),
+      cuentas: listaCuentas, // se clasifica por naturaleza en getGAV (lectura)
       total: round(total),
       syncedAt: new Date().toISOString(),
     };
+  }
+
+  // Clasifica una subcuenta de GAV (94/95) en una cubeta de NATURALEZA por palabras clave de su
+  // descripción. Aproximación afinable: al ver descripciones reales tras el resync se ajusta acá
+  // (sólo redeploy de backend, la clasificación corre en lectura). El total por naturaleza cuadra
+  // con el total por destino porque parte de las mismas subcuentas.
+  private clasificarNaturalezaGAV(desc: string): string {
+    const d = (desc || '').toLowerCase();
+    const has = (...ks: string[]) => ks.some((k) => d.includes(k));
+    if (has('deprecia', 'amortiz')) return 'Depreciación y amortización';
+    if (has('sueld', 'salari', 'remunerac', 'gratific', 'vacacion', 'cts', 'planilla', 'essalud',
+            'senati', 'conafovicer', 'bonific', 'asignacion familiar', 'participacion', 'dietas',
+            'compensacion', 'indemnizac', 'personal')) return 'Gastos de personal';
+    if (has('tribut', 'impuest', 'arbitri', 'licenci', 'sunat', 'contribuc', 'municipal', 'predial',
+            'itan', 'sencico', 'multa', 'sancion')) return 'Tributos';
+    if (has('seguro', 'poliza')) return 'Seguros';
+    if (has('alquil', 'arrend')) return 'Alquileres';
+    if (has('honorari', 'asesor', 'consultor', 'auditor', 'legal', 'notari', 'abogad', 'contab')) return 'Honorarios y asesorías';
+    if (has('energ', 'electric', 'agua', 'telefon', 'internet', 'comunicac', 'cable', 'luz')) return 'Servicios básicos';
+    if (has('vigilanc', 'seguridad', 'limpiez', 'manteni', 'reparac', 'transport', 'flete', 'courier',
+            'mensaj', 'publicidad', 'marketing', 'capacitac', 'viatico', 'viaje', 'pasaje', 'movilidad',
+            'combustible', 'peaje', 'tercero', 'servicio')) return 'Servicios de terceros';
+    if (has('insumo', 'suministr', 'util', 'materiale', 'papeler', 'fungib', 'repuesto', 'herramient',
+            'uniforme', 'implement')) return 'Suministros y materiales';
+    return 'Otros gastos de gestión';
+  }
+
+  private gavPorNaturaleza(cuentas: any[]) {
+    const buckets: Record<string, any> = {};
+    for (const c of cuentas || []) {
+      const nat = this.clasificarNaturalezaGAV(c.descripcion);
+      if (!buckets[nat]) buckets[nat] = { nat, ytd: 0, meses: {}, cuentas: [] };
+      buckets[nat].ytd = round(buckets[nat].ytd + (c.ytd || 0));
+      for (const [m, v] of Object.entries(c.meses || {})) buckets[nat].meses[m] = round((buckets[nat].meses[m] || 0) + (Number(v) || 0));
+      buckets[nat].cuentas.push({ cod: c.cod, descripcion: c.descripcion, ytd: c.ytd });
+    }
+    const lista = Object.values(buckets).sort((a: any, b: any) => b.ytd - a.ytd);
+    const total = lista.reduce((s: number, c: any) => s + c.ytd, 0);
+    return lista.map((c: any) => ({
+      ...c,
+      cuentas: c.cuentas.sort((a: any, b: any) => b.ytd - a.ytd),
+      pct: total > 0 ? round((c.ytd / total) * 100) : 0,
+    }));
   }
 
   // GAV por RANGO de fechas — derivado del snapshot `transactions` (clases 94+95, fecha diaria).

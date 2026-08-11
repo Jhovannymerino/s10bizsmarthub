@@ -244,6 +244,8 @@ export default function DashboardPage() {
   const [gav, setGAV] = useState<any>(null);
   const [gavDesde, setGavDesde] = useState<string | null>(null);
   const [gavHasta, setGavHasta] = useState<string | null>(null);
+  // GAV: 'destino' = por función 94/95 (default) · 'naturaleza' = por tipo de gasto (personal, servicios…)
+  const [gavVista, setGavVista] = useState<'destino' | 'naturaleza'>('destino');
   const [consolidado, setConsolidado] = useState<any>(null);
   const [scorecard, setScorecard] = useState<any>(null);
   const [cajaPosicion, setCajaPosicion] = useState<any>(null);
@@ -3549,14 +3551,26 @@ export default function DashboardPage() {
             onDesde={setGavDesde} onHasta={setGavHasta}
             onClear={() => { setGavDesde(null); setGavHasta(null); setRefreshKey((k) => k + 1); }} />
         )}
-        {activeTab === 'gav' && gav && (
+        {activeTab === 'gav' && gav && (() => {
+          const gavCats = gavVista === 'naturaleza' && gav.naturaleza?.length
+            ? gav.naturaleza.map((n: any) => ({ cod: n.nat, descripcion: n.nat, ytd: n.ytd, pct: n.pct, meses: n.meses, cuentas: n.cuentas }))
+            : (gav.categorias || []);
+          return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="kpi-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>GAV por Categoría</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>GAV por {gavVista === 'naturaleza' ? 'Naturaleza' : 'Categoría'}</div>
+                  {gav.naturaleza?.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      <button onClick={() => setGavVista('destino')} style={{ padding: '0.22rem 0.6rem', borderRadius: 6, fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', border: gavVista === 'destino' ? '1px solid rgba(43,180,187,0.5)' : '1px solid rgba(255,255,255,0.12)', background: gavVista === 'destino' ? 'rgba(43,180,187,0.15)' : 'rgba(255,255,255,0.04)', color: gavVista === 'destino' ? '#2BB4BB' : '#8B97A8' }}>Destino</button>
+                      <button onClick={() => setGavVista('naturaleza')} style={{ padding: '0.22rem 0.6rem', borderRadius: 6, fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', border: gavVista === 'naturaleza' ? '1px solid rgba(43,180,187,0.5)' : '1px solid rgba(255,255,255,0.12)', background: gavVista === 'naturaleza' ? 'rgba(43,180,187,0.15)' : 'rgba(255,255,255,0.04)', color: gavVista === 'naturaleza' ? '#2BB4BB' : '#8B97A8' }}>Naturaleza</button>
+                    </div>
+                  )}
+                </div>
                 <ExportBtn onClick={() => {
                   const headers = ['Categoría', 'YTD', '% GAV', '% Ingresos'];
-                  const rows = sortRows(gav.categorias || [], gavSort.col, gavSort.dir).map((c: any) => [
+                  const rows = sortRows(gavCats, gavSort.col, gavSort.dir).map((c: any) => [
                     c.descripcion, c.ytd,
                     `${c.pct?.toFixed(1)}%`,
                     ytd?.ingresos > 0 ? `${((c.ytd / ytd.ingresos) * 100).toFixed(1)}%` : '',
@@ -3575,7 +3589,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortRows(gav.categorias || [], gavSort.col, gavSort.dir).map((c: any) => (
+                  {sortRows(gavCats, gavSort.col, gavSort.dir).map((c: any) => (
                     <tr key={c.cod} data-clickable="1"
                       onClick={() => setGavDrill({ cod: c.cod, descripcion: c.descripcion, meses: c.meses, ytd: c.ytd })}
                       title="Ver detalle mensual">
@@ -3605,11 +3619,11 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
                   <Pie
-                    data={gav.categorias?.map((c: any) => ({ name: c.descripcion, value: c.ytd }))}
+                    data={gavCats.map((c: any) => ({ name: c.descripcion, value: c.ytd }))}
                     cx="50%" cy="45%" outerRadius={110} dataKey="value"
                     label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(1)}%` : ''}
                   >
-                    {gav.categorias?.map((_: any, i: number) => (
+                    {gavCats.map((_: any, i: number) => (
                       <Cell key={i} fill={COLORS_PIE[i % COLORS_PIE.length]} />
                     ))}
                   </Pie>
@@ -3619,7 +3633,8 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ═══ Admin Tab ═══ */}
         {activeTab === 'admin' && userRole === 'admin' && (() => {

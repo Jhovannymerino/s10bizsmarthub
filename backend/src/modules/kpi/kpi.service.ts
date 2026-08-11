@@ -634,11 +634,14 @@ export class KpiService {
     const nameMap = cfg.agrupar === 'cuenta' && cfg.snap
       ? await this.loadCuentaNombres(companyId, cfg.snap, cfg.sub, cfg.nameFields || [])
       : null;
+    // No se descartan los asientos sin codTercero: se agrupan como "(Sin tercero)" para que el
+    // total cuadre con el balance (si se dejaran fuera, otras CxC/CxP no atarían a la cuenta).
     const items = rows
-      .filter((r) => r.cod != null && Math.abs(Number(r.saldo) || 0) > 0.01)
+      .filter((r) => Math.abs(Number(r.saldo) || 0) > 0.01)
       .map((r) => {
-        const cod = String(r.cod);
-        const nombre = nameMap?.get(cod) || String(r.nombre || cod);
+        const esNull = r.cod == null || String(r.cod) === '';
+        const cod = esNull ? '' : String(r.cod);
+        const nombre = (!esNull && nameMap?.get(cod)) || (esNull ? '(Sin tercero asignado)' : String(r.nombre || cod));
         return { cod, nombre, saldo: round(Number(r.saldo) || 0) };
       })
       .sort((a, b) => Math.abs(b.saldo) - Math.abs(a.saldo));

@@ -666,6 +666,7 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year: string,
     @Query('quarter') quarter: string,
+    @Query('corteMes') corteMesQ: string,
     @Res() res: Response,
   ) {
     const y = parseYear(year);
@@ -729,27 +730,36 @@ export class KpiController {
     });
 
     // El YTD del reporte es ene..último mes del trimestre reportado, NO el año
-    // completo del snapshot: `pl.ytd` acumula los 12 meses, así que un Directorio
-    // Q2 generado en julio traía ene–jul contaminando la columna YTD.
+    // completo del snapshot: `pl.ytd` acumula los 12 meses (o lo que haya llegado
+    // del último sync), así que un Directorio Q2 generado en julio traía ene–jul
+    // contaminando la columna YTD. El cierre por defecto es el último mes del
+    // trimestre, pero es un "corte" explícito y sobreescribible (?corteMes=N):
+    // el trimestre puede no estar cerrado en S10 todavía (p.ej. reportar Q3 en
+    // agosto, antes de que setiembre tenga datos), así que el Directorio debe
+    // poder fijar su propia fecha de cierre en vez de heredar "todo lo sincronizado
+    // a hoy" del filtro de otra pestaña.
     const ultimoMesQ = Math.max(...qMeses);
+    const corteMes = corteMesQ
+      ? Math.max(1, Math.min(12, parseInt(corteMesQ, 10) || ultimoMesQ))
+      : ultimoMesQ;
     const qData = presentar(
       agg(plMonthly.filter((m: any) => qMeses.includes(m.mes))),
       depreciacion(Math.min(...qMeses), ultimoMesQ));
-    const ytdRows = plMonthly.filter((m: any) => m.mes <= ultimoMesQ);
+    const ytdRows = plMonthly.filter((m: any) => m.mes <= corteMes);
     const ytdData = ytdRows.length
-      ? presentar(agg(ytdRows), depreciacion(1, ultimoMesQ))
+      ? presentar(agg(ytdRows), depreciacion(1, corteMes))
       : ((pl as any)?.ytd || qData);
 
     // Mismo recorte para el detalle de GAV: el snapshot acumula el año completo,
-    // pero el slide debe mostrar ene..último mes del trimestre. Se recalcula desde
-    // `meses`; si un snapshot viejo no lo trae, se deja tal cual.
+    // pero el slide debe mostrar ene..mes de corte. Se recalcula desde `meses`;
+    // si un snapshot viejo no lo trae, se deja tal cual.
     const gavQ = (() => {
       const cats: any[] = (gav as any)?.categorias || [];
       if (!cats.length || !cats.some(c => c?.meses && Object.keys(c.meses).length)) return gav;
       const recal = cats.map((c: any) => {
         const meses = c.meses || {};
         const ytd = Object.keys(meses).reduce(
-          (s, k) => (Number(k) <= ultimoMesQ ? s + (Number(meses[k]) || 0) : s), 0);
+          (s, k) => (Number(k) <= corteMes ? s + (Number(meses[k]) || 0) : s), 0);
         return { ...c, ytd: r2(ytd) };
       });
       const total = recal.reduce((s, c) => s + c.ytd, 0);
@@ -762,6 +772,7 @@ export class KpiController {
       empresa: company?.name || companyId,
       quarter: q,
       year: y,
+      corteMes,
       qData,
       ytdData,
       pptoQ: (directorio as any)?.data?.presupuesto?.q || {},

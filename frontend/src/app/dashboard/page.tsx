@@ -409,6 +409,11 @@ export default function DashboardPage() {
   const [directorioEditing, setDirectorioEditing] = useState<boolean>(false);
   const [directorioSaving, setDirectorioSaving] = useState<boolean>(false);
   const [directorioDraft, setDirectorioDraft] = useState<any>(null);
+  // Mes de corte del YTD del Directorio (1-12). null = usa el cierre natural del
+  // trimestre seleccionado. Se calcula aparte de `pl` (que trae el filtro de la
+  // pestaña P&L) para que el reporte de Directorio no dependa de qué rango haya
+  // quedado seleccionado en otra pestaña.
+  const [directorioCorteMes, setDirectorioCorteMes] = useState<number | null>(null);
   const [validacionForenseExpanded, setValidacionForenseExpanded] = useState<string | null>(null);
   const [forenseFacturasDrillKey, setForenseFacturasDrillKey] = useState<string | null>(null);
   const [balanceViewMode, setBalanceViewMode] = useState<'saldos' | 'sumas'>('saldos');
@@ -515,6 +520,7 @@ export default function DashboardPage() {
     setCxcVinculadas(null);
     setPL(null); setCxC(null); setCxP(null); setCaja(null); setGAV(null); setConsolidado(null); setScorecard(null);
     setPlDesde(null); setPlHasta(null); setGavDesde(null); setGavHasta(null); setCajaDesde(null); setCajaHasta(null); setCxcAnulados(false);
+    setDirectorioCorteMes(null);
     setCxcDesde(null); setCxcHasta(null); setCxpDesde(null); setCxpHasta(null); setCxcModo('docs'); setCxpModo('docs');
     setBalanceData(null); setOtrasCxCData(null); setOtrasCxPData(null); setPrestamosData(null);
     setTributosData(null); setLaboralData(null); setActivoFijoData(null); setGastosNatData(null);
@@ -857,6 +863,7 @@ export default function DashboardPage() {
     const id = selectedCompany.codEmpresa;
     setDirectorioEditing(false);
     setDirectorioData(null);
+    setDirectorioCorteMes(null);
     fetchApi(`/kpi/${id}/directorio?year=${selectedYear}&quarter=${selectedQuarter}`, token)
       .then(d => { setDirectorioData(d); setDirectorioDraft(JSON.parse(JSON.stringify(d?.data || {}))); })
       .catch(() => { setDirectorioData(null); setDirectorioDraft(null); });
@@ -4898,19 +4905,30 @@ export default function DashboardPage() {
             Q1: 'Ene – Mar', Q2: 'Abr – Jun', Q3: 'Jul – Sep', Q4: 'Oct – Dic'
           };
           const qMeses = Q_MONTHS[selectedQuarter];
+          const ultimoMesQ = Math.max(...qMeses);
+          const MES_NAMES_DIR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
+          // Mes de corte del YTD: por defecto el cierre del trimestre, mismo criterio
+          // que usa el export a PPTX. Se calcula SIEMPRE desde `plMonthly` (no desde
+          // `pl.ytd`/`ytd`), que es un snapshot que acumula todo lo sincronizado a hoy
+          // y además queda contaminado por el filtro Desde/Hasta que haya quedado
+          // seleccionado en la pestaña P&L — dos pestañas distintas no deben compartir
+          // ese estado para un reporte de Directorio, que necesita su propio corte fijo.
+          const corteMes = Math.max(1, Math.min(12, directorioCorteMes ?? ultimoMesQ));
           const qRows = plMonthly.filter((m: any) => qMeses.includes(m.mes));
+          const ytdRows = plMonthly.filter((m: any) => m.mes <= corteMes);
           const sumField = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0);
-          const qData = {
-            ingresos: sumField(qRows, 'ingresos'),
-            costoDirecto: sumField(qRows, 'costoDirecto'),
-            margenBruto: sumField(qRows, 'margenBruto'),
-            gav: sumField(qRows, 'gav'),
-            ebitda: sumField(qRows, 'ebitda'),
-            gastosFinancieros: sumField(qRows, 'gastosFinancieros'),
-            diferenciaCambio: sumField(qRows, 'diferenciaCambio'),
-            utilidadNeta: sumField(qRows, 'utilidadNeta'),
-          };
-          const ytdData = ytd || { ingresos: 0, costoDirecto: 0, margenBruto: 0, gav: 0, ebitda: 0, gastosFinancieros: 0, diferenciaCambio: 0, utilidadNeta: 0 };
+          const aggPL = (rows: any[]) => ({
+            ingresos: sumField(rows, 'ingresos'),
+            costoDirecto: sumField(rows, 'costoDirecto'),
+            margenBruto: sumField(rows, 'margenBruto'),
+            gav: sumField(rows, 'gav'),
+            ebitda: sumField(rows, 'ebitda'),
+            gastosFinancieros: sumField(rows, 'gastosFinancieros'),
+            diferenciaCambio: sumField(rows, 'diferenciaCambio'),
+            utilidadNeta: sumField(rows, 'utilidadNeta'),
+          });
+          const qData = aggPL(qRows);
+          const ytdData = aggPL(ytdRows);
           // % helpers (defensive against div-by-zero / negative ingresos)
           const safePct = (num: number, den: number) => (den && Math.abs(den) > 0.01) ? (num / den) * 100 : 0;
           const qGMpct = safePct(qData.margenBruto, qData.ingresos);
@@ -4990,7 +5008,7 @@ export default function DashboardPage() {
                       <button onClick={async () => {
                         const token = localStorage.getItem('token');
                         try {
-                          const res = await fetch(`${API}/kpi/${selectedCompany.codEmpresa}/directorio/export?year=${selectedYear}&quarter=${selectedQuarter}`, {
+                          const res = await fetch(`${API}/kpi/${selectedCompany.codEmpresa}/directorio/export?year=${selectedYear}&quarter=${selectedQuarter}&corteMes=${corteMes}`, {
                             headers: { Authorization: `Bearer ${token}` },
                           });
                           if (!res.ok) { alert(`Error al exportar: ${res.status}`); return; }
@@ -5136,8 +5154,23 @@ export default function DashboardPage() {
                             </table>
                           </div>
                           <div>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-                              YTD {selectedYear}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                YTD {selectedYear} (Ene – {MES_NAMES_DIR[corteMes - 1]})
+                              </div>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', color: '#8B97A8' }} title="Fecha de cierre del YTD del reporte. Por defecto es el último mes del trimestre; cámbiala si el trimestre aún no cierra en S10 (p.ej. reportar Q3 antes de que setiembre tenga datos) o si el Directorio pide un corte distinto.">
+                                Corte:
+                                <select
+                                  value={corteMes}
+                                  disabled={directorioEditing}
+                                  onChange={(e) => setDirectorioCorteMes(Number(e.target.value))}
+                                  style={{ padding: '0.2rem 0.4rem', borderRadius: '0.35rem', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '0.7rem', colorScheme: 'dark' }}
+                                >
+                                  {MES_NAMES_DIR.map((label, i) => (
+                                    <option key={label} value={i + 1}>{label}</option>
+                                  ))}
+                                </select>
+                              </label>
                             </div>
                             <table className="table-s10" style={{ width: '100%' }}>
                               <thead>

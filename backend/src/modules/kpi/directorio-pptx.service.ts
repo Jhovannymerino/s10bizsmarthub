@@ -48,6 +48,7 @@ export class DirectorioPptxService {
     empresa: string;
     quarter: string;
     year: number;
+    corteMes?: number; // mes de corte explícito del YTD (1-12); default: cierre del trimestre
     qData: any;        // P&L trimestral
     ytdData: any;      // P&L YTD
     pptoQ: any;        // Presupuesto Q
@@ -58,11 +59,13 @@ export class DirectorioPptxService {
     cajaPosicion: any; // { saldoInicialQ, saldoFinalQ, totalEntradas, totalSalidas, meses[] }
     directorio: any;   // draft manual
   }): Promise<Buffer> {
-    const { empresa, quarter, year, qData, ytdData, pptoQ, pptoYTD, gav, cxc, caja, cajaPosicion, directorio } = ctx;
+    const { empresa, quarter, year, corteMes, qData, ytdData, pptoQ, pptoYTD, gav, cxc, caja, cajaPosicion, directorio } = ctx;
     const d = directorio || {};
     const qLabel = Q_LABELS[quarter] || quarter;
-    // El YTD del reporte llega recortado a ene..cierre del trimestre; el rótulo lo dice.
-    const ultimoMesQ = ({ Q1: 3, Q2: 6, Q3: 9, Q4: 12 } as Record<string, number>)[quarter] || 12;
+    // El YTD del reporte llega recortado a ene..mes de corte (explícito, no
+    // necesariamente el cierre del trimestre — el trimestre puede no estar
+    // cerrado en S10 todavía); el rótulo lo dice.
+    const ultimoMesQ = corteMes || ({ Q1: 3, Q2: 6, Q3: 9, Q4: 12 } as Record<string, number>)[quarter] || 12;
     const ytdLabel = `YTD ${year} (Ene – ${MES_NAMES[ultimoMesQ - 1]})`;
 
     const pres: any = new PptxGenJS();

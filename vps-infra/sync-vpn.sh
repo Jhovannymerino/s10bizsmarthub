@@ -16,6 +16,9 @@ VPN_PREEXISTENTE=false
 ETH_GW=""
 ETH_DEV=""
 ETH_IP=""
+PPP_DEV=""      # interfaz ppp propia de S10 (NO asumir "ppp0": este VPS es
+                # compartido con otras apps que también usan openfortivpn —
+                # ver nota en la detección de abajo)
 SSH_TABLE=100   # tabla de policy routing dedicada para el tráfico de gestión
 
 cleanup() {
@@ -26,7 +29,7 @@ cleanup() {
       ip rule del from "$ETH_IP" table "$SSH_TABLE" 2>/dev/null || true
       ip route flush table "$SSH_TABLE" 2>/dev/null || true
     fi
-    ip route del 192.168.1.0/24 dev ppp0 2>/dev/null || true
+    [ -n "$PPP_DEV" ] && ip route del 192.168.1.0/24 dev "$PPP_DEV" 2>/dev/null || true
     kill "$(cat "$PIDFILE")" 2>/dev/null || true
     rm -f "$PIDFILE"
     # Restaurar ruta default por si openfortivpn la cambió de nuevo
@@ -41,9 +44,18 @@ trap cleanup EXIT
 
 log "Iniciando sync year=$YEAR"
 
-# Si ya hay una interfaz ppp activa, reutilizarla
-if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
-  log "VPN ya activo — reutilizando conexión existente"
+# ¿Ya hay un túnel S10 propio y funcionando? OJO: este VPS es compartido con
+# otras apps que también usan openfortivpn (p.ej. nuevamasvida) — cada una
+# levanta su propia interfaz ppp0/ppp1/... Comprobar "existe algún ppp[0-9]"
+# a secas (como hacía antes) da falsos positivos: el 19-20/8 el sync falló 4
+# veces seguidas porque detectó el ppp0 de OTRA app, asumió que la VPN de S10
+# ya estaba conectada, y nunca intentó levantar la suya — SQL 192.168.1.51
+# quedó inalcanzable las 4 veces. La comprobación correcta es específica al
+# proceso de S10 (mismo patrón que usa el pkill de abajo) Y a que el SQL de
+# verdad responda, no solo "hay algún túnel arriba en el servidor".
+if pgrep -f 'openfortivpn -c /etc/openfortivpn/s10.conf' >/dev/null 2>&1 \
+   && timeout 2 bash -c '</dev/tcp/192.168.1.51/1433' 2>/dev/null; then
+  log "VPN S10 ya activa y SQL alcanzable — reutilizando conexión existente"
   VPN_PREEXISTENTE=true
 else
   # Guardar ruta default actual (eth0) ANTES de conectar VPN
@@ -68,36 +80,49 @@ else
     fi
 
     # NOTA: openfortivpn maneja las rutas (NO usar --no-routes). Se probó
-    # --no-routes para mantener SSH vivo, pero rompe el acceso a SQL: ppp0
-    # levanta pero la red S10 queda inalcanzable (la ruta manual no basta).
-    # El SSH cae durante el sync (openfortivpn pone default via ppp0); es
-    # molestia aceptable — lo que importa es que SQL sea alcanzable.
+    # --no-routes para mantener SSH vivo, pero rompe el acceso a SQL: la
+    # interfaz levanta pero la red S10 queda inalcanzable (la ruta manual no
+    # basta). El SSH cae durante el sync (openfortivpn pone default via su
+    # ppp); es molestia aceptable — lo que importa es que SQL sea alcanzable.
+    #
+    # Interfaces ppp que YA existían antes de lanzar nuestro propio
+    # openfortivpn — pueden ser de OTRA app de este VPS compartido (ver nota
+    # arriba). Se usan para diferenciar, por diferencia de conjunto, cuál
+    # interfaz nueva es la nuestra en vez de asumir "ppp0" a secas.
+    PPP_ANTES=$(ip -o link show 2>/dev/null | awk -F': ' '/ ppp[0-9]/ {print $2}')
     openfortivpn -c /etc/openfortivpn/s10.conf 2>>"$LOG" &
     VPN_PID=$!
     echo $VPN_PID > "$PIDFILE"
 
-    # Esperar interfaz ppp (max 60s)
+    # Esperar a que aparezca una interfaz ppp NUEVA (max 60s) — no cualquier
+    # ppp[0-9], porque si otra app de este VPS compartido ya tenía una arriba
+    # (p.ej. ppp0 de nuevamasvida), este bucle la vería en el primer segundo y
+    # daría por conectada la VPN de S10 sin haberlo estado nunca: incidente
+    # real 19-20/8/2026, 4 syncs seguidos fallaron con SQL inalcanzable.
     VPN_LEVANTO=false
     for i in $(seq 1 60); do
       sleep 1
-      if ip link show 2>/dev/null | grep -q 'ppp[0-9]'; then
-        log "ppp0 levantado tras ${i}s (intento $intento)"
+      PPP_DEV=$(ip -o link show 2>/dev/null | awk -F': ' '/ ppp[0-9]/ {print $2}' \
+        | grep -Fxv -f <(printf '%s\n' "$PPP_ANTES") | head -1)
+      if [ -n "$PPP_DEV" ]; then
+        log "$PPP_DEV levantado tras ${i}s (intento $intento) — interfaz propia de S10"
         VPN_LEVANTO=true
         # POLICY ROUTING — mantiene vivo el acceso de gestión (SSH) sin perder
         # la ruta a SQL. openfortivpn maneja sus rutas normalmente (la red S10
-        # queda alcanzable por ppp0), pero secuestra y renegocia la ruta default
-        # → ppp0, lo que mataría el SSH. En vez de pelear por la tabla principal
-        # (carrera que se pierde), creamos una tabla aparte: TODO el tráfico cuyo
-        # ORIGEN sea la IP pública del VPS sale por eth0, pase lo que pase con el
-        # túnel. openfortivpn no toca esta regla → SSH estable todo el sync.
+        # queda alcanzable por $PPP_DEV), pero secuestra y renegocia la ruta
+        # default → $PPP_DEV, lo que mataría el SSH. En vez de pelear por la
+        # tabla principal (carrera que se pierde), creamos una tabla aparte:
+        # TODO el tráfico cuyo ORIGEN sea la IP pública del VPS sale por eth0,
+        # pase lo que pase con el túnel. openfortivpn no toca esta regla → SSH
+        # estable todo el sync.
         if [ -n "$ETH_IP" ] && [ -n "$ETH_GW" ] && [ -n "$ETH_DEV" ]; then
           ip route replace default via "$ETH_GW" dev "$ETH_DEV" table "$SSH_TABLE" 2>/dev/null || true
           ip rule del from "$ETH_IP" table "$SSH_TABLE" 2>/dev/null || true   # evitar duplicado
           ip rule add from "$ETH_IP" table "$SSH_TABLE" priority 100 2>/dev/null || true
           log "Policy routing: origen $ETH_IP → tabla $SSH_TABLE (eth0) — SSH vivo durante el sync"
         fi
-        ip route add 192.168.1.0/24 dev ppp0 2>/dev/null || true
-        log "Ruta S10 192.168.1.0/24 → ppp0"
+        ip route add 192.168.1.0/24 dev "$PPP_DEV" 2>/dev/null || true
+        log "Ruta S10 192.168.1.0/24 → $PPP_DEV"
         break
       fi
     done

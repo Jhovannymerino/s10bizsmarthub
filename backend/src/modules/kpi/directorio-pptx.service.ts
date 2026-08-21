@@ -487,11 +487,15 @@ export class DirectorioPptxService {
 
       const totalEmitidas = cxcDocs.totalEmitidas || 0;
       const totalPorEmitir = cxcDocs.totalPorEmitir || 0;
-      const totalGeneral = cxcDocs.totalSaldo || Math.round((totalEmitidas + totalPorEmitir) * 100) / 100;
+      const totalAnticipos = cxcDocs.totalAnticipos || 0;
+      const hasAnticipos = Math.abs(totalAnticipos) > 0.5;
+      const totalGeneral = cxcDocs.totalSaldo
+        || Math.round((totalEmitidas + totalPorEmitir + totalAnticipos) * 100) / 100;
 
       const kCards = [
         { label: 'Total Emitidas', val: totalEmitidas, color: NAVY },
         { label: 'Total Por Emitir', val: totalPorEmitir, color: BLUE },
+        ...(hasAnticipos ? [{ label: 'Anticipos de Clientes', val: totalAnticipos, color: ORANGE }] : []),
         { label: 'Total General (cta. 12)', val: totalGeneral, color: TEAL },
       ];
       const cardW = (12.5 - 0.2 * (kCards.length - 1)) / kCards.length;
@@ -507,10 +511,11 @@ export class DirectorioPptxService {
         .sort((a: any, b: any) => (b.saldoLedger || 0) - (a.saldoLedger || 0))
         .slice(0, 12);
       const colHeaders = [
-        { text: 'Cliente',      fill: NAVY, w: 5.5 },
-        { text: 'Emitidas (S/)',   fill: '1A6B30', w: 2.3 },
-        { text: 'Por Emitir (S/)', fill: '1E5FAD', w: 2.3 },
-        { text: 'TOTAL (S/)',      fill: NAVY, w: 2.4 },
+        { text: 'Cliente',      fill: NAVY, w: hasAnticipos ? 4.3 : 5.5 },
+        { text: 'Emitidas (S/)',   fill: '1A6B30', w: hasAnticipos ? 1.9 : 2.3 },
+        { text: 'Por Emitir (S/)', fill: '1E5FAD', w: hasAnticipos ? 1.9 : 2.3 },
+        ...(hasAnticipos ? [{ text: 'Anticipos (S/)', fill: ORANGE, w: 1.9 }] : []),
+        { text: 'TOTAL (S/)',      fill: NAVY, w: hasAnticipos ? 2.5 : 2.4 },
       ];
       const colW = colHeaders.map(c => c.w);
       const header = colHeaders.map(c => ({
@@ -521,12 +526,14 @@ export class DirectorioPptxService {
         { text: (c.cliente || '').substring(0, 55), options: { fontSize: 9.5 } },
         { text: (c.emitidas || 0) > 0 ? fmt(c.emitidas) : '—', options: { fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas', color: GREEN } },
         { text: (c.porEmitir || 0) > 0 ? fmt(c.porEmitir) : '—', options: { fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas', color: BLUE } },
+        ...(hasAnticipos ? [{ text: Math.abs(c.anticipos || 0) > 0.5 ? fmt(c.anticipos) : '—', options: { fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas', color: ORANGE } }] : []),
         { text: fmt(c.saldoLedger || 0), options: { fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas', bold: true } },
       ]);
       const totalRow = [
         { text: 'TOTAL', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5 } },
         { text: fmt(totalEmitidas), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas' } },
         { text: fmt(totalPorEmitir), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas' } },
+        ...(hasAnticipos ? [{ text: fmt(totalAnticipos), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas' } }] : []),
         { text: fmt(totalGeneral), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas' } },
       ];
       s.addTable([header, ...rows, totalRow as any], {
@@ -537,7 +544,7 @@ export class DirectorioPptxService {
         border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
       });
       s.addText(
-        `${cxcDocs.clientes.length > 12 ? `Top 12 de ${cxcDocs.clientes.length} clientes · ` : ''}Cuenta 12 (Mayor) partida en 1212 "Emitidas" (con comprobante) y 1211 "Por Emitir" (devengado, sin comprobante aún) · TOTAL reconcilia con la cuenta 121 del balance`,
+        `${cxcDocs.clientes.length > 12 ? `Top 12 de ${cxcDocs.clientes.length} clientes · ` : ''}Cuenta 12 (Mayor) partida en 1212 "Emitidas" (con comprobante) y 1211 "Por Emitir" (devengado, sin comprobante aún)${hasAnticipos ? ' · Anticipos = adelantos de clientes recibidos (cta. 1220), reducen lo neto por cobrar' : ''} · TOTAL reconcilia con la cuenta 121 del balance`,
         { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
       addFooter(s, '07');
     }

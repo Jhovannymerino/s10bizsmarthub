@@ -502,24 +502,29 @@ export class KpiService {
         GROUP BY "codTercero", LEFT("codCuenta",4)`,
       companyId, hasta,
     );
-    const map = new Map<string, { nombre: string; emitidas: number; porEmitir: number }>();
+    // Cualquier subcuenta de la clase 12 fuera de 1211/1212 (ej. 1220 "Anticipo de Clientes")
+    // se acumula en `anticipos` -- antes se descartaba en silencio, así que el saldoLedger
+    // salía inflado para clientes con anticipos recibidos (ver mismo fix en
+    // enrichCxCReconciliacion, con el caso real de MESCO/INTEGRAL documentado ahí).
+    const map = new Map<string, { nombre: string; emitidas: number; porEmitir: number; anticipos: number }>();
     for (const r of rows) {
       if (r.ruc == null) continue;
       const ruc = String(r.ruc);
-      const e = map.get(ruc) || { nombre: r.nombre || ruc, emitidas: 0, porEmitir: 0 };
+      const e = map.get(ruc) || { nombre: r.nombre || ruc, emitidas: 0, porEmitir: 0, anticipos: 0 };
       if (r.nombre) e.nombre = r.nombre;
       if (r.sub === '1212') e.emitidas = round(e.emitidas + (Number(r.saldo) || 0));
       else if (r.sub === '1211') e.porEmitir = round(e.porEmitir + (Number(r.saldo) || 0));
+      else e.anticipos = round(e.anticipos + (Number(r.saldo) || 0));
       map.set(ruc, e);
     }
     const terceros: any[] = [];
     const vinculados: any[] = [];
     for (const [ruc, l] of map) {
-      const saldoLedger = round(l.emitidas + l.porEmitir);
+      const saldoLedger = round(l.emitidas + l.porEmitir + l.anticipos);
       if (Math.abs(saldoLedger) < 0.01) continue;
       (grupoRuc.has(ruc) ? vinculados : terceros).push({
         codCliente: ruc, cliente: l.nombre, esVinculada: grupoRuc.has(ruc),
-        emitidas: l.emitidas, porEmitir: l.porEmitir,
+        emitidas: l.emitidas, porEmitir: l.porEmitir, anticipos: l.anticipos,
         saldoLedger, saldoTotalSoles: saldoLedger, saldoDocs: saldoLedger, diferencia: 0,
       });
     }
@@ -533,6 +538,7 @@ export class KpiService {
       clientes: terceros, clientesVinculados: vinculados,
       totalSaldo, totalDocs: totalSaldo,
       totalEmitidas: sum(terceros, 'emitidas'), totalPorEmitir: sum(terceros, 'porEmitir'),
+      totalAnticipos: sum(terceros, 'anticipos'),
       totalVinculados: sum(vinculados, 'saldoLedger'), numVinculados: vinculados.length,
       concentracionTop3: totalSaldo > 0 ? round((top3 / totalSaldo) * 100) : 0,
       numClientes: terceros.length, totalVigente: 0, total90mas: 0, pct90mas: 0,
@@ -910,9 +916,13 @@ export class KpiService {
 
     // Saldo CONTABLE de la clase 12 por tercero desde el Mayor (lo que ve la contadora en el
     // balance). 1212 = facturas emitidas en cartera; 1211 = facturas por emitir (provisión sin
-    // comprobante). El aging de documentos (`vw_12DocumentosPorCobrar`) puede diferir del mayor
-    // a nivel de documento (detracciones ya depositadas, timing) — caso STILER 2026-08: mayor
-    // 1,180,000 vs aging 972,320. El mayor es la verdad; se muestran AMBOS.
+    // comprobante); cualquier otra subcuenta de la clase 12 (ej. 1220 "Anticipo de Clientes")
+    // se acumula aparte como `anticipos` -- antes se descartaba en silencio porque este mapa
+    // solo reconocía 1211/1212, y para INTEGRAL esa subcuenta neta -S/1.7M (verificado en vivo:
+    // MESCO mostraba saldoLedger=657,900 cuando el Mayor real, cuenta 12 completa, da 32,900).
+    // El aging de documentos (`vw_12DocumentosPorCobrar`) puede diferir del mayor a nivel de
+    // documento (detracciones ya depositadas, timing) — caso STILER 2026-08: mayor 1,180,000
+    // vs aging 972,320. El mayor es la verdad; se muestran AMBOS.
     const ledgerRows = await this.prisma.$queryRawUnsafe<any[]>(
       `SELECT "codTercero" AS ruc, LEFT("codCuenta", 4) AS sub,
               SUM("debito" - "credito")::float8 AS saldo
@@ -922,19 +932,16 @@ export class KpiService {
         GROUP BY "codTercero", LEFT("codCuenta", 4)`,
       companyId,
     );
-    const ledgerMap = new Map<string, { emitidas: number; porEmitir: number }>();
+    const ledgerMap = new Map<string, { emitidas: number; porEmitir: number; anticipos: number }>();
     for (const r of ledgerRows) {
       if (r.ruc == null) continue;
       const ruc = String(r.ruc);
-      const e = ledgerMap.get(ruc) || { emitidas: 0, porEmitir: 0 };
+      const e = ledgerMap.get(ruc) || { emitidas: 0, porEmitir: 0, anticipos: 0 };
       if (r.sub === '1212') e.emitidas = round(e.emitidas + (Number(r.saldo) || 0));
       else if (r.sub === '1211') e.porEmitir = round(e.porEmitir + (Number(r.saldo) || 0));
+      else e.anticipos = round(e.anticipos + (Number(r.saldo) || 0));
       ledgerMap.set(ruc, e);
     }
-    const saldoLedgerDe = (ruc: string) => {
-      const l = ledgerMap.get(ruc);
-      return l ? round(l.emitidas + l.porEmitir) : 0; // = cuenta 121 del tercero
-    };
 
     const terceros: any[] = [];
     const vinculados: any[] = [];
@@ -943,14 +950,15 @@ export class KpiService {
       const ruc = String(c.codCliente);
       vistos.add(ruc);
       const esVinculada = grupoRuc.has(ruc);
-      const l = ledgerMap.get(ruc) || { emitidas: 0, porEmitir: 0 };
+      const l = ledgerMap.get(ruc) || { emitidas: 0, porEmitir: 0, anticipos: 0 };
       const saldoDocs = round(c.saldoTotalSoles || 0);
-      const saldoLedger = round(l.emitidas + l.porEmitir);
+      const saldoLedger = round(l.emitidas + l.porEmitir + l.anticipos);
       const enriched = {
         ...c,
         esVinculada,
         emitidas: l.emitidas,
         porEmitir: l.porEmitir,
+        anticipos: l.anticipos,
         saldoDocs,
         saldoLedger,
         saldoConEmitir: saldoLedger, // alias retro-compat
@@ -963,13 +971,13 @@ export class KpiService {
     // para que el total ate al balance aunque no exista un comprobante que envejecer.
     for (const [ruc, l] of ledgerMap) {
       if (vistos.has(ruc)) continue;
-      const saldoLedger = round(l.emitidas + l.porEmitir);
+      const saldoLedger = round(l.emitidas + l.porEmitir + l.anticipos);
       if (Math.abs(saldoLedger) < 0.01) continue;
       (grupoRuc.has(ruc) ? vinculados : terceros).push({
         codCliente: ruc, cliente: `(Solo contable) ${ruc}`,
         saldoPEN: 0, saldoUSD: 0, tipoCambioUSD: TC_USD_FALLBACK,
         saldoTotalSoles: 0, saldoVigente: 0, dias0_30: 0, dias31_60: 0, dias61_90: 0, dias90mas: 0,
-        esVinculada: grupoRuc.has(ruc), emitidas: l.emitidas, porEmitir: l.porEmitir,
+        esVinculada: grupoRuc.has(ruc), emitidas: l.emitidas, porEmitir: l.porEmitir, anticipos: l.anticipos,
         saldoDocs: 0, saldoLedger, saldoConEmitir: saldoLedger, diferencia: saldoLedger,
         soloContable: true,
       });
@@ -980,8 +988,9 @@ export class KpiService {
 
     const sum = (arr: any[], f: string) => round(arr.reduce((s, x) => s + (x[f] || 0), 0));
     const totalDocs      = sum(terceros, 'saldoDocs');       // cartera de documentos (aging)
-    const totalEmitidas  = round(terceros.reduce((s, c) => s + ((ledgerMap.get(String(c.codCliente))?.emitidas) || 0), 0));
+    const totalEmitidas  = sum(terceros, 'emitidas');
     const totalPorEmitir = sum(terceros, 'porEmitir');
+    const totalAnticipos = sum(terceros, 'anticipos');
     const totalSaldo     = sum(terceros, 'saldoLedger');     // = cuenta 121 (contable) → headline
     const total90mas     = sum(terceros, 'dias90mas');
     const top3 = terceros.slice(0, 3).reduce((s, c) => s + (c.saldoLedger || 0), 0);
@@ -994,6 +1003,7 @@ export class KpiService {
       totalDocs,
       totalEmitidas,
       totalPorEmitir,
+      totalAnticipos,
       totalSaldo,
       totalVigente:  sum(terceros, 'saldoVigente'),
       total90mas,
@@ -1008,6 +1018,7 @@ export class KpiService {
         docs: totalDocs,
         emitidas: totalEmitidas,
         porEmitir: totalPorEmitir,
+        anticipos: totalAnticipos,
         totalTerceros: totalSaldo,
         diferenciaDocsVsLedger: round(totalSaldo - totalDocs),
         vinculados: totalVinculados,

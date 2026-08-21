@@ -2683,13 +2683,15 @@ export default function DashboardPage() {
                   <table className="table-s10" style={{ maxWidth: 560 }}>
                     <tbody>
                       <tr><td style={{ color: 'var(--text-muted)' }}>Cartera de documentos (aging)</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{fmt(cxc.totalDocs ?? 0)}</td></tr>
-                      {Math.abs((cxc.totalSaldo ?? 0) - (cxc.totalDocs ?? 0)) > 0.5 && <tr><td style={{ color: 'var(--text-muted)' }}>(±) Detracciones depositadas / facturas por emitir / timing</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#F59E0B' }}>{fmt((cxc.totalSaldo ?? 0) - (cxc.totalDocs ?? 0))}</td></tr>}
+                      {Math.abs((cxc.totalPorEmitir ?? 0)) > 0.5 && <tr><td style={{ color: 'var(--text-muted)' }}>(+) Facturas por Emitir — provisión sin comprobante (cta. 1211)</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#F59E0B' }}>{fmt(cxc.totalPorEmitir)}</td></tr>}
+                      {Math.abs((cxc.totalAnticipos ?? 0)) > 0.5 && <tr><td style={{ color: 'var(--text-muted)' }}>(+) Anticipos de clientes recibidos (cta. 1220)</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#F59E0B' }}>{fmt(cxc.totalAnticipos)}</td></tr>}
+                      {Math.abs((cxc.totalSaldo ?? 0) - (cxc.totalDocs ?? 0) - (cxc.totalPorEmitir ?? 0) - (cxc.totalAnticipos ?? 0)) > 0.5 && <tr><td style={{ color: 'var(--text-muted)' }}>(±) Detracciones depositadas / timing</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#F59E0B' }}>{fmt((cxc.totalSaldo ?? 0) - (cxc.totalDocs ?? 0) - (cxc.totalPorEmitir ?? 0) - (cxc.totalAnticipos ?? 0))}</td></tr>}
                       <tr className="total-row"><td>= Saldo contable S10 · cuenta 121 (terceros)</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmt(cxc.totalSaldo ?? 0)}</td></tr>
                       {(cxc.totalVinculados ?? 0) > 0 && <tr><td style={{ color: 'var(--text-muted)' }}>Cartera intercompañía (grupo) — segregada, va aparte</td><td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#5B86E5' }}>{fmt(cxc.totalVinculados)}</td></tr>}
                     </tbody>
                   </table>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '0.5rem', lineHeight: 1.5 }}>
-                    La columna <b>Saldo S10</b> es el saldo contable del Mayor (cuenta 12) por cliente — lo que ves en el balance de comprobación. La <b>cartera de documentos</b> puede diferir por detracciones ya depositadas o facturas por emitir (provisión sin comprobante). Las empresas del grupo (CxC intercompañía) van aparte porque la cuenta 12 es de <b>terceros</b>; su saldo real suele vivir como préstamo intercompañía (cta. 1612).
+                    La columna <b>Saldo S10</b> es el saldo contable del Mayor (cuenta 12) por cliente — lo que ves en el balance de comprobación. La <b>cartera de documentos</b> puede diferir por facturas por emitir (provisión sin comprobante), anticipos de clientes ya recibidos, detracciones ya depositadas, o timing. Las empresas del grupo (CxC intercompañía) van aparte porque la cuenta 12 es de <b>terceros</b>; su saldo real suele vivir como préstamo intercompañía (cta. 1612).
                   </div>
                 </div>
               )}

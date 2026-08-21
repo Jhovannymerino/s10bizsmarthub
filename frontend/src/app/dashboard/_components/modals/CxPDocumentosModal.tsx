@@ -76,8 +76,9 @@ function getOtroLabel(d: any): string {
   return 'Documento no estándar — revisar en S10';
 }
 
-export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, onClose }: {
-  companyId: string; proveedor: string; codProveedor: string; year?: number; onClose: () => void;
+export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, desde, hasta, onClose }: {
+  companyId: string; proveedor: string; codProveedor: string; year?: number;
+  desde?: string | null; hasta?: string | null; onClose: () => void;
 }) {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,13 +91,15 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const params = new URLSearchParams({ codProveedor: String(codProveedor) });
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
     fetch(`${API}/kpi/${companyId}/cxp-docs?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then(d => { setDocs(d.docs || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [companyId, codProveedor]);
+  }, [companyId, codProveedor, desde, hasta]);
 
   const facturas = docs.filter(d => !isOtro(d));
   const otros = docs.filter(d => isOtro(d));

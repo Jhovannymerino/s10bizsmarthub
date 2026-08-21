@@ -42,8 +42,9 @@ const esNCflotante = (d: any) => esNC(d) && saldoVal(d) < -EPS;   // NC sin apli
 
 type Filter = 'pendientes' | 'vencido' | 'vigente' | 'saldados' | 'nc' | 'todos';
 
-export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClose }: {
-  companyId: string; cliente: string; codCliente: string; year?: number; onClose: () => void;
+export function CxCDocumentosModal({ companyId, cliente, codCliente, year, desde, hasta, onClose }: {
+  companyId: string; cliente: string; codCliente: string; year?: number;
+  desde?: string | null; hasta?: string | null; onClose: () => void;
 }) {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,13 +57,15 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const params = new URLSearchParams({ codCliente: String(codCliente) });
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
     fetch(`${API}/kpi/${companyId}/cxc-docs?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then(d => { setDocs(d.docs || []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [companyId, codCliente]);
+  }, [companyId, codCliente, desde, hasta]);
 
   // Conjuntos por estado
   const pendientes = docs.filter(d => esPendiente(d) || esNCflotante(d)); // cartera: facturas + NC flotantes

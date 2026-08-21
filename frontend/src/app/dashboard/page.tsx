@@ -623,6 +623,27 @@ export default function DashboardPage() {
     return () => ctrl.abort();
   }, [gavDesde, gavHasta, selectedCompany, selectedYear, isGrupo]);
 
+  // El Reporte Directorio (tab "directorio") asume que `gav` trae el año completo sin
+  // filtrar -- ahí recorta por su propio `corteMes` (ver gavYtd) para cuadrar con el PPTX
+  // exportado. Si el usuario filtró antes en la pestaña "GAV Detalle" y llega a Directorio
+  // sin limpiar ese filtro, `gav` sigue siendo el recortado por gavDesde/gavHasta y gavYtd
+  // vuelve a divergir del PPTX. Al entrar a Directorio con un filtro de GAV activo, se
+  // limpia y se recarga el año completo.
+  useEffect(() => {
+    if (activeTab !== 'directorio' || isGrupo) return;
+    if (!gavDesde && !gavHasta) return;
+    setGavDesde(null);
+    setGavHasta(null);
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const ctrl = new AbortController();
+    fetchApi(`/kpi/${id}/gav?year=${selectedYear}`, token, ctrl.signal)
+      .then((d) => setGAV(d?.categorias ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') { /* mantener GAV previo */ } });
+    return () => ctrl.abort();
+  }, [activeTab, gavDesde, gavHasta, selectedCompany, selectedYear, isGrupo]);
+
   // CxC por rango de fecha de emisión: sobreescribe `cxc` cuando hay rango activo. Al
   // limpiar el rango, el botón "Limpiar" bumpea refreshKey y la carga principal recarga
   // la cartera completa (con reconciliación al Mayor).
@@ -1029,6 +1050,8 @@ export default function DashboardPage() {
           cliente={cxcTxDrill.cliente}
           codCliente={cxcTxDrill.codCliente}
           year={selectedYear}
+          desde={cxcModo === 'docs' ? cxcDesde : null}
+          hasta={cxcHasta}
           onClose={() => setCxCTxDrill(null)}
         />
       )}
@@ -1045,6 +1068,8 @@ export default function DashboardPage() {
           proveedor={cxpTxDrill.proveedor}
           codProveedor={cxpTxDrill.codProveedor}
           year={selectedYear}
+          desde={cxpModo === 'docs' ? cxpDesde : null}
+          hasta={cxpHasta}
           onClose={() => setCxPTxDrill(null)}
         />
       )}
@@ -1062,6 +1087,8 @@ export default function DashboardPage() {
           year={selectedYear}
           codBanco={cajaTxDrill.codBanco}
           desBanco={cajaTxDrill.desBanco}
+          desde={cajaDesde}
+          hasta={cajaHasta}
           onClose={() => setCajaTxDrill(null)}
         />
       )}
@@ -4918,6 +4945,31 @@ export default function DashboardPage() {
           const corteMes = Math.max(1, Math.min(12, directorioCorteMes ?? ultimoMesQ));
           const qRows = plMonthly.filter((m: any) => qMeses.includes(m.mes));
           const ytdRows = plMonthly.filter((m: any) => m.mes <= corteMes);
+          // Mes de corte aislado (no acumulado): solo el mes seleccionado en "Corte:",
+          // para la 3ra columna del Resumen Ejecutivo (pedido: ver el mes individual,
+          // no el trimestre ni el YTD).
+          const mesRows = plMonthly.filter((m: any) => m.mes === corteMes);
+          // Mismo recorte para la tabla "05 · GAV POR CATEGORÍA": `gav` (estado global)
+          // se carga una sola vez por año vía GET /kpi/:id/gav y trae TODOS los meses que
+          // S10 ya sincronizó, sin conocer trimestre ni corte — por eso el TOTAL GAV de esa
+          // tabla no coincidía con el del export PPTX (que sí recorta, ver
+          // kpi.controller.ts `gavQ`). Se replica aquí exactamente la misma lógica de recorte
+          // por `categorias[].meses` para que ambos números salgan iguales.
+          const gavYtd = (() => {
+            const cats: any[] = gav?.categorias || [];
+            if (!cats.length || !cats.some((c: any) => c?.meses && Object.keys(c.meses).length)) return gav;
+            const round2 = (n: number) => Math.round(n * 100) / 100;
+            const recal = cats.map((c: any) => {
+              const meses = c.meses || {};
+              const ytd = Object.keys(meses).reduce(
+                (s, k) => (Number(k) <= corteMes ? s + (Number(meses[k]) || 0) : s), 0);
+              return { ...c, ytd: round2(ytd) };
+            });
+            const total = recal.reduce((s, c) => s + c.ytd, 0);
+            recal.forEach((c: any) => { c.pct = total ? round2((c.ytd / total) * 100) : 0; });
+            recal.sort((a: any, b: any) => b.ytd - a.ytd);
+            return { ...gav, categorias: recal, total: round2(total) };
+          })();
           const sumField = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0);
           const aggPL = (rows: any[]) => ({
             ingresos: sumField(rows, 'ingresos'),
@@ -4925,12 +4977,15 @@ export default function DashboardPage() {
             margenBruto: sumField(rows, 'margenBruto'),
             gav: sumField(rows, 'gav'),
             ebitda: sumField(rows, 'ebitda'),
+            otrosIngresos: sumField(rows, 'otrosIngresos'),
+            ingresosFinancieros: sumField(rows, 'ingresosFinancieros'),
             gastosFinancieros: sumField(rows, 'gastosFinancieros'),
             diferenciaCambio: sumField(rows, 'diferenciaCambio'),
             utilidadNeta: sumField(rows, 'utilidadNeta'),
           });
           const qData = aggPL(qRows);
           const ytdData = aggPL(ytdRows);
+          const mesData = aggPL(mesRows);
           // % helpers (defensive against div-by-zero / negative ingresos)
           const safePct = (num: number, den: number) => (den && Math.abs(den) > 0.01) ? (num / den) * 100 : 0;
           const qGMpct = safePct(qData.margenBruto, qData.ingresos);
@@ -4970,14 +5025,23 @@ export default function DashboardPage() {
           ];
 
           // P&L rows para tabla resumen
+          // Nota: 'otrosIngresos', 'ingresosFinancieros' y 'diferenciaCambio' se
+          // exponen como filas propias (antes quedaban invisibles aunque ya
+          // formaban parte de utilidadNeta, ver kpi.service.ts línea 268) para que
+          // el Resumen Ejecutivo coincida con el formato del Estado de Resultados
+          // que usa el Directorio (Ingresos Financieros / Gastos Financieros /
+          // Diferencia de Cambio como líneas separadas).
           const plDirRows = [
-            { key: 'ingresos',          label: 'Ingresos',            bold: true },
-            { key: 'costoDirecto',      label: '(−) Costo Directo (COGS)' },
-            { key: 'margenBruto',       label: 'Margen Bruto',        bold: true, hl: true },
-            { key: 'gav',               label: '(−) GAV' },
-            { key: 'ebitda',            label: 'EBITDA',              bold: true, hl: true },
-            { key: 'gastosFinancieros', label: '(−) Gastos Financieros' },
-            { key: 'utilidadNeta',      label: 'Utilidad Neta',       bold: true, hl: true },
+            { key: 'ingresos',            label: 'Ingresos',                     bold: true },
+            { key: 'costoDirecto',        label: '(−) Costo Directo (COGS)' },
+            { key: 'margenBruto',         label: 'Margen Bruto',                 bold: true, hl: true },
+            { key: 'gav',                 label: '(−) GAV' },
+            { key: 'ebitda',              label: 'EBITDA',                       bold: true, hl: true },
+            { key: 'otrosIngresos',       label: '(+) Otros Ingresos' },
+            { key: 'ingresosFinancieros', label: '(+) Ingresos Financieros' },
+            { key: 'gastosFinancieros',   label: '(−) Gastos Financieros' },
+            { key: 'diferenciaCambio',    label: '(±) Diferencia de Cambio (neta)' },
+            { key: 'utilidadNeta',        label: 'Utilidad Neta',                bold: true, hl: true },
           ];
 
           return (
@@ -5186,6 +5250,20 @@ export default function DashboardPage() {
                               <tbody>{renderRow(ytdData, pyDerived, hasPptoYTD)}</tbody>
                             </table>
                           </div>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8B97A8', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                              {MES_NAMES_DIR[corteMes - 1]} {selectedYear}
+                            </div>
+                            <table className="table-s10" style={{ width: '100%' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ textAlign: 'left' }}>Concepto</th>
+                                  <th style={{ textAlign: 'right' }}>Real (S/)</th>
+                                </tr>
+                              </thead>
+                              <tbody>{renderRow(mesData, {}, false)}</tbody>
+                            </table>
+                          </div>
                         </div>
                         {!hasPptoQ && !hasPptoYTD && (
                           <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.8rem', background: 'rgba(91,134,229,0.06)', border: '1px solid rgba(91,134,229,0.15)', borderRadius: '0.4rem', fontSize: '0.72rem', color: '#8B97A8' }}>
@@ -5232,10 +5310,10 @@ export default function DashboardPage() {
                   </div>
 
                   {/* 05 · GAV detallado */}
-                  {gav?.categorias && (gav.categorias as any[]).length > 0 && (
+                  {gavYtd?.categorias && (gavYtd.categorias as any[]).length > 0 && (
                     <div className="kpi-card" style={{ marginBottom: '1.5rem' }}>
                       <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
-                        05 · GAV POR CATEGORÍA — YTD {selectedYear}
+                        05 · GAV POR CATEGORÍA — YTD {selectedYear} (Ene – {MES_NAMES_DIR[corteMes - 1]})
                       </h2>
                       <div style={{ overflowX: 'auto' }}>
                         <table className="table-s10" style={{ width: '100%' }}>
@@ -5248,7 +5326,7 @@ export default function DashboardPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {(gav.categorias as any[]).slice(0, 20).map((c: any, i: number) => (
+                            {(gavYtd.categorias as any[]).slice(0, 20).map((c: any, i: number) => (
                               <tr key={i}>
                                 <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#8B97A8' }}>{c.cod}</td>
                                 <td>{c.descripcion}</td>
@@ -5258,14 +5336,14 @@ export default function DashboardPage() {
                             ))}
                             <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
                               <td colSpan={2}>TOTAL GAV</td>
-                              <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(gav.total || 0)}</td>
+                              <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(gavYtd.total || 0)}</td>
                               <td style={{ textAlign: 'right' }}>100%</td>
                             </tr>
                           </tbody>
                         </table>
-                        {(gav.categorias as any[]).length > 20 && (
+                        {(gavYtd.categorias as any[]).length > 20 && (
                           <div style={{ fontSize: '0.7rem', color: '#8B97A8', fontStyle: 'italic', padding: '0.5rem 0' }}>
-                            Top 20 de {(gav.categorias as any[]).length} cuentas — ver pestaña GAV Detalle para listado completo
+                            Top 20 de {(gavYtd.categorias as any[]).length} cuentas — ver pestaña GAV Detalle para listado completo
                           </div>
                         )}
                       </div>
@@ -5299,9 +5377,9 @@ export default function DashboardPage() {
                         </h2>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                           {[
-                            { label: 'Total CxC',    val: totalCxC,  color: 'var(--text-primary)',
-                              tipTitle: 'Total Cuentas por Cobrar',
-                              tip: 'Suma de saldos pendientes de cobro a todos los clientes al cierre del período.' },
+                            { label: 'Total CxC Comercial', val: totalCxC,  color: 'var(--text-primary)',
+                              tipTitle: 'Total Cuentas por Cobrar — Comercial',
+                              tip: 'Suma de saldos pendientes de cobro a clientes terceros (comerciales) al cierre del período. Excluye la cartera intercompañía del grupo (empresas relacionadas), que se reporta aparte más abajo.' },
                             { label: 'Vigente',      val: tVigente,  color: '#10B981',
                               tipTitle: 'Cartera Vigente',
                               tip: 'Saldos cuya fecha de vencimiento aún no ha llegado. Sin mora.' },
@@ -5411,6 +5489,37 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* ── Cartera Intercompañía (segregada del CxC comercial, cuenta 121) ── */}
+                        {(cxc.totalVinculados ?? 0) > 0 && (
+                          <div style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', background: 'rgba(91,134,229,0.06)', border: '1px solid rgba(91,134,229,0.25)', borderRadius: '0.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: (cxc.clientesVinculados?.length ?? 0) > 0 ? '0.5rem' : 0 }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                Cartera Intercompañía (empresas del grupo)
+                                <span style={{ fontSize: '0.65rem', color: '#5B86E5', fontWeight: 600, marginLeft: '0.4rem' }}>· {cxc.numVinculados ?? cxc.clientesVinculados?.length ?? 0} · fuera del CxC comercial</span>
+                              </div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'monospace', color: '#5B86E5' }}>{fmt(cxc.totalVinculados ?? 0)}</div>
+                            </div>
+                            {(cxc.clientesVinculados?.length ?? 0) > 0 && (
+                              <div style={{ overflowX: 'auto' }}>
+                                <table className="table-s10" style={{ width: '100%', fontSize: '0.72rem' }}>
+                                  <thead><tr><th style={{ textAlign: 'left' }}>Empresa del grupo</th><th style={{ textAlign: 'right' }}>Saldo S10 (S/)</th></tr></thead>
+                                  <tbody>
+                                    {(cxc.clientesVinculados as any[]).map((c: any, i: number) => (
+                                      <tr key={`dir-vin-${c.codCliente}-${i}`}>
+                                        <td>{c.cliente}</td>
+                                        <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.saldoLedger ?? c.saldoTotalSoles ?? 0)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                            <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginTop: '0.5rem', lineHeight: 1.5 }}>
+                              Total cuenta 121 (S10) = Total CxC Comercial ({fmt(totalCxC)}) + Cartera Intercompañía ({fmt(cxc.totalVinculados ?? 0)}) = <b style={{ color: 'var(--text-primary)' }}>{fmt((cxc.totalSaldo ?? totalCxC) + (cxc.totalVinculados ?? 0))}</b>. Se segrega porque la cuenta 12 de S10 es de <b>terceros</b>; el saldo con empresas relacionadas del grupo suele vivir como préstamo intercompañía (cta. 1612).
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

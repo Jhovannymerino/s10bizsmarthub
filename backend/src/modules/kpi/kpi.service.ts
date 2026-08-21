@@ -909,7 +909,7 @@ export class KpiService {
     };
   }
 
-  async getCxCDocs(companyId: string, codCliente?: string) {
+  async getCxCDocs(companyId: string, codCliente?: string, desde?: string, hasta?: string) {
     const cached = await this.getSnapshot(companyId, 'cxc_docs', 'current');
     if (!cached) return { docs: [], message: 'No data available. Run sync first.' };
 
@@ -917,16 +917,32 @@ export class KpiService {
     if (codCliente) {
       docs = docs.filter((d: any) => String(d.CodCliente) === String(codCliente));
     }
+    if (desde || hasta) {
+      const d = desde || '0000-01-01';
+      const h = hasta || '9999-12-31';
+      docs = docs.filter((doc: any) => {
+        const iso = fechaDDMMYYYYtoISO(String(doc.FechaDocumento || ''));
+        return iso && iso >= d && iso <= h;
+      });
+    }
     return { docs, syncedAt: cached.syncedAt };
   }
 
-  async getCxPDocs(companyId: string, codProveedor?: string) {
+  async getCxPDocs(companyId: string, codProveedor?: string, desde?: string, hasta?: string) {
     const cached = await this.getSnapshot(companyId, 'cxp_docs', 'current');
     if (!cached) return { docs: [], message: 'No data available. Run sync first.' };
 
     let docs = cached.data as any[];
     if (codProveedor) {
       docs = docs.filter((d: any) => String(d.CodProveedor) === String(codProveedor));
+    }
+    if (desde || hasta) {
+      const d = desde || '0000-01-01';
+      const h = hasta || '9999-12-31';
+      docs = docs.filter((doc: any) => {
+        const iso = fechaDDMMYYYYtoISO(String(doc.FechaDocumento || ''));
+        return iso && iso >= d && iso <= h;
+      });
     }
     return { docs, syncedAt: cached.syncedAt };
   }
@@ -2092,11 +2108,19 @@ export class KpiService {
     return { rows, totalSaldo: round(totalSaldo), syncedAt: cached.syncedAt };
   }
 
-  async getCajaTxn(companyId: string, year: number, codCuenta?: string) {
+  async getCajaTxn(companyId: string, year: number, codCuenta?: string, desde?: string, hasta?: string) {
     const cached = await this.getSnapshot(companyId, 'caja_txn', `${year}`);
     if (!cached) return { transactions: [], total: 0 };
     let txns = cached.data as any[];
     if (codCuenta) txns = txns.filter((t: any) => String(t.CodBanco ?? t.CodCuenta).startsWith(codCuenta));
+    if (desde || hasta) {
+      const d = desde || '0000-01-01';
+      const h = hasta || '9999-12-31';
+      txns = txns.filter((t: any) => {
+        const iso = fechaDDMMYYYYtoISO(String(t.Fecha || ''));
+        return iso && iso >= d && iso <= h;
+      });
+    }
     return { transactions: txns, total: txns.length };
   }
 

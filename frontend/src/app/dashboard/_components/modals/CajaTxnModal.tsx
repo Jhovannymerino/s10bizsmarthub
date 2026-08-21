@@ -93,8 +93,9 @@ function AsientoCompletoPanel({ companyId, year, nroAsiento, onClose }: {
   );
 }
 
-export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
-  companyId: string; year: number; codBanco: string; desBanco: string; onClose: () => void;
+export function CajaTxnModal({ companyId, year, codBanco, desBanco, desde, hasta, onClose }: {
+  companyId: string; year: number; codBanco: string; desBanco: string;
+  desde?: string | null; hasta?: string | null; onClose: () => void;
 }) {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +115,8 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
     setFetchError(false);
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const params = new URLSearchParams({ year: String(year), codCuenta: codBanco });
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     fetch(`${API}/kpi/${companyId}/caja-transactions?${params}`, {
@@ -124,7 +127,7 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
       .then(d => { setTxns(d.transactions || []); setLoading(false); })
       .catch(() => { setFetchError(true); setLoading(false); })
       .finally(() => clearTimeout(timer));
-  }, [companyId, year, codBanco, retryCount]);
+  }, [companyId, year, codBanco, desde, hasta, retryCount]);
 
   const mesesPresentes = Array.from(new Set(txns.map((t: any) => t.Mes as number))).sort((a, b) => a - b);
   const byMes = mesFilter ? txns.filter((t: any) => t.Mes === mesFilter) : txns;

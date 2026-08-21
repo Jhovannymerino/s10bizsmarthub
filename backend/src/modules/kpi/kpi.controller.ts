@@ -65,8 +65,10 @@ export class KpiController {
   getCxCDocs(
     @Param('companyId') companyId: string,
     @Query('codCliente') codCliente?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
-    return this.kpiService.getCxCDocs(companyId, codCliente);
+    return this.kpiService.getCxCDocs(companyId, codCliente, desde || undefined, hasta || undefined);
   }
 
   /** Cartera Especial (Estado 6): vinculadas, intercompañía, en disputa */
@@ -93,8 +95,10 @@ export class KpiController {
   getCxPDocs(
     @Param('companyId') companyId: string,
     @Query('codProveedor') codProveedor?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
-    return this.kpiService.getCxPDocs(companyId, codProveedor);
+    return this.kpiService.getCxPDocs(companyId, codProveedor, desde || undefined, hasta || undefined);
   }
 
   /** Posición de Caja por banco */
@@ -435,9 +439,11 @@ export class KpiController {
     @Param('companyId') companyId: string,
     @Query('year') year?: string,
     @Query('codCuenta') codCuenta?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
   ) {
     const y = parseYear(year);
-    return this.kpiService.getCajaTxn(companyId, y, codCuenta);
+    return this.kpiService.getCajaTxn(companyId, y, codCuenta, desde || undefined, hasta || undefined);
   }
 
   /** Caja — todas las líneas de un asiento (para ver la partida doble completa) */

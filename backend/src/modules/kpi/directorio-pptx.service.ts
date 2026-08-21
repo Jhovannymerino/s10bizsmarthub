@@ -145,8 +145,14 @@ export class DirectorioPptxService {
       const s = pres.addSlide();
       addTitle(s, '01', `RESUMEN EJECUTIVO ${quarter} ${year}`);
       // La depreciación va como línea propia DEBAJO del EBITDA (el GAV ya llega sin
-      // ella) y lo financiero en una sola línea neta, de modo que los renglones
-      // visibles sumen exactamente la utilidad neta.
+      // ella). Lo financiero se desglosa en líneas separadas (Otros Ingresos,
+      // Ingresos Financieros, Gastos Financieros, Diferencia de Cambio neta) igual
+      // que el Estado de Resultados de referencia del Directorio, en vez de una
+      // única línea neta que ocultaba el efecto de la diferencia de cambio — antes
+      // el monto SÍ estaba incluido en la Utilidad Neta pero nunca se veía como
+      // renglón propio (reportado por el usuario al comparar contra el Excel
+      // externo del Directorio). Los renglones visibles siguen sumando exactamente
+      // la utilidad neta.
       const rows = [
         ['ingresos', 'Ingresos'],
         ['costoDirecto', '(−) Costo Directo (COGS)'],
@@ -154,7 +160,10 @@ export class DirectorioPptxService {
         ['gav', '(−) GAV'],
         ['ebitda', 'EBITDA'],
         ['depreciacion', '(−) Depreciación'],
-        ['finNeto', 'Ingresos / Gastos Financieros (neto)'],
+        ['otrosIngresos', '(+) Otros Ingresos'],
+        ['ingresosFinancieros', '(+) Ingresos Financieros'],
+        ['gastosFinancieros', '(−) Gastos Financieros'],
+        ['diferenciaCambio', '(±) Diferencia de Cambio (neta)'],
         ['utilidadNeta', 'Utilidad Neta'],
       ];
       const buildPpto = (raw: any) => {
@@ -162,7 +171,10 @@ export class DirectorioPptxService {
         const cos = Math.abs(raw?.costoDirecto || 0);
         const g = Math.abs(raw?.gav || 0);
         const da = Math.abs(raw?.da || 0);
+        const otros = raw?.otrosIngresos || 0;
+        const ingFin = raw?.ingresosFinancieros || 0;
         const gf = Math.abs(raw?.gastosFinancieros || 0);
+        const dc = raw?.diferenciaCambio || 0;
         return {
           ingresos: ing,
           costoDirecto: raw?.costoDirecto || 0,
@@ -170,8 +182,11 @@ export class DirectorioPptxService {
           gav: g,
           ebitda: ing - cos - g,
           depreciacion: da,
-          finNeto: -gf,
-          utilidadNeta: ing - cos - g - da - gf,
+          otrosIngresos: otros,
+          ingresosFinancieros: ingFin,
+          gastosFinancieros: gf,
+          diferenciaCambio: dc,
+          utilidadNeta: ing - cos - g - da - gf + otros + ingFin + dc,
         };
       };
       const pq = buildPpto(pptoQ);
@@ -348,15 +363,20 @@ export class DirectorioPptxService {
       const totalVigente = cxc.totalVigente  || sumF('saldoVigente');
       const totalCedido  = Number(d.cxcCedido   || 0);
       const totalIncobrabe = Number(d.cxcIncobrable || 0);
+      const totalVinc     = Number(cxc.totalVinculados || 0);
+      const totalCta121   = totalCxC + totalVinc;
 
-      // 4 KPI cards
+      // KPI cards — 4 comerciales + una 5ª "Intercompañía (grupo)" cuando aplica, para que
+      // la segregación de la cuenta 121 quede visible en el slide (antes era un footnote de
+      // una línea, fácil de pasar por alto).
       const kCards = [
-        { label: 'Total CxC',              val: totalCxC,     color: NAVY   },
+        { label: 'Total CxC Comercial',     val: totalCxC,     color: NAVY   },
         { label: 'Total Vigente',           val: totalVigente, color: GREEN  },
         { label: 'Total Cedido (Factoring)',val: totalCedido,  color: BLUE   },
         { label: 'Total Incobrable',        val: totalIncobrabe, color: RED  },
+        ...(totalVinc > 0 ? [{ label: 'Intercompañía (Grupo)', val: totalVinc, color: BLUE }] : []),
       ];
-      const cardW = (12.5 - 0.6) / 4;
+      const cardW = (12.5 - 0.2 * (kCards.length - 1)) / kCards.length;
       kCards.forEach((c, i) => {
         const x = 0.4 + i * (cardW + 0.2);
         s.addShape('rect', { x, y: 1.1, w: cardW, h: 0.18, fill: { color: c.color } });
@@ -427,11 +447,26 @@ export class DirectorioPptxService {
         border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
       });
 
-      const notaVinc = Number(cxc.totalVinculados || 0) > 0
-        ? ` · Cartera intercompañía (grupo) S/ ${fmt(cxc.totalVinculados)} segregada aparte`
-        : '';
+      // Fila de reconciliación explícita: el "Total CxC Comercial" de arriba NO es el saldo
+      // completo de la cuenta 121 — la cartera intercompañía va segregada aparte. Antes esto
+      // era solo un footnote de una línea (fácil de pasar por alto en una revisión rápida con
+      // Dirección); ahora queda como una fila visible bajo la tabla, con el mismo criterio que
+      // ya usa la pestaña CxC del dashboard on-screen.
+      if (totalVinc > 0) {
+        s.addText(
+          [
+            { text: 'Total CxC Comercial: ', options: { fontSize: 9, color: TEXT } },
+            { text: `S/ ${fmt(totalCxC)}`, options: { fontSize: 9, color: NAVY, bold: true, fontFace: 'Consolas' } },
+            { text: '   +   Intercompañía (grupo): ', options: { fontSize: 9, color: TEXT } },
+            { text: `S/ ${fmt(totalVinc)}`, options: { fontSize: 9, color: BLUE, bold: true, fontFace: 'Consolas' } },
+            { text: '   =   Total cuenta 121 (S10): ', options: { fontSize: 9, color: TEXT } },
+            { text: `S/ ${fmt(totalCta121)}`, options: { fontSize: 9, color: TEXT, bold: true, fontFace: 'Consolas' } },
+          ] as any,
+          { x: 0.4, y: 6.7, w: 12.5, h: 0.28, fill: { color: 'F3F4F6' } },
+        );
+      }
       s.addText(
-        `${cxc.clientes.length > 9 ? `Top 9 de ${cxc.clientes.length} clientes · ` : ''}Aging por FechaVencimiento · TOTAL reconcilia con la cuenta 121 del balance (emitidas + provisión por emitir)${notaVinc}`,
+        `${cxc.clientes.length > 9 ? `Top 9 de ${cxc.clientes.length} clientes · ` : ''}Aging por FechaVencimiento · TOTAL reconcilia con la cuenta 121 del balance (emitidas + provisión por emitir)${totalVinc > 0 ? ' · Cartera intercompañía segregada aparte, ver reconciliación arriba' : ''}`,
         { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
       addFooter(s, '07');
     }

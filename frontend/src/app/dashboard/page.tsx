@@ -4964,7 +4964,11 @@ export default function DashboardPage() {
           // seleccionado en la pestaña P&L — dos pestañas distintas no deben compartir
           // ese estado para un reporte de Directorio, que necesita su propio corte fijo.
           const corteMes = Math.max(1, Math.min(12, directorioCorteMes ?? ultimoMesQ));
-          const qRows = plMonthly.filter((m: any) => qMeses.includes(m.mes));
+          // El trimestre también respeta el corte, igual que YTD -- si no, en cuanto el
+          // sync trae un preliminar parcial de un mes del trimestre aún no cerrado (p.ej.
+          // agosto con corte=Jul), ese mes se sumaba igual y el número crecía solo, sin que
+          // nadie tocara nada, contradiciendo el corte que Directorio declaró explícito.
+          const qRows = plMonthly.filter((m: any) => qMeses.includes(m.mes) && m.mes <= corteMes);
           const ytdRows = plMonthly.filter((m: any) => m.mes <= corteMes);
           // Mes de corte aislado (no acumulado): solo el mes seleccionado en "Corte:",
           // para la 3ra columna del Resumen Ejecutivo (pedido: ver el mes individual,

@@ -709,6 +709,18 @@ export class KpiService {
       }
     }
 
+    // `sinFecha` no tiene columna propia en el dashboard ni en el PPTX -- solo entraba al
+    // TOTAL, nunca a ninguna fila visible, así que "lo que muestra no suma el total"
+    // (reportado por Directorio comparando el export contra el saldo por cliente). Por
+    // naturaleza es deuda vieja de antigüedad desconocida (documento ya pagado antes de que
+    // este registro existiera, o arrastre de apertura/cierre), así que se pliega en +90 días
+    // -- el bucket más conservador -- en vez de quedar invisible. El total del cliente no
+    // cambia, solo deja de haber un remanente sin columna.
+    for (const acc of map.values()) {
+      acc.d90mas = round(acc.d90mas + acc.sinFecha);
+      acc.sinFecha = 0;
+    }
+
     const terceros: any[] = [];
     const vinculados: any[] = [];
     for (const [ruc, a] of map) {

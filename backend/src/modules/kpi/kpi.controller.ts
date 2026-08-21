@@ -762,9 +762,15 @@ export class KpiController {
     const cxcAging = await this.kpiService.getCxCAgingAFecha(companyId, corteFecha);
     const cxc = (cxcAging as any)?.clientes?.length ? cxcAging : await this.kpiService.getCxC(companyId);
 
+    // El trimestre también respeta el corte declarado -- no solo el YTD. Sin este tope,
+    // en cuanto el sync trae aunque sea un preliminar parcial de un mes futuro DENTRO del
+    // mismo trimestre (p.ej. un Q3 con corte=Jul, pero agosto ya trajo algo de S10), ese
+    // mes "no cerrado" se sumaba igual al trimestre y el PPT mostraba más ingreso/EBITDA
+    // que el dashboard (que si no tenía ese dato aún, mostraba menos) -- reportado por
+    // Directorio comparando el export contra el Bizz en vivo.
     const qData = presentar(
-      agg(plMonthly.filter((m: any) => qMeses.includes(m.mes))),
-      depreciacion(Math.min(...qMeses), ultimoMesQ));
+      agg(plMonthly.filter((m: any) => qMeses.includes(m.mes) && m.mes <= corteMes)),
+      depreciacion(Math.min(...qMeses), corteMes));
     const ytdRows = plMonthly.filter((m: any) => m.mes <= corteMes);
     const ytdData = ytdRows.length
       ? presentar(agg(ytdRows), depreciacion(1, corteMes))

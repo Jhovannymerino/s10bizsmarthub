@@ -319,6 +319,10 @@ export default function DashboardPage() {
   // 'saldo' = saldo contable de la cartera a una fecha de corte (del Mayor, ata al balance).
   const [cxcModo, setCxcModo] = useState<'docs' | 'saldo'>('docs');
   const [cxpModo, setCxpModo] = useState<'docs' | 'saldo'>('docs');
+  // Filtro Emitidas/Por Emitir dentro del modo 'docs': 'todas' = cartera comercial completa
+  // (default, sin cambios); 'emitidas' = solo documentos con comprobante (cta. 1212);
+  // 'porEmitir' = solo lo devengado sin comprobante todavía (cta. 1211, provisión).
+  const [cxcVista, setCxcVista] = useState<'todas' | 'emitidas' | 'porEmitir'>('todas');
   // Reporte de detracciones (modal); lado inicial según vista (CxC=cobradas, CxP=pagadas)
   const [detracModal, setDetracModal] = useState<null | 'cobradas' | 'pagadas'>(null);
   const [activeTab, setActiveTab] = useState<'inicio' | 'pl' | 'cxc' | 'cxp' | 'caja' | 'gav' | 'docs' | 'admin' | 'balance' | 'otras_cxc' | 'otras_cxp' | 'prestamos' | 'tributos' | 'laboral' | 'activo_fijo' | 'tesoreria' | 'patrimonio' | 'inventarios' | 'gastos_nat' | 'caja_saldos' | 'conciliacion' | 'audit' | 'validation_forense' | 'directorio' | 'gerencial' | 'cxc_ranking' | 'cxp_ranking'>('inicio');
@@ -957,6 +961,15 @@ export default function DashboardPage() {
     sortRows(cxc?.clientes ?? [], cxcSort.col, cxcSort.dir)
       .filter((c: any) => !cxcSearch || c.cliente?.toLowerCase().includes(cxcSearch.toLowerCase())),
     [cxc, cxcSort, cxcSearch]
+  );
+  // Vista "Solo Por Emitir": misma cartera (cta. 12) pero mirando solo la provisión 1211 --
+  // sin buckets de aging (esas líneas no tienen comprobante ni FechaVencimiento propia).
+  const cxcPorEmitirFiltered = useMemo(() =>
+    [...(cxc?.clientes ?? [])]
+      .filter((c: any) => (c.porEmitir ?? 0) > 0.01)
+      .filter((c: any) => !cxcSearch || c.cliente?.toLowerCase().includes(cxcSearch.toLowerCase()))
+      .sort((a: any, b: any) => (b.porEmitir ?? 0) - (a.porEmitir ?? 0)),
+    [cxc, cxcSearch]
   );
 
   const cxpFiltered = useMemo(() =>
@@ -2447,11 +2460,14 @@ export default function DashboardPage() {
         {activeTab === 'cxc' && cxc && (() => {
           const fUSD = (v: number) => `$ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
           const hasUSD = (cxc.totalSaldoUSD ?? 0) > 0;
-          const hasPorEmitir = (cxc.totalPorEmitir ?? 0) > 0;
-          const hasLedger = (cxc.clientes ?? []).some((c: any) => c.saldoLedger != null);
+          const vistaActiva = cxc.modo === 'saldo-a-fecha' ? 'todas' : cxcVista;
+          const hasPorEmitir = vistaActiva === 'todas' && (cxc.totalPorEmitir ?? 0) > 0;
+          const hasLedger = vistaActiva !== 'emitidas' && (cxc.clientes ?? []).some((c: any) => c.saldoLedger != null);
           const filtered = cxcFiltered;
           const sumCol = (col: string) => filtered.reduce((s: number, c: any) => s + (c[col] ?? 0), 0);
-          const totalRef = cxc.totalSaldo || sumCol('saldoLedger') || sumCol('saldoTotalSoles');
+          const totalRef = vistaActiva === 'emitidas'
+            ? (cxc.totalDocs || sumCol('saldoTotalSoles'))
+            : (cxc.totalSaldo || sumCol('saldoLedger') || sumCol('saldoTotalSoles'));
           return (
             <>
               <RangoFechasBar year={selectedYear} desde={cxcDesde} hasta={cxcHasta}
@@ -2459,6 +2475,26 @@ export default function DashboardPage() {
                 modo={cxcModo}
                 onModo={(m) => { if (m === 'docs') { setCxcModo('docs'); setCxcDesde(null); setCxcHasta(null); setRefreshKey((k) => k + 1); } else { setCxcModo('saldo'); } }}
                 onClear={() => { setCxcDesde(null); setCxcHasta(null); setRefreshKey((k) => k + 1); }} />
+              {cxc.modo !== 'saldo-a-fecha' && (
+                <div style={{ display: 'flex', gap: '0.4rem', margin: '0 0 1rem' }}>
+                  {([
+                    { v: 'todas' as const, label: 'Todas' },
+                    { v: 'emitidas' as const, label: 'Solo Emitidas' },
+                    { v: 'porEmitir' as const, label: 'Solo Por Emitir' },
+                  ]).map(({ v, label }) => (
+                    <button key={v} onClick={() => setCxcVista(v)}
+                      title={v === 'emitidas' ? 'Solo documentos con comprobante emitido (cta. 1212)'
+                        : v === 'porEmitir' ? 'Solo lo devengado sin comprobante todavía (provisión, cta. 1211)'
+                        : 'Cartera completa: emitidas + por emitir'}
+                      style={{ padding: '0.3rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600,
+                        border: cxcVista === v ? '1px solid rgba(43,180,187,0.5)' : '1px solid rgba(255,255,255,0.12)',
+                        background: cxcVista === v ? 'rgba(43,180,187,0.15)' : 'rgba(255,255,255,0.04)',
+                        color: cxcVista === v ? '#2BB4BB' : '#8B97A8' }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
               {cxc.modo === 'saldo-a-fecha' && (
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '-0.5rem 0 1rem', lineHeight: 1.5 }}>
                   <b>Saldo contable de la cartera</b> al corte, tomado del Mayor (cuenta 12). Ata al balance de comprobación a esa fecha. No muestra envejecimiento: el aging a una fecha pasada requeriría el estado de pago histórico del documento, que no se guarda.
@@ -2469,6 +2505,58 @@ export default function DashboardPage() {
                   Rango por <b>fecha de emisión</b> del documento. Muestra la cartera de los comprobantes emitidos en el período; en este modo no se reconcilia con el saldo contable del Mayor (que es puntual, no filtrable por fecha de emisión).
                 </div>
               )}
+              {vistaActiva === 'porEmitir' ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <KpiCard label="Total Por Emitir" value={fmt(cxc.totalPorEmitir ?? 0)} signal="neutral" sub="Provisión — cuenta 1211" hint="Receivable ya devengado pero sin comprobante emitido todavía. No tiene vencimiento propio, por eso no se envejece." />
+                    <KpiCard label="N° Clientes" value={String(cxcPorEmitirFiltered.length)} signal="neutral" sub="Con provisión por emitir" hint="Clientes con saldo devengado sin comprobante emitido" />
+                  </div>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <SearchInput value={cxcSearch} onChange={setCxcSearch} placeholder="Buscar cliente..." />
+                  </div>
+                  <div className="kpi-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Por Emitir por Cliente — equiv. S/</div>
+                      <ExportBtn onClick={() => {
+                        const headers = ['Cliente', 'Por Emitir S/', '% de la provisión'];
+                        const totPE = cxcPorEmitirFiltered.reduce((s: number, c: any) => s + (c.porEmitir ?? 0), 0);
+                        const rows = cxcPorEmitirFiltered.map((c: any) => [
+                          c.cliente, c.porEmitir ?? 0,
+                          totPE > 0 ? (((c.porEmitir ?? 0) / totPE) * 100).toFixed(1) + '%' : '—',
+                        ]);
+                        exportCSV(`CxC_PorEmitir_${selectedCompany.shortName}.csv`, headers, rows);
+                      }} />
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="table-s10">
+                        <thead>
+                          <tr><th>Cliente</th><th style={{ textAlign: 'right' }}>Por Emitir S/</th><th style={{ textAlign: 'right' }}>% de la provisión</th></tr>
+                        </thead>
+                        <tbody>
+                          {cxcPorEmitirFiltered.map((c: any, i: number) => {
+                            const totPE = cxc.totalPorEmitir ?? 0;
+                            return (
+                              <tr key={`pe-${c.codCliente}-${i}`}>
+                                <td style={{ color: 'var(--text-primary)' }}>{c.cliente}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{fmt(c.porEmitir ?? 0)}</td>
+                                <td style={{ textAlign: 'right', color: '#8B97A8' }}>{totPE > 0 ? pct(((c.porEmitir ?? 0) / totPE) * 100) : '—'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr className="total-row">
+                            <td>TOTAL ({cxcPorEmitirFiltered.length} clientes)</td>
+                            <td style={{ textAlign: 'right' }}>{fmt(cxcPorEmitirFiltered.reduce((s: number, c: any) => s + (c.porEmitir ?? 0), 0))}</td>
+                            <td style={{ textAlign: 'right' }}>100%</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              ) : (
+              <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 {(cxc.totalSaldoPEN ?? 0) > 0 && <KpiCard label="Cartera S/ PEN" value={fmt(cxc.totalSaldoPEN)} signal="neutral" sub="Saldo pendiente de cobro en soles" hint="Facturas emitidas aún no cobradas, moneda soles" />}
                 {hasUSD && <KpiCard label="Cartera $ USD" value={fUSD(cxc.totalSaldoUSD)} signal="neutral" sub="Saldo pendiente de cobro en dólares" hint="Facturas emitidas aún no cobradas, moneda USD" />}
@@ -2484,7 +2572,7 @@ export default function DashboardPage() {
               </div>
               <div className="kpi-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Aging por Cliente — equiv. S/</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{vistaActiva === 'emitidas' ? 'Emitidas por Cliente — equiv. S/' : 'Aging por Cliente — equiv. S/'}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                   <button onClick={() => setDetracModal('cobradas')}
                     title="Reporte de detracciones: fecha de cobro de la detracción y del pago, por documento"
@@ -2585,6 +2673,8 @@ export default function DashboardPage() {
                   </table>
                 </div>
               </div>
+              </>
+              )}
 
               {/* ── Reconciliación con el balance (cuenta 12) ── */}
               {(hasLedger || (cxc.totalVinculados ?? 0) > 0) && (

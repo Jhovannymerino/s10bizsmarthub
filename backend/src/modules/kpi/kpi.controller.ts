@@ -761,6 +761,10 @@ export class KpiController {
     const corteFecha = new Date(Date.UTC(y, corteMes, 0)).toISOString().slice(0, 10);
     const cxcAging = await this.kpiService.getCxCAgingAFecha(companyId, corteFecha);
     const cxc = (cxcAging as any)?.clientes?.length ? cxcAging : await this.kpiService.getCxC(companyId);
+    // Documentos por Cobrar (Emitidas 1212 / Por Emitir 1211) al MISMO corte declarado --
+    // para la lámina que pidió Milka mostrando ambos montos por cliente, igual que el
+    // informe de CxC en vivo pero anclado al corte del Directorio (no al día de hoy).
+    const cxcDocs = await this.kpiService.getCxCSaldoAFecha(companyId, corteFecha);
 
     // El trimestre también respeta el corte declarado -- no solo el YTD. Sin este tope,
     // en cuanto el sync trae aunque sea un preliminar parcial de un mes futuro DENTRO del
@@ -805,6 +809,7 @@ export class KpiController {
       pptoYTD: (directorio as any)?.data?.presupuesto?.ytd || {},
       gav: gavQ,
       cxc,
+      cxcDocs,
       caja,
       cajaPosicion,
       directorio: (directorio as any)?.data || {},

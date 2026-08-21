@@ -55,11 +55,12 @@ export class DirectorioPptxService {
     pptoYTD: any;      // Presupuesto YTD
     gav: any;          // { categorias: [], total }
     cxc: any;          // { clientes: [], totalSaldo, concentracionTop3 }
+    cxcDocs?: any;     // { clientes: [{ emitidas, porEmitir, saldoLedger }], totalEmitidas, totalPorEmitir }
     caja: any;         // { totalPorMes }
     cajaPosicion: any; // { saldoInicialQ, saldoFinalQ, totalEntradas, totalSalidas, meses[] }
     directorio: any;   // draft manual
   }): Promise<Buffer> {
-    const { empresa, quarter, year, corteMes, qData, ytdData, pptoQ, pptoYTD, gav, cxc, caja, cajaPosicion, directorio } = ctx;
+    const { empresa, quarter, year, corteMes, qData, ytdData, pptoQ, pptoYTD, gav, cxc, cxcDocs, caja, cajaPosicion, directorio } = ctx;
     const d = directorio || {};
     const qLabel = Q_LABELS[quarter] || quarter;
     // El YTD del reporte llega recortado a ene..mes de corte (explícito, no
@@ -467,6 +468,76 @@ export class DirectorioPptxService {
       }
       s.addText(
         `${cxc.clientes.length > 9 ? `Top 9 de ${cxc.clientes.length} clientes · ` : ''}Aging por FechaVencimiento · TOTAL reconcilia con la cuenta 121 del balance (emitidas + provisión por emitir)${totalVinc > 0 ? ' · Cartera intercompañía segregada aparte, ver reconciliación arriba' : ''}`,
+        { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
+      addFooter(s, '07');
+    }
+
+    // ═══════════════════════════════════════
+    // SLIDE 07b — Documentos por Cobrar: Emitidas vs. Por Emitir
+    // ═══════════════════════════════════════
+    // Pedido explícito de Milka: el aging de arriba solo envejece lo YA EMITIDO (tiene
+    // FechaVencimiento). Esta lámina muestra, por cliente, la cuenta 12 completa partida en
+    // sus dos subcuentas: 1212 "emitidas" (factura ya tiene comprobante) y 1211 "por emitir"
+    // (devengado pero sin comprobante todavía, sin vencimiento propio). Mismo corte que el
+    // resto del Directorio (no el saldo "vivo" de hoy), igual criterio que el informe de CxC
+    // en vivo (ver kpi.service.ts `enrichCxCReconciliacion`).
+    if (cxcDocs?.clientes && cxcDocs.clientes.length > 0) {
+      const s = pres.addSlide();
+      addTitle(s, '07', `DOCUMENTOS POR COBRAR — Emitidas vs. Por Emitir · Al cierre ${quarter} ${year}`);
+
+      const totalEmitidas = cxcDocs.totalEmitidas || 0;
+      const totalPorEmitir = cxcDocs.totalPorEmitir || 0;
+      const totalGeneral = cxcDocs.totalSaldo || Math.round((totalEmitidas + totalPorEmitir) * 100) / 100;
+
+      const kCards = [
+        { label: 'Total Emitidas', val: totalEmitidas, color: NAVY },
+        { label: 'Total Por Emitir', val: totalPorEmitir, color: BLUE },
+        { label: 'Total General (cta. 12)', val: totalGeneral, color: TEAL },
+      ];
+      const cardW = (12.5 - 0.2 * (kCards.length - 1)) / kCards.length;
+      kCards.forEach((c, i) => {
+        const x = 0.4 + i * (cardW + 0.2);
+        s.addShape('rect', { x, y: 1.1, w: cardW, h: 0.18, fill: { color: c.color } });
+        s.addShape('rect', { x, y: 1.28, w: cardW, h: 1.15, fill: { color: 'FFFFFF' }, line: { color: 'E5E7EB', width: 1 } });
+        s.addText(c.label, { x: x + 0.1, y: 1.33, w: cardW - 0.2, h: 0.3, color: SUBTLE, fontSize: 9.5, align: 'center' });
+        s.addText(`S/ ${fmt(c.val)}`, { x: x + 0.05, y: 1.65, w: cardW - 0.1, h: 0.65, color: c.color, fontSize: 18, bold: true, align: 'center', fontFace: 'Consolas' });
+      });
+
+      const sortedDocs = [...cxcDocs.clientes]
+        .sort((a: any, b: any) => (b.saldoLedger || 0) - (a.saldoLedger || 0))
+        .slice(0, 12);
+      const colHeaders = [
+        { text: 'Cliente',      fill: NAVY, w: 5.5 },
+        { text: 'Emitidas (S/)',   fill: '1A6B30', w: 2.3 },
+        { text: 'Por Emitir (S/)', fill: '1E5FAD', w: 2.3 },
+        { text: 'TOTAL (S/)',      fill: NAVY, w: 2.4 },
+      ];
+      const colW = colHeaders.map(c => c.w);
+      const header = colHeaders.map(c => ({
+        text: c.text,
+        options: { bold: true, fill: { color: c.fill }, color: 'FFFFFF', fontSize: 9.5, align: c.text === 'Cliente' ? ('left' as const) : ('right' as const) },
+      }));
+      const rows = sortedDocs.map((c: any) => [
+        { text: (c.cliente || '').substring(0, 55), options: { fontSize: 9.5 } },
+        { text: (c.emitidas || 0) > 0 ? fmt(c.emitidas) : '—', options: { fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas', color: GREEN } },
+        { text: (c.porEmitir || 0) > 0 ? fmt(c.porEmitir) : '—', options: { fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas', color: BLUE } },
+        { text: fmt(c.saldoLedger || 0), options: { fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas', bold: true } },
+      ]);
+      const totalRow = [
+        { text: 'TOTAL', options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5 } },
+        { text: fmt(totalEmitidas), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(totalPorEmitir), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas' } },
+        { text: fmt(totalGeneral), options: { bold: true, fill: { color: NAVY }, color: 'FFFFFF', fontSize: 9.5, align: 'right' as const, fontFace: 'Consolas' } },
+      ];
+      s.addTable([header, ...rows, totalRow as any], {
+        x: 0.4, y: 2.6, w: 12.5,
+        colW,
+        rowH: 0.32,
+        fontFace: 'Inter',
+        border: { type: 'solid', pt: 0.4, color: 'E5E7EB' },
+      });
+      s.addText(
+        `${cxcDocs.clientes.length > 12 ? `Top 12 de ${cxcDocs.clientes.length} clientes · ` : ''}Cuenta 12 (Mayor) partida en 1212 "Emitidas" (con comprobante) y 1211 "Por Emitir" (devengado, sin comprobante aún) · TOTAL reconcilia con la cuenta 121 del balance`,
         { x: 0.4, y: 7.05, w: 12.5, h: 0.25, color: SUBTLE, fontSize: 8, italic: true });
       addFooter(s, '07');
     }

@@ -949,6 +949,7 @@ export class KpiService {
       const enriched = {
         ...c,
         esVinculada,
+        emitidas: l.emitidas,
         porEmitir: l.porEmitir,
         saldoDocs,
         saldoLedger,
@@ -968,7 +969,7 @@ export class KpiService {
         codCliente: ruc, cliente: `(Solo contable) ${ruc}`,
         saldoPEN: 0, saldoUSD: 0, tipoCambioUSD: TC_USD_FALLBACK,
         saldoTotalSoles: 0, saldoVigente: 0, dias0_30: 0, dias31_60: 0, dias61_90: 0, dias90mas: 0,
-        esVinculada: grupoRuc.has(ruc), porEmitir: l.porEmitir,
+        esVinculada: grupoRuc.has(ruc), emitidas: l.emitidas, porEmitir: l.porEmitir,
         saldoDocs: 0, saldoLedger, saldoConEmitir: saldoLedger, diferencia: saldoLedger,
         soloContable: true,
       });

@@ -688,6 +688,27 @@ export class KpiService {
       map.set(ruc, acc);
     }
 
+    // Presentación: ningún bucket de antigüedad se muestra negativo. Puede quedar uno
+    // negativo cuando, para un cliente con deuda vieja arrastrada año tras año, el mismo
+    // nroD mezcla actividad real (factura, cobranzas) CON líneas de Apertura/Cierre de
+    // varios años -- al separar el arrastre (que va a sinFecha, sin vencimiento propio)
+    // de la actividad real (que va al bucket de SU vencimiento), uno de los dos puede
+    // terminar absorbiendo más de lo que "le tocaba" y cruzar a negativo. El total del
+    // cliente sigue siendo exacto siempre; esto solo redistribuye CÓMO se reparte entre
+    // buckets, nunca cuánto hay en total -- se lo lleva el bucket de mayor magnitud.
+    const BUCKET_KEYS = ['vigente', 'd0_30', 'd31_60', 'd61_90', 'd90mas', 'sinFecha'] as const;
+    for (const acc of map.values()) {
+      for (let guard = 0; guard < BUCKET_KEYS.length; guard++) {
+        const negKey = BUCKET_KEYS.find((k) => acc[k] < -0.01);
+        if (!negKey) break;
+        const negVal = acc[negKey];
+        const target = BUCKET_KEYS.filter((k) => k !== negKey)
+          .reduce((best, k) => (Math.abs(acc[k]) > Math.abs(acc[best]) ? k : best));
+        acc[target] = round(acc[target] + negVal);
+        acc[negKey] = 0;
+      }
+    }
+
     const terceros: any[] = [];
     const vinculados: any[] = [];
     for (const [ruc, a] of map) {

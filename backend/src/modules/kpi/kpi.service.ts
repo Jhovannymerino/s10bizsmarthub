@@ -600,23 +600,43 @@ export class KpiService {
   // registro empezara a poblarse nunca tuvo su fecha capturada. Esos saldos (deberían
   // ser ~0 casi siempre, ya en la fecha eran documentos ya liquidados) se reportan
   // aparte en `saldoSinFechaVenc` en vez de asumirse "vigentes" a ciegas.
+  //
+  // Asiento de Apertura/Cierre: en algunos clientes (caso real: STILER) S10 reutiliza el
+  // nroD de una factura real para la línea que reabre el saldo del año anterior — el saldo
+  // arrastrado quedaría bucketeado por la fecha de vencimiento de ESA factura, generando
+  // buckets negativos sin sentido cuando el arrastre es grande. Estas líneas nunca
+  // representan un documento con vencimiento propio, así que se excluyen del agrupado por
+  // nroD y se suman aparte, cayendo en `saldoSinFechaVenc` igual que un doc sin registro.
   private async agingAFecha(companyId: string, hasta: string, clase: string, tipo: 'cxc' | 'cxp') {
     const grupo = await this.prisma.company.findMany({ select: { codEmpresa: true } });
     const grupoRuc = new Set(
       grupo.map((g) => String(g.codEmpresa)).filter((r) => r !== String(companyId)),
     );
     const signExpr = tipo === 'cxc' ? '"debito" - "credito"' : '"credito" - "debito"';
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
-      `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre, "nroD" AS "nroD",
-              SUM(${signExpr})::float8 AS saldo
-         FROM "LedgerEntry"
-        WHERE "companyId" = $1 AND LEFT("codCuenta",2) = $2
-          AND "fecha"::date <= $3::date
-          AND NOT (UPPER(COALESCE("glosa",'')) = 'ASIENTO DE CIERRE'
-                   AND EXTRACT(YEAR FROM "fecha") = EXTRACT(YEAR FROM $3::date))
-        GROUP BY "codTercero", "nroD"`,
-      companyId, clase, hasta,
-    );
+    const cierreAnioCorteExcl = `NOT (UPPER(COALESCE("glosa",'')) = 'ASIENTO DE CIERRE'
+                   AND EXTRACT(YEAR FROM "fecha") = EXTRACT(YEAR FROM $3::date))`;
+    const [rows, arrastre] = await Promise.all([
+      this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre, "nroD" AS "nroD",
+                SUM(${signExpr})::float8 AS saldo
+           FROM "LedgerEntry"
+          WHERE "companyId" = $1 AND LEFT("codCuenta",2) = $2
+            AND "fecha"::date <= $3::date
+            AND UPPER(COALESCE("glosa",'')) NOT IN ('ASIENTO DE APERTURA','ASIENTO DE CIERRE')
+          GROUP BY "codTercero", "nroD"`,
+        companyId, clase, hasta,
+      ),
+      this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre, SUM(${signExpr})::float8 AS saldo
+           FROM "LedgerEntry"
+          WHERE "companyId" = $1 AND LEFT("codCuenta",2) = $2
+            AND "fecha"::date <= $3::date
+            AND UPPER(COALESCE("glosa",'')) IN ('ASIENTO DE APERTURA','ASIENTO DE CIERRE')
+            AND ${cierreAnioCorteExcl}
+          GROUP BY "codTercero"`,
+        companyId, clase, hasta,
+      ),
+    ]);
     const nroDs = [...new Set(rows.map((r) => String(r.nroD || '')).filter(Boolean))];
     const vencimientos = nroDs.length
       ? await this.prisma.documentoVencimiento.findMany({
@@ -651,6 +671,20 @@ export class KpiService {
         else if (dv <= 90) acc.d61_90 = round(acc.d61_90 + saldo);
         else acc.d90mas = round(acc.d90mas + saldo);
       }
+      map.set(ruc, acc);
+    }
+
+    // Saldo arrastrado por apertura/cierre: no tiene vencimiento propio, cae en sinFecha.
+    // Puede crear clientes nuevos en `map` (uno cuyo único movimiento es el arrastre).
+    for (const a of arrastre) {
+      if (a.ruc == null) continue;
+      const ruc = String(a.ruc);
+      const saldo = Number(a.saldo) || 0;
+      if (Math.abs(saldo) < 0.01) continue;
+      const acc = map.get(ruc) || { nombre: a.nombre || ruc, saldo: 0, vigente: 0, d0_30: 0, d31_60: 0, d61_90: 0, d90mas: 0, sinFecha: 0 };
+      if (a.nombre && !map.has(ruc)) acc.nombre = a.nombre;
+      acc.saldo = round(acc.saldo + saldo);
+      acc.sinFecha = round(acc.sinFecha + saldo);
       map.set(ruc, acc);
     }
 

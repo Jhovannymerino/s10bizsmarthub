@@ -7,7 +7,7 @@ import { SortState, sortRows, toggleSort, searchRows } from '../../_lib/sort';
 import { SortTh, searchInputStyle } from '../../_lib/SortTh';
 
 const CAT_CONFIG: Record<string, { label: string; color: string; cuenta: string }> = {
-  prestamo:  { label: 'Préstamo',  color: '#F59E0B', cuenta: '→ 45' },
+  prestamo:  { label: 'Préstamo',  color: 'var(--yellow)', cuenta: '→ 45' },
   anticipo:  { label: 'Anticipo',  color: '#8B5CF6', cuenta: '→ 162 / revisar' },
   otro:      { label: 'Otro',      color: '#64748B', cuenta: '→ revisar' },
 };
@@ -49,15 +49,15 @@ export function AuditClasificacionModal({ companyId, onClose }: {
 
   const btnStyle = (active: boolean, color?: string) => ({
     padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
-    border: active ? `1px solid ${color ?? 'rgba(32,126,131,0.5)'}` : '1px solid rgba(255,255,255,0.1)',
-    background: active ? `${color ?? 'rgba(32,126,131'}20` : 'rgba(255,255,255,0.04)',
-    color: active ? (color ?? '#2BB4BB') : '#8B97A8',
+    border: active ? `1px solid ${color ?? 'rgba(32,126,131,0.5)'}` : '1px solid var(--modal-border-2)',
+    background: active ? `${color ?? 'rgba(32,126,131'}20` : 'var(--modal-input-bg)',
+    color: active ? (color ?? 'var(--primary-light)') : 'var(--text-muted)',
   });
 
   const tabStyle = (active: boolean) => ({
     padding: '0.4rem 1rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: active ? 700 : 400,
     borderBottom: active ? '2px solid #2BB4BB' : '2px solid transparent',
-    color: active ? '#2BB4BB' : '#8B97A8', background: 'none', border: 'none',
+    color: active ? 'var(--primary-light)' : 'var(--text-muted)', background: 'none', border: 'none',
     borderBottomStyle: 'solid' as const,
   });
 
@@ -66,21 +66,21 @@ export function AuditClasificacionModal({ companyId, onClose }: {
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="audit-clas-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '88vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '88vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
           <div>
-            <div id="audit-clas-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>Auditoría de Clasificación Contable</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
+            <div id="audit-clas-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>Auditoría de Clasificación Contable</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               Documentos en cuenta 42 que no son deuda comercial · Comparado con lo que sí está correctamente en 45 y 162
             </div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--modal-border-1)', marginBottom: '1rem' }}>
           <button style={{ ...tabStyle(tab === 'mal42'), display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }} onClick={() => setTab('mal42')}>
             <AlertTriangle size={13} aria-hidden="true" /> Mal clasificados en cta. 42 {data ? `(${data.malClasificados?.length ?? 0} docs · ${fmt(data.total42Revision ?? 0)})` : ''}
           </button>
@@ -93,9 +93,9 @@ export function AuditClasificacionModal({ companyId, onClose }: {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Analizando cuentas...</div>
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Analizando cuentas...</div>
         ) : !data ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Sin datos disponibles. Ejecuta una sincronización primero.</div>
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Sin datos disponibles. Ejecuta una sincronización primero.</div>
         ) : tab === 'mal42' ? (
           <>
             {/* Resumen por categoría */}
@@ -106,8 +106,8 @@ export function AuditClasificacionModal({ companyId, onClose }: {
                   return (
                     <div key={cat} style={{ background: `${cfg.color}15`, border: `1px solid ${cfg.color}40`, borderRadius: '0.5rem', padding: '0.6rem 1rem', minWidth: 160 }}>
                       <div style={{ fontSize: '0.7rem', color: cfg.color, fontWeight: 700 }}>{cfg.label} {cfg.cuenta}</div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC', marginTop: '0.15rem' }}>{fmt(v.saldo)}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#8B97A8' }}>{v.count} documento{v.count !== 1 ? 's' : ''}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.15rem' }}>{fmt(v.saldo)}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{v.count} documento{v.count !== 1 ? 's' : ''}</div>
                     </div>
                   );
                 })}
@@ -126,7 +126,7 @@ export function AuditClasificacionModal({ companyId, onClose }: {
             </div>
 
             {filtered42.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Sin documentos en esta categoría.</div>
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Sin documentos en esta categoría.</div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-s10" style={{ fontSize: '0.78rem' }}>
@@ -154,13 +154,13 @@ export function AuditClasificacionModal({ companyId, onClose }: {
                             </span>
                           </td>
                           <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.proveedor}>{d.proveedor}</td>
-                          <td style={{ fontSize: '0.72rem', color: '#8B97A8' }}>{d.tipo}</td>
+                          <td style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{d.tipo}</td>
                           <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{d.serie ? `${d.serie}-${d.numero}` : d.numero || '—'}</td>
                           <td style={{ whiteSpace: 'nowrap' }}>{d.fechaDocumento}</td>
-                          <td style={{ fontWeight: 600, color: d.saldo > 0 ? '#F8FAFC' : '#8B97A8' }}>{fmt(d.saldo)}</td>
-                          <td style={{ color: d.pagado > 0 ? '#10B981' : '#8B97A8' }}>{d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
-                          <td style={{ fontSize: '0.72rem', color: '#F59E0B', fontWeight: 600 }}>{d.cuentaSugerida}</td>
-                          <td style={{ fontSize: '0.70rem', color: '#8B97A8', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.motivo}>{d.motivo}</td>
+                          <td style={{ fontWeight: 600, color: d.saldo > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{fmt(d.saldo)}</td>
+                          <td style={{ color: d.pagado > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
+                          <td style={{ fontSize: '0.72rem', color: 'var(--yellow)', fontWeight: 600 }}>{d.cuentaSugerida}</td>
+                          <td style={{ fontSize: '0.70rem', color: 'var(--text-muted)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.motivo}>{d.motivo}</td>
                         </tr>
                       );
                     })}
@@ -180,7 +180,7 @@ export function AuditClasificacionModal({ companyId, onClose }: {
         ) : tab === 'en45' ? (
           <div style={{ overflowX: 'auto' }}>
             {data.en45?.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>No hay saldos en cuenta 45.</div>
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay saldos en cuenta 45.</div>
             ) : (
               <table className="table-s10" style={{ fontSize: '0.78rem' }}>
                 <thead>
@@ -189,7 +189,7 @@ export function AuditClasificacionModal({ companyId, onClose }: {
                 <tbody>
                   {data.en45?.map((r: any, i: number) => (
                     <tr key={i}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2BB4BB' }}>{r.cuenta}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: 'var(--primary-light)' }}>{r.cuenta}</td>
                       <td>{r.desCuenta}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tercero || '—'}</td>
                       <td style={{ fontWeight: 600 }}>{fmt(r.saldoTotal)}</td>
@@ -205,7 +205,7 @@ export function AuditClasificacionModal({ companyId, onClose }: {
         ) : (
           <div style={{ overflowX: 'auto' }}>
             {data.en16?.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>No hay saldos en cuenta 16x.</div>
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay saldos en cuenta 16x.</div>
             ) : (
               <table className="table-s10" style={{ fontSize: '0.78rem' }}>
                 <thead>
@@ -214,10 +214,10 @@ export function AuditClasificacionModal({ companyId, onClose }: {
                 <tbody>
                   {data.en16?.map((r: any, i: number) => (
                     <tr key={i}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2BB4BB' }}>{r.cuenta}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: 'var(--primary-light)' }}>{r.cuenta}</td>
                       <td>{r.desCuenta}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tercero || '—'}</td>
-                      <td style={{ fontWeight: 600, color: r.saldoTotal < 0 ? '#EF4444' : '#F8FAFC' }}>{fmt(r.saldoTotal)}</td>
+                      <td style={{ fontWeight: 600, color: r.saldoTotal < 0 ? 'var(--red)' : 'var(--text-primary)' }}>{fmt(r.saldoTotal)}</td>
                     </tr>
                   ))}
                 </tbody>

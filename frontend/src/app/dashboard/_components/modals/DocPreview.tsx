@@ -42,11 +42,11 @@ export function DocPreview({ companyId, nroD, onClose }: { companyId: string; nr
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="doc-preview-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', width: 520, padding: '1.5rem', maxHeight: '80vh', overflow: 'auto', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', width: 520, padding: '1.5rem', maxHeight: '80vh', overflow: 'auto', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div id="doc-preview-title" style={{ fontWeight: 700, color: '#2BB4BB', fontSize: '0.9rem' }}>{titleText}</div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', color: '#8B97A8', cursor: 'pointer', fontSize: '1.1rem', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <div id="doc-preview-title" style={{ fontWeight: 700, color: 'var(--primary-light)', fontSize: '0.9rem' }}>{titleText}</div>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         {!loading && found && d && (() => {
           const rows = [
@@ -69,9 +69,9 @@ export function DocPreview({ companyId, nroD, onClose }: { companyId: string; nr
             <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
               <tbody>
                 {rows.map(([k, v]) => v && v !== '—' && v !== fmt(0) ? (
-                  <tr key={k} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <td style={{ padding: '0.4rem 0.5rem', color: '#8B97A8', fontWeight: 600, whiteSpace: 'nowrap', width: '40%' }}>{k}</td>
-                    <td style={{ padding: '0.4rem 0.5rem', color: '#F8FAFC' }}>{v}</td>
+                  <tr key={k} style={{ borderBottom: '1px solid var(--td-border)' }}>
+                    <td style={{ padding: '0.4rem 0.5rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', width: '40%' }}>{k}</td>
+                    <td style={{ padding: '0.4rem 0.5rem', color: 'var(--text-primary)' }}>{v}</td>
                   </tr>
                 ) : null)}
               </tbody>
@@ -79,7 +79,7 @@ export function DocPreview({ companyId, nroD, onClose }: { companyId: string; nr
           );
         })()}
         {!loading && !found && (
-          <div style={{ color: '#8B97A8', fontSize: '0.82rem' }}>Este asiento no tiene documento fuente registrado (asiento manual, planilla, ajuste o depreciación).</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Este asiento no tiene documento fuente registrado (asiento manual, planilla, ajuste o depreciación).</div>
         )}
       </div>
     </div>

@@ -115,12 +115,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} noValidate>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
+              <label htmlFor="login-input" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter', sans-serif" }}>
                 Email o usuario
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: loginErr ? '#EF4444' : '#9CA3AF' }} />
                 <input
+                  id="login-input"
                   type="text" value={login} onChange={e => setLogin(e.target.value)} required
                   placeholder="usuario o nombre@empresa.com"
                   aria-invalid={!!loginErr}
@@ -135,7 +136,7 @@ export default function LoginPage() {
 
             <div style={{ marginBottom: '1.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>
+                <label htmlFor="password-input" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>
                   Contraseña
                 </label>
                 <Link href="/login/forgot-password" style={{ fontSize: '0.72rem', color: '#207E83', textDecoration: 'none', fontFamily: "'Inter', sans-serif" }}>
@@ -145,6 +146,7 @@ export default function LoginPage() {
               <div style={{ position: 'relative' }}>
                 <Lock size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: passwordErr ? '#EF4444' : '#9CA3AF' }} />
                 <input
+                  id="password-input"
                   type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
                   placeholder="••••••••"
                   aria-invalid={!!passwordErr}

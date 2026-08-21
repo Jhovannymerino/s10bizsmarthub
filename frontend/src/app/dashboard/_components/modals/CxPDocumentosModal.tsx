@@ -126,21 +126,21 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
   const otrosUSD = otros.filter(d => getMoneda(d) === 'USD').reduce((s, d) => s + (d.Saldo ?? 0), 0);
 
   const diasColor = (dias: number) => {
-    if (dias <= 0) return '#10B981';
-    if (dias <= 30) return '#F59E0B';
+    if (dias <= 0) return 'var(--green)';
+    if (dias <= 30) return 'var(--yellow)';
     if (dias <= 60) return '#F97316';
-    return '#EF4444';
+    return 'var(--red)';
   };
 
   const btnStyle = (active: boolean, accent?: string) => ({
     padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
     border: active
       ? `1px solid ${accent === 'amber' ? 'rgba(245,158,11,0.5)' : accent === 'green' ? 'rgba(16,185,129,0.5)' : 'rgba(32,126,131,0.5)'}`
-      : '1px solid rgba(255,255,255,0.1)',
+      : '1px solid var(--modal-border-2)',
     background: active
       ? (accent === 'amber' ? 'rgba(245,158,11,0.15)' : accent === 'green' ? 'rgba(16,185,129,0.15)' : 'rgba(32,126,131,0.2)')
-      : 'rgba(255,255,255,0.04)',
-    color: active ? (accent === 'amber' ? '#F59E0B' : accent === 'green' ? '#10B981' : '#2BB4BB') : '#8B97A8',
+      : 'var(--modal-input-bg)',
+    color: active ? (accent === 'amber' ? 'var(--yellow)' : accent === 'green' ? 'var(--green)' : 'var(--primary-light)') : 'var(--text-muted)',
   });
 
   const showingOtros = filter === 'otros';
@@ -173,13 +173,13 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="cxp-docs-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div id="cxp-docs-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{proveedor}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
+            <div id="cxp-docs-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{proveedor}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               {showingOtros
                 ? `Anticipos y otros · ${filtered.length} registros`
                 : filter === 'pagado'
@@ -190,10 +190,10 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <button onClick={() => setVerMayor(true)}
               title="Ver todos los movimientos contables de este proveedor en el Mayor (incluye documentos saldados o anulados)"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: '#2BB4BB' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: 'var(--primary-light)' }}>
               <ScrollText size={13} aria-hidden="true" /> Ver en el Mayor
             </button>
-            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
           </div>
         </div>
 
@@ -231,15 +231,15 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
             ]);
             exportCSV(`CxP_${String(proveedor).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}_${filter}.csv`, headers, rows);
           }} title="Exportar a Excel (CSV) los documentos de esta vista"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.7rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: '#8B97A8' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.7rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid var(--modal-border-2)', background: 'var(--modal-input-bg)', color: 'var(--text-muted)' }}>
             <Download size={13} aria-hidden="true" /> Exportar
           </button>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
             {showingOtros ? 'Sin anticipos ni otros documentos.' : 'Sin documentos en esta categoría.'}
           </div>
         ) : (
@@ -248,7 +248,7 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
               <div style={{
                 background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
                 borderRadius: '0.5rem', padding: '0.6rem 0.85rem', marginBottom: '0.75rem',
-                fontSize: '0.75rem', color: '#F59E0B',
+                fontSize: '0.75rem', color: 'var(--yellow)',
               }}>
                 Estos documentos <strong>no se suman al saldo pendiente</strong> de la deuda comercial.
                 Representan pagos ya realizados (anticipos), préstamos financieros u otros movimientos administrativos que deben revisarse o reclasificarse en S10.
@@ -292,12 +292,12 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
                           : esNC ? 'rgba(239,68,68,0.04)'
                           : isUSD ? 'rgba(74,222,128,0.03)' : undefined,
                       }}>
-                        <td style={{ color: showingOtros ? '#F59E0B' : esNC ? '#EF4444' : '#8B97A8', fontSize: '0.72rem' }}>
+                        <td style={{ color: showingOtros ? 'var(--yellow)' : esNC ? 'var(--red)' : 'var(--text-muted)', fontSize: '0.72rem' }}>
                           {esNC && <span title="Nota de Crédito — resta del saldo del proveedor" style={{ fontSize: '0.68rem', fontWeight: 700, marginRight: '0.3rem' }}>NC</span>}
                           {d.DesTipo || d.TipoDoc}
                         </td>
                         {showingOtros && (
-                          <td style={{ fontSize: '0.70rem', color: '#8B97A8', maxWidth: 200 }}>
+                          <td style={{ fontSize: '0.70rem', color: 'var(--text-muted)', maxWidth: 200 }}>
                             {getOtroLabel(d)}
                           </td>
                         )}
@@ -324,20 +324,20 @@ export function CxPDocumentosModal({ companyId, proveedor, codProveedor, year, o
                             <button
                               onClick={e => { e.stopPropagation(); setPagosDrill({ nroD: String(d.NroD), label: d.Serie ? `${d.Serie}-${d.Numero}` : (d.Numero || String(d.NroD)), totalPagado: d.Pagado }); }}
                               title="Ver detalle de pagos"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', textDecoration: 'underline', textDecorationStyle: 'dotted', fontSize: '0.78rem', padding: 0 }}>
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-light)', textDecoration: 'underline', textDecorationStyle: 'dotted', fontSize: '0.78rem', padding: 0 }}>
                               {fMon(moneda, d.Pagado)}
                             </button>
                           ) : (
-                            <span style={{ color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{fMon(moneda, d.Pagado ?? 0)}</span>
                           )}
                         </td>
-                        <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? '#F59E0B' : '#8B97A8' }}>
+                        <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? 'var(--yellow)' : 'var(--text-muted)' }}>
                           {(d.Detraccion ?? 0) > 0 ? fMon(moneda, d.Detraccion) : '—'}
                         </td>
-                        <td style={{ textAlign: 'right', fontWeight: 600, color: esNC ? '#EF4444' : (d.Saldo ?? 0) > 0 ? '#F8FAFC' : '#8B97A8' }}>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: esNC ? 'var(--red)' : (d.Saldo ?? 0) > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                           {fMon(moneda, d.Saldo ?? 0)}
                         </td>
-                        <td style={{ fontSize: '0.70rem', color: '#8B97A8' }}>{d.Estado || '—'}</td>
+                        <td style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>{d.Estado || '—'}</td>
                       </tr>
                     );
                   })}

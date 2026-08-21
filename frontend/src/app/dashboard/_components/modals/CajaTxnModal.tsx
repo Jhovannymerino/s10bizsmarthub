@@ -34,19 +34,19 @@ function AsientoCompletoPanel({ companyId, year, nroAsiento, onClose }: {
       onClick={onClose}>
       <div ref={asientoModalRef} role="dialog" aria-modal="true" aria-labelledby="asiento-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', maxWidth: '90vw', width: 780, maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', maxWidth: '90vw', width: 780, maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <div id="asiento-modal-title" style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Asiento N° {nroAsiento}</div>
-            <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.15rem' }}>Partida doble completa — todas las cuentas de este asiento</div>
+            <div id="asiento-modal-title" style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Asiento N° {nroAsiento}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>Partida doble completa — todas las cuentas de este asiento</div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Cargando...</div>
         ) : lineas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8', fontSize: '0.85rem' }}>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             Sin datos disponibles. Ejecuta una sincronización para cargar el asiento completo.
           </div>
         ) : (
@@ -62,12 +62,12 @@ function AsientoCompletoPanel({ companyId, year, nroAsiento, onClose }: {
               <tbody>
                 {lineas.map((t: any, i: number) => (
                   <tr key={i} style={{ background: t.Clase === '10' ? 'rgba(43,180,187,0.07)' : undefined }}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: t.Clase === '10' ? '#2BB4BB' : '#F8FAFC' }}>{t.CodCuenta}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: t.Clase === '10' ? 'var(--primary-light)' : 'var(--text-primary)' }}>{t.CodCuenta}</td>
                     <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.DesCuenta}>{t.DesCuenta || '—'}</td>
-                    <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8' }} title={t.Glosa}>{t.Glosa || '—'}</td>
+                    <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-muted)' }} title={t.Glosa}>{t.Glosa || '—'}</td>
                     <td style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem' }}>{t.Tercero || '—'}</td>
-                    <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
-                    <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                    <td style={{ color: t.Debito > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                    <td style={{ color: t.Credito > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -139,9 +139,9 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
 
   const btnStyle = (active: boolean) => ({
     padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
-    border: active ? '1px solid rgba(32,126,131,0.5)' : '1px solid rgba(255,255,255,0.1)',
-    background: active ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.04)',
-    color: active ? '#2BB4BB' : '#8B97A8',
+    border: active ? '1px solid rgba(32,126,131,0.5)' : '1px solid var(--modal-border-2)',
+    background: active ? 'rgba(32,126,131,0.2)' : 'var(--modal-input-bg)',
+    color: active ? 'var(--primary-light)' : 'var(--text-muted)',
   });
 
   return (
@@ -150,16 +150,16 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="caja-txn-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1020, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1020, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div id="caja-txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codBanco} — {desBanco}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
+            <div id="caja-txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{codBanco} — {desBanco}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               Movimientos clase 10 · {year} · {filtered.length} asientos · clic en Nro. Asiento para ver partida doble completa
             </div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={() => setMesFilter(null)} style={btnStyle(mesFilter === null)}>Todos</button>
@@ -173,17 +173,17 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
           />
         </div>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando movimientos...</div>
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Cargando movimientos...</div>
         ) : fetchError ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
-            <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
+            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
             <button onClick={() => setRetryCount(c => c + 1)}
-              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: 'var(--primary-light)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
               <RotateCcw size={13} aria-hidden="true" /> Reintentar
             </button>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             {search ? `Sin resultados para "${search}".` : `Sin movimientos para esta cuenta bancaria en ${year}.`}
           </div>
         ) : (
@@ -211,20 +211,20 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
                         <button
                           onClick={e => { e.stopPropagation(); setAsientoCompleto(String(t.NroAsiento)); }}
                           title="Ver asiento completo (partida doble)"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-light)', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
                           {t.NroAsiento}
                         </button>
                       </td>
                       <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
                       <td style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem' }}>{t.Tercero || '—'}</td>
-                      <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
-                      <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
-                      <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
+                      <td style={{ color: t.Debito > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto < 0 ? 'var(--red)' : 'var(--green)' }}>{fmt(neto)}</td>
                       <td>
                         {t.NroD ? (
                           <button onClick={e => { e.stopPropagation(); setDocPreview(String(t.NroD)); }}
                             title={String(t.NroD)}
-                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: '#2BB4BB', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            style={{ padding: '0.15rem 0.55rem', borderRadius: '0.75rem', border: '1px solid rgba(43,180,187,0.35)', background: 'rgba(43,180,187,0.08)', color: 'var(--primary-light)', fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                             <Link2 size={11} aria-hidden="true" /> {String(t.NroD).slice(-8)}
                           </button>
                         ) : <span style={{ color: '#4B5563', fontSize: '0.7rem' }}>—</span>}
@@ -238,7 +238,7 @@ export function CajaTxnModal({ companyId, year, codBanco, desBanco, onClose }: {
                   <td colSpan={4}>TOTAL</td>
                   <td>{fmt(totalDeb)}</td>
                   <td>{fmt(totalCred)}</td>
-                  <td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td>
+                  <td style={{ color: (totalDeb - totalCred) < 0 ? 'var(--red)' : 'var(--green)' }}>{fmt(totalDeb - totalCred)}</td>
                   <td />
                 </tr>
               </tfoot>

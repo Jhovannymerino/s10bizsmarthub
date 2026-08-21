@@ -39,21 +39,21 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="gav-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 720, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', maxWidth: '95vw', width: 720, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
           <div>
-            <div id="gav-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cat.cod} — {cat.descripcion}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>GAV mensual · YTD: {fmt(cat.ytd)}</div>
+            <div id="gav-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{cat.cod} — {cat.descripcion}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>GAV mensual · YTD: {fmt(cat.ytd)}</div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         {chartData.length > 0 && (
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-              <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#8B97A8' }} />
-              <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}K`} tick={{ fontSize: 10, fill: '#8B97A8' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="mes" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+              <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}K`} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
               <Tooltip formatter={(v: number) => [fmt(v), 'GAV']} />
               <Bar dataKey="value" fill="#207E83" radius={[3, 3, 0, 0]} />
             </BarChart>
@@ -72,7 +72,7 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
               <tr key={row._mes}>
                 <td>{row.mes}</td>
                 <td>{fmt(row.importe)}</td>
-                <td style={{ color: '#8B97A8' }}>{cat.ytd > 0 ? pct(row.pctYtd) : '—'}</td>
+                <td style={{ color: 'var(--text-muted)' }}>{cat.ytd > 0 ? pct(row.pctYtd) : '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -82,7 +82,7 @@ export function GavCategoryModal({ companyId, year, cat, onClose }: {
         </table>
         <div style={{ marginTop: '1rem', textAlign: 'right' }}>
           <button onClick={() => setTxDrill(true)}
-            style={{ padding: '0.45rem 1rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            style={{ padding: '0.45rem 1rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: 'var(--primary-light)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
             Ver asientos individuales <ChevronRight size={14} aria-hidden="true" />
           </button>
         </div>

@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     icon: '/icons/icon.svg',
     apple: '/icons/icon.svg',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
@@ -37,13 +40,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Outfit:wght@100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
-        <style>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           :root {
             --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
             --font-outfit: 'Outfit', system-ui, sans-serif;
             --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
           }
-        `}</style>
+        ` }} />
         {/* PWA: service worker registration */}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {

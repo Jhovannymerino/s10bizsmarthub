@@ -74,23 +74,24 @@ function ResetPasswordContent() {
           </p>
 
           {done ? (
-            <div style={{ padding: '1rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '0.75rem', color: '#059669', fontSize: '0.85rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
+            <div role="status" style={{ padding: '1rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '0.75rem', color: '#059669', fontSize: '0.85rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
               ✓ Contraseña actualizada. Redirigiendo al inicio de sesión...
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Nueva contraseña</label>
+                <label htmlFor="new-password-input" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Nueva contraseña</label>
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>🔒</span>
                   <input
+                    id="new-password-input"
                     type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
                     placeholder="••••••••"
                     style={{ width: '100%', padding: '0.75rem 2.75rem 0.75rem 2.5rem', border: '1.5px solid #E5E7EB', borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter',sans-serif" }}
                     onFocus={e => (e.target.style.borderColor = '#207E83')}
                     onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                   />
-                  <button type="button" onClick={() => setShowPwd(!showPwd)}
+                  <button type="button" onClick={() => setShowPwd(!showPwd)} aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '0.85rem', padding: 0 }}>
                     {showPwd ? '🙈' : '👁'}
                   </button>
@@ -98,7 +99,7 @@ function ResetPasswordContent() {
                 {password.length > 0 && (
                   <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{ flex: 1, height: 4, borderRadius: 2, background: '#E5E7EB', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(strength / 3) * 100}%`, background: strengthColor[strength], transition: 'width 0.3s, background 0.3s' }} />
+                      <div style={{ height: '100%', width: '100%', transformOrigin: 'left', transform: `scaleX(${strength / 3})`, background: strengthColor[strength], transition: 'transform 0.3s, background 0.3s' }} />
                     </div>
                     <span style={{ fontSize: '0.72rem', color: strengthColor[strength], fontFamily: "'Inter',sans-serif", fontWeight: 600 }}>{strengthLabel[strength]}</span>
                   </div>
@@ -106,10 +107,11 @@ function ResetPasswordContent() {
               </div>
 
               <div style={{ marginBottom: '1.75rem' }}>
-                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Confirmar contraseña</label>
+                <label htmlFor="confirm-password-input" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Confirmar contraseña</label>
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.9rem' }}>🔒</span>
                   <input
+                    id="confirm-password-input"
                     type={showPwd ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} required
                     placeholder="••••••••"
                     style={{ width: '100%', padding: '0.75rem 0.875rem 0.75rem 2.5rem', border: `1.5px solid ${confirm && confirm !== password ? '#EF4444' : '#E5E7EB'}`, borderRadius: '0.75rem', fontSize: '0.9rem', color: '#0D1525', background: '#F9FAFB', boxSizing: 'border-box', outline: 'none', fontFamily: "'Inter',sans-serif" }}
@@ -120,7 +122,7 @@ function ResetPasswordContent() {
               </div>
 
               {error && (
-                <div style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
+                <div role="alert" style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
                   {error}
                 </div>
               )}

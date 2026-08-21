@@ -77,20 +77,20 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
         onClick={onClose}>
         <div ref={modalRef} role="dialog" aria-modal="true" tabIndex={-1}
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
-          style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1080, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+          style={{ background: 'var(--modal-bg)', border: '1px solid rgba(43,180,187,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1080, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
           onClick={e => e.stopPropagation()}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ color: '#2BB4BB', fontSize: '0.72rem', fontWeight: 700, border: '1px solid rgba(43,180,187,0.4)', borderRadius: 4, padding: '1px 6px' }}>EL MAYOR</span>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ color: 'var(--primary-light)', fontSize: '0.72rem', fontWeight: 700, border: '1px solid rgba(43,180,187,0.4)', borderRadius: 4, padding: '1px 6px' }}>EL MAYOR</span>
                 {titulo}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                 {companyName ? `${companyName} · ` : ''}{year}
-                {data && <> · {data.total.toLocaleString()} líneas · Débito <span style={{ color: '#10B981' }}>{fmt(data.totalDebito)}</span> · Crédito <span style={{ color: '#EF4444' }}>{fmt(data.totalCredito)}</span> · Neto <span style={{ color: '#F8FAFC', fontWeight: 600 }}>{fmt(data.saldoNeto)}</span></>}
+                {data && <> · {data.total.toLocaleString()} líneas · Débito <span style={{ color: 'var(--green)' }}>{fmt(data.totalDebito)}</span> · Crédito <span style={{ color: 'var(--red)' }}>{fmt(data.totalCredito)}</span> · Neto <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{fmt(data.saldoNeto)}</span></>}
               </div>
             </div>
-            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
           </div>
 
           {/* Barra de filtros: búsqueda por texto + rango de fechas */}
@@ -101,15 +101,15 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
                 type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)}
                 placeholder="Buscar por glosa, tercero o N° de documento…"
                 style={{ width: '100%', padding: '0.35rem 0.5rem 0.35rem 1.7rem', borderRadius: 6, fontSize: '0.76rem',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#F8FAFC', outline: 'none' }} />
+                  background: 'var(--modal-input-bg)', border: '1px solid var(--modal-border-2)', color: 'var(--text-primary)', outline: 'none' }} />
             </div>
-            <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
               Desde
               <input type="date" value={desde} min={`${year}-01-01`} max={`${year}-12-31`}
                 onChange={e => { setDesde(e.target.value); setPage(1); }}
                 style={dateInputStyle} />
             </label>
-            <label style={{ fontSize: '0.72rem', color: '#8B97A8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
               Hasta
               <input type="date" value={hasta} min={`${year}-01-01`} max={`${year}-12-31`}
                 onChange={e => { setHasta(e.target.value); setPage(1); }}
@@ -119,16 +119,16 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
               <button onClick={() => { setSearchInput(''); setDesde(`${year}-01-01`); setHasta(`${year}-12-31`); setPage(1); }}
                 title="Limpiar filtros"
                 style={{ padding: '0.3rem 0.6rem', borderRadius: 6, fontSize: '0.72rem', cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: '#8B97A8' }}>
+                  background: 'var(--modal-input-bg)', border: '1px solid var(--modal-border-2)', color: 'var(--text-muted)' }}>
                 Limpiar
               </button>
             )}
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando el mayor...</div>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Cargando el mayor...</div>
           ) : !data?.rows?.length ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>Sin asientos para este filtro en {year}.</div>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sin asientos para este filtro en {year}.</div>
           ) : (
             <>
               <div style={{ overflowX: 'auto' }}>
@@ -151,16 +151,16 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
                         <td style={{ whiteSpace: 'nowrap' }}>{fmtFecha(r.fecha)}</td>
                         <td>
                           <button onClick={() => setAsiento({ nroAsiento: r.nroAsiento, fecha: r.fecha, codUnico: r.codUnico })} title="Ver partida doble del comprobante"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', textDecoration: 'underline', textDecorationStyle: 'dotted', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0 }}>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-light)', textDecoration: 'underline', textDecorationStyle: 'dotted', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0 }}>
                             {r.nroAsiento}
                           </button>
                         </td>
                         {!soloUnaCuenta && <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }} title={r.desCuenta}>{r.codCuenta}</td>}
-                        <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8' }} title={r.glosa}>{r.glosa || '—'}</td>
+                        <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-muted)' }} title={r.glosa}>{r.glosa || '—'}</td>
                         <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem' }} title={r.tercero}>{r.tercero || '—'}</td>
-                        <td style={{ color: r.debito > 0 ? '#10B981' : '#8B97A8' }}>{r.debito > 0 ? fmt(r.debito) : '—'}</td>
-                        <td style={{ color: r.credito > 0 ? '#EF4444' : '#8B97A8' }}>{r.credito > 0 ? fmt(r.credito) : '—'}</td>
-                        <td style={{ fontWeight: 600, color: r.saldoAcumulado < 0 ? '#EF4444' : '#F8FAFC' }}>{fmt(r.saldoAcumulado)}</td>
+                        <td style={{ color: r.debito > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{r.debito > 0 ? fmt(r.debito) : '—'}</td>
+                        <td style={{ color: r.credito > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{r.credito > 0 ? fmt(r.credito) : '—'}</td>
+                        <td style={{ fontWeight: 600, color: r.saldoAcumulado < 0 ? 'var(--red)' : 'var(--text-primary)' }}>{fmt(r.saldoAcumulado)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -177,7 +177,7 @@ export function MayorModal({ companyId, companyName, year, filtro, titulo, onClo
               {totalPages > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
                   <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={pgBtn(page <= 1)}>← Anterior</button>
-                  <span style={{ fontSize: '0.78rem', color: '#8B97A8' }}>Página {page} de {totalPages}</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Página {page} de {totalPages}</span>
                   <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} style={pgBtn(page >= totalPages)}>Siguiente →</button>
                 </div>
               )}
@@ -206,20 +206,20 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
       onClick={onClose}>
       <div role="dialog" aria-modal="true"
-        style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', maxWidth: '95vw', width: 880, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid rgba(43,180,187,0.3)', borderRadius: '0.75rem', maxWidth: '95vw', width: 880, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><ArrowLeft size={16} /></button>
-              <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC' }}>Asiento {nroAsiento}</span>
+              <button onClick={onClose} aria-label="Volver al mayor" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><ArrowLeft size={16} aria-hidden="true" /></button>
+              <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Asiento {nroAsiento}</span>
             </div>
-            {data && <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}{data.operaciones?.length ? <> · <span style={{ color: '#6B7280' }}>{data.operaciones.length === 1 ? 'Operación' : 'Operaciones'} S10: <span style={{ fontFamily: 'monospace', color: '#8B97A8' }}>{data.operaciones.join(', ')}</span></span></> : ''}</div>}
+            {data && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginLeft: '1.6rem' }}>{fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}{data.operaciones?.length ? <> · <span style={{ color: '#6B7280' }}>{data.operaciones.length === 1 ? 'Operación' : 'Operaciones'} S10: <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{data.operaciones.join(', ')}</span></span></> : ''}</div>}
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         {!data ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando asiento...</div>
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Cargando asiento...</div>
         ) : (
           <>
             <div style={{ overflowX: 'auto' }}>
@@ -240,14 +240,14 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
                       <td style={{ textAlign: 'center', padding: '0 0.25rem' }}>
                         {l.nroD
                           ? <button onClick={() => setDocPreview(String(l.nroD))} title="Ver documento origen" aria-label="Ver documento origen"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', padding: 0, display: 'flex' }}><Link2 size={13} aria-hidden="true" /></button>
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-light)', padding: 0, display: 'flex' }}><Link2 size={13} aria-hidden="true" /></button>
                           : <span style={{ color: '#4B5563', fontSize: '0.7rem' }}>—</span>}
                       </td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{l.codCuenta}</td>
                       <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.desCuenta}>{l.desCuenta}</td>
-                      <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem', color: '#8B97A8' }} title={l.tercero}>{l.tercero || '—'}</td>
-                      <td style={{ color: l.debito > 0 ? '#10B981' : '#8B97A8' }}>{l.debito > 0 ? fmt(l.debito) : '—'}</td>
-                      <td style={{ color: l.credito > 0 ? '#EF4444' : '#8B97A8' }}>{l.credito > 0 ? fmt(l.credito) : '—'}</td>
+                      <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.72rem', color: 'var(--text-muted)' }} title={l.tercero}>{l.tercero || '—'}</td>
+                      <td style={{ color: l.debito > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{l.debito > 0 ? fmt(l.debito) : '—'}</td>
+                      <td style={{ color: l.credito > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{l.credito > 0 ? fmt(l.credito) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -261,7 +261,7 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
               </table>
             </div>
             <div style={{ marginTop: '0.9rem', padding: '0.5rem 0.8rem', borderRadius: 6, fontSize: '0.8rem', fontWeight: 600,
-              background: data.cuadra ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: data.cuadra ? '#10B981' : '#EF4444' }}>
+              background: data.cuadra ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: data.cuadra ? 'var(--green)' : 'var(--red)' }}>
               {data.cuadra ? '✓ Asiento cuadrado — partida doble balanceada (Débito = Crédito)' : `⚠ Descuadre de ${fmt(Math.abs(data.totalDebito - data.totalCredito))}`}
             </div>
           </>
@@ -274,12 +274,12 @@ function AsientoMayorModal({ companyId, nroAsiento, fecha, codUnico, onClose }: 
 
 const dateInputStyle: React.CSSProperties = {
   padding: '0.3rem 0.4rem', borderRadius: 6, fontSize: '0.74rem',
-  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
-  color: '#F8FAFC', colorScheme: 'dark', outline: 'none',
+  background: 'var(--modal-input-bg)', border: '1px solid var(--modal-border-2)',
+  color: 'var(--text-primary)', colorScheme: 'dark', outline: 'none',
 };
 
 const pgBtn = (disabled: boolean): React.CSSProperties => ({
   padding: '0.3rem 0.9rem', borderRadius: '0.4rem', fontSize: '0.78rem',
-  border: '1px solid rgba(255,255,255,0.12)', cursor: disabled ? 'not-allowed' : 'pointer',
-  background: disabled ? 'rgba(255,255,255,0.03)' : 'rgba(43,180,187,0.12)', color: disabled ? '#4B5563' : '#2BB4BB',
+  border: '1px solid var(--modal-border-2)', cursor: disabled ? 'not-allowed' : 'pointer',
+  background: disabled ? 'var(--surface-hover)' : 'rgba(43,180,187,0.12)', color: disabled ? '#4B5563' : 'var(--primary-light)',
 });

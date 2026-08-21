@@ -41,20 +41,20 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="cxc-vin-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1150, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1150, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div id="cxc-vin-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F59E0B' }}>{cliente}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
+            <div id="cxc-vin-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--yellow)' }}>{cliente}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               Cartera Especial · {filtered.length} documento{filtered.length !== 1 ? 's' : ''}
-              <span style={{ marginLeft: '0.5rem', padding: '1px 7px', borderRadius: '1rem', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', fontSize: '0.70rem' }}>
+              <span style={{ marginLeft: '0.5rem', padding: '1px 7px', borderRadius: '1rem', background: 'rgba(245,158,11,0.15)', color: 'var(--yellow)', fontSize: '0.70rem' }}>
                 Estado 6 / Vinculada
               </span>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
@@ -66,7 +66,7 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
         </div>
 
         {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Sin documentos.</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Sin documentos.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
@@ -90,7 +90,7 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
                   const isUSD = moneda === 'USD';
                   return (
                     <tr key={i} style={{ background: isUSD ? 'rgba(74,222,128,0.03)' : undefined }}>
-                      <td style={{ color: '#8B97A8', fontSize: '0.72rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento || d.DesTipo}>{d.TipoDocumento || d.DesTipo || '—'}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.72rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.TipoDocumento || d.DesTipo}>{d.TipoDocumento || d.DesTipo || '—'}</td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
                         {d.Serie ? `${d.Serie}-${d.Numero}` : d.Numero || '—'}
                       </td>
@@ -105,17 +105,17 @@ export function CxCVinculadasModal({ cliente, docs, onClose }: {
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>{fMon(moneda, d.Total ?? 0)}</td>
-                      <td style={{ textAlign: 'right', color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</td>
-                      <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? '#F59E0B' : '#4B5563', fontSize: '0.72rem' }}>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>{fMon(moneda, d.Pagado ?? 0)}</td>
+                      <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? 'var(--yellow)' : '#4B5563', fontSize: '0.72rem' }}>
                         {(d.Detraccion ?? 0) > 0 ? fMon(moneda, d.Detraccion) : '—'}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, color: '#F59E0B' }}>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--yellow)' }}>
                         {fMon(moneda, d.Saldo ?? 0)}
                       </td>
-                      <td style={{ textAlign: 'right', color: (d.DiasAntiguedad ?? 0) > 365 ? '#EF4444' : '#8B97A8', fontSize: '0.72rem' }}>
+                      <td style={{ textAlign: 'right', color: (d.DiasAntiguedad ?? 0) > 365 ? 'var(--red)' : 'var(--text-muted)', fontSize: '0.72rem' }}>
                         {(d.DiasAntiguedad ?? 0) > 0 ? `${d.DiasAntiguedad}d` : '—'}
                       </td>
-                      <td style={{ color: '#8B97A8', fontSize: '0.70rem', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Observacion}>{d.Observacion || '—'}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.70rem', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.Observacion}>{d.Observacion || '—'}</td>
                     </tr>
                   );
                 })}

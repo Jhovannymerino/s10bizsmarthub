@@ -93,23 +93,23 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
   const netoUSD = docs.filter(d => getMoneda(d) === 'USD').reduce((s, d) => s + (d.Saldo ?? 0), 0);
 
   const diasColor = (dias: number) => {
-    if (dias <= 0) return '#10B981';
-    if (dias <= 30) return '#F59E0B';
+    if (dias <= 0) return 'var(--green)';
+    if (dias <= 30) return 'var(--yellow)';
     if (dias <= 60) return '#F97316';
-    return '#EF4444';
+    return 'var(--red)';
   };
 
   const btnStyle = (active: boolean, accent: 'teal' | 'green' | 'red' = 'teal') => {
     const colors = {
-      teal:  { border: 'rgba(32,126,131,0.5)',  bg: 'rgba(32,126,131,0.2)',  fg: '#2BB4BB' },
-      green: { border: 'rgba(16,185,129,0.5)',  bg: 'rgba(16,185,129,0.15)', fg: '#10B981' },
-      red:   { border: 'rgba(239,68,68,0.5)',   bg: 'rgba(239,68,68,0.15)',  fg: '#EF4444' },
+      teal:  { border: 'rgba(32,126,131,0.5)',  bg: 'rgba(32,126,131,0.2)',  fg: 'var(--primary-light)' },
+      green: { border: 'rgba(16,185,129,0.5)',  bg: 'rgba(16,185,129,0.15)', fg: 'var(--green)' },
+      red:   { border: 'rgba(239,68,68,0.5)',   bg: 'rgba(239,68,68,0.15)',  fg: 'var(--red)' },
     }[accent];
     return {
       padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
-      border: active ? `1px solid ${colors.border}` : '1px solid rgba(255,255,255,0.1)',
-      background: active ? colors.bg : 'rgba(255,255,255,0.04)',
-      color: active ? colors.fg : '#8B97A8',
+      border: active ? `1px solid ${colors.border}` : '1px solid var(--modal-border-2)',
+      background: active ? colors.bg : 'var(--modal-input-bg)',
+      color: active ? colors.fg : 'var(--text-muted)',
     };
   };
 
@@ -127,9 +127,9 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
 
   // Badge de estado por fila
   const estadoBadge = (d: any) => {
-    if (esNC(d)) return { label: 'NC', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' };
-    if (esSaldado(d)) return { label: 'Saldado', color: '#10B981', bg: 'rgba(16,185,129,0.12)' };
-    return { label: 'Pendiente', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' };
+    if (esNC(d)) return { label: 'NC', color: 'var(--red)', bg: 'rgba(239,68,68,0.12)' };
+    if (esSaldado(d)) return { label: 'Saldado', color: 'var(--green)', bg: 'rgba(16,185,129,0.12)' };
+    return { label: 'Pendiente', color: 'var(--yellow)', bg: 'rgba(245,158,11,0.12)' };
   };
 
   return (
@@ -157,16 +157,16 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="cxc-docs-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', maxWidth: '95vw', width: 1100, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div id="cxc-docs-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{cliente}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>
+            <div id="cxc-docs-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{cliente}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               {filterLabel[filter]} · {filtered.length} documentos
               <span style={{ marginLeft: '0.6rem', color: '#5B6675' }}>·</span>
               <span style={{ marginLeft: '0.6rem' }} title="Saldo neto del cliente sumando todos sus documentos (facturas − NC)">
-                Neto: <b style={{ color: (Math.abs(netoPEN) > EPS || Math.abs(netoUSD) > EPS) ? '#F8FAFC' : '#10B981' }}>
+                Neto: <b style={{ color: (Math.abs(netoPEN) > EPS || Math.abs(netoUSD) > EPS) ? 'var(--text-primary)' : 'var(--green)' }}>
                   {Math.abs(netoPEN) > EPS ? fmt(netoPEN) : ''}{(Math.abs(netoPEN) > EPS && Math.abs(netoUSD) > EPS) ? ' · ' : ''}{Math.abs(netoUSD) > EPS ? fUSD(netoUSD) : (Math.abs(netoPEN) > EPS ? '' : fmt(0))}
                 </b>
               </span>
@@ -175,10 +175,10 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <button onClick={() => setVerMayor(true)}
               title="Ver todos los movimientos contables de este cliente en el Mayor (la prueba contable detrás de cada documento)"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: '#2BB4BB' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: 'var(--primary-light)' }}>
               <ScrollText size={13} aria-hidden="true" /> Ver en el Mayor
             </button>
-            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
           </div>
         </div>
 
@@ -211,15 +211,15 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
             ]);
             exportCSV(`CxC_${String(cliente).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}_${filter}.csv`, headers, rows);
           }} title="Exportar a Excel (CSV) los documentos de esta vista"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.7rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: '#8B97A8' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.7rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid var(--modal-border-2)', background: 'var(--modal-input-bg)', color: 'var(--text-muted)' }}>
             <Download size={13} aria-hidden="true" /> Exportar
           </button>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Cargando...</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#8B97A8' }}>Sin documentos en esta vista.</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Sin documentos en esta vista.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.78rem' }}>
@@ -252,7 +252,7 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
                           {badge.label}
                         </span>
                       </td>
-                      <td style={{ color: nc ? '#EF4444' : '#8B97A8', fontSize: '0.72rem' }}>
+                      <td style={{ color: nc ? 'var(--red)' : 'var(--text-muted)', fontSize: '0.72rem' }}>
                         {d.DesTipo || d.TipoDoc}
                       </td>
                       <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
@@ -278,17 +278,17 @@ export function CxCDocumentosModal({ companyId, cliente, codCliente, year, onClo
                           <button
                             onClick={e => { e.stopPropagation(); setPagosDrill({ nroD: String(d.NroD), label: d.Serie ? `${d.Serie}-${d.Numero}` : (d.Numero || String(d.NroD)), totalPagado: d.Pagado }); }}
                             title="Ver detalle de pagos"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', textDecoration: 'underline', textDecorationStyle: 'dotted', fontSize: '0.78rem', padding: 0 }}>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-light)', textDecoration: 'underline', textDecorationStyle: 'dotted', fontSize: '0.78rem', padding: 0 }}>
                             {fMon(moneda, d.Pagado)}
                           </button>
                         ) : (
-                          <span style={{ color: '#8B97A8' }}>{fMon(moneda, d.Pagado ?? 0)}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{fMon(moneda, d.Pagado ?? 0)}</span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? '#F59E0B' : '#4B5563', fontSize: '0.72rem' }}>
+                      <td style={{ textAlign: 'right', color: (d.Detraccion ?? 0) > 0 ? 'var(--yellow)' : '#4B5563', fontSize: '0.72rem' }}>
                         {(d.Detraccion ?? 0) > 0 ? fMon(moneda, d.Detraccion) : '—'}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, color: nc ? '#EF4444' : settled ? '#10B981' : '#F8FAFC' }}>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: nc ? 'var(--red)' : settled ? 'var(--green)' : 'var(--text-primary)' }}>
                         {fMon(moneda, d.Saldo ?? 0)}
                       </td>
                     </tr>

@@ -141,7 +141,7 @@ function LedgerPageInner() {
   const toggleGrupo = (k: string) => setExpandedGrupos((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', background: '#0A1626', minHeight: '100vh' }}>
+    <div style={{ fontFamily: 'Inter, sans-serif', background: 'var(--bg-main)', minHeight: '100vh' }}>
       {asientoDrill && (
         <AsientoModal company={company} nroAsiento={asientoDrill.nroAsiento} fecha={asientoDrill.fecha} codUnico={asientoDrill.codUnico} token={token} onClose={() => setAsientoDrill(null)} />
       )}
@@ -159,25 +159,25 @@ function LedgerPageInner() {
       </div>
 
       {/* Controls */}
-      <div style={{ padding: '16px 24px', background: '#0D1A2D', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ padding: '16px 24px', background: 'var(--modal-bg)', borderBottom: '1px solid var(--modal-border-1)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <select value={company} onChange={(e) => setCompany(e.target.value)}
-          style={{ padding: '6px 12px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, fontSize: 14, background: '#0A1626', color: '#F8FAFC' }}>
+          style={{ padding: '6px 12px', border: '1px solid var(--modal-border-2)', borderRadius: 6, fontSize: 14, background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
           {COMPANIES.map((c) => <option key={c.codEmpresa} value={c.codEmpresa}>{c.shortName}</option>)}
         </select>
         <select value={year} onChange={(e) => setYear(parseInt(e.target.value))}
-          style={{ padding: '6px 12px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, fontSize: 14, background: '#0A1626', color: '#F8FAFC' }}>
+          style={{ padding: '6px 12px', border: '1px solid var(--modal-border-2)', borderRadius: 6, fontSize: 14, background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
           {[CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2, CURRENT_YEAR - 3, CURRENT_YEAR - 4].map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
         <select value={mes} onChange={(e) => setMes(e.target.value ? parseInt(e.target.value) : '')}
-          style={{ padding: '6px 12px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, fontSize: 14, background: '#0A1626', color: '#F8FAFC' }}>
+          style={{ padding: '6px 12px', border: '1px solid var(--modal-border-2)', borderRadius: 6, fontSize: 14, background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
           <option value="">Todo el año</option>
           {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
         </select>
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, color: '#9CA3AF' }} />
+          <Search size={14} style={{ position: 'absolute', left: 8, color: 'var(--text-muted)' }} />
           <input type="text" placeholder="Buscar glosa / tercero / doc..." value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ padding: '6px 12px 6px 28px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, fontSize: 14, width: 240, background: '#0A1626', color: '#F8FAFC' }} />
+            style={{ padding: '6px 12px 6px 28px', border: '1px solid var(--modal-border-2)', borderRadius: 6, fontSize: 14, width: 240, background: 'var(--bg-main)', color: 'var(--text-primary)' }} />
         </div>
         {(cuenta || nroD) && (
           <button onClick={() => { setCuenta(''); setNroD(''); }}
@@ -193,34 +193,38 @@ function LedgerPageInner() {
 
       <div style={{ display: 'flex', gap: 16, padding: 16, alignItems: 'flex-start' }}>
         {/* Árbol de cuentas */}
-        <div style={{ width: 320, flexShrink: 0, background: '#0D1A2D', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontWeight: 700, fontSize: 14, color: '#F8FAFC', position: 'sticky', top: 0, background: '#0D1A2D' }}>
+        <div style={{ width: 320, flexShrink: 0, background: 'var(--modal-bg)', borderRadius: 10, border: '1px solid var(--modal-border-1)', maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--modal-border-1)', fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', position: 'sticky', top: 0, background: 'var(--modal-bg)' }}>
             Plan de Cuentas {year}
           </div>
           <div style={{ padding: 8 }}>
             <button onClick={() => setCuenta('')}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: !cuenta ? 'rgba(43,180,187,0.15)' : 'transparent', color: !cuenta ? '#2BB4BB' : '#cbd5e1' }}>
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '6px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: !cuenta ? 'rgba(43,180,187,0.15)' : 'transparent', color: !cuenta ? 'var(--primary-light)' : 'var(--text-primary)' }}>
               Todas las cuentas
             </button>
             {tree?.clases?.map((cl: any) => (
               <div key={cl.clase}>
                 <div onClick={() => toggleClase(cl.clase)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 8px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#F8FAFC' }}>
-                  {expandedClases.has(cl.clase) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  role="button" tabIndex={0} aria-expanded={expandedClases.has(cl.clase)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleClase(cl.clase); } }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 8px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {expandedClases.has(cl.clase) ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
                   <span>{cl.clase}</span>
-                  <span style={{ color: '#8B97A8', fontWeight: 400, fontSize: 12 }}>{CLASE_NAMES[cl.clase] ?? ''}</span>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>{CLASE_NAMES[cl.clase] ?? ''}</span>
                 </div>
                 {expandedClases.has(cl.clase) && cl.grupos.map((gr: any) => (
                   <div key={gr.grupoCuenta} style={{ marginLeft: 14 }}>
                     <div onClick={() => toggleGrupo(gr.grupoCuenta)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#cbd5e1' }}>
-                      {expandedGrupos.has(gr.grupoCuenta) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      role="button" tabIndex={0} aria-expanded={expandedGrupos.has(gr.grupoCuenta)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(gr.grupoCuenta); } }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {expandedGrupos.has(gr.grupoCuenta) ? <ChevronDown size={12} aria-hidden="true" /> : <ChevronRight size={12} aria-hidden="true" />}
                       {gr.grupoCuenta}
                     </div>
                     {expandedGrupos.has(gr.grupoCuenta) && gr.cuentas.map((c: any) => (
                       <button key={c.codCuenta} onClick={() => setCuenta(c.codCuenta)}
                         title={`${fmt(c.saldo)} · ${c.movimientos} movs`}
-                        style={{ display: 'block', width: '100%', textAlign: 'left', marginLeft: 18, padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 12, background: cuenta === c.codCuenta ? 'rgba(43,180,187,0.15)' : 'transparent', color: cuenta === c.codCuenta ? '#2BB4BB' : '#8B97A8' }}>
+                        style={{ display: 'block', width: '100%', textAlign: 'left', marginLeft: 18, padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 12, background: cuenta === c.codCuenta ? 'rgba(43,180,187,0.15)' : 'transparent', color: cuenta === c.codCuenta ? 'var(--primary-light)' : 'var(--text-muted)' }}>
                         <span style={{ fontFamily: 'monospace' }}>{c.codCuenta}</span> {c.desCuenta}
                       </button>
                     ))}
@@ -232,14 +236,14 @@ function LedgerPageInner() {
         </div>
 
         {/* Tabla del mayor */}
-        <div style={{ flex: 1, background: '#0D1A2D', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ flex: 1, background: 'var(--modal-bg)', borderRadius: 10, border: '1px solid var(--modal-border-1)', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--modal-border-1)', background: 'var(--surface-hover)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#F8FAFC' }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
                 {cuentaLabel || `Mayor completo — ${companyName} ${year}`}
               </h2>
               {ledger && (
-                <p style={{ margin: '2px 0 0', fontSize: 12, color: '#8B97A8' }}>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                   {ledger.total.toLocaleString()} líneas · Débito {fmt(ledger.totalDebito)} · Crédito {fmt(ledger.totalCredito)} · Neto {fmt(ledger.saldoNeto)}
                 </p>
               )}
@@ -247,16 +251,16 @@ function LedgerPageInner() {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 50, color: '#8B97A8' }}>Cargando mayor...</div>
+            <div style={{ textAlign: 'center', padding: 50, color: 'var(--text-muted)' }}>Cargando mayor...</div>
           ) : error ? (
-            <div style={{ padding: 16, color: '#F87171' }}>Error: {error}</div>
+            <div style={{ padding: 16, color: 'var(--red)' }}>Error: {error}</div>
           ) : !ledger?.rows?.length ? (
-            <div style={{ textAlign: 'center', padding: 50, color: '#8B97A8' }}>Sin movimientos para este filtro.</div>
+            <div style={{ textAlign: 'center', padding: 50, color: 'var(--text-muted)' }}>Sin movimientos para este filtro.</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                 <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.04)', position: 'sticky', top: 0 }}>
+                  <tr style={{ background: 'var(--modal-input-bg)', position: 'sticky', top: 0 }}>
                     <th style={thL}>Fecha</th>
                     <th style={thL}>Asiento</th>
                     {!cuenta && <th style={thL}>Cuenta</th>}
@@ -269,27 +273,27 @@ function LedgerPageInner() {
                 </thead>
                 <tbody>
                   {ledger.rows.map((r: any) => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <tr key={r.id} style={{ borderBottom: '1px solid var(--td-border)' }}>
                       <td style={tdL}>{fmtFecha(r.fecha)}</td>
                       <td style={tdL}>
                         <button onClick={() => setAsientoDrill({ nroAsiento: r.nroAsiento, fecha: r.fecha, codUnico: r.codUnico })}
-                          style={{ background: 'none', border: 'none', color: '#2BB4BB', cursor: 'pointer', fontFamily: 'monospace', textDecoration: 'underline', textDecorationStyle: 'dotted', padding: 0, fontSize: 12.5 }}>
+                          style={{ background: 'none', border: 'none', color: 'var(--primary-light)', cursor: 'pointer', fontFamily: 'monospace', textDecoration: 'underline', textDecorationStyle: 'dotted', padding: 0, fontSize: 12.5 }}>
                           {r.nroAsiento}
                         </button>
                       </td>
                       {!cuenta && (
                         <td style={tdL}>
                           <button onClick={() => setCuenta(r.codCuenta)} title={r.desCuenta}
-                            style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontFamily: 'monospace', padding: 0, fontSize: 12.5 }}>
+                            style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'monospace', padding: 0, fontSize: 12.5 }}>
                             {r.codCuenta}
                           </button>
                         </td>
                       )}
-                      <td style={{ ...tdL, maxWidth: 280, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#8B97A8' }} title={r.glosa}>{r.glosa || '—'}</td>
+                      <td style={{ ...tdL, maxWidth: 280, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-muted)' }} title={r.glosa}>{r.glosa || '—'}</td>
                       <td style={{ ...tdL, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.tercero}>{r.tercero || '—'}</td>
-                      <td style={{ ...tdR, color: r.debito > 0 ? '#10B981' : '#4B5563' }}>{r.debito > 0 ? fmt(r.debito) : '—'}</td>
-                      <td style={{ ...tdR, color: r.credito > 0 ? '#EF4444' : '#4B5563' }}>{r.credito > 0 ? fmt(r.credito) : '—'}</td>
-                      <td style={{ ...tdR, fontWeight: 600, color: r.saldoAcumulado < 0 ? '#EF4444' : '#F8FAFC' }}>{fmt(r.saldoAcumulado)}</td>
+                      <td style={{ ...tdR, color: r.debito > 0 ? 'var(--green)' : '#4B5563' }}>{r.debito > 0 ? fmt(r.debito) : '—'}</td>
+                      <td style={{ ...tdR, color: r.credito > 0 ? 'var(--red)' : '#4B5563' }}>{r.credito > 0 ? fmt(r.credito) : '—'}</td>
+                      <td style={{ ...tdR, fontWeight: 600, color: r.saldoAcumulado < 0 ? 'var(--red)' : 'var(--text-primary)' }}>{fmt(r.saldoAcumulado)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -299,9 +303,9 @@ function LedgerPageInner() {
 
           {/* Paginación */}
           {ledger && totalPages > 1 && (
-            <div style={{ padding: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ padding: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, borderTop: '1px solid var(--modal-border-1)' }}>
               <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} style={pgBtn(page <= 1)}>← Anterior</button>
-              <span style={{ fontSize: 13, color: '#8B97A8' }}>Página {page} de {totalPages}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Página {page} de {totalPages}</span>
               <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} style={pgBtn(page >= totalPages)}>Siguiente →</button>
             </div>
           )}
@@ -323,51 +327,51 @@ function AsientoModal({ company, nroAsiento, fecha, codUnico, token, onClose }: 
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: '#0D1A2D', border: '1px solid rgba(43,180,187,0.3)', borderRadius: 10, maxWidth: 900, width: '100%', maxHeight: '85vh', overflow: 'auto', padding: 24 }}>
+      <div role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} style={{ background: 'var(--modal-bg)', border: '1px solid rgba(43,180,187,0.3)', borderRadius: 10, maxWidth: 900, width: '100%', maxHeight: '85vh', overflow: 'auto', padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#F8FAFC' }}>Asiento {nroAsiento}</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>Asiento {nroAsiento}</div>
             {data && (
-              <div style={{ fontSize: 13, color: '#8B97A8' }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {fmtFecha(data.fecha)} · {data.glosa || 'Sin glosa'}
-                {data.operaciones?.length ? <> · <span style={{ color: '#6B7280' }}>{data.operaciones.length === 1 ? 'Operación' : 'Operaciones'} S10: <span style={{ fontFamily: 'monospace' }}>{data.operaciones.join(', ')}</span></span></> : ''}
+                {data.operaciones?.length ? <> · <span style={{ color: 'var(--text-muted)' }}>{data.operaciones.length === 1 ? 'Operación' : 'Operaciones'} S10: <span style={{ fontFamily: 'monospace' }}>{data.operaciones.join(', ')}</span></span></> : ''}
               </div>
             )}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B97A8' }}><X size={20} /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} aria-hidden="true" /></button>
         </div>
         {!data ? (
-          <div style={{ padding: 30, textAlign: 'center', color: '#8B97A8' }}>Cargando...</div>
+          <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando...</div>
         ) : (
           <>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                <tr style={{ background: 'var(--modal-input-bg)' }}>
                   <th style={thL}>Cuenta</th><th style={thL}>Descripción</th><th style={thL}>Glosa</th>
                   <th style={thL}>Tercero</th><th style={thR}>Débito</th><th style={thR}>Crédito</th>
                 </tr>
               </thead>
               <tbody>
                 {data.lineas.map((l: any) => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <tr key={l.id} style={{ borderBottom: '1px solid var(--td-border)' }}>
                     <td style={{ ...tdL, fontFamily: 'monospace' }}>{l.codCuenta}</td>
                     <td style={tdL}>{l.desCuenta}</td>
-                    <td style={{ ...tdL, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8B97A8' }} title={l.glosa}>{l.glosa || '—'}</td>
+                    <td style={{ ...tdL, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-muted)' }} title={l.glosa}>{l.glosa || '—'}</td>
                     <td style={tdL}>{l.tercero || '—'}</td>
-                    <td style={{ ...tdR, color: l.debito > 0 ? '#10B981' : '#4B5563' }}>{l.debito > 0 ? fmt(l.debito) : '—'}</td>
-                    <td style={{ ...tdR, color: l.credito > 0 ? '#EF4444' : '#4B5563' }}>{l.credito > 0 ? fmt(l.credito) : '—'}</td>
+                    <td style={{ ...tdR, color: l.debito > 0 ? 'var(--green)' : '#4B5563' }}>{l.debito > 0 ? fmt(l.debito) : '—'}</td>
+                    <td style={{ ...tdR, color: l.credito > 0 ? 'var(--red)' : '#4B5563' }}>{l.credito > 0 ? fmt(l.credito) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: 'rgba(255,255,255,0.03)', fontWeight: 700 }}>
-                  <td colSpan={4} style={{ ...tdR, color: '#F8FAFC' }}>TOTALES</td>
-                  <td style={{ ...tdR, color: '#F8FAFC' }}>{fmt(data.totalDebito)}</td>
-                  <td style={{ ...tdR, color: '#F8FAFC' }}>{fmt(data.totalCredito)}</td>
+                <tr style={{ background: 'var(--surface-hover)', fontWeight: 700 }}>
+                  <td colSpan={4} style={{ ...tdR, color: 'var(--text-primary)' }}>TOTALES</td>
+                  <td style={{ ...tdR, color: 'var(--text-primary)' }}>{fmt(data.totalDebito)}</td>
+                  <td style={{ ...tdR, color: 'var(--text-primary)' }}>{fmt(data.totalCredito)}</td>
                 </tr>
               </tfoot>
             </table>
-            <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, fontSize: 13, fontWeight: 600, background: data.cuadra ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: data.cuadra ? '#10B981' : '#EF4444' }}>
+            <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, fontSize: 13, fontWeight: 600, background: data.cuadra ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', color: data.cuadra ? 'var(--green)' : 'var(--red)' }}>
               {data.cuadra ? '✓ Asiento cuadrado — partida doble balanceada (Débito = Crédito)' : `⚠ Descuadre de ${fmt(Math.abs(data.totalDebito - data.totalCredito))}`}
             </div>
           </>
@@ -377,11 +381,11 @@ function AsientoModal({ company, nroAsiento, fecha, codUnico, token, onClose }: 
   );
 }
 
-const thL: React.CSSProperties = { padding: '8px 12px', textAlign: 'left', color: '#8B97A8', fontWeight: 600, fontSize: 12 };
+const thL: React.CSSProperties = { padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, fontSize: 12 };
 const thR: React.CSSProperties = { ...thL, textAlign: 'right' };
-const tdL: React.CSSProperties = { padding: '6px 12px', textAlign: 'left', color: '#cbd5e1' };
-const tdR: React.CSSProperties = { padding: '6px 12px', textAlign: 'right', fontFamily: 'monospace', color: '#cbd5e1' };
+const tdL: React.CSSProperties = { padding: '6px 12px', textAlign: 'left', color: 'var(--text-primary)' };
+const tdR: React.CSSProperties = { padding: '6px 12px', textAlign: 'right', fontFamily: 'monospace', color: 'var(--text-primary)' };
 const pgBtn = (disabled: boolean): React.CSSProperties => ({
-  padding: '6px 14px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', fontSize: 13,
-  cursor: disabled ? 'not-allowed' : 'pointer', background: disabled ? 'rgba(255,255,255,0.03)' : 'rgba(43,180,187,0.12)', color: disabled ? '#4B5563' : '#2BB4BB',
+  padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 13,
+  cursor: disabled ? 'not-allowed' : 'pointer', background: disabled ? 'var(--surface-hover)' : 'rgba(43,180,187,0.12)', color: disabled ? '#4B5563' : 'var(--primary-light)',
 });

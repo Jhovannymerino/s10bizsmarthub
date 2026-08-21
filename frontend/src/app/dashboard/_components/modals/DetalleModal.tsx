@@ -19,14 +19,14 @@ export function DetalleModal({ title, rows, activeMeses, companyId, year, onClos
       onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="detalle-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', minWidth: 600, outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem', minWidth: 600, outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <div id="detalle-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>Detalle: {title}</div>
-            <div style={{ fontSize: '0.75rem', color: '#8B97A8', marginTop: '0.2rem' }}>Click en una cuenta para ver los asientos individuales</div>
+            <div id="detalle-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>Detalle: {title}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Click en una cuenta para ver los asientos individuales</div>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -43,10 +43,10 @@ export function DetalleModal({ title, rows, activeMeses, companyId, year, onClos
                 <tr key={r.codCuenta} style={{ cursor: 'pointer' }}
                   onClick={() => setTxDrill({ codCuenta: r.codCuenta, descripcion: r.descripcion })}
                   title="Ver asientos individuales">
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#2BB4BB' }}>{r.codCuenta}</td>
-                  <td style={{ color: '#2BB4BB', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>{r.descripcion} <ChevronRight size={12} aria-hidden="true" /></td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--primary-light)' }}>{r.codCuenta}</td>
+                  <td style={{ color: 'var(--primary-light)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>{r.descripcion} <ChevronRight size={12} aria-hidden="true" /></td>
                   {activeMeses.map(m => (
-                    <td key={m} style={{ color: (r.meses[m] || 0) < 0 ? '#EF4444' : undefined }}>
+                    <td key={m} style={{ color: (r.meses[m] || 0) < 0 ? 'var(--red)' : undefined }}>
                       {fmt(r.meses[m] || 0)}
                     </td>
                   ))}

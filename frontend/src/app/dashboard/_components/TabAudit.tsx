@@ -25,14 +25,14 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
     <>
       {/* Sin documento */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
           🔴 Asientos sin documento fuente · {selectedYear}
         </div>
-        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
-          En S10, cada asiento contable debería estar vinculado a un documento fuente (factura, recibo, voucher). Un asiento con <strong style={{ color: '#F8FAFC' }}>NroD = NULL</strong> significa que fue ingresado manualmente sin respaldo documental registrado en el sistema. Se analizan las clases de mayor riesgo: caja (10), cuentas por cobrar (12–17), tributos y obligaciones (40–46) e ingresos (70–75).
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+          En S10, cada asiento contable debería estar vinculado a un documento fuente (factura, recibo, voucher). Un asiento con <strong style={{ color: 'var(--text-primary)' }}>NroD = NULL</strong> significa que fue ingresado manualmente sin respaldo documental registrado en el sistema. Se analizan las clases de mayor riesgo: caja (10), cuentas por cobrar (12–17), tributos y obligaciones (40–46) e ingresos (70–75).
         </div>
         {!auditData?.sinDoc?.resumen?.length ? (
-          <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Sin hallazgos en este período.</div>
+          <div style={{ color: 'var(--green)', fontSize: '0.85rem' }}>✓ Sin hallazgos en este período.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -51,11 +51,11 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
                     <tr key={i} style={{ cursor: r.SinDocumento > 0 ? 'pointer' : 'default' }}
                       onClick={r.SinDocumento > 0 ? () => setAuditSinDocDrill({ clase: r.Clase, desClase: CLASE_NAMES[r.Clase] || `Clase ${r.Clase}` }) : undefined}
                       title={r.SinDocumento > 0 ? 'Ver asientos sin documento' : undefined}>
-                      <td style={{ fontFamily: 'monospace', color: '#2BB4BB' }}>{r.Clase}{r.SinDocumento > 0 && <span style={{ fontSize: '0.65rem', marginLeft: '0.3rem' }}>▶</span>}</td>
+                      <td style={{ fontFamily: 'monospace', color: 'var(--primary-light)' }}>{r.Clase}{r.SinDocumento > 0 && <span style={{ fontSize: '0.65rem', marginLeft: '0.3rem' }}>▶</span>}</td>
                       <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={CLASE_NAMES[r.Clase] || r.DescClase}>{CLASE_NAMES[r.Clase] || r.DescClase || '—'}</td>
-                      <td style={{ color: r.SinDocumento > 0 ? '#F59E0B' : '#10B981' }}>{r.SinDocumento}</td>
-                      <td style={{ color: '#8B97A8' }}>{r.TotalAsientos}</td>
-                      <td style={{ color: pctSD > 20 ? '#EF4444' : pctSD > 5 ? '#F59E0B' : '#10B981' }}>{pctSD.toFixed(1)}%</td>
+                      <td style={{ color: r.SinDocumento > 0 ? 'var(--yellow)' : 'var(--green)' }}>{r.SinDocumento}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>{r.TotalAsientos}</td>
+                      <td style={{ color: pctSD > 20 ? 'var(--red)' : pctSD > 5 ? 'var(--yellow)' : 'var(--green)' }}>{pctSD.toFixed(1)}%</td>
                       <td style={{ fontWeight: 600 }}>{fmt(r.MontoSinDoc)}</td>
                     </tr>
                   );
@@ -75,18 +75,18 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
 
       {/* Descuadres */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
           ⚠️ Asientos descuadrados · {selectedYear}
         </div>
-        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
-          Todo documento contable debe cuadrar: Débito total = Crédito total. Un descuadre indica una contabilización incompleta o con error de monto que distorsiona los estados financieros. Se muestran documentos con diferencia <strong style={{ color: '#F8FAFC' }}>&gt; S/1.00</strong>, agrupados por documento fuente (NroD). Excluye asientos de apertura y cierre, que se verifican por separado. La columna <strong style={{ color: '#F8FAFC' }}>Doc.</strong> muestra el número de documento en S10 cuando es una factura o recibo identificable; de lo contrario muestra el ID interno (NroD).
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+          Todo documento contable debe cuadrar: Débito total = Crédito total. Un descuadre indica una contabilización incompleta o con error de monto que distorsiona los estados financieros. Se muestran documentos con diferencia <strong style={{ color: 'var(--text-primary)' }}>&gt; S/1.00</strong>, agrupados por documento fuente (NroD). Excluye asientos de apertura y cierre, que se verifican por separado. La columna <strong style={{ color: 'var(--text-primary)' }}>Doc.</strong> muestra el número de documento en S10 cuando es una factura o recibo identificable; de lo contrario muestra el ID interno (NroD).
         </div>
         {!auditData?.descuadres?.rows?.length ? (
-          <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Todos los asientos están cuadrados. Sin hallazgos.</div>
+          <div style={{ color: 'var(--green)', fontSize: '0.85rem' }}>✓ Todos los asientos están cuadrados. Sin hallazgos.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             {auditData.descuadres.rows.length >= 200 && (
-              <div style={{ fontSize: '0.75rem', color: '#F59E0B', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--yellow)', marginBottom: '0.5rem' }}>
                 ⚠ Mostrando los 200 mayores descuadres. Puede haber más — revise en S10 directamente.
               </div>
             )}
@@ -101,12 +101,12 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
                   return (
                     <tr key={i}>
                       <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: isExternal ? '#2BB4BB' : '#8B97A8' }}>{docLabel}</td>
-                      <td style={{ color: '#8B97A8', textAlign: 'center' }}>{r.Lineas}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: isExternal ? 'var(--primary-light)' : 'var(--text-muted)' }}>{docLabel}</td>
+                      <td style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{r.Lineas}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Tercero}>{r.Tercero || '—'}</td>
-                      <td style={{ color: r.TotalDebito > 0 ? '#10B981' : '#8B97A8' }}>{r.TotalDebito > 0 ? fmt(r.TotalDebito) : '—'}</td>
-                      <td style={{ color: r.TotalCredito > 0 ? '#EF4444' : '#8B97A8' }}>{r.TotalCredito > 0 ? fmt(r.TotalCredito) : '—'}</td>
-                      <td style={{ fontWeight: 700, color: '#EF4444' }}>{fmt(r.Descuadre)}</td>
+                      <td style={{ color: r.TotalDebito > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{r.TotalDebito > 0 ? fmt(r.TotalDebito) : '—'}</td>
+                      <td style={{ color: r.TotalCredito > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{r.TotalCredito > 0 ? fmt(r.TotalCredito) : '—'}</td>
+                      <td style={{ fontWeight: 700, color: 'var(--red)' }}>{fmt(r.Descuadre)}</td>
                       <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
                     </tr>
                   );
@@ -122,27 +122,27 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
         const ac = auditData?.descuadres?.aperturaCierre;
         if (!ac || (!ac.apertura && !ac.cierre)) return null;
         const Card = ({ label, data }: { label: string; data: any }) => (
-          <div style={{ flex: 1, minWidth: 260, background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem', padding: '1rem', border: `1px solid ${data?.cuadrado === false ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
-            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>{label}</div>
+          <div style={{ flex: 1, minWidth: 260, background: 'var(--surface-hover)', borderRadius: '0.5rem', padding: '1rem', border: `1px solid ${data?.cuadrado === false ? 'rgba(239,68,68,0.3)' : 'var(--border)'}` }}>
+            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>{label}</div>
             {!data ? (
-              <div style={{ color: '#8B97A8', fontSize: '0.78rem' }}>No encontrado en el período.</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>No encontrado en el período.</div>
             ) : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: '#8B97A8' }}>Fecha</span><span>{data.fecha || '—'}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Fecha</span><span>{data.fecha || '—'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: '#8B97A8' }}>Líneas (NroD)</span><span style={{ color: '#8B97A8' }}>{data.nroDs}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Líneas (NroD)</span><span style={{ color: 'var(--text-muted)' }}>{data.nroDs}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.25rem' }}>
-                  <span style={{ color: '#8B97A8' }}>Total Débito</span><span style={{ color: '#10B981' }}>{fmt(data.totalDebito)}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Total Débito</span><span style={{ color: 'var(--green)' }}>{fmt(data.totalDebito)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.5rem' }}>
-                  <span style={{ color: '#8B97A8' }}>Total Crédito</span><span style={{ color: '#EF4444' }}>{fmt(data.totalCredito)}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Total Crédito</span><span style={{ color: 'var(--red)' }}>{fmt(data.totalCredito)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.5rem', fontWeight: 600 }}>
-                  <span style={{ color: '#8B97A8' }}>Balance</span>
-                  <span style={{ color: data.cuadrado ? '#10B981' : '#EF4444' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderTop: '1px solid var(--modal-border-1)', paddingTop: '0.5rem', fontWeight: 600 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Balance</span>
+                  <span style={{ color: data.cuadrado ? 'var(--green)' : 'var(--red)' }}>
                     {data.cuadrado ? '✓ Cuadrado' : `⚠ Descuadre ${fmt(data.descuadre)}`}
                   </span>
                 </div>
@@ -152,10 +152,10 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
         );
         return (
           <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
               🔑 Verificación Apertura y Cierre · {selectedYear}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
               S10 registra cada cuenta como una línea separada (un NroD por cuenta). El balance se verifica sobre el total consolidado de todas las líneas.
             </div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -168,18 +168,18 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
 
       {/* Atípicos */}
       <div className="kpi-card" style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
           🔶 Asientos atípicos · {selectedYear}
         </div>
-        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
-          Líneas de asiento contable con <strong style={{ color: '#F8FAFC' }}>Débito o Crédito superior a 100,000</strong> en moneda original. Montos de esta magnitud son inusuales en operaciones rutinarias y requieren verificación documental. No indica error por sí solo — un pago o cobro grande puede ser legítimo — pero debe tener respaldo. Excluye apertura y cierre. Se muestra el número de documento en S10 cuando corresponde a una factura o recibo identificable.
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+          Líneas de asiento contable con <strong style={{ color: 'var(--text-primary)' }}>Débito o Crédito superior a 100,000</strong> en moneda original. Montos de esta magnitud son inusuales en operaciones rutinarias y requieren verificación documental. No indica error por sí solo — un pago o cobro grande puede ser legítimo — pero debe tener respaldo. Excluye apertura y cierre. Se muestra el número de documento en S10 cuando corresponde a una factura o recibo identificable.
         </div>
         {!auditData?.atipicos?.rows?.length ? (
-          <div style={{ color: '#10B981', fontSize: '0.85rem' }}>✓ Sin asientos atípicos en este período.</div>
+          <div style={{ color: 'var(--green)', fontSize: '0.85rem' }}>✓ Sin asientos atípicos en este período.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             {auditData.atipicos.rows.length >= 200 && (
-              <div style={{ fontSize: '0.75rem', color: '#F59E0B', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--yellow)', marginBottom: '0.5rem' }}>
                 ⚠ Mostrando los 200 de mayor monto. Puede haber más — revise en S10 directamente.
               </div>
             )}
@@ -194,12 +194,12 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
                   return (
                     <tr key={i}>
                       <td style={{ whiteSpace: 'nowrap' }}>{r.Fecha}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: isExternal ? '#2BB4BB' : '#8B97A8' }}>{docLabel}</td>
-                      <td style={{ fontFamily: 'monospace', color: '#2BB4BB', fontSize: '0.72rem' }}>{r.CodCuenta}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: isExternal ? 'var(--primary-light)' : 'var(--text-muted)' }}>{docLabel}</td>
+                      <td style={{ fontFamily: 'monospace', color: 'var(--primary-light)', fontSize: '0.72rem' }}>{r.CodCuenta}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.DesCuenta}>{r.DesCuenta || '—'}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.Glosa}>{r.Glosa || '—'}</td>
-                      <td style={{ color: r.Debito > 0 ? '#10B981' : '#8B97A8' }}>{r.Debito > 0 ? fmt(r.Debito) : '—'}</td>
-                      <td style={{ color: r.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{r.Credito > 0 ? fmt(r.Credito) : '—'}</td>
+                      <td style={{ color: r.Debito > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{r.Debito > 0 ? fmt(r.Debito) : '—'}</td>
+                      <td style={{ color: r.Credito > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{r.Credito > 0 ? fmt(r.Credito) : '—'}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.Tercero || '—'}</td>
                     </tr>
                   );
@@ -212,15 +212,15 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
 
       {/* Conciliación ingresos */}
       <div className="kpi-card">
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.75rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
           📊 Conciliación Ingresos vs Documentos Emitidos · {selectedYear}
         </div>
-        <div style={{ fontSize: '0.72rem', color: '#8B97A8', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
           Ingresos contables medidos por fecha de aplicación contable (clases 70–75, NroD ≠ NULL). Facturas medidas por fecha de emisión del documento. Diferencias de timing entre ambas fechas pueden generar discrepancias entre meses que no representan errores reales.
           {' '}Facturas en USD sin tipo de cambio registrado usan TC referencial S/3.80.
         </div>
         {!auditData?.conciliacion?.rows?.length ? (
-          <div style={{ color: '#8B97A8', fontSize: '0.85rem' }}>Sin datos de conciliación.</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sin datos de conciliación.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table className="table-s10" style={{ fontSize: '0.8rem' }}>
@@ -232,10 +232,10 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
                     <tr key={i}>
                       <td style={{ fontWeight: 500 }}>{MESES[(r.Mes || 1) - 1]}</td>
                       <td>{fmt(r.IngresosContables)}</td>
-                      <td style={{ color: '#10B981' }}>{fmt(r.FacturasEmitidas)}</td>
-                      <td style={{ color: '#EF4444' }}>{fmt(r.NotasCredito)}</td>
+                      <td style={{ color: 'var(--green)' }}>{fmt(r.FacturasEmitidas)}</td>
+                      <td style={{ color: 'var(--red)' }}>{fmt(r.NotasCredito)}</td>
                       <td>{fmt(r.NetoDocumentos)}</td>
-                      <td style={{ fontWeight: 700, color: Math.abs(diff) < 1 ? '#10B981' : Math.abs(diff) < 10000 ? '#F59E0B' : '#EF4444' }}>
+                      <td style={{ fontWeight: 700, color: Math.abs(diff) < 1 ? 'var(--green)' : Math.abs(diff) < 10000 ? 'var(--yellow)' : 'var(--red)' }}>
                         {Math.abs(diff) < 1 ? '✓' : fmt(diff)}
                       </td>
                     </tr>
@@ -249,7 +249,7 @@ export function TabAudit({ auditData, selectedYear, setAuditSinDocDrill }: Props
                 ))}
                 <td style={{ color: (() => {
                   const d = auditData.conciliacion.rows.reduce((s: number, r: any) => s + (r.IngresosContables||0) - (r.NetoDocumentos||0), 0);
-                  return Math.abs(d) < 1 ? '#10B981' : Math.abs(d) < 50000 ? '#F59E0B' : '#EF4444';
+                  return Math.abs(d) < 1 ? 'var(--green)' : Math.abs(d) < 50000 ? 'var(--yellow)' : 'var(--red)';
                 })() }}>
                   {fmt(auditData.conciliacion.rows.reduce((s: number, r: any) => s + (r.IngresosContables||0) - (r.NetoDocumentos||0), 0))}
                 </td>

@@ -92,15 +92,15 @@ export function TabValidacionForense({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
           <div className="kpi-card" style={{ textAlign: 'center' }}>
             <div className="kpi-label">Validaciones ejecutadas</div>
-            <div className="kpi-value" style={{ fontSize: '2rem', color: '#F8FAFC' }}>{vfd.summary.total}</div>
+            <div className="kpi-value" style={{ fontSize: '2rem', color: 'var(--text-primary)' }}>{vfd.summary.total}</div>
           </div>
           <div className="kpi-card" style={{ textAlign: 'center' }}>
             <div className="kpi-label">Sin errores SQL</div>
-            <div className="kpi-value" style={{ fontSize: '2rem', color: '#10B981' }}>{vfd.summary.ok}</div>
+            <div className="kpi-value" style={{ fontSize: '2rem', color: 'var(--green)' }}>{vfd.summary.ok}</div>
           </div>
           <div className="kpi-card" style={{ textAlign: 'center' }}>
             <div className="kpi-label">Con error de ejecución</div>
-            <div className="kpi-value" style={{ fontSize: '2rem', color: vfd.summary.errors > 0 ? '#EF4444' : '#10B981' }}>{vfd.summary.errors}</div>
+            <div className="kpi-value" style={{ fontSize: '2rem', color: vfd.summary.errors > 0 ? 'var(--red)' : 'var(--green)' }}>{vfd.summary.errors}</div>
           </div>
         </div>
       )}
@@ -109,11 +109,11 @@ export function TabValidacionForense({
       {(!vfd || (vfd?.message && !vfd?.validations)) && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280, textAlign: 'center', gap: '0.75rem' }}>
           <div style={{ fontSize: '2rem' }}>🔬</div>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: '#F8FAFC' }}>Sin datos de Validación Forense</div>
-          <div style={{ fontSize: '0.82rem', color: '#8B97A8', maxWidth: 380 }}>
+          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sin datos de Validación Forense</div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: 380 }}>
             {vfd?.message || 'Los datos forenses no están disponibles para esta empresa/año.'}
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#8B97A8' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             Usa el botón <strong style={{ color: '#207E83' }}>Sincronizar Datos</strong> del sidebar para cargar la información desde S10.
           </div>
         </div>
@@ -122,15 +122,15 @@ export function TabValidacionForense({
       {/* Matrix */}
       {vfd?.validations && (
         <div className="kpi-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div className="kpi-label">Matriz de Validación Forense</div>
-              <div style={{ color: '#F8FAFC', fontWeight: 700, fontSize: '0.95rem' }}>
+              <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.95rem' }}>
                 {isGrupo ? 'GRUPO CONSOLIDADO' : selectedCompany.shortName} · {selectedYear}
               </div>
             </div>
             {vfd.syncedAt && (
-              <span style={{ fontSize: '0.7rem', color: '#8B97A8' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 Sync: {new Date(vfd.syncedAt).toLocaleString('es-PE', { timeZone: 'America/Lima' })}
               </span>
             )}
@@ -160,38 +160,38 @@ export function TabValidacionForense({
                         onClick={() => setValidacionForenseExpanded(isExpanded ? null : v.id)}
                         style={{ background: isExpanded ? 'rgba(32,126,131,0.1)' : undefined }}
                       >
-                        <td style={{ textAlign: 'center', color: '#8B97A8', fontFamily: 'monospace', fontSize: '0.7rem' }}>{idx + 1}</td>
+                        <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.7rem' }}>{idx + 1}</td>
                         <td style={{ textAlign: 'left' }}>
-                          <span style={{ fontWeight: 600, color: '#F8FAFC' }}>{v.label}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{v.label}</span>
                         </td>
-                        <td style={{ textAlign: 'left', color: '#8B97A8', fontSize: '0.78rem' }}>{info.categoria}</td>
+                        <td style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.78rem' }}>{info.categoria}</td>
                         <td style={{ textAlign: 'center' }}>
                           {v.rowCount > 0 && !v.error
                             ? <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, ...RIESGO_STYLE[info.riesgo] }}>{info.riesgo}</span>
                             : <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 500, background: 'transparent', color: '#4B5563', border: '1px solid transparent' }}>{info.riesgo}</span>
                           }
                         </td>
-                        <td style={{ textAlign: 'left', color: '#8B97A8', fontSize: '0.72rem', fontStyle: 'italic' }}>{info.norma}</td>
+                        <td style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.72rem', fontStyle: 'italic' }}>{info.norma}</td>
                         <td style={{ fontFamily: 'monospace', textAlign: 'center' }}>
                           {v.rowCount > 0
-                            ? <span style={{ color: '#F59E0B', fontWeight: 700 }}>{v.rowCount.toLocaleString()} {isExpanded ? '▲' : '▼'}</span>
-                            : <span style={{ color: '#10B981' }}>0</span>
+                            ? <span style={{ color: 'var(--yellow)', fontWeight: 700 }}>{v.rowCount.toLocaleString()} {isExpanded ? '▲' : '▼'}</span>
+                            : <span style={{ color: 'var(--green)' }}>0</span>
                           }
                         </td>
                         <td style={{ textAlign: 'center' }}>
                           {v.error
-                            ? <span style={{ color: '#EF4444', fontWeight: 700, fontSize: '0.7rem' }}>ERROR</span>
+                            ? <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: '0.7rem' }}>ERROR</span>
                             : v.rowCount > 0
-                              ? <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.72rem' }}>HALLAZGO</span>
-                              : <span style={{ color: '#10B981', fontWeight: 700 }}>OK</span>
+                              ? <span style={{ color: 'var(--yellow)', fontWeight: 700, fontSize: '0.72rem' }}>HALLAZGO</span>
+                              : <span style={{ color: 'var(--green)', fontWeight: 700 }}>OK</span>
                           }
                         </td>
                       </tr>
 
                       {isExpanded && info.descripcion && (
                         <tr>
-                          <td colSpan={7} style={{ padding: '0.6rem 1rem', background: 'rgba(32,126,131,0.08)', borderLeft: '3px solid #2BB4BB', color: '#CBD5E1', fontSize: '0.78rem', lineHeight: 1.5, textAlign: 'left' }}>
-                            <span style={{ fontWeight: 600, color: '#2BB4BB', marginRight: '0.4rem' }}>¿Qué detecta?</span>{info.descripcion}
+                          <td colSpan={7} style={{ padding: '0.6rem 1rem', background: 'rgba(32,126,131,0.08)', borderLeft: '3px solid #2BB4BB', color: 'var(--text-primary)', fontSize: '0.78rem', lineHeight: 1.5, textAlign: 'left' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--primary-light)', marginRight: '0.4rem' }}>¿Qué detecta?</span>{info.descripcion}
                           </td>
                         </tr>
                       )}
@@ -240,7 +240,7 @@ export function TabValidacionForense({
                                               const isV04bFacturasActive = isV04bFacturas && typeof val === 'number' && val > 0;
                                               return (
                                                 <td key={vi} style={{ textAlign: money ? 'right' : 'left', whiteSpace: 'nowrap', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis',
-                                                  color: money && val < 0 ? '#F87171' : money && val > 0 ? '#F8FAFC' : undefined,
+                                                  color: money && val < 0 ? '#F87171' : money && val > 0 ? 'var(--text-primary)' : undefined,
                                                   fontFamily: (money || cnt) ? 'monospace' : undefined,
                                                 }}>
                                                   {val === null || val === undefined ? '—'
@@ -253,14 +253,14 @@ export function TabValidacionForense({
                                                     : isNumAsientosCell
                                                       ? <button onClick={() => setAccountTxDrill({ codCuenta: effectiveCod!, descripcion: String(row.DesCuenta ?? row.DesBanco ?? row.Tipo ?? effectiveCod), endpoint: rowEndpoint!, ...(isMultiYearV && row.Anio ? { yearOverride: Number(row.Anio), ...(row.Mes ? { mesPreset: Number(row.Mes) } : {}) } : {}) })}
                                                           title="Ver asientos individuales"
-                                                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                                                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-light)', fontFamily: 'monospace', fontSize: '0.72rem', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
                                                           {val} ▶
                                                         </button>
                                                     : isV04bResumen && k === 'Tipo'
-                                                      ? <>{String(val)}<span style={{ color: '#8B97A8', fontWeight: 400, marginLeft: '0.4rem', fontSize: '0.65rem' }}>{TIPO_DOC_LABEL[String(val)] ?? String(row.DesTipo ?? '')}</span></>
+                                                      ? <>{String(val)}<span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: '0.4rem', fontSize: '0.65rem' }}>{TIPO_DOC_LABEL[String(val)] ?? String(row.DesTipo ?? '')}</span></>
                                                     : k === 'Estado' && String(val) === '5' ? <span style={{ color: '#6B7280', fontSize: '0.62rem' }}>Anulado</span>
-                                                    : k === 'Estado' && String(val) === '6' ? <span title="PENDIENTE DE REVISIÓN: documento vinculado/netteado contra otro (anticipo, NC, intercompañía). Confirmar en S10 si el ingreso fue reconocido por un mecanismo alternativo." style={{ color: '#F59E0B', fontWeight: 600 }}>⚠ Vinculada</span>
-                                                    : k === 'Estado' && String(val) === '1' ? <span style={{ color: '#10B981' }}>Pendiente</span>
+                                                    : k === 'Estado' && String(val) === '6' ? <span title="PENDIENTE DE REVISIÓN: documento vinculado/netteado contra otro (anticipo, NC, intercompañía). Confirmar en S10 si el ingreso fue reconocido por un mecanismo alternativo." style={{ color: 'var(--yellow)', fontWeight: 600 }}>⚠ Vinculada</span>
+                                                    : k === 'Estado' && String(val) === '1' ? <span style={{ color: 'var(--green)' }}>Pendiente</span>
                                                     : money ? fmt(val) : String(val)
                                                   }
                                                 </td>
@@ -271,10 +271,10 @@ export function TabValidacionForense({
                                               return (
                                                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                                                   {diff > 0
-                                                    ? <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.68rem' }}>Tipo B</span>
+                                                    ? <span style={{ color: 'var(--yellow)', fontWeight: 700, fontSize: '0.68rem' }}>Tipo B</span>
                                                     : diff < 0
-                                                      ? <span style={{ color: '#EF4444', fontWeight: 700, fontSize: '0.68rem' }}>Tipo A</span>
-                                                      : <span style={{ color: '#10B981', fontSize: '0.68rem' }}>OK</span>
+                                                      ? <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: '0.68rem' }}>Tipo A</span>
+                                                      : <span style={{ color: 'var(--green)', fontSize: '0.68rem' }}>OK</span>
                                                   }
                                                 </td>
                                               );
@@ -294,8 +294,8 @@ export function TabValidacionForense({
                                                 <td colSpan={colKeys.length} style={{ padding: 0, background: 'rgba(226,92,26,0.06)', borderLeft: '3px solid #E25C1A' }}>
                                                   <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.68rem', color: '#FBB040', fontWeight: 600, marginBottom: '0.25rem' }}>
                                                     {titulo}
-                                                    {detailRows.length === 0 && <span style={{ color: '#8B97A8', fontWeight: 400, marginLeft: '0.5rem' }}>Sin datos — ejecuta sync para cargar el detalle</span>}
-                                                    {detailRows.length > 0 && <span style={{ color: '#8B97A8', fontWeight: 400, marginLeft: '0.5rem' }}>top {detailRows.length} por monto{totalCount > detailRows.length ? ` de ${totalCount} total` : ''}</span>}
+                                                    {detailRows.length === 0 && <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: '0.5rem' }}>Sin datos — ejecuta sync para cargar el detalle</span>}
+                                                    {detailRows.length > 0 && <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: '0.5rem' }}>top {detailRows.length} por monto{totalCount > detailRows.length ? ` de ${totalCount} total` : ''}</span>}
                                                   </div>
                                                   {detailRows.length > 0 && (
                                                     <div style={{ overflowX: 'auto', maxHeight: 280 }}>
@@ -308,9 +308,9 @@ export function TabValidacionForense({
                                                                 {isMoney(k) && typeof r[k] === 'number' ? fmt(r[k])
                                                                   : k === 'Moneda' ? (r[k] === '01' ? 'PEN' : r[k] === '02' ? 'USD' : String(r[k] ?? '—'))
                                                                   : k === 'Estado' && String(r[k]) === '5' ? <span style={{ color: '#6B7280', fontSize: '0.62rem' }}>Anulado</span>
-                                                                  : k === 'Estado' && String(r[k]) === '6' ? <span title="PENDIENTE DE REVISIÓN: documento vinculado/netteado contra otro (anticipo, NC, intercompañía). Confirmar en S10 si el ingreso fue reconocido por un mecanismo alternativo." style={{ color: '#F59E0B', fontWeight: 600 }}>⚠ Vinculada</span>
-                                                                  : k === 'Estado' && String(r[k]) === '1' ? <span style={{ color: '#10B981' }}>Pendiente</span>
-                                                                  : k === 'Observacion' ? <span style={{ color: '#8B97A8', fontStyle: r[k] ? 'normal' : 'italic' }}>{r[k] || '—'}</span>
+                                                                  : k === 'Estado' && String(r[k]) === '6' ? <span title="PENDIENTE DE REVISIÓN: documento vinculado/netteado contra otro (anticipo, NC, intercompañía). Confirmar en S10 si el ingreso fue reconocido por un mecanismo alternativo." style={{ color: 'var(--yellow)', fontWeight: 600 }}>⚠ Vinculada</span>
+                                                                  : k === 'Estado' && String(r[k]) === '1' ? <span style={{ color: 'var(--green)' }}>Pendiente</span>
+                                                                  : k === 'Observacion' ? <span style={{ color: 'var(--text-muted)', fontStyle: r[k] ? 'normal' : 'italic' }}>{r[k] || '—'}</span>
                                                                   : String(r[k] ?? '—')}
                                                               </td>
                                                             ))}</tr>
@@ -327,7 +327,7 @@ export function TabValidacionForense({
                                       );
                                     })}
                                     {rawRows.length > 50 && (
-                                      <tr><td colSpan={isV17 ? colKeys.length + 1 : colKeys.length} style={{ color: '#8B97A8', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
+                                      <tr><td colSpan={isV17 ? colKeys.length + 1 : colKeys.length} style={{ color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'left' }}>… y {rawRows.length - 50} registros más</td></tr>
                                     )}
                                   </tbody>
                                 </table>

@@ -72,9 +72,9 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
 
   const btnStyle = (active: boolean, accent?: string) => ({
     padding: '0.25rem 0.75rem', borderRadius: '1rem', cursor: 'pointer', fontSize: '0.78rem',
-    border: active ? `1px solid ${accent ? 'rgba(226,92,26,0.5)' : 'rgba(32,126,131,0.5)'}` : '1px solid rgba(255,255,255,0.1)',
-    background: active ? (accent ? 'rgba(226,92,26,0.15)' : 'rgba(32,126,131,0.2)') : 'rgba(255,255,255,0.04)',
-    color: active ? (accent ? '#E25C1A' : '#2BB4BB') : '#8B97A8',
+    border: active ? `1px solid ${accent ? 'rgba(226,92,26,0.5)' : 'rgba(32,126,131,0.5)'}` : '1px solid var(--modal-border-2)',
+    background: active ? (accent ? 'rgba(226,92,26,0.15)' : 'rgba(32,126,131,0.2)') : 'var(--modal-input-bg)',
+    color: active ? (accent ? '#E25C1A' : 'var(--primary-light)') : 'var(--text-muted)',
   });
 
   return (
@@ -82,20 +82,20 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
       <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="account-txn-modal-title" tabIndex={-1}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', maxWidth: '95vw', width: 960, maxHeight: '85vh', overflow: 'auto', padding: '1.5rem', outline: 'none' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
-            <div id="account-txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: '#F8FAFC' }}>{codCuenta} — {descripcion}</div>
-            <div style={{ fontSize: '0.78rem', color: '#8B97A8', marginTop: '0.2rem' }}>Asientos individuales · {fetchYear} · {filtered.length} movimientos · <Link2 size={11} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle' }} /> = doc. origen</div>
+            <div id="account-txn-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{codCuenta} — {descripcion}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Asientos individuales · {fetchYear} · {filtered.length} movimientos · <Link2 size={11} aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle' }} /> = doc. origen</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <button onClick={() => setShowMayor(true)}
               title="Ver estas líneas en el libro mayor"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: '#2BB4BB' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.7rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, border: '1px solid rgba(43,180,187,0.4)', background: 'rgba(43,180,187,0.12)', color: 'var(--primary-light)' }}>
               <ScrollText size={13} aria-hidden="true" /> Ver en el Mayor
             </button>
-            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#8B97A8', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
+            <button onClick={onClose} aria-label="Cerrar" style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}><X size={18} aria-hidden="true" /></button>
           </div>
         </div>
         {isActivoFijo && aniosPresentes.length > 0 && (
@@ -118,14 +118,14 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
             style={searchInputStyle}
           />
         </div>
-        {loading ? <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8' }}>Cargando asientos...</div>
+        {loading ? <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Cargando asientos...</div>
         : fetchError ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
-            <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
-            <button onClick={() => setRetryCount(c => c + 1)} style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: '#2BB4BB', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><RotateCcw size={13} aria-hidden="true" /> Reintentar</button>
+            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: '1rem' }}>Error al cargar los datos.</div>
+            <button onClick={() => setRetryCount(c => c + 1)} style={{ padding: '0.45rem 1.25rem', background: 'rgba(32,126,131,0.15)', border: '1px solid rgba(32,126,131,0.3)', borderRadius: '0.5rem', color: 'var(--primary-light)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><RotateCcw size={13} aria-hidden="true" /> Reintentar</button>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#8B97A8', fontSize: '0.85rem' }}>
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             {search ? `Sin resultados para "${search}".` : isActivoFijo
               ? (anioFilter || mesFilter ? 'Sin movimientos con los filtros seleccionados.' : 'Sin movimientos históricos para esta cuenta.')
               : `Sin asientos para esta cuenta en ${fetchYear}.`
@@ -156,22 +156,22 @@ export function AccountTxnModal({ companyId, year, codCuenta, descripcion, endpo
                         {t.NroD
                           ? <button onClick={e => { e.stopPropagation(); setDocPreview(String(t.NroD)); }}
                               title="Ver documento origen" aria-label="Ver documento origen"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2BB4BB', fontSize: '0.9rem', padding: 0, lineHeight: 1, display: 'flex' }}><Link2 size={14} aria-hidden="true" /></button>
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary-light)', fontSize: '0.9rem', padding: 0, lineHeight: 1, display: 'flex' }}><Link2 size={14} aria-hidden="true" /></button>
                           : <span style={{ color: '#4B5563', fontSize: '0.75rem' }}>—</span>
                         }
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>{t.Fecha}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#2BB4BB' }}>{t.NroAsiento || t.CodUnico || '—'}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: 'var(--primary-light)' }}>{t.NroAsiento || t.CodUnico || '—'}</td>
                       <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.Glosa}>{t.Glosa || '—'}</td>
                       <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.Tercero || '—'}</td>
-                      <td style={{ color: t.Debito > 0 ? '#10B981' : '#8B97A8' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
-                      <td style={{ color: t.Credito > 0 ? '#EF4444' : '#8B97A8' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
-                      <td style={{ fontWeight: 600, color: neto < 0 ? '#EF4444' : '#10B981' }}>{fmt(neto)}</td>
+                      <td style={{ color: t.Debito > 0 ? 'var(--green)' : 'var(--text-muted)' }}>{t.Debito > 0 ? fmt(t.Debito) : '—'}</td>
+                      <td style={{ color: t.Credito > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{t.Credito > 0 ? fmt(t.Credito) : '—'}</td>
+                      <td style={{ fontWeight: 600, color: neto < 0 ? 'var(--red)' : 'var(--green)' }}>{fmt(neto)}</td>
                     </tr>
                   );
                 })}
               </tbody>
-              <tfoot><tr className="total-row"><td colSpan={5}>TOTAL</td><td>{fmt(totalDeb)}</td><td>{fmt(totalCred)}</td><td style={{ color: (totalDeb - totalCred) < 0 ? '#EF4444' : '#10B981' }}>{fmt(totalDeb - totalCred)}</td></tr></tfoot>
+              <tfoot><tr className="total-row"><td colSpan={5}>TOTAL</td><td>{fmt(totalDeb)}</td><td>{fmt(totalCred)}</td><td style={{ color: (totalDeb - totalCred) < 0 ? 'var(--red)' : 'var(--green)' }}>{fmt(totalDeb - totalCred)}</td></tr></tfoot>
             </table>
           </div>
         )}

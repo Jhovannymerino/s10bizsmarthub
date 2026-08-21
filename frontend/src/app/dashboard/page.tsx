@@ -125,12 +125,12 @@ const YoYBadge = React.memo(function YoYBadge({ curr, prev }: { curr: number; pr
 // to preserve focus across re-renders of DashboardPage)
 // ═══════════════════════════════════════════════
 const DIR_INPUT_STYLE: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(43,180,187,0.25)',
-  borderRadius: '0.35rem', padding: '0.35rem 0.55rem', color: 'var(--text-primary)',
+  background: 'var(--input-dir-bg)', border: '1px solid var(--input-dir-border)',
+  borderRadius: '0.35rem', padding: '0.35rem 0.55rem', color: 'var(--input-dir-color)',
   fontSize: '0.75rem', fontFamily: 'monospace', width: '100%',
 };
 const DIR_INPUT_TEXT: React.CSSProperties = { ...DIR_INPUT_STYLE, fontFamily: 'inherit' };
-const DIR_OPTION_STYLE: React.CSSProperties = { background: '#0E1A2E', color: '#F8FAFC' };
+const DIR_OPTION_STYLE: React.CSSProperties = { background: 'var(--input-dir-opt)', color: 'var(--input-dir-color)' };
 
 function DirNumInput({ path, value, onChange }: { path: string; value: number; onChange: (p: string, v: any) => void }) {
   // Permite vaciar el campo durante la edición sin saltar a "0"
@@ -1265,7 +1265,7 @@ export default function DashboardPage() {
                   <span style={{ fontSize: '0.58rem', color: '#8B97A8' }}>{elapsedStr}{remaining !== null ? ` · ${remainingStr}` : ''}</span>
                 </div>
                 <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: '0.35rem' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #F59E0B, #FBBF24)', borderRadius: 4, transition: 'width 0.6s ease' }} />
+                  <div style={{ height: '100%', width: '100%', transformOrigin: 'left', transform: `scaleX(${pct / 100})`, background: 'linear-gradient(90deg, #F59E0B, #FBBF24)', borderRadius: 4, transition: 'transform 0.6s ease' }} />
                 </div>
                 {p.currentYear && <div style={{ fontSize: '0.65rem', color: '#E5E7EB', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}><RotateCcw size={10} aria-hidden="true" /> {p.currentYear}{p.currentBatch && <span style={{ color: '#9CA3AF', fontWeight: 400 }}> · {p.currentBatch}</span>}</div>}
                 {p.currentCompany && <div style={{ fontSize: '0.6rem', color: '#9CA3AF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Building size={10} aria-hidden="true" /> {p.currentCompany}</div>}
@@ -1522,7 +1522,8 @@ export default function DashboardPage() {
       {profileOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
           onClick={() => setProfileOpen(false)}>
-          <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: 420, boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}
+          <div role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" onKeyDown={(e) => e.key === 'Escape' && setProfileOpen(false)}
+            style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: 420, boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}
             onClick={e => e.stopPropagation()}>
 
             {/* Avatar + datos */}
@@ -1531,23 +1532,23 @@ export default function DashboardPage() {
                 {userEmail ? userEmail[0].toUpperCase() : 'U'}
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{userUsername || userEmail || 'Usuario'}</div>
-                {userUsername && <div style={{ fontSize: '0.78rem', color: '#6B7A8D', marginTop: 2 }}>{userEmail}</div>}
-                <div style={{ marginTop: 4, display: 'inline-block', padding: '0.15rem 0.6rem', background: userRole === 'admin' ? 'rgba(32,126,131,0.2)' : 'rgba(255,255,255,0.06)', borderRadius: 999, fontSize: '0.65rem', fontWeight: 700, color: userRole === 'admin' ? '#2BB4BB' : '#8B97A8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div id="profile-modal-title" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{userUsername || userEmail || 'Usuario'}</div>
+                {userUsername && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{userEmail}</div>}
+                <div style={{ marginTop: 4, display: 'inline-block', padding: '0.15rem 0.6rem', background: userRole === 'admin' ? 'rgba(32,126,131,0.2)' : 'var(--modal-input-bg)', borderRadius: 999, fontSize: '0.65rem', fontWeight: 700, color: userRole === 'admin' ? 'var(--primary-light)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   {userRole}
                 </div>
               </div>
             </div>
 
             {/* Editar email */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ borderTop: '1px solid var(--modal-border-1)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Correo electrónico
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <input type="email" value={profileEmail} onChange={e => { setProfileEmail(e.target.value); setProfileEmailError(''); setProfileEmailSuccess(''); }}
                   placeholder="correo@empresa.com"
-                  style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box' as const, background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
+                  style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box' as const, background: 'var(--modal-input-bg)', color: 'var(--text-primary)', outline: 'none' }} />
                 <button disabled={profileEmailLoading || !profileEmail || profileEmail === userEmail}
                   onClick={async () => {
                     if (!profileEmail.includes('@')) { setProfileEmailError('Ingresa un correo válido'); return; }
@@ -1568,54 +1569,54 @@ export default function DashboardPage() {
                     } catch (e: any) { setProfileEmailError(e.message); }
                     finally { setProfileEmailLoading(false); }
                   }}
-                  style={{ padding: '0.5rem 0.9rem', border: 'none', borderRadius: '0.375rem', background: profileEmailLoading || !profileEmail || profileEmail === userEmail ? '#374151' : 'linear-gradient(135deg, #207E83, #2BB4BB)', color: profileEmailLoading || !profileEmail || profileEmail === userEmail ? '#6B7A8D' : '#fff', cursor: profileEmailLoading || !profileEmail || profileEmail === userEmail ? 'not-allowed' : 'pointer', fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap' as const }}>
+                  style={{ padding: '0.5rem 0.9rem', border: 'none', borderRadius: '0.375rem', background: profileEmailLoading || !profileEmail || profileEmail === userEmail ? '#374151' : 'linear-gradient(135deg, #207E83, #2BB4BB)', color: profileEmailLoading || !profileEmail || profileEmail === userEmail ? 'var(--text-muted)' : '#fff', cursor: profileEmailLoading || !profileEmail || profileEmail === userEmail ? 'not-allowed' : 'pointer', fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap' as const }}>
                   {profileEmailLoading ? '...' : 'Guardar'}
                 </button>
               </div>
-              {profileEmailError && <div style={{ marginTop: '0.4rem', color: '#EF4444', fontSize: '0.78rem' }}>{profileEmailError}</div>}
-              {profileEmailSuccess && <div style={{ marginTop: '0.4rem', color: '#10B981', fontSize: '0.78rem' }}>✓ {profileEmailSuccess}</div>}
+              {profileEmailError && <div style={{ marginTop: '0.4rem', color: 'var(--red)', fontSize: '0.78rem' }}>{profileEmailError}</div>}
+              {profileEmailSuccess && <div style={{ marginTop: '0.4rem', color: 'var(--green)', fontSize: '0.78rem' }}>✓ {profileEmailSuccess}</div>}
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.5rem' }}>
-              <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#8B97A8', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ borderTop: '1px solid var(--modal-border-1)', paddingTop: '1.5rem' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Cambiar contraseña
               </div>
 
               <div style={{ marginBottom: '0.875rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Contraseña actual</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Contraseña actual</label>
                 <div style={{ position: 'relative' }}>
                   <input type={showProfilePwdCurrent ? 'text' : 'password'} value={profilePwd.current} onChange={e => setProfilePwd(p => ({ ...p, current: e.target.value }))}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'var(--modal-input-bg)', color: 'var(--text-primary)', outline: 'none' }} />
                   <button type="button" onClick={() => setShowProfilePwdCurrent(v => !v)} aria-label={showProfilePwdCurrent ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                    {showProfilePwdCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                    {showProfilePwdCurrent ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
               <div style={{ marginBottom: '0.875rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Nueva contraseña</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Nueva contraseña</label>
                 <div style={{ position: 'relative' }}>
                   <input type={showProfilePwdNext ? 'text' : 'password'} value={profilePwd.next} onChange={e => setProfilePwd(p => ({ ...p, next: e.target.value }))}
                     placeholder="Mínimo 8 caracteres"
-                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'var(--modal-input-bg)', color: 'var(--text-primary)', outline: 'none' }} />
                   <button type="button" onClick={() => setShowProfilePwdNext(v => !v)} aria-label={showProfilePwdNext ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                    {showProfilePwdNext ? <EyeOff size={16} /> : <Eye size={16} />}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                    {showProfilePwdNext ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#6B7A8D', marginBottom: '0.3rem' }}>Confirmar nueva contraseña</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Confirmar nueva contraseña</label>
                 <div style={{ position: 'relative' }}>
                   <input type={showProfilePwdConfirm ? 'text' : 'password'} value={profilePwd.confirm} onChange={e => setProfilePwd(p => ({ ...p, confirm: e.target.value }))}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: `1px solid ${profilePwd.confirm && profilePwd.confirm !== profilePwd.next ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
+                    style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: `1px solid ${profilePwd.confirm && profilePwd.confirm !== profilePwd.next ? 'rgba(239,68,68,0.4)' : 'var(--modal-border-2)'}`, borderRadius: '0.375rem', fontSize: '0.88rem', boxSizing: 'border-box', background: 'var(--modal-input-bg)', color: 'var(--text-primary)', outline: 'none' }} />
                   <button type="button" onClick={() => setShowProfilePwdConfirm(v => !v)} aria-label={showProfilePwdConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                    {showProfilePwdConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                    style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                    {showProfilePwdConfirm ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                   </button>
                 </div>
               </div>
@@ -1633,7 +1634,7 @@ export default function DashboardPage() {
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button onClick={() => setProfileOpen(false)}
-                  style={{ padding: '0.5rem 1.25rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.06)', color: '#8B97A8', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  style={{ padding: '0.5rem 1.25rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', background: 'var(--modal-input-bg)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem' }}>
                   Cerrar
                 </button>
                 <button disabled={profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm}
@@ -1655,7 +1656,7 @@ export default function DashboardPage() {
                     } catch (e: any) { setProfilePwdError(e.message); }
                     finally { setProfilePwdLoading(false); }
                   }}
-                  style={{ padding: '0.5rem 1.25rem', border: 'none', borderRadius: '0.375rem', background: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? '#374151' : 'linear-gradient(135deg, #207E83, #2BB4BB)', color: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? '#6B7A8D' : '#fff', cursor: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                  style={{ padding: '0.5rem 1.25rem', border: 'none', borderRadius: '0.375rem', background: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? '#374151' : 'linear-gradient(135deg, #207E83, #2BB4BB)', color: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? 'var(--text-muted)' : '#fff', cursor: profilePwdLoading || !profilePwd.current || !profilePwd.next || !profilePwd.confirm ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
                   {profilePwdLoading ? 'Guardando...' : 'Cambiar contraseña'}
                 </button>
               </div>
@@ -1730,7 +1731,7 @@ export default function DashboardPage() {
               </div>
               {total > 0 && (
                 <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '4px', height: '4px', marginBottom: '0.5rem', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: '#F59E0B', borderRadius: '4px', transition: 'width 1s ease' }} />
+                  <div style={{ height: '100%', width: '100%', transformOrigin: 'left', transform: `scaleX(${pct / 100})`, background: '#F59E0B', borderRadius: '4px', transition: 'transform 1s ease' }} />
                 </div>
               )}
               <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.75rem', color: '#8B97A8' }}>
@@ -3797,58 +3798,59 @@ export default function DashboardPage() {
               {adminModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
                   onClick={() => setAdminModal(null)}>
-                  <div style={{ background: '#0D1A2D', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.75rem', padding: '2rem', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '1.25rem' }}>
+                  <div role="dialog" aria-modal="true" aria-labelledby="admin-modal-title" onKeyDown={(e) => e.key === 'Escape' && setAdminModal(null)}
+                    style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border-1)', borderRadius: '0.75rem', padding: '2rem', width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+                    <div id="admin-modal-title" style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '1.25rem' }}>
                       {adminModal.mode === 'create' ? 'Nuevo usuario' : `Editar: ${adminModal.user?.email}`}
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Email</label>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--text-muted)' }}>Email</label>
                       <input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} required={adminModal.mode === 'create'}
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'var(--modal-input-bg)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--text-muted)' }}>
                         Nombre de usuario <span style={{ fontWeight: 400, color: '#4B5563', fontSize: '0.75rem' }}>(opcional — para ingresar sin email)</span>
                       </label>
                       <input type="text" value={adminForm.username} onChange={e => setAdminForm(f => ({ ...f, username: e.target.value }))}
                         placeholder="ej: jmerino"
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'var(--modal-input-bg)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--text-muted)' }}>
                         {adminModal.mode === 'edit' ? 'Nueva contraseña (dejar en blanco para no cambiar)' : 'Contraseña'}
                       </label>
                       <div style={{ position: 'relative' }}>
                         <input type={showAdminFormPassword ? 'text' : 'password'} value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))}
-                          style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', outline: 'none' }} />
+                          style={{ width: '100%', padding: '0.5rem 2.25rem 0.5rem 0.75rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', fontSize: '0.9rem', boxSizing: 'border-box', background: 'var(--modal-input-bg)', color: 'var(--text-primary)', outline: 'none' }} />
                         <button type="button" onClick={() => setShowAdminFormPassword(v => !v)} aria-label={showAdminFormPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                          style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7A8D', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                          {showAdminFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                          {showAdminFormPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                         </button>
                       </div>
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>Rol</label>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--text-muted)' }}>Rol</label>
                       <select value={adminForm.role} onChange={e => setAdminForm(f => ({ ...f, role: e.target.value }))}
-                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.375rem', fontSize: '0.9rem', background: '#0D1A2D', color: '#F8FAFC', outline: 'none' }}>
-                        <option value="viewer" style={{ background: '#0D1A2D', color: '#F8FAFC' }}>Viewer — solo lectura</option>
-                        <option value="admin" style={{ background: '#0D1A2D', color: '#F8FAFC' }}>Admin — acceso total</option>
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', fontSize: '0.9rem', background: 'var(--modal-bg)', color: 'var(--text-primary)', outline: 'none' }}>
+                        <option value="viewer" style={{ background: 'var(--modal-bg)', color: 'var(--text-primary)' }}>Viewer — solo lectura</option>
+                        <option value="admin" style={{ background: 'var(--modal-bg)', color: 'var(--text-primary)' }}>Admin — acceso total</option>
                       </select>
                     </div>
 
                     <div style={{ marginBottom: '1.25rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.5rem', color: '#8B97A8' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
                         Empresas permitidas <span style={{ fontWeight: 400, color: '#4B5563' }}>(vacío = todas)</span>
                       </label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                         {COMPANY_OPTIONS.map(co => {
                           const checked = adminForm.allowedCompanies.includes(co.value);
                           return (
-                            <label key={co.value} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', border: `1px solid ${checked ? 'rgba(32,126,131,0.5)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', background: checked ? 'rgba(32,126,131,0.15)' : 'rgba(255,255,255,0.04)', cursor: 'pointer', fontSize: '0.82rem', color: checked ? '#2BB4BB' : '#8B97A8' }}>
+                            <label key={co.value} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', border: `1px solid ${checked ? 'rgba(32,126,131,0.5)' : 'var(--modal-border-2)'}`, borderRadius: '0.375rem', background: checked ? 'rgba(32,126,131,0.15)' : 'var(--modal-input-bg)', cursor: 'pointer', fontSize: '0.82rem', color: checked ? 'var(--primary-light)' : 'var(--text-muted)' }}>
                               <input type="checkbox" checked={checked}
                                 onChange={() => setAdminForm(f => ({
                                   ...f,
@@ -3866,7 +3868,7 @@ export default function DashboardPage() {
                     {/* Tabs permitidos — solo relevante para viewers */}
                     {adminForm.role === 'viewer' && (
                       <div style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: '#8B97A8' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem', color: 'var(--text-muted)' }}>
                           Menú permitido <span style={{ fontWeight: 400, color: '#4B5563' }}>(vacío = todos)</span>
                         </label>
                         {TAB_GROUPS.map(grp => (
@@ -3876,7 +3878,7 @@ export default function DashboardPage() {
                               {grp.tabs.map(t => {
                                 const checked = adminForm.allowedTabs.includes(t.key);
                                 return (
-                                  <label key={t.key} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.5rem', border: `1px solid ${checked ? 'rgba(32,126,131,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '0.375rem', background: checked ? 'rgba(32,126,131,0.15)' : 'rgba(255,255,255,0.03)', cursor: 'pointer', fontSize: '0.75rem', color: checked ? '#2BB4BB' : '#6B7A8D' }}>
+                                  <label key={t.key} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.5rem', border: `1px solid ${checked ? 'rgba(32,126,131,0.5)' : 'var(--modal-border-1)'}`, borderRadius: '0.375rem', background: checked ? 'rgba(32,126,131,0.15)' : 'var(--surface-hover)', cursor: 'pointer', fontSize: '0.75rem', color: checked ? 'var(--primary-light)' : 'var(--text-muted)' }}>
                                     <input type="checkbox" checked={checked} onChange={() => setAdminForm(f => ({
                                       ...f,
                                       allowedTabs: checked
@@ -3896,15 +3898,15 @@ export default function DashboardPage() {
                     {adminModal.mode === 'edit' && (
                       <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <input type="checkbox" id="active-chk" checked={adminForm.active} onChange={e => setAdminForm(f => ({ ...f, active: e.target.checked }))} />
-                        <label htmlFor="active-chk" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#8B97A8' }}>Usuario activo</label>
+                        <label htmlFor="active-chk" style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Usuario activo</label>
                       </div>
                     )}
 
-                    {adminError && <div style={{ color: '#EF4444', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{adminError}</div>}
+                    {adminError && <div style={{ color: 'var(--red)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{adminError}</div>}
 
                     <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                       <button onClick={() => setAdminModal(null)}
-                        style={{ padding: '0.5rem 1.25rem', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.06)', color: '#8B97A8', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        style={{ padding: '0.5rem 1.25rem', border: '1px solid var(--modal-border-2)', borderRadius: '0.375rem', background: 'var(--modal-input-bg)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem' }}>
                         Cancelar
                       </button>
                       <button onClick={saveUser}

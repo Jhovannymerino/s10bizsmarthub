@@ -14,15 +14,20 @@ export function SortTh({ col, label, sort, onSort, style }: {
   const dir = active ? sort.dir : null;
   return (
     <th
-      onClick={() => onSort(col)}
       aria-sort={dir === 'asc' ? 'ascending' : dir === 'desc' ? 'descending' : 'none'}
-      style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', ...style }}
-      title={`Ordenar por ${label}`}
+      style={{ whiteSpace: 'nowrap', ...style }}
     >
-      {label}
-      <span style={{ marginLeft: '0.2rem', opacity: active ? 0.9 : 0.25, display: 'inline-flex', verticalAlign: 'middle' }} aria-hidden="true">
-        {dir === 'asc' ? <ChevronUp size={12} /> : dir === 'desc' ? <ChevronDown size={12} /> : <ChevronsUpDown size={12} />}
-      </span>
+      <button
+        type="button"
+        onClick={() => onSort(col)}
+        title={`Ordenar por ${label}`}
+        style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit', cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center' }}
+      >
+        {label}
+        <span style={{ marginLeft: '0.2rem', opacity: active ? 0.9 : 0.25, display: 'inline-flex', verticalAlign: 'middle' }} aria-hidden="true">
+          {dir === 'asc' ? <ChevronUp size={12} /> : dir === 'desc' ? <ChevronDown size={12} /> : <ChevronsUpDown size={12} />}
+        </span>
+      </button>
     </th>
   );
 }

@@ -112,11 +112,12 @@ function VerifyCodeContent() {
           </p>
 
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1.75rem' }} onPaste={handlePaste}>
+            <div role="group" aria-label="Código de verificación de 6 dígitos" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '1.75rem' }} onPaste={handlePaste}>
               {digits.map((d, i) => (
                 <input
                   key={i}
                   ref={el => { inputs.current[i] = el; }}
+                  aria-label={`Dígito ${i + 1} de 6`}
                   type="text" inputMode="numeric" maxLength={1} value={d}
                   onChange={e => handleDigit(i, e.target.value)}
                   onKeyDown={e => handleKeyDown(i, e)}
@@ -133,12 +134,12 @@ function VerifyCodeContent() {
             </div>
 
             {error && (
-              <div style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
+              <div role="alert" style={{ padding: '0.625rem 0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.75rem', color: '#EF4444', fontSize: '0.82rem', marginBottom: '1.25rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
                 {error}
               </div>
             )}
             {resendMsg && (
-              <div style={{ padding: '0.5rem', color: '#059669', fontSize: '0.82rem', marginBottom: '1rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
+              <div role="status" style={{ padding: '0.5rem', color: '#059669', fontSize: '0.82rem', marginBottom: '1rem', textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>
                 {resendMsg}
               </div>
             )}

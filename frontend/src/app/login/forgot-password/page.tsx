@@ -82,10 +82,11 @@ export default function ForgotPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} noValidate>
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Email o usuario</label>
+                <label htmlFor="login-input" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 700, color: 'var(--form-label-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', fontFamily: "'Inter',sans-serif" }}>Email o usuario</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} aria-hidden="true" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: loginErr ? '#EF4444' : '#9CA3AF' }} />
                   <input
+                    id="login-input"
                     type="text" value={login} onChange={e => setLogin(e.target.value)} required
                     placeholder="usuario o nombre@empresa.com"
                     aria-invalid={!!loginErr}

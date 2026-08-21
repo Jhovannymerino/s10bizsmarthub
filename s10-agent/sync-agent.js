@@ -570,18 +570,25 @@ HAVING SUM(
 ORDER BY SaldoTotal DESC
 `;
 
-// Documentos pendientes de pago por proveedor (reemplaza drilldown de asientos contables)
-// CTE dedup elimina duplicados que genera vw_12DocumentosPorPagar por su JOIN interno
+// Documentos de pago por proveedor (trazabilidad en modal + registro de FechaVencimiento
+// para aging histórico, ver DocumentoVencimiento en el backend).
+// CTE dedup elimina duplicados que genera vw_12DocumentosPorPagar por su JOIN interno.
+// Trae TODOS los documentos (pendientes + pagados), acotado a 3 años para pagados igual
+// que QUERY_CXC_DOCS -- antes solo traía Estado='1' (pendientes), así que un documento
+// pagado desaparecía del snapshot para siempre junto con su FechaVencimiento.
 const QUERY_CXP_DOCS = (codEmpresa) => `
 WITH dedup AS (
   SELECT *,
     ROW_NUMBER() OVER (PARTITION BY NroD ORDER BY NroD) AS rn
   FROM CMO.dbo.vw_12DocumentosPorPagar
   WHERE CodEmpresa = '${codEmpresa}'
-    AND DescripcionEstado = '1'
+    -- Estado '1' = pendiente (con saldo); Estado '5' = pagado/saldado.
+    AND DescripcionEstado IN ('1','5')
     AND UPPER(ISNULL(DescripcionTipoDocumento,'')) NOT LIKE '%VINCULADA%'
-    AND (Total - ISNULL(TotalPagado,0)) > 0.01
     AND NOT (UPPER(ISNULL(DescripcionTipoDocumento,'')) LIKE '%NOTA% DE CR%' AND ISNULL(TotalPagado,0) < 0)
+    -- Pendientes: TODAS sin importar antigüedad, para cuadrar con la cartera.
+    -- Pagados: solo últimos 3 años, para acotar el tamaño del payload.
+    AND (DescripcionEstado = '1' OR YEAR(FechaDocumento) >= YEAR(GETDATE()) - 2)
 )
 SELECT
   ISNULL(CodIdentificador,'')                                        AS CodProveedor,

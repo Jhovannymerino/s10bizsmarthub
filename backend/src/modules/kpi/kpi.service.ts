@@ -607,7 +607,7 @@ export class KpiService {
     );
     const signExpr = tipo === 'cxc' ? '"debito" - "credito"' : '"credito" - "debito"';
     const rows = await this.prisma.$queryRawUnsafe<any[]>(
-      `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre, "nroD" AS nroD,
+      `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre, "nroD" AS "nroD",
               SUM(${signExpr})::float8 AS saldo
          FROM "LedgerEntry"
         WHERE "companyId" = $1 AND LEFT("codCuenta",2) = $2

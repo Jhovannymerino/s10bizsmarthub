@@ -414,6 +414,11 @@ export default function DashboardPage() {
   // pestaña P&L) para que el reporte de Directorio no dependa de qué rango haya
   // quedado seleccionado en otra pestaña.
   const [directorioCorteMes, setDirectorioCorteMes] = useState<number | null>(null);
+  // CxC del Reporte Directorio, AL CORTE del trimestre (no el saldo "vivo" de `cxc`, que
+  // alimenta la pestaña CxC operativa y sí debe reflejar hoy). Mismo dato que ya usa el
+  // export a PPTX (getCxCAgingAFecha) -- si no se fetchea aparte, la pantalla y el PPTX
+  // vuelven a mostrar números distintos para "CxC al cierre".
+  const [cxcDirectorio, setCxcDirectorio] = useState<any>(null);
   const [validacionForenseExpanded, setValidacionForenseExpanded] = useState<string | null>(null);
   const [forenseFacturasDrillKey, setForenseFacturasDrillKey] = useState<string | null>(null);
   const [balanceViewMode, setBalanceViewMode] = useState<'saldos' | 'sumas'>('saldos');
@@ -747,6 +752,22 @@ export default function DashboardPage() {
   }, [activeTab, selectedCompany, selectedYear, selectedQuarter, isGrupo]);
 
   useEffect(() => {
+    if (activeTab !== 'directorio' || isGrupo) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const id = selectedCompany.codEmpresa;
+    const qMesesLocal: Record<'Q1' | 'Q2' | 'Q3' | 'Q4', number[]> = { Q1: [1, 2, 3], Q2: [4, 5, 6], Q3: [7, 8, 9], Q4: [10, 11, 12] };
+    const ultimoMesQLocal = Math.max(...qMesesLocal[selectedQuarter]);
+    const corteMesLocal = Math.max(1, Math.min(12, directorioCorteMes ?? ultimoMesQLocal));
+    const hasta = new Date(Date.UTC(selectedYear, corteMesLocal, 0)).toISOString().slice(0, 10);
+    const ctrl = new AbortController();
+    fetchApi(`/kpi/${id}/cxc?modo=aging-a-fecha&hasta=${hasta}`, token, ctrl.signal)
+      .then((d) => setCxcDirectorio(d?.clientes ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') setCxcDirectorio(null); });
+    return () => ctrl.abort();
+  }, [activeTab, selectedCompany, selectedYear, selectedQuarter, directorioCorteMes, isGrupo]);
+
+  useEffect(() => {
     if (activeTab !== 'docs' || isGrupo) return;
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -957,8 +978,8 @@ export default function DashboardPage() {
   }, [gastosNatData]);
 
   const directorioSortedClientes = useMemo(() =>
-    [...(cxc?.clientes ?? [])].sort((a: any, b: any) => (b.saldoTotalSoles || 0) - (a.saldoTotalSoles || 0)),
-    [cxc]
+    [...((cxcDirectorio ?? cxc)?.clientes ?? [])].sort((a: any, b: any) => (b.saldoTotalSoles || 0) - (a.saldoTotalSoles || 0)),
+    [cxcDirectorio, cxc]
   );
 
   const PL_ROWS = [
@@ -5350,16 +5371,20 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* 07 · CxC Aging */}
-                  {cxc?.clientes && (cxc.clientes as any[]).length > 0 && (() => {
-                    const clientes = cxc.clientes as any[];
+                  {/* 07 · CxC Aging — al corte del trimestre (cxcDirectorio), no el saldo
+                      "vivo" de `cxc` que usa la pestaña operativa de Cuentas por Cobrar.
+                      Fallback a `cxc` mientras cxcDirectorio carga, para no mostrar vacío. */}
+                  {(() => {
+                    const cxcEff = cxcDirectorio ?? cxc;
+                    if (!cxcEff?.clientes || !(cxcEff.clientes as any[]).length) return null;
+                    const clientes = cxcEff.clientes as any[];
                     const sum = (k: string) => clientes.reduce((s, c) => s + Number(c[k] || 0), 0);
-                    const tVigente = cxc.totalVigente || sum('saldoVigente');
+                    const tVigente = cxcEff.totalVigente || sum('saldoVigente');
                     const t0_30 = sum('dias0_30');
                     const t31_60 = sum('dias31_60');
                     const t61_90 = sum('dias61_90');
                     const t90mas = sum('dias90mas');
-                    const totalCxC = cxc.totalSaldo || (tVigente + t0_30 + t31_60 + t61_90 + t90mas);
+                    const totalCxC = cxcEff.totalSaldo || (tVigente + t0_30 + t31_60 + t61_90 + t90mas);
                     const sortedClientes = directorioSortedClientes;
                     const draft = directorioDraft || {};
                     const isEditing = directorioEditing;
@@ -5395,7 +5420,7 @@ export default function DashboardPage() {
                             { label: '+90 días',     val: t90mas,    color: '#EF4444',
                               tipTitle: 'CxC vencida +90 días',
                               tip: 'Saldo con vencimiento mayor a 90 días. NIIF 9 exige provisión de incobrables. Considerar gestión legal o cesión a factoring.' },
-                            { label: 'Concentr. Top 3', val: cxc.concentracionTop3, color: '#5B86E5', isPct: true,
+                            { label: 'Concentr. Top 3', val: cxcEff.concentracionTop3, color: '#5B86E5', isPct: true,
                               tipTitle: 'Concentración Top 3 clientes',
                               tip: 'Porcentaje del total de CxC concentrado en los 3 clientes con mayor saldo. Alta concentración (>50%) implica riesgo de liquidez.' },
                           ].map((b: any, i) => (
@@ -5491,21 +5516,21 @@ export default function DashboardPage() {
                         </div>
 
                         {/* ── Cartera Intercompañía (segregada del CxC comercial, cuenta 121) ── */}
-                        {(cxc.totalVinculados ?? 0) > 0 && (
+                        {(cxcEff.totalVinculados ?? 0) > 0 && (
                           <div style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', background: 'rgba(91,134,229,0.06)', border: '1px solid rgba(91,134,229,0.25)', borderRadius: '0.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: (cxc.clientesVinculados?.length ?? 0) > 0 ? '0.5rem' : 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: (cxcEff.clientesVinculados?.length ?? 0) > 0 ? '0.5rem' : 0 }}>
                               <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                                 Cartera Intercompañía (empresas del grupo)
-                                <span style={{ fontSize: '0.65rem', color: '#5B86E5', fontWeight: 600, marginLeft: '0.4rem' }}>· {cxc.numVinculados ?? cxc.clientesVinculados?.length ?? 0} · fuera del CxC comercial</span>
+                                <span style={{ fontSize: '0.65rem', color: '#5B86E5', fontWeight: 600, marginLeft: '0.4rem' }}>· {cxcEff.numVinculados ?? cxcEff.clientesVinculados?.length ?? 0} · fuera del CxC comercial</span>
                               </div>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'monospace', color: '#5B86E5' }}>{fmt(cxc.totalVinculados ?? 0)}</div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'monospace', color: '#5B86E5' }}>{fmt(cxcEff.totalVinculados ?? 0)}</div>
                             </div>
-                            {(cxc.clientesVinculados?.length ?? 0) > 0 && (
+                            {(cxcEff.clientesVinculados?.length ?? 0) > 0 && (
                               <div style={{ overflowX: 'auto' }}>
                                 <table className="table-s10" style={{ width: '100%', fontSize: '0.72rem' }}>
                                   <thead><tr><th style={{ textAlign: 'left' }}>Empresa del grupo</th><th style={{ textAlign: 'right' }}>Saldo S10 (S/)</th></tr></thead>
                                   <tbody>
-                                    {(cxc.clientesVinculados as any[]).map((c: any, i: number) => (
+                                    {(cxcEff.clientesVinculados as any[]).map((c: any, i: number) => (
                                       <tr key={`dir-vin-${c.codCliente}-${i}`}>
                                         <td>{c.cliente}</td>
                                         <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(c.saldoLedger ?? c.saldoTotalSoles ?? 0)}</td>
@@ -5516,7 +5541,7 @@ export default function DashboardPage() {
                               </div>
                             )}
                             <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginTop: '0.5rem', lineHeight: 1.5 }}>
-                              Total cuenta 121 (S10) = Total CxC Comercial ({fmt(totalCxC)}) + Cartera Intercompañía ({fmt(cxc.totalVinculados ?? 0)}) = <b style={{ color: 'var(--text-primary)' }}>{fmt((cxc.totalSaldo ?? totalCxC) + (cxc.totalVinculados ?? 0))}</b>. Se segrega porque la cuenta 12 de S10 es de <b>terceros</b>; el saldo con empresas relacionadas del grupo suele vivir como préstamo intercompañía (cta. 1612).
+                              Total cuenta 121 (S10) = Total CxC Comercial ({fmt(totalCxC)}) + Cartera Intercompañía ({fmt(cxcEff.totalVinculados ?? 0)}) = <b style={{ color: 'var(--text-primary)' }}>{fmt((cxcEff.totalSaldo ?? totalCxC) + (cxcEff.totalVinculados ?? 0))}</b>. Se segrega porque la cuenta 12 de S10 es de <b>terceros</b>; el saldo con empresas relacionadas del grupo suele vivir como préstamo intercompañía (cta. 1612).
                             </div>
                           </div>
                         )}

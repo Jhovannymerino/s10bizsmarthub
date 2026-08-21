@@ -478,8 +478,8 @@ export class KpiService {
   // emitir" + 1212 "emitidas", igual que la reconciliación) con fecha <= corte. Excluye el
   // asiento de cierre de ejercicio (revierte saldos para el arrastre entre años); el asiento
   // de apertura SÍ cuenta (es el saldo inicial). Ata al balance de comprobación a esa fecha.
-  // No trae aging: el envejecimiento a una fecha pasada exigiría el estado de pago histórico,
-  // que el snapshot no guarda.
+  // No trae aging por antigüedad (ver getCxCAgingAFecha más abajo, que sí lo reconstruye
+  // usando el registro DocumentoVencimiento).
   //
   // Cierre/apertura: el cierre de cada dic (Cr que lleva a cero) se cancela con la apertura de
   // enero siguiente (Db que reabre). Por eso se incluyen los cierres de años PREVIOS al corte
@@ -580,6 +580,148 @@ export class KpiService {
       total, totalSaldo: total, totalVinculados: sum(vinculados),
       numProveedores: proveedores.length, numVinculados: vinculados.length,
       total90mas: 0, pct90mas: 0,
+    };
+  }
+
+  // Aging (Vigente/0-30/31-60/61-90/+90) de CxC/CxP a una FECHA DE CORTE pasada.
+  // getCxCSaldoAFecha/getCxPSaldoAFecha ya dan el saldo correcto a esa fecha, pero no el
+  // desglose por antigüedad porque el aging "vivo" (getCxC/getCxP) se calcula sobre
+  // vw_12DocumentosPorCobrar/PorPagar, que solo lista documentos PENDIENTES — en cuanto
+  // se pagan, desaparecen de ahí y con ellos su FechaVencimiento.
+  //
+  // Se reconstruye así: por cada (tercero, nroD) en el Mayor, el saldo a la fecha de
+  // corte (débito−crédito acumulado con fecha <= corte) dice si ese documento seguía
+  // pendiente en esa fecha, sin importar si ya se pagó después. La FechaVencimiento sale
+  // del registro DocumentoVencimiento (poblado por upsert en cada sync, nunca se borra —
+  // sobrevive al pago del documento). Con ambos datos se calcula el bucket de antigüedad
+  // AL CORTE, no a hoy.
+  //
+  // Limitación real, no oculta: un documento que ya estaba pagado ANTES de que este
+  // registro empezara a poblarse nunca tuvo su fecha capturada. Esos saldos (deberían
+  // ser ~0 casi siempre, ya en la fecha eran documentos ya liquidados) se reportan
+  // aparte en `saldoSinFechaVenc` en vez de asumirse "vigentes" a ciegas.
+  private async agingAFecha(companyId: string, hasta: string, clase: string, tipo: 'cxc' | 'cxp') {
+    const grupo = await this.prisma.company.findMany({ select: { codEmpresa: true } });
+    const grupoRuc = new Set(
+      grupo.map((g) => String(g.codEmpresa)).filter((r) => r !== String(companyId)),
+    );
+    const signExpr = tipo === 'cxc' ? '"debito" - "credito"' : '"credito" - "debito"';
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+      `SELECT "codTercero" AS ruc, MAX("tercero") AS nombre, "nroD" AS nroD,
+              SUM(${signExpr})::float8 AS saldo
+         FROM "LedgerEntry"
+        WHERE "companyId" = $1 AND LEFT("codCuenta",2) = $2
+          AND "fecha"::date <= $3::date
+          AND NOT (UPPER(COALESCE("glosa",'')) = 'ASIENTO DE CIERRE'
+                   AND EXTRACT(YEAR FROM "fecha") = EXTRACT(YEAR FROM $3::date))
+        GROUP BY "codTercero", "nroD"`,
+      companyId, clase, hasta,
+    );
+    const nroDs = [...new Set(rows.map((r) => String(r.nroD || '')).filter(Boolean))];
+    const vencimientos = nroDs.length
+      ? await this.prisma.documentoVencimiento.findMany({
+          where: { companyId, tipo, nroD: { in: nroDs } },
+          select: { nroD: true, fechaVencimiento: true },
+        })
+      : [];
+    const vencMap = new Map(vencimientos.map((v) => [v.nroD, v.fechaVencimiento]));
+    const corte = new Date(`${hasta}T00:00:00.000Z`).getTime();
+
+    type Acc = {
+      nombre: string; saldo: number; vigente: number;
+      d0_30: number; d31_60: number; d61_90: number; d90mas: number; sinFecha: number;
+    };
+    const map = new Map<string, Acc>();
+    for (const r of rows) {
+      if (r.ruc == null) continue;
+      const ruc = String(r.ruc);
+      const saldo = Number(r.saldo) || 0;
+      if (Math.abs(saldo) < 0.01) continue;
+      const acc = map.get(ruc) || { nombre: r.nombre || ruc, saldo: 0, vigente: 0, d0_30: 0, d31_60: 0, d61_90: 0, d90mas: 0, sinFecha: 0 };
+      if (r.nombre) acc.nombre = r.nombre;
+      acc.saldo = round(acc.saldo + saldo);
+      const fVenc = vencMap.get(String(r.nroD || ''));
+      if (!fVenc) {
+        acc.sinFecha = round(acc.sinFecha + saldo);
+      } else {
+        const dv = Math.floor((corte - fVenc.getTime()) / 86400000);
+        if (dv <= 0) acc.vigente = round(acc.vigente + saldo);
+        else if (dv <= 30) acc.d0_30 = round(acc.d0_30 + saldo);
+        else if (dv <= 60) acc.d31_60 = round(acc.d31_60 + saldo);
+        else if (dv <= 90) acc.d61_90 = round(acc.d61_90 + saldo);
+        else acc.d90mas = round(acc.d90mas + saldo);
+      }
+      map.set(ruc, acc);
+    }
+
+    const terceros: any[] = [];
+    const vinculados: any[] = [];
+    for (const [ruc, a] of map) {
+      const item = {
+        codTercero: ruc, nombre: a.nombre, esVinculada: grupoRuc.has(ruc),
+        saldoTotalSoles: a.saldo, saldoVigente: a.vigente,
+        dias0_30: a.d0_30, dias31_60: a.d31_60, dias61_90: a.d61_90, dias90mas: a.d90mas,
+        saldoSinFechaVenc: a.sinFecha,
+      };
+      (grupoRuc.has(ruc) ? vinculados : terceros).push(item);
+    }
+    terceros.sort((a, b) => b.saldoTotalSoles - a.saldoTotalSoles);
+    vinculados.sort((a, b) => b.saldoTotalSoles - a.saldoTotalSoles);
+    const sum = (arr: any[], f: string) => round(arr.reduce((s, x) => s + (x[f] || 0), 0));
+    const totalSaldo = sum(terceros, 'saldoTotalSoles');
+    const totalVigente = sum(terceros, 'saldoVigente');
+    const total90mas = sum(terceros, 'dias90mas');
+    const totalSinFechaVenc = sum(terceros, 'saldoSinFechaVenc');
+    const top3 = terceros.slice(0, 3).reduce((s, c) => s + c.saldoTotalSoles, 0);
+    return {
+      modo: 'aging-a-fecha', fechaCorte: hasta,
+      terceros, vinculados,
+      totalSaldo, totalVinculados: sum(vinculados, 'saldoTotalSoles'),
+      totalVigente, total90mas,
+      pct90mas: totalSaldo > 0 ? round((total90mas / totalSaldo) * 100) : 0,
+      totalSinFechaVenc,
+      concentracionTop3: totalSaldo > 0 ? round((top3 / totalSaldo) * 100) : 0,
+      numTerceros: terceros.length, numVinculados: vinculados.length,
+    };
+  }
+
+  // Aging CxC (cuenta 12) a fecha de corte — ver comentario de `agingAFecha` arriba.
+  // Devuelve el mismo shape de `clientes[]`/`clientesVinculados` que getCxC(), para
+  // enchufar directo en el mismo render (dashboard y export PPTX).
+  async getCxCAgingAFecha(companyId: string, hasta: string) {
+    const r = await this.agingAFecha(companyId, hasta, '12', 'cxc');
+    const toCliente = (t: any) => ({
+      codCliente: t.codTercero, cliente: t.nombre, esVinculada: t.esVinculada,
+      saldoTotalSoles: t.saldoTotalSoles, saldoVigente: t.saldoVigente,
+      dias0_30: t.dias0_30, dias31_60: t.dias31_60, dias61_90: t.dias61_90, dias90mas: t.dias90mas,
+      saldoSinFechaVenc: t.saldoSinFechaVenc,
+    });
+    return {
+      modo: r.modo, fechaCorte: r.fechaCorte,
+      clientes: r.terceros.map(toCliente), clientesVinculados: r.vinculados.map(toCliente),
+      totalSaldo: r.totalSaldo, totalVinculados: r.totalVinculados,
+      totalVigente: r.totalVigente, total90mas: r.total90mas, pct90mas: r.pct90mas,
+      totalSinFechaVenc: r.totalSinFechaVenc,
+      concentracionTop3: r.concentracionTop3, numClientes: r.numTerceros, numVinculados: r.numVinculados,
+    };
+  }
+
+  // Aging CxP (cuenta 42) a fecha de corte — ver comentario de `agingAFecha` arriba.
+  async getCxPAgingAFecha(companyId: string, hasta: string) {
+    const r = await this.agingAFecha(companyId, hasta, '42', 'cxp');
+    const toProveedor = (t: any) => ({
+      codProveedor: t.codTercero, proveedor: t.nombre, esVinculada: t.esVinculada,
+      saldoTotalSoles: t.saldoTotalSoles, saldoVigente: t.saldoVigente,
+      dias0_30: t.dias0_30, dias31_60: t.dias31_60, dias61_90: t.dias61_90, dias90mas: t.dias90mas,
+      saldoSinFechaVenc: t.saldoSinFechaVenc,
+    });
+    return {
+      modo: r.modo, fechaCorte: r.fechaCorte,
+      proveedores: r.terceros.map(toProveedor), proveedoresVinculados: r.vinculados.map(toProveedor),
+      totalSaldo: r.totalSaldo, totalVinculados: r.totalVinculados,
+      totalVigente: r.totalVigente, total90mas: r.total90mas, pct90mas: r.pct90mas,
+      totalSinFechaVenc: r.totalSinFechaVenc,
+      concentracionTop3: r.concentracionTop3, numProveedores: r.numTerceros, numVinculados: r.numVinculados,
     };
   }
 

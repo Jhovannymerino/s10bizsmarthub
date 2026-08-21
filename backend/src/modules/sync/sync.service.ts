@@ -119,6 +119,7 @@ export class SyncService {
       if (data.cxc_docs?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'cxc_docs', 'current', year, null, data.cxc_docs);
         logs.push({ kpiType: 'cxc_docs', rowsProcessed: data.cxc_docs.length, status: 'success' });
+        await this.upsertDocumentoVencimiento(companyId, 'cxc', data.cxc_docs);
       }
 
       if (data.cxc_vinculadas !== undefined) {
@@ -140,6 +141,7 @@ export class SyncService {
       if (data.cxp_docs?.length) {
         await this.kpiService.saveSnapshot(companyId, companyName, 'cxp_docs', 'current', year, null, data.cxp_docs);
         logs.push({ kpiType: 'cxp_docs', rowsProcessed: data.cxp_docs.length, status: 'success' });
+        await this.upsertDocumentoVencimiento(companyId, 'cxp', data.cxp_docs);
       }
 
       if (data.caja?.length) {
@@ -432,6 +434,47 @@ export class SyncService {
         },
       });
       throw error;
+    }
+  }
+
+  // Registro de fechas de vencimiento por documento (ver DocumentoVencimiento en el
+  // schema): se puebla por upsert desde cada snapshot de cxc_docs/cxp_docs, que solo
+  // trae documentos PENDIENTES. Nunca se borra, así que un documento que se paga y
+  // desaparece de futuros syncs conserva aquí su fecha de vencimiento para siempre —
+  // es lo que permite reconstruir aging a una fecha de corte pasada (getCxCAgingAFecha/
+  // getCxPAgingAFecha en kpi.service.ts) aunque el documento ya esté saldado hoy.
+  private async upsertDocumentoVencimiento(companyId: string, tipo: 'cxc' | 'cxp', docs: any[]) {
+    const toISO = (f: string): Date | null => {
+      if (!f) return null;
+      const [d, m, y] = String(f).split('/');
+      if (!y) return null;
+      const dt = new Date(`${y}-${m}-${d}T00:00:00.000Z`);
+      return isNaN(dt.getTime()) ? null : dt;
+    };
+    for (const doc of docs) {
+      const nroD = doc?.NroD != null ? String(doc.NroD) : '';
+      const fechaVenc = toISO(doc?.FechaVencimiento);
+      if (!nroD || !fechaVenc) continue;
+      try {
+        await this.prisma.documentoVencimiento.upsert({
+          where: { companyId_tipo_nroD: { companyId, tipo, nroD } },
+          update: {
+            fechaVencimiento: fechaVenc,
+            fechaDocumento: toISO(doc?.FechaDocumento),
+            tercero: String(doc?.Cliente ?? doc?.Proveedor ?? ''),
+            moneda: String(doc?.Moneda ?? '01'),
+          },
+          create: {
+            companyId, tipo, nroD,
+            fechaVencimiento: fechaVenc,
+            fechaDocumento: toISO(doc?.FechaDocumento),
+            tercero: String(doc?.Cliente ?? doc?.Proveedor ?? ''),
+            moneda: String(doc?.Moneda ?? '01'),
+          },
+        });
+      } catch (e) {
+        this.logger.warn(`No se pudo upsertar DocumentoVencimiento ${tipo}/${nroD}: ${(e as any).message}`);
+      }
     }
   }
 

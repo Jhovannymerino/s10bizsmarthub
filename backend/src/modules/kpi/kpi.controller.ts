@@ -56,6 +56,10 @@ export class KpiController {
   ) {
     // modo='saldo-a-fecha' → saldo contable de la cartera al corte (hasta), desde el Mayor.
     if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getCxCSaldoAFecha(companyId, hasta);
+    // modo='aging-a-fecha' → igual que saldo-a-fecha, pero con desglose vigente/0-30/.../+90
+    // reconstruido al corte (ver getCxCAgingAFecha). Usado por el Reporte Directorio para que
+    // la pantalla y el export PPTX muestren exactamente el mismo número.
+    if (modo === 'aging-a-fecha' && hasta) return this.kpiService.getCxCAgingAFecha(companyId, hasta);
     if (desde || hasta) return this.kpiService.getCxCRange(companyId, desde || undefined, hasta || undefined);
     return this.kpiService.getCxC(companyId, incluirAnulados === '1' || incluirAnulados === 'true');
   }
@@ -86,6 +90,7 @@ export class KpiController {
     @Query('modo') modo?: string,
   ) {
     if (modo === 'saldo-a-fecha' && hasta) return this.kpiService.getCxPSaldoAFecha(companyId, hasta);
+    if (modo === 'aging-a-fecha' && hasta) return this.kpiService.getCxPAgingAFecha(companyId, hasta);
     if (desde || hasta) return this.kpiService.getCxPRange(companyId, desde || undefined, hasta || undefined);
     return this.kpiService.getCxP(companyId);
   }
@@ -680,12 +685,13 @@ export class KpiController {
     const qMonths: Record<string, number[]> = { Q1: [1,2,3], Q2: [4,5,6], Q3: [7,8,9], Q4: [10,11,12] };
     const qMeses = qMonths[q] || [1,2,3];
 
-    // Cargar todo en paralelo
+    // Cargar todo en paralelo. cxc queda fuera: depende de `corteMes`, que se resuelve
+    // más abajo a partir de plMonthly — se pide después, ya al corte declarado (ver
+    // getCxCAgingAFecha), en vez del saldo "vivo" del último sync.
     const company = await this.prisma.company.findUnique({ where: { codEmpresa: companyId } });
-    const [pl, gav, cxc, caja, directorio, cajaPosicion] = await Promise.all([
+    const [pl, gav, caja, directorio, cajaPosicion] = await Promise.all([
       this.kpiService.getDashboard(companyId, y),
       this.kpiService.getGAV(companyId, y),
-      this.kpiService.getCxC(companyId),
       this.kpiService.getCaja(companyId, y),
       this.kpiService.getDirectorio(companyId, y, q),
       this.kpiService.getCajaPosicion(companyId, y, q),
@@ -748,6 +754,14 @@ export class KpiController {
     const corteMes = corteMesQ
       ? Math.max(1, Math.min(12, parseInt(corteMesQ, 10) || ultimoMesQ))
       : ultimoMesQ;
+    // CxC al corte declarado (último día de corteMes), no el saldo "vivo" del último
+    // sync — ver comentario de getCxCAgingAFecha en kpi.service.ts. Si no hay datos de
+    // Mayor sincronizados para reconstruir el aging (empresa nueva, o sync solo con el
+    // snapshot de documentos), cae al saldo vivo en vez de mostrar el slide vacío.
+    const corteFecha = new Date(Date.UTC(y, corteMes, 0)).toISOString().slice(0, 10);
+    const cxcAging = await this.kpiService.getCxCAgingAFecha(companyId, corteFecha);
+    const cxc = (cxcAging as any)?.clientes?.length ? cxcAging : await this.kpiService.getCxC(companyId);
+
     const qData = presentar(
       agg(plMonthly.filter((m: any) => qMeses.includes(m.mes))),
       depreciacion(Math.min(...qMeses), ultimoMesQ));

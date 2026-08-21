@@ -67,6 +67,31 @@ model LedgerEntry {
   @@index([companyId, anio, mes]) // filtro por periodo
 }
 
+// Registro de fecha de vencimiento por documento (CxC/CxP), poblado por upsert en cada
+// sync desde vw_12DocumentosPorCobrar/PorPagar. Existe porque esa vista de S10 solo
+// lista documentos PENDIENTES: en cuanto un documento se paga, desaparece de futuros
+// syncs y con él su FechaVencimiento. Este registro nunca se borra, así que sobrevive
+// al pago del documento y permite reconstruir aging histórico (ver getCxCAgingAFecha/
+// getCxPAgingAFecha en kpi.service.ts) uniendo esto con el saldo real a una fecha desde
+// LedgerEntry. Limitación conocida: un documento que ya estaba pagado ANTES de que este
+// registro empezara a poblarse nunca tuvo su fecha capturada — para esos no hay aging
+// histórico reconstruible, solo el saldo agregado.
+model DocumentoVencimiento {
+  id                Int      @id @default(autoincrement())
+  companyId         String
+  nroD              String
+  tipo              String // 'cxc' | 'cxp'
+  fechaDocumento    DateTime?
+  fechaVencimiento  DateTime
+  tercero           String   @default("")
+  moneda            String   @default("01")
+  primeraVezVistoAt DateTime @default(now())
+  actualizadoAt     DateTime @updatedAt
+
+  @@unique([companyId, tipo, nroD])
+  @@index([companyId, tipo])
+}
+
 // Empresas configuradas
 model Company {
   id           Int      @id @default(autoincrement())

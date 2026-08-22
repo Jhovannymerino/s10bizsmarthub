@@ -423,6 +423,10 @@ export default function DashboardPage() {
   // export a PPTX (getCxCAgingAFecha) -- si no se fetchea aparte, la pantalla y el PPTX
   // vuelven a mostrar números distintos para "CxC al cierre".
   const [cxcDirectorio, setCxcDirectorio] = useState<any>(null);
+  // Documentos por Cobrar (Emitidas 1212 / Por Emitir 1211 / Anticipos 1220) al mismo corte
+  // que cxcDirectorio -- mismo dato que ya usa la lámina "07b" del PPTX (getCxCSaldoAFecha),
+  // para que la pantalla no se quede atrás del export.
+  const [cxcDocsDirectorio, setCxcDocsDirectorio] = useState<any>(null);
   const [validacionForenseExpanded, setValidacionForenseExpanded] = useState<string | null>(null);
   const [forenseFacturasDrillKey, setForenseFacturasDrillKey] = useState<string | null>(null);
   const [balanceViewMode, setBalanceViewMode] = useState<'saldos' | 'sumas'>('saldos');
@@ -768,6 +772,9 @@ export default function DashboardPage() {
     fetchApi(`/kpi/${id}/cxc?modo=aging-a-fecha&hasta=${hasta}`, token, ctrl.signal)
       .then((d) => setCxcDirectorio(d?.clientes ? d : null))
       .catch((err) => { if (err.name !== 'AbortError') setCxcDirectorio(null); });
+    fetchApi(`/kpi/${id}/cxc?modo=saldo-a-fecha&hasta=${hasta}`, token, ctrl.signal)
+      .then((d) => setCxcDocsDirectorio(d?.clientes ? d : null))
+      .catch((err) => { if (err.name !== 'AbortError') setCxcDocsDirectorio(null); });
     return () => ctrl.abort();
   }, [activeTab, selectedCompany, selectedYear, selectedQuarter, directorioCorteMes, isGrupo]);
 
@@ -5641,6 +5648,98 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* 07b · Documentos por Cobrar — Emitidas vs. Por Emitir, mismo corte que
+                      cxcDirectorio. Réplica en pantalla de la lámina 07b que ya trae el
+                      export PPTX (getCxCSaldoAFecha) — antes solo vivía en el archivo. */}
+                  {(() => {
+                    if (!cxcDocsDirectorio?.clientes || !(cxcDocsDirectorio.clientes as any[]).length) return null;
+                    const clientes = cxcDocsDirectorio.clientes as any[];
+                    const totalEmitidas = cxcDocsDirectorio.totalEmitidas || 0;
+                    const totalPorEmitir = cxcDocsDirectorio.totalPorEmitir || 0;
+                    const totalAnticipos = cxcDocsDirectorio.totalAnticipos || 0;
+                    const hasAnticipos = Math.abs(totalAnticipos) > 0.5;
+                    const totalGeneral = cxcDocsDirectorio.totalSaldo
+                      || Math.round((totalEmitidas + totalPorEmitir + totalAnticipos) * 100) / 100;
+                    const sortedDocs = [...clientes].sort((a, b) => (b.saldoLedger || 0) - (a.saldoLedger || 0)).slice(0, 12);
+                    return (
+                      <div className="kpi-card kpi-card-tooltips" style={{ marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E25C1A', margin: '0 0 1rem 0', letterSpacing: '0.05em' }}>
+                          07b · DOCUMENTOS POR COBRAR — Emitidas vs. Por Emitir
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                          {[
+                            { label: 'Total Emitidas', val: totalEmitidas, color: '#10B981',
+                              tipTitle: 'Documentos Emitidos (cta. 1212)',
+                              tip: 'Facturas ya emitidas con comprobante. Tienen fecha de vencimiento propia y son las que se envejecen en el aging de arriba.' },
+                            { label: 'Total Por Emitir', val: totalPorEmitir, color: '#3B82F6',
+                              tipTitle: 'Por Emitir (cta. 1211)',
+                              tip: 'Ingreso ya devengado pero sin comprobante emitido todavía. No tiene vencimiento propio, por eso no se envejece en el aging.' },
+                            ...(hasAnticipos ? [{ label: 'Anticipos de Clientes', val: totalAnticipos, color: '#E25C1A',
+                              tipTitle: 'Anticipos (cta. 1220)',
+                              tip: 'Adelantos recibidos de clientes. Reducen lo neto por cobrar.' }] : []),
+                            { label: 'Total General (cta. 12)', val: totalGeneral, color: '#2BB4BB',
+                              tipTitle: 'Total cuenta 12',
+                              tip: 'Emitidas + Por Emitir + Anticipos. Reconcilia con la cuenta 121 del balance.' },
+                          ].map((b: any, i) => (
+                            <div key={i} className="info-pill" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.7rem 0.8rem' }}>
+                              <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginBottom: '0.25rem' }}>
+                                {b.label}<span className="info-icon">i</span>
+                              </div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'monospace', color: b.color }}>
+                                {fmt(b.val || 0)}
+                              </div>
+                              <div className="info-tooltip">
+                                <div className="info-tip-title">{b.tipTitle}</div>
+                                <div>{b.tip}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="table-s10" style={{ width: '100%', fontSize: '0.75rem' }}>
+                            <thead>
+                              <tr>
+                                <th style={{ textAlign: 'left' }}>Cliente</th>
+                                <th style={{ textAlign: 'right' }}>Emitidas</th>
+                                <th style={{ textAlign: 'right' }}>Por Emitir</th>
+                                {hasAnticipos && <th style={{ textAlign: 'right' }}>Anticipos</th>}
+                                <th style={{ textAlign: 'right' }}>Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sortedDocs.map((c: any, i: number) => (
+                                <tr key={i}>
+                                  <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.cliente}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.emitidas || 0) > 0 ? '#10B981' : undefined }}>{(c.emitidas || 0) > 0 ? fmt(c.emitidas) : '—'}</td>
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: (c.porEmitir || 0) > 0 ? '#3B82F6' : undefined }}>{(c.porEmitir || 0) > 0 ? fmt(c.porEmitir) : '—'}</td>
+                                  {hasAnticipos && (
+                                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: Math.abs(c.anticipos || 0) > 0.5 ? '#E25C1A' : undefined }}>{Math.abs(c.anticipos || 0) > 0.5 ? fmt(c.anticipos) : '—'}</td>
+                                  )}
+                                  <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(c.saldoLedger || 0)}</td>
+                                </tr>
+                              ))}
+                              <tr style={{ background: 'rgba(226,92,26,0.06)', fontWeight: 700 }}>
+                                <td>TOTAL ({clientes.length} clientes)</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(totalEmitidas)}</td>
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(totalPorEmitir)}</td>
+                                {hasAnticipos && <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(totalAnticipos)}</td>}
+                                <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(totalGeneral)}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          {clientes.length > 12 && (
+                            <div style={{ fontSize: '0.7rem', color: '#8B97A8', fontStyle: 'italic', padding: '0.5rem 0' }}>
+                              Top 12 de {clientes.length} clientes por saldo
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: '#8B97A8', marginTop: '0.75rem', lineHeight: 1.5 }}>
+                          Cuenta 12 (Mayor) partida en 1212 &quot;Emitidas&quot; (con comprobante) y 1211 &quot;Por Emitir&quot; (devengado, sin comprobante aún){hasAnticipos ? ' · Anticipos = adelantos de clientes recibidos (cta. 1220), reducen lo neto por cobrar' : ''} · TOTAL reconcilia con la cuenta 121 del balance.
+                        </div>
                       </div>
                     );
                   })()}

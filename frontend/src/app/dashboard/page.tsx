@@ -5347,10 +5347,10 @@ export default function DashboardPage() {
                                   value={corteMes}
                                   disabled={directorioEditing}
                                   onChange={(e) => setDirectorioCorteMes(Number(e.target.value))}
-                                  style={{ padding: '0.2rem 0.4rem', borderRadius: '0.35rem', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '0.7rem', colorScheme: 'dark' }}
+                                  style={{ padding: '0.2rem 0.4rem', borderRadius: '0.35rem', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', fontSize: '0.7rem' }}
                                 >
                                   {MES_NAMES_DIR.map((label, i) => (
-                                    <option key={label} value={i + 1}>{label}</option>
+                                    <option key={label} value={i + 1} style={DIR_OPTION_STYLE}>{label}</option>
                                   ))}
                                 </select>
                               </label>

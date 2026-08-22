@@ -13,6 +13,11 @@ const COMPANIES = [
 ];
 const CURRENT_YEAR = new Date().getFullYear();
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
+// El popup nativo de <option> no hereda el fondo oscuro del <select> (color-scheme
+// del navegador lo renderiza sobre blanco) -- sin esto, las opciones no seleccionadas
+// quedan en letra clara sobre fondo blanco, ilegibles. Mismo fix que DIR_OPTION_STYLE
+// en dashboard/page.tsx.
+const LEDGER_OPTION_STYLE: React.CSSProperties = { background: 'var(--input-dir-opt)', color: 'var(--input-dir-color)' };
 
 const CLASE_NAMES: Record<string, string> = {
   '10': 'Caja y Bancos', '12': 'CxC Comerciales', '13': 'CxC Relacionadas',
@@ -162,16 +167,16 @@ function LedgerPageInner() {
       <div style={{ padding: '16px 24px', background: 'var(--modal-bg)', borderBottom: '1px solid var(--modal-border-1)', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <select value={company} onChange={(e) => setCompany(e.target.value)}
           style={{ padding: '6px 12px', border: '1px solid var(--modal-border-2)', borderRadius: 6, fontSize: 14, background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
-          {COMPANIES.map((c) => <option key={c.codEmpresa} value={c.codEmpresa}>{c.shortName}</option>)}
+          {COMPANIES.map((c) => <option key={c.codEmpresa} value={c.codEmpresa} style={LEDGER_OPTION_STYLE}>{c.shortName}</option>)}
         </select>
         <select value={year} onChange={(e) => setYear(parseInt(e.target.value))}
           style={{ padding: '6px 12px', border: '1px solid var(--modal-border-2)', borderRadius: 6, fontSize: 14, background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
-          {[CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2, CURRENT_YEAR - 3, CURRENT_YEAR - 4].map((y) => <option key={y} value={y}>{y}</option>)}
+          {[CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2, CURRENT_YEAR - 3, CURRENT_YEAR - 4].map((y) => <option key={y} value={y} style={LEDGER_OPTION_STYLE}>{y}</option>)}
         </select>
         <select value={mes} onChange={(e) => setMes(e.target.value ? parseInt(e.target.value) : '')}
           style={{ padding: '6px 12px', border: '1px solid var(--modal-border-2)', borderRadius: 6, fontSize: 14, background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
-          <option value="">Todo el año</option>
-          {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+          <option value="" style={LEDGER_OPTION_STYLE}>Todo el año</option>
+          {MESES.map((m, i) => <option key={i} value={i + 1} style={LEDGER_OPTION_STYLE}>{m}</option>)}
         </select>
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <Search size={14} style={{ position: 'absolute', left: 8, color: 'var(--text-muted)' }} />
